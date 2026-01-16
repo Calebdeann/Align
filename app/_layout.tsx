@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Slot } from 'expo-router';
-import { useFonts } from 'expo-font';
+import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
@@ -12,35 +12,44 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 });
 
 export default function RootLayout() {
-  // Load fonts - keys must match names in theme.ts
-  const [fontsLoaded, fontError] = useFonts({
-    'Quicksand-Regular': require('../assets/fonts/Quicksand-Regular.ttf'),
-    'Quicksand-Medium': require('../assets/fonts/Quicksand-Medium.ttf'),
-    'Quicksand-SemiBold': require('../assets/fonts/Quicksand-SemiBold.ttf'),
-    'Quicksand-Bold': require('../assets/fonts/Quicksand-Bold.ttf'),
-    'Canela-Medium': require('../assets/fonts/Canela-Medium-Trial.otf'),
-  });
+  const [appIsReady, setAppIsReady] = useState(false);
 
-  // Hide splash once fonts are ready
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {
+    async function prepare() {
+      try {
+        // Load fonts using Font.loadAsync instead of useFonts hook
+        await Font.loadAsync({
+          'Quicksand-Regular': require('../assets/fonts/Quicksand-Regular.ttf'),
+          'Quicksand-Medium': require('../assets/fonts/Quicksand-Medium.ttf'),
+          'Quicksand-SemiBold': require('../assets/fonts/Quicksand-SemiBold.ttf'),
+          'Quicksand-Bold': require('../assets/fonts/Quicksand-Bold.ttf'),
+          'Canela-Medium': require('../assets/fonts/Canela-Medium-Trial.otf'),
+        });
+      } catch (e) {
+        console.warn('Font loading error:', e);
+      } finally {
+        setAppIsReady(true);
+      }
+    }
+
+    prepare();
+  }, []);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (appIsReady) {
+      await SplashScreen.hideAsync().catch(() => {
         // Ignore error on web/keyboard testing
       });
     }
-  }, [fontsLoaded, fontError]);
+  }, [appIsReady]);
 
   // Show nothing while loading (splash is visible)
-  if (!fontsLoaded && !fontError) {
+  if (!appIsReady) {
     return null;
   }
 
-  if (fontError) {
-    console.error('Font loading error:', fontError);
-  }
-
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
       <StatusBar style="dark" />
       <Slot />
     </View>

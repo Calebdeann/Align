@@ -1,55 +1,157 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, TextInput, Keyboard, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
-type TutorialStep = 'reps' | 'weight' | 'checkmark';
+type TutorialStep = 'weight' | 'reps' | 'checkmark' | 'complete';
 
 const hints: Record<TutorialStep, { title: string; subtitle: string }> = {
-  reps: {
-    title: 'Enter a rep number',
+  weight: {
+    title: 'Enter the weight',
     subtitle: "If you don't know, enter a guess",
   },
-  weight: {
-    title: 'Now enter the weight',
+  reps: {
+    title: 'Enter a rep number',
     subtitle: "If you don't know, enter a guess",
   },
   checkmark: {
     title: 'Tap the checkmark',
     subtitle: 'This logs your set',
   },
+  complete: {
+    title: 'Well done!!!',
+    subtitle: "Tap 'Continue'",
+  },
 };
 
 export default function ExerciseTutorialScreen() {
   const { exerciseName } = useLocalSearchParams<{ exerciseName: string }>();
-  const [step, setStep] = useState<TutorialStep>('reps');
-  const [kg, setKg] = useState('10');
-  const [reps, setReps] = useState('8');
+  const [step, setStep] = useState<TutorialStep>('weight');
+  const [kg, setKg] = useState('');
+  const [reps, setReps] = useState('');
   const [isChecked, setIsChecked] = useState(false);
 
-  const handleRepsChange = (value: string) => {
-    setReps(value);
-    if (value.length > 0 && step === 'reps') {
-      setStep('weight');
-    }
-  };
+  const weightInputRef = useRef<TextInput>(null);
+  const repsInputRef = useRef<TextInput>(null);
+
+  // Celebration animation values
+  const [showCelebration, setShowCelebration] = useState(false);
+  const celebrationScale = useRef(new Animated.Value(0)).current;
+  const celebrationOpacity = useRef(new Animated.Value(0)).current;
+  const confettiAnimations = useRef(
+    Array.from({ length: 12 }, () => ({
+      translateY: new Animated.Value(0),
+      translateX: new Animated.Value(0),
+      opacity: new Animated.Value(1),
+      rotate: new Animated.Value(0),
+    }))
+  ).current;
+
+  // Auto-focus weight input on mount to open keyboard
+  useEffect(() => {
+    setTimeout(() => {
+      weightInputRef.current?.focus();
+    }, 300);
+  }, []);
 
   const handleKgChange = (value: string) => {
     setKg(value);
-    if (value.length > 0 && step === 'weight') {
-      setStep('checkmark');
+  };
+
+  const handleKgSubmit = () => {
+    if (kg.trim()) {
+      setStep('reps');
+      Keyboard.dismiss();
+      setTimeout(() => {
+        repsInputRef.current?.focus();
+      }, 100);
     }
+  };
+
+  const handleRepsChange = (value: string) => {
+    setReps(value);
+  };
+
+  const handleRepsSubmit = () => {
+    if (reps.trim()) {
+      setStep('checkmark');
+      Keyboard.dismiss();
+    }
+  };
+
+  const playCelebration = () => {
+    setShowCelebration(true);
+
+    // Reset animations
+    celebrationScale.setValue(0);
+    celebrationOpacity.setValue(1);
+    confettiAnimations.forEach((anim) => {
+      anim.translateY.setValue(0);
+      anim.translateX.setValue(0);
+      anim.opacity.setValue(1);
+      anim.rotate.setValue(0);
+    });
+
+    // Main celebration pulse
+    Animated.sequence([
+      Animated.spring(celebrationScale, {
+        toValue: 1.2,
+        friction: 3,
+        tension: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(celebrationScale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Confetti burst animation
+    const confettiPromises = confettiAnimations.map((anim, index) => {
+      const angle = (index / confettiAnimations.length) * Math.PI * 2;
+      const distance = 80 + Math.random() * 60;
+      const targetX = Math.cos(angle) * distance;
+      const targetY = Math.sin(angle) * distance - 40;
+
+      return Animated.parallel([
+        Animated.timing(anim.translateX, {
+          toValue: targetX,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim.translateY, {
+          toValue: targetY,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim.rotate, {
+          toValue: Math.random() * 4 - 2,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim.opacity, {
+          toValue: 0,
+          duration: 600,
+          delay: 300,
+          useNativeDriver: true,
+        }),
+      ]);
+    });
+
+    Animated.parallel(confettiPromises).start(() => {
+      setTimeout(() => setShowCelebration(false), 100);
+    });
   };
 
   const handleCheck = () => {
     setIsChecked(true);
-    setTimeout(() => {
-      router.push('/onboarding/complete');
-    }, 500);
+    setStep('complete');
+    playCelebration();
   };
 
-  const canContinue = isChecked;
+  const canContinue = step === 'complete';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -98,25 +200,57 @@ export default function ExerciseTutorialScreen() {
         </View>
 
         {/* Data Row */}
-        <View style={styles.tableRow}>
+        <View style={[styles.tableRow, isChecked && styles.tableRowCompleted]}>
           <Text style={[styles.tableCell, styles.colSet]}>1</Text>
           <Text style={[styles.tableCell, styles.colPrevious]}>-</Text>
           <View style={styles.colKg}>
             <TextInput
-              style={[styles.input, step === 'weight' && styles.inputHighlighted]}
+              ref={weightInputRef}
+              style={[
+                styles.input,
+                step === 'weight' && styles.inputHighlighted,
+                isChecked && styles.inputCompleted,
+              ]}
               value={kg}
               onChangeText={handleKgChange}
+              placeholder="20"
+              placeholderTextColor={colors.textSecondary + '80'}
               keyboardType="numeric"
-              selectTextOnFocus
+              returnKeyType="done"
+              autoCorrect={false}
+              editable={true}
+              selectTextOnFocus={true}
+              onSubmitEditing={handleKgSubmit}
+              onEndEditing={() => {
+                if (kg.trim() && step === 'weight') {
+                  handleKgSubmit();
+                }
+              }}
             />
           </View>
           <View style={styles.colReps}>
             <TextInput
-              style={[styles.input, step === 'reps' && styles.inputHighlighted]}
+              ref={repsInputRef}
+              style={[
+                styles.input,
+                step === 'reps' && styles.inputHighlighted,
+                isChecked && styles.inputCompleted,
+              ]}
               value={reps}
               onChangeText={handleRepsChange}
+              placeholder="10"
+              placeholderTextColor={colors.textSecondary + '80'}
               keyboardType="numeric"
-              selectTextOnFocus
+              returnKeyType="done"
+              autoCorrect={false}
+              editable={true}
+              selectTextOnFocus={true}
+              onSubmitEditing={handleRepsSubmit}
+              onEndEditing={() => {
+                if (reps.trim() && step === 'reps') {
+                  handleRepsSubmit();
+                }
+              }}
             />
           </View>
           <View style={styles.colCheck}>
@@ -126,9 +260,13 @@ export default function ExerciseTutorialScreen() {
                 step === 'checkmark' && styles.checkboxHighlighted,
                 isChecked && styles.checkboxChecked,
               ]}
-              onPress={handleCheck}
+              onPress={step === 'checkmark' ? handleCheck : undefined}
             >
-              {isChecked && <Text style={styles.checkmark}>✓</Text>}
+              {isChecked ? (
+                <Text style={styles.checkmark}>✓</Text>
+              ) : (
+                <Text style={styles.checkmarkEmpty}>✓</Text>
+              )}
             </Pressable>
           </View>
         </View>
@@ -152,14 +290,64 @@ export default function ExerciseTutorialScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
-          onPress={() => router.push('/onboarding/complete')}
+          onPress={() => {
+            if (canContinue) {
+              router.push('/onboarding/complete');
+            }
+          }}
           disabled={!canContinue}
         >
-          <Text style={[styles.continueText, !canContinue && styles.continueTextDisabled]}>
-            Continue
-          </Text>
+          <Text style={styles.continueText}>Continue</Text>
         </Pressable>
       </View>
+
+      {/* Celebration Overlay */}
+      {showCelebration && (
+        <View style={styles.celebrationOverlay} pointerEvents="none">
+          <Animated.View
+            style={[styles.celebrationCenter, { transform: [{ scale: celebrationScale }] }]}
+          >
+            <Text style={styles.celebrationEmoji}>🎉</Text>
+          </Animated.View>
+          {confettiAnimations.map((anim, index) => {
+            const confettiColors = [
+              colors.primary,
+              '#FFD700',
+              '#FF6B6B',
+              '#4ECDC4',
+              '#FF9F43',
+              '#A29BFE',
+            ];
+            const confettiEmojis = ['✨', '⭐', '💪', '🔥', '💜', '🏋️'];
+            return (
+              <Animated.View
+                key={index}
+                style={[
+                  styles.confettiPiece,
+                  {
+                    backgroundColor: confettiColors[index % confettiColors.length],
+                    transform: [
+                      { translateX: anim.translateX },
+                      { translateY: anim.translateY },
+                      {
+                        rotate: anim.rotate.interpolate({
+                          inputRange: [-2, 2],
+                          outputRange: ['-180deg', '180deg'],
+                        }),
+                      },
+                    ],
+                    opacity: anim.opacity,
+                  },
+                ]}
+              >
+                <Text style={styles.confettiEmoji}>
+                  {confettiEmojis[index % confettiEmojis.length]}
+                </Text>
+              </Animated.View>
+            );
+          })}
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -269,6 +457,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.sm,
   },
+  tableRowCompleted: {
+    backgroundColor: colors.primary + '20',
+    marginHorizontal: -spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 12,
+  },
   tableCell: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
@@ -293,19 +487,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   input: {
+    height: 44,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    paddingVertical: 10,
     paddingHorizontal: spacing.md,
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.text,
     textAlign: 'center',
+    backgroundColor: colors.background,
   },
   inputHighlighted: {
     borderColor: colors.primary,
     borderWidth: 2,
+  },
+  inputCompleted: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   checkbox: {
     width: 28,
@@ -329,6 +528,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  checkmarkEmpty: {
+    color: colors.border,
+    fontSize: 16,
   },
   addSetButton: {
     marginHorizontal: spacing.lg,
@@ -390,5 +593,30 @@ const styles = StyleSheet.create({
   },
   continueTextDisabled: {
     color: colors.textSecondary,
+  },
+  celebrationOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  celebrationCenter: {
+    position: 'absolute',
+    top: '35%',
+  },
+  celebrationEmoji: {
+    fontSize: 80,
+  },
+  confettiPiece: {
+    position: 'absolute',
+    top: '35%',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confettiEmoji: {
+    fontSize: 20,
   },
 });

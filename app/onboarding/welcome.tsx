@@ -9,7 +9,7 @@ export default function WelcomeScreen() {
       currentStep={1}
       totalSteps={4}
       onContinue={() => router.push('/onboarding/progress')}
-      onSkip={() => router.push('/onboarding/progress')}
+      onSkip={() => router.push('/onboarding/experience')}
     />
   );
 }

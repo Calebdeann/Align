@@ -10,6 +10,7 @@ interface OnboardingLayoutProps {
   totalSteps: number;
   onContinue: () => void;
   onSkip: () => void;
+  onTitlePress?: () => void;
 }
 
 function AnimatedDot({ isActive, index }: { isActive: boolean; index: number }) {
@@ -52,6 +53,7 @@ export default function OnboardingLayout({
   totalSteps,
   onContinue,
   onSkip,
+  onTitlePress,
 }: OnboardingLayoutProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -68,7 +70,13 @@ export default function OnboardingLayout({
     <SafeAreaView style={styles.container}>
       {/* Header content with fade animation */}
       <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-        <Text style={styles.title}>{title}</Text>
+        {onTitlePress ? (
+          <Pressable onPress={onTitlePress}>
+            <Text style={styles.title}>{title}</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.title}>{title}</Text>
+        )}
         <Text style={styles.subtitle}>{subtitle}</Text>
       </Animated.View>
 

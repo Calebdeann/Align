@@ -20,7 +20,9 @@ export default function OnboardingWelcome() {
         {/* Main content - positioned slightly above center */}
         <View style={styles.content}>
           <Text style={styles.logo}>ALIGN</Text>
-          <Text style={styles.tagline}>BUILT FOR THE GIRLS</Text>
+          <Pressable onPress={() => router.replace('/home')}>
+            <Text style={styles.tagline}>BUILT FOR THE GIRLS</Text>
+          </Pressable>
         </View>
 
         {/* Bottom buttons */}

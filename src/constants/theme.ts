@@ -17,6 +17,10 @@ export const colors = {
   surface: '#F5F5F5',
   surfaceSecondary: '#FAFAFA',
 
+  // Card backgrounds (use with cardStroke for containers)
+  card: '#F5F4FA',
+  cardStroke: '#FFFFFF',
+
   // Text
   text: '#1A1A1A',
   textSecondary: '#666666',
@@ -113,4 +117,36 @@ export const shadows = {
     shadowRadius: 8,
     elevation: 8,
   },
+} as const;
+
+/**
+ * Container Styles
+ *
+ * Screen backgrounds:
+ * - Primary screens (Planner, Workout tabs): #FFFFFF (colors.background)
+ * - Secondary screens (Profile, Schedule Workout, modals): #FAFAFA (colors.surfaceSecondary)
+ *
+ * Card containers:
+ * - Background: #F5F4FA
+ * - Border: 2px solid #FFFFFF (pure white stroke)
+ * - Border radius: 16px
+ *
+ * Dividers inside cards:
+ * - Height: 1px
+ * - Color: rgba(217, 217, 217, 0.25)
+ * - Horizontal margin: spacing.sm (8px) on each side
+ */
+
+// Common card style - use for all containers across the app
+export const cardStyle = {
+  backgroundColor: '#F5F4FA',
+  borderWidth: 2,
+  borderColor: '#FFFFFF',
+  borderRadius: 16,
+} as const;
+
+// Divider style for use inside cards
+export const dividerStyle = {
+  height: 1,
+  backgroundColor: 'rgba(217, 217, 217, 0.25)',
 } as const;

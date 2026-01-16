@@ -15,10 +15,7 @@ export default function PlanReadyScreen() {
 
       {/* Continue Button */}
       <View style={styles.bottomSection}>
-        <Pressable
-          style={styles.continueButton}
-          onPress={() => router.push('/onboarding/thank-you')}
-        >
+        <Pressable style={styles.continueButton} onPress={() => router.replace('/(tabs)')}>
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
       </View>

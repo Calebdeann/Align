@@ -5,11 +5,11 @@ import { router } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
-const LeafLeft = require('@/assets/images/Leaf Left.png');
-const LeafRight = require('@/assets/images/Leaf Right.png');
-const Girl1 = require('@/assets/images/Girl 1.png');
-const Girl2 = require('@/assets/images/Girl 2.png');
-const Girl3 = require('@/assets/images/Girl 3.png');
+const LeafLeft = require('../../assets/images/Leaf Left.png');
+const LeafRight = require('../../assets/images/Leaf Right.png');
+const Girl1 = require('../../assets/images/Girl 1.png');
+const Girl2 = require('../../assets/images/Girl 2.png');
+const Girl3 = require('../../assets/images/Girl 3.png');
 
 const LEAF_GOLD = '#D4A574';
 

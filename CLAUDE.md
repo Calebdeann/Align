@@ -56,18 +56,43 @@ Align is a women-focused workout tracker and scheduler app. Built with React Nat
 
 ```
 align/
-├── app/                    # Expo Router screens
-├── src/
-│   ├── components/         # UI components
-│   ├── constants/          # Theme, config
-│   ├── services/           # Supabase, API calls
-│   ├── stores/             # Zustand stores
-│   ├── hooks/              # Custom hooks
-│   └── types/              # TypeScript types
-├── assets/
-│   └── fonts/              # Quicksand font files
-├── docs/figma/             # Figma exports
-└── .claude/                # Claude efficiency files
+├── app/                        # Expo Router screens (file-based routing)
+│   ├── (tabs)/                 # Tab navigator screens
+│   │   ├── _layout.tsx         # Tab bar configuration
+│   │   ├── index.tsx           # Planner/Calendar screen
+│   │   ├── workout.tsx         # Workout screen
+│   │   └── profile.tsx         # Profile screen
+│   ├── onboarding/             # Onboarding flow screens
+│   ├── _layout.tsx             # Root layout (fonts, splash)
+│   └── index.tsx               # Entry point / Welcome screen
+│
+├── src/                        # Source code (non-routing)
+│   ├── components/             # Reusable UI components
+│   │   ├── icons/              # SVG icon components
+│   │   ├── layout/             # Layout wrapper components
+│   │   ├── ui/                 # Generic UI (buttons, cards, etc.)
+│   │   └── index.ts            # Barrel export
+│   ├── constants/              # App-wide constants
+│   │   └── theme.ts            # Colors, fonts, spacing
+│   ├── hooks/                  # Custom React hooks
+│   ├── lib/                    # Third-party library configs
+│   ├── services/               # API & external services
+│   │   └── supabase.ts         # Supabase client
+│   ├── stores/                 # Zustand state stores
+│   │   └── onboardingStore.ts  # Onboarding state
+│   ├── types/                  # TypeScript type definitions
+│   │   └── index.ts            # Shared types
+│   └── utils/                  # Helper functions
+│       └── calendar.ts         # Calendar date utilities
+│
+├── assets/                     # Static assets
+│   ├── fonts/                  # Custom fonts
+│   ├── images/                 # App images
+│   ├── Figma_App/              # Figma exports for main app
+│   └── Figma_Onboarding/       # Figma exports for onboarding
+│
+├── ios/                        # Native iOS project (dev builds)
+└── .claude/                    # Claude project files
 ```
 
 ## Key Patterns
