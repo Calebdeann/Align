@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const daysPerWeekOptions = [
   '1 day / week',
@@ -42,7 +43,11 @@ export default function WorkoutFrequencyScreen() {
     (activeTab === 'specific-days' && selectedSpecificDays.length > 0);
 
   const handleContinue = () => {
-    // TODO: Save selection to store
+    if (activeTab === 'days-per-week' && selectedDaysPerWeek) {
+      useOnboardingStore.getState().setAndSave('workoutFrequency', selectedDaysPerWeek);
+    } else if (activeTab === 'specific-days' && selectedSpecificDays.length > 0) {
+      useOnboardingStore.getState().setAndSave('workoutDays', selectedSpecificDays);
+    }
     router.push('/onboarding/reminder');
   };
 
@@ -59,7 +64,12 @@ export default function WorkoutFrequencyScreen() {
           <View style={[styles.progressBarFill, { width: '88%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/reminder')}>
+        <Pressable
+          onPress={() => {
+            useOnboardingStore.getState().skipField('workoutFrequency');
+            router.push('/onboarding/reminder');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>

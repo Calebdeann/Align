@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fonts, fontSize, spacing, radius } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const experienceLevels = [
   { id: 'never', label: "I've never worked out", bars: 1 },
@@ -33,9 +34,11 @@ function BarIcon({ filled, isSelected }: { filled: number; isSelected: boolean }
 
 export default function ExperienceScreen() {
   const [selected, setSelected] = useState<string | null>(null);
+  const setAndSave = useOnboardingStore((s) => s.setAndSave);
 
   const handleSelect = (id: string) => {
     setSelected(id);
+    setAndSave('experienceLevel', id);
     setTimeout(() => {
       router.push('/onboarding/goals');
     }, 300);
@@ -54,7 +57,12 @@ export default function ExperienceScreen() {
           <View style={[styles.progressBarFill, { width: '10%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/goals')}>
+        <Pressable
+          onPress={() => {
+            useOnboardingStore.getState().skipField('experienceLevel');
+            router.push('/onboarding/goals');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -157,7 +165,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     backgroundColor: '#FFFFFF',
     borderRadius: radius.lg,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: 'rgba(239, 239, 239, 0.5)',
     gap: spacing.lg,
   },

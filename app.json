@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.align.app",
+      "bundleIdentifier": "com.aligntracker.app",
       "usesAppleSignIn": true
     },
     "android": {
@@ -29,6 +29,12 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-secure-store", "expo-web-browser", "expo-router", "expo-font"]
+    "plugins": [
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-router",
+      "expo-font",
+      "expo-apple-authentication"
+    ]
   }
 }

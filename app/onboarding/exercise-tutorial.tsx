@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, TextInput, Keyboard, Animated } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { filterNumericInput } from '@/utils/units';
 
 type TutorialStep = 'weight' | 'reps' | 'checkmark' | 'complete';
 
@@ -56,7 +57,7 @@ export default function ExerciseTutorialScreen() {
   }, []);
 
   const handleKgChange = (value: string) => {
-    setKg(value);
+    setKg(filterNumericInput(value));
   };
 
   const handleKgSubmit = () => {
@@ -70,7 +71,7 @@ export default function ExerciseTutorialScreen() {
   };
 
   const handleRepsChange = (value: string) => {
-    setReps(value);
+    setReps(filterNumericInput(value, false));
   };
 
   const handleRepsSubmit = () => {

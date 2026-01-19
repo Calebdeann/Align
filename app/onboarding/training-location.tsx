@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const locations = [
   { id: 'commercial', label: 'Commercial Gym', icon: '🏢' },
@@ -12,9 +13,11 @@ const locations = [
 
 export default function TrainingLocationScreen() {
   const [selected, setSelected] = useState<string | null>(null);
+  const { setAndSave, skipField } = useOnboardingStore();
 
   const handleSelect = (id: string) => {
     setSelected(id);
+    setAndSave('trainingLocation', id);
     setTimeout(() => {
       router.push('/onboarding/equipment');
     }, 300);
@@ -24,7 +27,10 @@ export default function TrainingLocationScreen() {
     <QuestionLayout
       question="Where do you train?"
       progress={82}
-      onSkip={() => router.push('/onboarding/equipment')}
+      onSkip={() => {
+        skipField('trainingLocation');
+        router.push('/onboarding/equipment');
+      }}
     >
       <View style={optionStyles.optionsContainer}>
         {locations.map((location) => {

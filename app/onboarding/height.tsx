@@ -11,6 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const TICK_SPACING = 12; // Increased for better readability
@@ -22,8 +24,17 @@ const TOTAL_INCHES = MAX_INCHES - MIN_INCHES;
 const RULER_HEIGHT = TOTAL_INCHES * TICK_SPACING;
 
 export default function HeightScreen() {
-  const [unit, setUnit] = useState<'cm' | 'ft'>('ft');
+  const { measurementUnit, setMeasurementUnit } = useUserPreferencesStore();
+
+  // Derive display unit from preferences
+  const unit = measurementUnit === 'cm' ? 'cm' : 'ft';
+
   const [heightInches, setHeightInches] = useState(63);
+
+  // Update preferences when user toggles unit
+  const handleUnitChange = (newUnit: 'cm' | 'ft') => {
+    setMeasurementUnit(newUnit === 'cm' ? 'cm' : 'in');
+  };
 
   // Single scroll value - both units use same ruler structure
   const scrollY = useRef(new Animated.Value((63 - MIN_INCHES) * TICK_SPACING)).current;
@@ -127,7 +138,12 @@ export default function HeightScreen() {
           <View style={[styles.progressBarFill, { width: '65%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/weight')}>
+        <Pressable
+          onPress={() => {
+            useOnboardingStore.getState().skipField('heightInches');
+            router.push('/onboarding/weight');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -143,13 +159,13 @@ export default function HeightScreen() {
         <View style={styles.toggleBackground}>
           <Pressable
             style={[styles.toggleOption, unit === 'cm' && styles.toggleOptionActive]}
-            onPress={() => setUnit('cm')}
+            onPress={() => handleUnitChange('cm')}
           >
             <Text style={[styles.toggleText, unit === 'cm' && styles.toggleTextActive]}>cm</Text>
           </Pressable>
           <Pressable
             style={[styles.toggleOption, unit === 'ft' && styles.toggleOptionActive]}
-            onPress={() => setUnit('ft')}
+            onPress={() => handleUnitChange('ft')}
           >
             <Text style={[styles.toggleText, unit === 'ft' && styles.toggleTextActive]}>ft</Text>
           </Pressable>
@@ -201,7 +217,13 @@ export default function HeightScreen() {
 
       {/* Continue button */}
       <View style={styles.bottomSection}>
-        <Pressable style={styles.continueButton} onPress={() => router.push('/onboarding/weight')}>
+        <Pressable
+          style={styles.continueButton}
+          onPress={() => {
+            useOnboardingStore.getState().setAndSave('heightInches', heightInches);
+            router.push('/onboarding/weight');
+          }}
+        >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
       </View>

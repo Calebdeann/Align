@@ -11,7 +11,7 @@ Align is a women-focused workout tracker and scheduler app. Built with React Nat
 - **State Management:** Zustand
 - **Backend:** Supabase (Auth, Database, Storage)
 - **Auth:** Apple Sign-In + Google Sign-In
-- **Bundle ID:** com.align.app
+- **Bundle ID:** com.aligntracker.app
 - **Language:** TypeScript
 
 ## Current Phase
@@ -115,6 +115,48 @@ Use `QuestionLayout` component with `optionStyles` for all multi-select/single-s
 3. Ask before adding new dependencies
 4. Keep components small and focused
 
+## Security - Credentials Handling
+
+**CRITICAL: Never commit secrets to the codebase.**
+
+### What's Safe in Code (Public)
+
+- OAuth **Client IDs** (iOS, Web) - These are public identifiers
+- Supabase **URL** and **Anon Key** - Designed to be public
+- Bundle IDs, Team IDs, Key IDs
+
+### What Must NEVER Be in Code (Secrets)
+
+- OAuth **Client Secrets** - Store only in Supabase dashboard
+- Apple **.p8 private keys** - Store only in Supabase dashboard
+- Supabase **Service Role Key** - Never needed in client app
+- Any API keys with write/admin access
+
+### Current OAuth Setup
+
+```
+Apple Sign-In:
+- App ID: com.aligntracker.app
+- Service ID: com.aligntracker.app.auth (for Supabase callback)
+- Key ID: 26CKNHTCMG
+- Team ID: 26YKG8V9Q8
+- P8 Key & Secret: STORED IN SUPABASE ONLY
+
+Google Sign-In:
+- iOS Client ID: 1032254562807-29eof3svg4o8erh24t94v0nqe3l53ed8.apps.googleusercontent.com
+- Web Client ID: 1032254562807-qkr613tq0nqc07l6e23h9le715scvkrq.apps.googleusercontent.com
+- Client Secret: STORED IN SUPABASE ONLY
+```
+
+### Where Secrets Live
+
+| Secret               | Location                                 |
+| -------------------- | ---------------------------------------- |
+| Apple P8 Key         | Supabase → Auth → Providers → Apple      |
+| Apple JWT Secret     | Supabase → Auth → Providers → Apple      |
+| Google Client Secret | Supabase → Auth → Providers → Google     |
+| Supabase Service Key | Supabase → Settings → API (never in app) |
+
 ## Don'ts
 
 - Don't auto-generate full UI - build step by step with user
@@ -132,5 +174,5 @@ Use `QuestionLayout` component with `optionStyles` for all multi-select/single-s
 
 - **Primary:** #947AFF
 - **Font:** Quicksand
-- **Bundle ID:** com.align.app
+- **Bundle ID:** com.aligntracker.app
 - **Target:** iOS first

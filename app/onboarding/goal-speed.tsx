@@ -95,7 +95,12 @@ export default function GoalSpeedScreen() {
           <View style={[styles.progressBarFill, { width: '85%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/goal-comparison')}>
+        <Pressable
+          onPress={() => {
+            useOnboardingStore.getState().skipField('weeklyGoal');
+            router.push('/onboarding/goal-comparison');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -160,6 +165,7 @@ export default function GoalSpeedScreen() {
           style={styles.continueButton}
           onPress={() => {
             setWeeklyGoal(speed);
+            useOnboardingStore.getState().setAndSave('weeklyGoal', speed);
             router.push('/onboarding/goal-comparison');
           }}
         >

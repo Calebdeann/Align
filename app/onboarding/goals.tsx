@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
-import { colors, fonts, fontSize, spacing, radius } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const goals = [
   { id: 'lose', label: 'Lose Weight', icon: '⚖️' },
@@ -13,9 +13,11 @@ const goals = [
 
 export default function GoalsScreen() {
   const [selected, setSelected] = useState<string | null>(null);
+  const { setAndSave, skipField } = useOnboardingStore();
 
   const handleSelect = (id: string) => {
     setSelected(id);
+    setAndSave('mainGoal', id);
     setTimeout(() => {
       router.push('/onboarding/other-goals');
     }, 300);
@@ -25,7 +27,10 @@ export default function GoalsScreen() {
     <QuestionLayout
       question="What is your main goal?"
       progress={20}
-      onSkip={() => router.push('/onboarding/other-goals')}
+      onSkip={() => {
+        skipField('mainGoal');
+        router.push('/onboarding/other-goals');
+      }}
     >
       <View style={optionStyles.optionsContainer}>
         {goals.map((goal) => {

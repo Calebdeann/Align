@@ -1,8 +1,8 @@
-import { useRef, useState, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Dimensions, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import {
   generateMonthData,
@@ -12,11 +12,26 @@ import {
   type MonthData,
 } from '@/utils/calendar';
 import { useWorkoutStore, type ScheduledWorkout } from '@/stores/workoutStore';
+import { getWorkoutsByDateRange, type WorkoutHistoryItem } from '@/services/api/workouts';
+import { getCurrentUser } from '@/services/api/user';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DAY_WIDTH = (SCREEN_WIDTH - spacing.lg * 2) / 7;
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// Type for displaying workouts in the calendar (both scheduled and completed)
+interface CalendarWorkoutItem {
+  id: string;
+  name: string;
+  tagColor: string;
+  templateName: string | null; // Template name to show above workout name
+  time?: { hour: number; minute: number };
+  isCompleted: boolean;
+  isFromDatabase: boolean; // true = completed workout from DB, false = scheduled workout
+  scheduledWorkoutId?: string; // For toggling completion on scheduled workouts
+  dbWorkoutId?: string; // For toggling DB completed workouts
+}
 
 // Icons
 function ListIcon({ color }: { color: string }) {
@@ -54,6 +69,29 @@ function ChevronRight() {
         d="M9 18l6-6-6-6"
         stroke={colors.textTertiary}
         strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function CheckboxUnchecked({ color }: { color: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={10} stroke={color} strokeWidth={2} />
+    </Svg>
+  );
+}
+
+function CheckboxChecked({ color }: { color: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={10} fill={color} />
+      <Path
+        d="M8 12l3 3 5-6"
+        stroke="#FFFFFF"
+        strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -101,9 +139,123 @@ export default function CalendarScreen() {
   const flatListRef = useRef<FlatList>(null);
   const listFlatListRef = useRef<FlatList>(null);
 
+  // User and completed workouts state
+  const [userId, setUserId] = useState<string | null>(null);
+  const [completedWorkouts, setCompletedWorkouts] = useState<WorkoutHistoryItem[]>([]);
+  // Track manually unchecked DB workouts (key: workout id, value: true if unchecked)
+  const [uncheckedDbWorkouts, setUncheckedDbWorkouts] = useState<Set<string>>(new Set());
+
   // Get workouts from store
+  const scheduledWorkouts = useWorkoutStore((state) => state.scheduledWorkouts);
   const getWorkoutsForMonth = useWorkoutStore((state) => state.getWorkoutsForMonth);
   const getWorkoutsForDate = useWorkoutStore((state) => state.getWorkoutsForDate);
+  const toggleWorkoutCompletion = useWorkoutStore((state) => state.toggleWorkoutCompletion);
+  const isWorkoutCompleted = useWorkoutStore((state) => state.isWorkoutCompleted);
+
+  // Fetch completed workouts function (reusable)
+  const fetchCompletedWorkouts = useCallback(async (uid: string) => {
+    // Fetch workouts for 6 months in past and future
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 6);
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 6);
+
+    const workouts = await getWorkoutsByDateRange(
+      uid,
+      startDate.toISOString(),
+      endDate.toISOString()
+    );
+    setCompletedWorkouts(workouts);
+  }, []);
+
+  // Fetch user on mount
+  useEffect(() => {
+    async function loadUser() {
+      const user = await getCurrentUser();
+      if (user) {
+        setUserId(user.id);
+        fetchCompletedWorkouts(user.id);
+      }
+    }
+    loadUser();
+  }, [fetchCompletedWorkouts]);
+
+  // Refresh completed workouts when screen is focused (e.g., after saving a workout)
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) {
+        fetchCompletedWorkouts(userId);
+      }
+    }, [userId, fetchCompletedWorkouts])
+  );
+
+  // Helper to get completed workouts for a specific date
+  const getCompletedWorkoutsForDate = useCallback(
+    (dateKey: string): WorkoutHistoryItem[] => {
+      return completedWorkouts.filter((w) => {
+        const completedDate = new Date(w.completedAt).toISOString().split('T')[0];
+        return completedDate === dateKey;
+      });
+    },
+    [completedWorkouts]
+  );
+
+  // Combine scheduled and completed workouts for a date
+  const getCombinedWorkoutsForDate = useCallback(
+    (dateKey: string): CalendarWorkoutItem[] => {
+      const scheduledWorkouts = getWorkoutsForDate(dateKey);
+      const dbCompletedWorkouts = getCompletedWorkoutsForDate(dateKey);
+
+      const combined: CalendarWorkoutItem[] = [];
+
+      // Add scheduled workouts
+      scheduledWorkouts.forEach((sw) => {
+        const completed = isWorkoutCompleted(sw.id, dateKey);
+        combined.push({
+          id: `scheduled_${sw.id}`,
+          name: sw.name,
+          tagColor: sw.tagColor || colors.primary,
+          templateName: sw.templateName || null, // Show template name above workout name
+          time: sw.time,
+          isCompleted: completed,
+          isFromDatabase: false,
+          scheduledWorkoutId: sw.id,
+        });
+      });
+
+      // Add completed workouts from DB that aren't already represented
+      dbCompletedWorkouts.forEach((cw) => {
+        // Check if this completed workout name matches any scheduled workout
+        const matchingScheduled = scheduledWorkouts.find(
+          (sw) => sw.name.toLowerCase().trim() === (cw.name || '').toLowerCase().trim()
+        );
+
+        // Only add if not already showing as a scheduled workout
+        if (!matchingScheduled) {
+          // Check if user manually unchecked this DB workout
+          const isUnchecked = uncheckedDbWorkouts.has(cw.id);
+          combined.push({
+            id: `completed_${cw.id}`,
+            name: cw.name || 'Workout',
+            tagColor: colors.primary, // Default purple for completed workouts without tags
+            templateName: null, // DB workouts don't have template name
+            isCompleted: !isUnchecked, // Show as unchecked if user toggled it off
+            isFromDatabase: true,
+            dbWorkoutId: cw.id, // For toggling DB workouts
+          });
+        }
+      });
+
+      return combined;
+    },
+    [
+      getWorkoutsForDate,
+      getCompletedWorkoutsForDate,
+      isWorkoutCompleted,
+      uncheckedDbWorkouts,
+      scheduledWorkouts,
+    ]
+  );
 
   // Handle view mode switch - reset to current date
   const handleViewModeSwitch = useCallback(() => {
@@ -125,6 +277,39 @@ export default function CalendarScreen() {
       }, 100);
     }
   }, [viewMode, today]);
+
+  // Handle clicking on a date in calendar view - switch to list view for that date
+  const handleDatePress = useCallback(
+    (targetDate: Date) => {
+      // Calculate the offset from today
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const targetStart = new Date(
+        targetDate.getFullYear(),
+        targetDate.getMonth(),
+        targetDate.getDate()
+      );
+      const diffTime = targetStart.getTime() - todayStart.getTime();
+      const dayOffset = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+      // Generate list days centered around the target date
+      // We want the target date to be visible, so generate days around it
+      const startOffset = dayOffset - INITIAL_PAST_DAYS;
+      const newListDays = generateDays(
+        today,
+        startOffset,
+        INITIAL_PAST_DAYS + 1 + INITIAL_FUTURE_DAYS
+      );
+
+      setListDays(newListDays);
+      setViewMode('list');
+
+      // Scroll to the target date (which is at index INITIAL_PAST_DAYS in the new list)
+      setTimeout(() => {
+        listFlatListRef.current?.scrollToIndex({ index: INITIAL_PAST_DAYS, animated: false });
+      }, 100);
+    },
+    [today]
+  );
 
   const loadMorePast = useCallback(() => {
     setMonths((prev) => {
@@ -176,7 +361,9 @@ export default function CalendarScreen() {
     isToday: boolean,
     weekIndex: number,
     dayIndex: number,
-    workouts: ScheduledWorkout[] = []
+    workouts: CalendarWorkoutItem[] = [],
+    year?: number,
+    month?: number
   ) => {
     if (day === null) {
       return <View key={`empty-${weekIndex}-${dayIndex}`} style={styles.dayCell} />;
@@ -185,8 +372,16 @@ export default function CalendarScreen() {
     // Get unique colors for workout dots (max 3 dots)
     const dotColors = workouts.slice(0, 3).map((w) => w.tagColor);
 
+    // Create date object for this day
+    const handlePress = () => {
+      if (year !== undefined && month !== undefined) {
+        const targetDate = new Date(year, month, day);
+        handleDatePress(targetDate);
+      }
+    };
+
     return (
-      <View key={`day-${day}`} style={styles.dayCell}>
+      <Pressable key={`day-${day}`} style={styles.dayCell} onPress={handlePress}>
         <View style={[styles.dayContent, isToday && styles.todayCircle]}>
           <Text style={[styles.dayText, isToday && styles.todayText]}>{day}</Text>
         </View>
@@ -197,13 +392,12 @@ export default function CalendarScreen() {
             ))}
           </View>
         )}
-      </View>
+      </Pressable>
     );
   };
 
   const renderMonth = ({ item }: { item: MonthData }) => {
     const isCurrentMonth = item.year === currentYear && item.month === currentMonth;
-    const workoutsByDay = getWorkoutsForMonth(item.year, item.month);
 
     return (
       <View style={styles.monthContainer}>
@@ -214,8 +408,20 @@ export default function CalendarScreen() {
           <View key={`week-${weekIndex}`} style={styles.weekRow}>
             {week.map((day, dayIndex) => {
               const isToday = isCurrentMonth && day === currentDate;
-              const dayWorkouts = day ? workoutsByDay.get(day) || [] : [];
-              return renderDay(day, isToday, weekIndex, dayIndex, dayWorkouts);
+              // Build date key for this day
+              const dateKey = day
+                ? `${item.year}-${String(item.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                : '';
+              const dayWorkouts = day ? getCombinedWorkoutsForDate(dateKey) : [];
+              return renderDay(
+                day,
+                isToday,
+                weekIndex,
+                dayIndex,
+                dayWorkouts,
+                item.year,
+                item.month
+              );
             })}
           </View>
         ))}
@@ -286,7 +492,7 @@ export default function CalendarScreen() {
   const renderListDayItem = useCallback(
     ({ item: day }: { item: (typeof listDays)[0] }) => {
       const dateKey = formatDateKey(day.date);
-      const workouts = getWorkoutsForDate(dateKey);
+      const workouts = getCombinedWorkoutsForDate(dateKey);
 
       return (
         <View>
@@ -304,26 +510,103 @@ export default function CalendarScreen() {
               <Text style={styles.noWorkoutText}>No Workouts</Text>
             </View>
           ) : (
-            /* Show scheduled workouts */
-            workouts.map((workout) => (
-              <View key={workout.id} style={styles.workoutRow}>
-                <View style={[styles.workoutTagDot, { backgroundColor: workout.tagColor }]} />
-                <View style={styles.workoutInfo}>
-                  <Text style={styles.workoutName}>{workout.name}</Text>
-                  {workout.time && (
-                    <Text style={styles.workoutTime}>
-                      {formatTime(workout.time.hour, workout.time.minute)}
-                    </Text>
-                  )}
+            /* Show scheduled and completed workouts */
+            workouts.map((workout) => {
+              // Determine if this is a completed workout from DB (viewing details)
+              // or a scheduled workout (viewing preview)
+              const handleWorkoutPress = () => {
+                if (workout.isFromDatabase && workout.dbWorkoutId) {
+                  // Completed workout from database - show details
+                  router.push({
+                    pathname: '/workout-details',
+                    params: { workoutId: workout.dbWorkoutId },
+                  });
+                } else if (workout.scheduledWorkoutId) {
+                  // Check if this scheduled workout is completed
+                  const isComplete = isWorkoutCompleted(workout.scheduledWorkoutId, dateKey);
+                  if (isComplete) {
+                    // If completed, try to find matching DB workout to show details
+                    const matchingDbWorkout = completedWorkouts.find((cw) => {
+                      const completedDate = new Date(cw.completedAt).toISOString().split('T')[0];
+                      return (
+                        completedDate === dateKey &&
+                        (cw.name || '').toLowerCase().trim() === workout.name.toLowerCase().trim()
+                      );
+                    });
+                    if (matchingDbWorkout) {
+                      router.push({
+                        pathname: '/workout-details',
+                        params: { workoutId: matchingDbWorkout.id },
+                      });
+                    } else {
+                      // No DB record found, show preview
+                      router.push({
+                        pathname: '/workout-preview',
+                        params: { workoutId: workout.scheduledWorkoutId, dateKey },
+                      });
+                    }
+                  } else {
+                    // Not completed - show preview
+                    router.push({
+                      pathname: '/workout-preview',
+                      params: { workoutId: workout.scheduledWorkoutId, dateKey },
+                    });
+                  }
+                }
+              };
+
+              return (
+                <View key={workout.id} style={styles.workoutRow}>
+                  <Pressable
+                    onPress={() => {
+                      // Toggle completion for scheduled workouts
+                      if (workout.scheduledWorkoutId) {
+                        toggleWorkoutCompletion(workout.scheduledWorkoutId, dateKey);
+                      } else if (workout.dbWorkoutId) {
+                        // Toggle DB workout completion state
+                        setUncheckedDbWorkouts((prev) => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(workout.dbWorkoutId!)) {
+                            newSet.delete(workout.dbWorkoutId!);
+                          } else {
+                            newSet.add(workout.dbWorkoutId!);
+                          }
+                          return newSet;
+                        });
+                      }
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    {workout.isCompleted ? (
+                      <CheckboxChecked color={workout.tagColor} />
+                    ) : (
+                      <CheckboxUnchecked color={workout.tagColor} />
+                    )}
+                  </Pressable>
+                  <Pressable style={styles.workoutInfoPressable} onPress={handleWorkoutPress}>
+                    <View style={styles.workoutInfo}>
+                      {workout.templateName && (
+                        <Text style={[styles.workoutTemplateLabel, { color: workout.tagColor }]}>
+                          {workout.templateName.toUpperCase()}
+                        </Text>
+                      )}
+                      <Text style={styles.workoutName}>{workout.name}</Text>
+                    </View>
+                    {workout.time && (
+                      <Text style={styles.workoutTimeRight}>
+                        {formatTime(workout.time.hour, workout.time.minute)}
+                      </Text>
+                    )}
+                    <ChevronRight />
+                  </Pressable>
                 </View>
-                <ChevronRight />
-              </View>
-            ))
+              );
+            })
           )}
         </View>
       );
     },
-    [getWorkoutsForDate]
+    [getCombinedWorkoutsForDate, toggleWorkoutCompletion, isWorkoutCompleted, completedWorkouts]
   );
 
   // List View
@@ -513,23 +796,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
-  workoutTagDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  workoutInfoPressable: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   workoutInfo: {
     flex: 1,
   },
+  workoutTemplateLabel: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.xs,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
   workoutName: {
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.text,
   },
-  workoutTime: {
-    fontFamily: fonts.regular,
+  workoutTimeRight: {
+    fontFamily: fonts.medium,
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: 2,
+    color: colors.primary,
+    backgroundColor: colors.primaryLight + '30',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
 });

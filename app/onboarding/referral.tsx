@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
-import { colors } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const sources = [
   { id: 'instagram', label: 'Instagram', icon: '📸' },
@@ -14,9 +14,11 @@ const sources = [
 
 export default function ReferralScreen() {
   const [selected, setSelected] = useState<string | null>(null);
+  const { setAndSave, skipField } = useOnboardingStore();
 
   const handleSelect = (id: string) => {
     setSelected(id);
+    setAndSave('referralSource', id);
     setTimeout(() => {
       router.push('/onboarding/age');
     }, 300);
@@ -26,7 +28,10 @@ export default function ReferralScreen() {
     <QuestionLayout
       question="Where did you hear about us?"
       progress={50}
-      onSkip={() => router.push('/onboarding/age')}
+      onSkip={() => {
+        skipField('referralSource');
+        router.push('/onboarding/age');
+      }}
     >
       <View style={optionStyles.optionsContainer}>
         {sources.map((source) => {

@@ -23,7 +23,7 @@
 - Onboarding is 30-40 screens with hard paywall at end
 - Primary color: #947AFF (purple)
 - Font: Quicksand
-- Bundle ID: com.align.app
+- Bundle ID: com.aligntracker.app
 - Focus on onboarding first, then auth, then core features
 - Mixpanel/Superwall at 95% completion
 

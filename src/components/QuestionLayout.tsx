@@ -155,7 +155,7 @@ export const optionStyles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     backgroundColor: '#FFFFFF',
     borderRadius: radius.lg,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: 'rgba(239, 239, 239, 0.5)',
     gap: spacing.lg,
   },

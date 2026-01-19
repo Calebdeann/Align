@@ -10,12 +10,15 @@ import {
   Modal,
   Animated,
   Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Svg, { Path, Rect, Circle, Polyline } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useTemplateStore, WorkoutTemplate, getTemplateTotalSets } from '@/stores/templateStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MONTH_NAMES = [
@@ -46,17 +49,16 @@ const REPEAT_OPTIONS = [
   { id: 'custom', label: 'Custom Days' },
 ];
 
-// Workout tags with their colors from theme
-const WORKOUT_TAGS = [
-  { id: 'legs', label: 'Legs', color: colors.workout.legs },
-  { id: 'glutes', label: 'Glutes', color: colors.workout.legs },
-  { id: 'arms', label: 'Arms', color: colors.workout.arms },
-  { id: 'back', label: 'Back', color: colors.workout.back },
-  { id: 'chest', label: 'Chest', color: colors.workout.chest },
-  { id: 'fullBody', label: 'Full Body', color: colors.workout.fullBody },
-  { id: 'cardio', label: 'Cardio', color: colors.workout.cardio },
-  { id: 'shoulders', label: 'Shoulders', color: colors.workout.shoulders },
-  { id: 'core', label: 'Core', color: colors.workout.core },
+// Workout colour options (no labels, just colours)
+const WORKOUT_COLOURS = [
+  { id: 'purple', color: colors.primary },
+  { id: 'green', color: colors.workout.back },
+  { id: 'blue', color: colors.workout.chest },
+  { id: 'orange', color: colors.workout.arms },
+  { id: 'pink', color: colors.workout.legs },
+  { id: 'teal', color: colors.workout.cardio },
+  { id: 'yellow', color: colors.workout.shoulders },
+  { id: 'red', color: colors.workout.core },
 ];
 
 // Icons
@@ -95,30 +97,6 @@ function CheckIcon() {
         d="M20 6L9 17l-5-5"
         stroke={colors.text}
         strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function ImageIcon() {
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Rect
-        x={3}
-        y={3}
-        width={18}
-        height={18}
-        rx={2}
-        stroke={colors.textTertiary}
-        strokeWidth={1.5}
-      />
-      <Circle cx={8.5} cy={8.5} r={1.5} stroke={colors.textTertiary} strokeWidth={1.5} />
-      <Path
-        d="M21 15l-5-5-6 6"
-        stroke={colors.textTertiary}
-        strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -326,13 +304,13 @@ export default function ScheduleWorkoutScreen() {
 
   const [workoutName, setWorkoutName] = useState('');
   const [description, setDescription] = useState('');
-  const [dateEnabled, setDateEnabled] = useState(false);
+  // Date is always required - default to today
   const [timeEnabled, setTimeEnabled] = useState(false);
   const [remindEnabled, setRemindEnabled] = useState(false);
 
-  // Tags state
-  const [showTagsModal, setShowTagsModal] = useState(false);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  // Colour state (replaces tags)
+  const [showColourModal, setShowColourModal] = useState(false);
+  const [selectedColour, setSelectedColour] = useState<string>('purple'); // Default to purple
 
   // Date state
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -354,11 +332,24 @@ export default function ScheduleWorkoutScreen() {
   const [reminderMinute, setReminderMinute] = useState(0);
   const [showReminderTimePicker, setShowReminderTimePicker] = useState(false);
 
+  // Template selection state (required - defaults to 'Default Workout')
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<WorkoutTemplate | null>(null);
+  const [isDefaultWorkout, setIsDefaultWorkout] = useState(true); // True = Default Workout selected
+
+  // Get templates from store
+  const templates = useTemplateStore((state) => state.templates);
+  const presetTemplates = useTemplateStore((state) => state.presetTemplates);
+
+  // All available templates (user-created + presets without category)
+  const allTemplates = [...templates, ...presetTemplates.filter((t) => !t.category)];
+
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const repeatSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const templateSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
-  const openTagsModal = () => {
-    setShowTagsModal(true);
+  const openColourModal = () => {
+    setShowColourModal(true);
     Animated.spring(slideAnim, {
       toValue: 0,
       useNativeDriver: true,
@@ -367,12 +358,12 @@ export default function ScheduleWorkoutScreen() {
     }).start();
   };
 
-  const closeTagsModal = () => {
+  const closeColourModal = () => {
     Animated.timing(slideAnim, {
       toValue: SCREEN_HEIGHT,
       duration: 250,
       useNativeDriver: true,
-    }).start(() => setShowTagsModal(false));
+    }).start(() => setShowColourModal(false));
   };
 
   const openRepeatModal = () => {
@@ -393,9 +384,33 @@ export default function ScheduleWorkoutScreen() {
     }).start(() => setShowRepeatModal(false));
   };
 
-  const selectTag = (tagId: string | null) => {
-    setSelectedTag(tagId);
-    closeTagsModal();
+  const openTemplateModal = () => {
+    setShowTemplateModal(true);
+    Animated.spring(templateSlideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeTemplateModal = () => {
+    Animated.timing(templateSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => setShowTemplateModal(false));
+  };
+
+  const selectTemplate = (template: WorkoutTemplate | null, isDefault: boolean = false) => {
+    setSelectedTemplate(template);
+    setIsDefaultWorkout(isDefault);
+    closeTemplateModal();
+  };
+
+  const selectColour = (colourId: string) => {
+    setSelectedColour(colourId);
+    closeColourModal();
   };
 
   const selectRepeatOption = (optionId: string) => {
@@ -415,23 +430,31 @@ export default function ScheduleWorkoutScreen() {
     });
   };
 
-  const getSelectedTagInfo = () => {
-    if (!selectedTag) return { label: 'No Tag', color: colors.textTertiary };
-    const tag = WORKOUT_TAGS.find((t) => t.id === selectedTag);
-    return tag || { label: 'No Tag', color: colors.textTertiary };
+  const getSelectedColour = () => {
+    const colour = WORKOUT_COLOURS.find((c) => c.id === selectedColour);
+    return colour?.color || colors.primary;
+  };
+
+  // Get display name for template selection
+  const getTemplateName = () => {
+    if (isDefaultWorkout) return 'Default Workout';
+    return selectedTemplate?.name || 'Default Workout';
   };
 
   const handleSave = () => {
     // Format date as YYYY-MM-DD
     const dateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
 
-    const tagInfo = getSelectedTagInfo();
+    const colourValue = getSelectedColour();
+    const templateName = getTemplateName();
 
     addWorkout({
-      name: workoutName || 'Untitled Workout',
+      name: workoutName || templateName,
       description: description || undefined,
-      tagId: selectedTag,
-      tagColor: tagInfo.color,
+      image: selectedTemplate?.image,
+      tagId: selectedColour, // Store colour id
+      tagColor: colourValue,
+      templateName, // Store template name for display
       date: dateKey,
       time: timeEnabled ? { hour: selectedHour, minute: selectedMinute } : undefined,
       repeat: {
@@ -445,6 +468,7 @@ export default function ScheduleWorkoutScreen() {
             minute: reminderMinute,
           }
         : undefined,
+      templateId: selectedTemplate?.id,
     });
 
     router.back();
@@ -516,56 +540,50 @@ export default function ScheduleWorkoutScreen() {
       >
         {/* Workout Info Card */}
         <View style={styles.card}>
-          <View style={styles.workoutInfoRow}>
-            <View style={styles.imagePlaceholder}>
-              <ImageIcon />
-            </View>
-            <View style={styles.workoutTextInputs}>
-              <TextInput
-                style={styles.workoutNameInput}
-                placeholder="Workout Name"
-                placeholderTextColor={colors.textTertiary}
-                value={workoutName}
-                onChangeText={setWorkoutName}
-              />
-              <TextInput
-                style={styles.descriptionInput}
-                placeholder="Description (Optional)"
-                placeholderTextColor={colors.textTertiary}
-                value={description}
-                onChangeText={setDescription}
-              />
-            </View>
+          {/* Workout Name */}
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>Workout Name</Text>
+            <TextInput
+              style={styles.inputField}
+              placeholder="Enter workout name"
+              placeholderTextColor={colors.textTertiary}
+              value={workoutName}
+              onChangeText={setWorkoutName}
+            />
           </View>
 
           <Divider />
 
-          <Pressable style={styles.menuRow}>
-            <Text style={styles.menuLabel}>Routine</Text>
+          {/* Description */}
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>Description</Text>
+            <TextInput
+              style={styles.inputField}
+              placeholder="Optional"
+              placeholderTextColor={colors.textTertiary}
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
+
+          <Divider />
+
+          {/* Template (required) */}
+          <Pressable style={styles.menuRow} onPress={openTemplateModal}>
+            <Text style={styles.menuLabel}>Template</Text>
             <View style={styles.menuRight}>
-              <Text style={styles.menuValue}>Default Routine</Text>
+              <Text style={[styles.menuValue, styles.menuValueSelected]}>{getTemplateName()}</Text>
               <ChevronRight />
             </View>
           </Pressable>
 
           <Divider />
 
-          <Pressable style={styles.menuRow} onPress={openTagsModal}>
-            <Text style={styles.menuLabel}>Tags</Text>
+          {/* Colour */}
+          <Pressable style={styles.menuRow} onPress={openColourModal}>
+            <Text style={styles.menuLabel}>Colour</Text>
             <View style={styles.menuRight}>
-              <View
-                style={[
-                  styles.tagPill,
-                  selectedTag && { backgroundColor: getSelectedTagInfo().color + '20' },
-                ]}
-              >
-                <View style={[styles.tagDot, { backgroundColor: getSelectedTagInfo().color }]} />
-                <Text
-                  style={[styles.tagPillText, selectedTag && { color: getSelectedTagInfo().color }]}
-                >
-                  {getSelectedTagInfo().label}
-                </Text>
-              </View>
+              <View style={[styles.colourCircle, { backgroundColor: getSelectedColour() }]} />
               <ChevronRight />
             </View>
           </Pressable>
@@ -574,81 +592,72 @@ export default function ScheduleWorkoutScreen() {
         {/* Date & Time Section */}
         <Text style={styles.sectionHeader}>Date & Time</Text>
         <View style={styles.card}>
+          {/* Date is always required - show calendar header and calendar */}
           <View style={styles.menuRow}>
             <View style={styles.menuLeft}>
               <CalendarIcon />
               <View>
                 <Text style={styles.menuLabel}>Date</Text>
-                {dateEnabled && <Text style={styles.menuSubLabel}>{formatDate(selectedDate)}</Text>}
+                <Text style={styles.menuSubLabel}>{formatDate(selectedDate)}</Text>
               </View>
             </View>
-            <Switch
-              value={dateEnabled}
-              onValueChange={setDateEnabled}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#FFFFFF"
-            />
           </View>
 
-          {dateEnabled && (
-            <>
-              <Divider />
-              <View style={styles.calendarContainer}>
-                <View style={styles.calendarHeader}>
-                  <Text style={styles.calendarMonthYear}>
-                    {MONTH_NAMES[calendarMonth]} {calendarYear} {'>'}
-                  </Text>
-                  <View style={styles.calendarNav}>
-                    <Pressable onPress={goToPrevMonth} style={styles.calendarNavButton}>
-                      <ChevronLeft />
-                    </Pressable>
-                    <Pressable onPress={goToNextMonth} style={styles.calendarNavButton}>
-                      <ChevronRightNav />
-                    </Pressable>
-                  </View>
-                </View>
+          <Divider />
+          <View style={styles.calendarContainer}>
+            <View style={styles.calendarHeader}>
+              <Text style={styles.calendarMonthYear}>
+                {MONTH_NAMES[calendarMonth]} {calendarYear} {'>'}
+              </Text>
+              <View style={styles.calendarNav}>
+                <Pressable onPress={goToPrevMonth} style={styles.calendarNavButton}>
+                  <ChevronLeft />
+                </Pressable>
+                <Pressable onPress={goToNextMonth} style={styles.calendarNavButton}>
+                  <ChevronRightNav />
+                </Pressable>
+              </View>
+            </View>
 
-                <View style={styles.calendarDayHeaders}>
-                  {DAYS.map((day) => (
-                    <Text key={day} style={styles.calendarDayHeader}>
-                      {day}
-                    </Text>
-                  ))}
-                </View>
+            <View style={styles.calendarDayHeaders}>
+              {DAYS.map((day) => (
+                <Text key={day} style={styles.calendarDayHeader}>
+                  {day}
+                </Text>
+              ))}
+            </View>
 
-                {calendarWeeks.map((week, weekIndex) => (
-                  <View key={weekIndex} style={styles.calendarWeek}>
-                    {week.map((day, dayIndex) => (
-                      <Pressable
-                        key={dayIndex}
-                        style={styles.calendarDay}
-                        onPress={() => day && selectDate(day)}
+            {calendarWeeks.map((week, weekIndex) => (
+              <View key={weekIndex} style={styles.calendarWeek}>
+                {week.map((day, dayIndex) => (
+                  <Pressable
+                    key={dayIndex}
+                    style={styles.calendarDay}
+                    onPress={() => day && selectDate(day)}
+                  >
+                    {day && (
+                      <View
+                        style={[
+                          styles.calendarDayContent,
+                          isSelectedDate(day) && styles.calendarDaySelected,
+                        ]}
                       >
-                        {day && (
-                          <View
-                            style={[
-                              styles.calendarDayContent,
-                              isSelectedDate(day) && styles.calendarDaySelected,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.calendarDayText,
-                                isSelectedDate(day) && styles.calendarDayTextSelected,
-                                isToday(day) && !isSelectedDate(day) && styles.calendarDayTextToday,
-                              ]}
-                            >
-                              {day}
-                            </Text>
-                          </View>
-                        )}
-                      </Pressable>
-                    ))}
-                  </View>
+                        <Text
+                          style={[
+                            styles.calendarDayText,
+                            isSelectedDate(day) && styles.calendarDayTextSelected,
+                            isToday(day) && !isSelectedDate(day) && styles.calendarDayTextToday,
+                          ]}
+                        >
+                          {day}
+                        </Text>
+                      </View>
+                    )}
+                  </Pressable>
                 ))}
               </View>
-            </>
-          )}
+            ))}
+          </View>
 
           <Divider />
 
@@ -934,65 +943,44 @@ export default function ScheduleWorkoutScreen() {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Tags Bottom Sheet Modal */}
+      {/* Colour Bottom Sheet Modal */}
       <Modal
-        visible={showTagsModal}
+        visible={showColourModal}
         transparent
         animationType="none"
-        onRequestClose={closeTagsModal}
+        onRequestClose={closeColourModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeTagsModal}>
+        <Pressable style={styles.modalOverlay} onPress={closeColourModal}>
           <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
             <Pressable onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalHandle} />
 
               <View style={styles.modalHeader}>
-                <Pressable style={styles.modalCloseButton} onPress={closeTagsModal}>
+                <Pressable style={styles.modalCloseButton} onPress={closeColourModal}>
                   <CloseIcon />
                 </Pressable>
-                <Text style={styles.modalTitle}>Tags</Text>
+                <Text style={styles.modalTitle}>Colour</Text>
                 <View style={styles.modalCloseButton} />
               </View>
 
-              <View style={styles.tagsContainer}>
-                <View style={styles.tagCard}>
-                  <Pressable style={styles.noTagRow} onPress={() => selectTag(null)}>
-                    <View style={[styles.tagDotLarge, { backgroundColor: colors.textTertiary }]} />
-                    <Text style={styles.noTagText}>No Tag</Text>
-                    {selectedTag === null && <CheckIcon />}
-                  </Pressable>
-
-                  <View style={styles.tagsGrid}>
-                    {WORKOUT_TAGS.map((tag) => (
-                      <Pressable
-                        key={tag.id}
-                        style={[
-                          styles.tagOption,
-                          { backgroundColor: tag.color + '20', borderColor: tag.color + '40' },
-                        ]}
-                        onPress={() => selectTag(tag.id)}
-                      >
-                        <View style={[styles.tagDotLarge, { backgroundColor: tag.color }]} />
-                        <Text style={[styles.tagOptionText, { color: tag.color }]}>
-                          {tag.label}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-
-                  <View style={styles.customTagSection}>
-                    <View style={styles.customTagHeader}>
-                      <View
-                        style={[styles.tagDotLarge, { backgroundColor: colors.textTertiary }]}
-                      />
-                      <Text style={styles.customTagLabel}>Custom Tag</Text>
-                    </View>
-                    <TextInput
-                      style={styles.customTagInput}
-                      placeholder="Name Your Tag..."
-                      placeholderTextColor={colors.textTertiary}
-                    />
-                  </View>
+              <View style={styles.colourContainer}>
+                <View style={styles.colourGrid}>
+                  {WORKOUT_COLOURS.map((colour) => (
+                    <Pressable
+                      key={colour.id}
+                      style={[
+                        styles.colourOption,
+                        selectedColour === colour.id && styles.colourOptionSelected,
+                      ]}
+                      onPress={() => selectColour(colour.id)}
+                    >
+                      <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
+                        {selectedColour === colour.id && (
+                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                        )}
+                      </View>
+                    </Pressable>
+                  ))}
                 </View>
               </View>
             </Pressable>
@@ -1051,35 +1039,198 @@ export default function ScheduleWorkoutScreen() {
                       <View style={styles.customDaysSection}>
                         <Text style={styles.customDaysLabel}>Select Days</Text>
                         <View style={styles.daysRow}>
-                          {DAY_SHORTS.map((day, index) => (
+                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((letter, index) => (
                             <Pressable
-                              key={day}
+                              key={index}
                               style={[
-                                styles.dayChip,
-                                selectedRepeatDays.includes(index) && styles.dayChipSelected,
+                                styles.dayCircle,
+                                selectedRepeatDays.includes(index) && styles.dayCircleSelected,
                               ]}
                               onPress={() => toggleRepeatDay(index)}
                             >
                               <Text
                                 style={[
-                                  styles.dayChipText,
-                                  selectedRepeatDays.includes(index) && styles.dayChipTextSelected,
+                                  styles.dayCircleText,
+                                  selectedRepeatDays.includes(index) &&
+                                    styles.dayCircleTextSelected,
                                 ]}
                               >
-                                {day}
+                                {letter}
                               </Text>
                             </Pressable>
                           ))}
                         </View>
+                        {selectedRepeatDays.length > 0 && (
+                          <Text style={styles.selectedDaysPreview}>
+                            {selectedRepeatDays.length === 7
+                              ? 'Every day'
+                              : selectedRepeatDays.map((d) => DAY_NAMES[d]).join(', ')}
+                          </Text>
+                        )}
                       </View>
 
-                      <Pressable style={styles.doneButton} onPress={closeRepeatModal}>
-                        <Text style={styles.doneButtonText}>Done</Text>
+                      <Pressable
+                        style={[
+                          styles.doneButton,
+                          selectedRepeatDays.length === 0 && styles.doneButtonDisabled,
+                        ]}
+                        onPress={closeRepeatModal}
+                        disabled={selectedRepeatDays.length === 0}
+                      >
+                        <Text
+                          style={[
+                            styles.doneButtonText,
+                            selectedRepeatDays.length === 0 && styles.doneButtonTextDisabled,
+                          ]}
+                        >
+                          Done
+                        </Text>
                       </Pressable>
                     </>
                   )}
                 </View>
               </View>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      {/* Template Selection Bottom Sheet Modal */}
+      <Modal
+        visible={showTemplateModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeTemplateModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={closeTemplateModal}>
+          <Animated.View
+            style={[styles.modalContent, { transform: [{ translateY: templateSlideAnim }] }]}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalHandle} />
+
+              <View style={styles.modalHeader}>
+                <Pressable style={styles.modalCloseButton} onPress={closeTemplateModal}>
+                  <CloseIcon />
+                </Pressable>
+                <Text style={styles.modalTitle}>Select Template</Text>
+                <View style={styles.modalCloseButton} />
+              </View>
+
+              <ScrollView
+                style={styles.templateScrollView}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+              >
+                {/* Default Workout Option */}
+                <Pressable style={styles.templateRow} onPress={() => selectTemplate(null, true)}>
+                  <View style={styles.templateImagePlaceholder}>
+                    <Ionicons name="fitness-outline" size={24} color={colors.textSecondary} />
+                  </View>
+                  <View style={styles.templateInfo}>
+                    <Text style={styles.templateName}>Default Workout</Text>
+                    <Text style={styles.templateMeta}>Quick workout without a template</Text>
+                  </View>
+                  {isDefaultWorkout && !selectedTemplate && (
+                    <View style={styles.templateCheckmark}>
+                      <CheckIcon />
+                    </View>
+                  )}
+                </Pressable>
+
+                {/* User Created Templates Section */}
+                {templates.length > 0 && (
+                  <>
+                    <Text style={styles.templateSectionHeader}>Your Templates</Text>
+                    {templates.map((template) => (
+                      <Pressable
+                        key={template.id}
+                        style={styles.templateRow}
+                        onPress={() => selectTemplate(template, false)}
+                      >
+                        <View style={styles.templateImageContainer}>
+                          {template.localImage ? (
+                            <Image source={template.localImage} style={styles.templateImage} />
+                          ) : template.image?.uri ? (
+                            <Image
+                              source={{ uri: template.image.uri }}
+                              style={styles.templateImage}
+                            />
+                          ) : (
+                            <View style={styles.templateImagePlaceholder}>
+                              <Ionicons
+                                name="barbell-outline"
+                                size={24}
+                                color={colors.textSecondary}
+                              />
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.templateInfo}>
+                          <Text style={styles.templateName}>{template.name}</Text>
+                          <Text style={styles.templateMeta}>
+                            {getTemplateTotalSets(template)} Sets • {template.equipment}
+                          </Text>
+                        </View>
+                        {!isDefaultWorkout && selectedTemplate?.id === template.id && (
+                          <View style={styles.templateCheckmark}>
+                            <CheckIcon />
+                          </View>
+                        )}
+                      </Pressable>
+                    ))}
+                  </>
+                )}
+
+                {/* Preset Templates Section */}
+                {presetTemplates.filter((t) => !t.category).length > 0 && (
+                  <>
+                    <Text style={styles.templateSectionHeader}>Align Templates</Text>
+                    {presetTemplates
+                      .filter((t) => !t.category)
+                      .slice(0, 10) // Show first 10 presets
+                      .map((template) => (
+                        <Pressable
+                          key={template.id}
+                          style={styles.templateRow}
+                          onPress={() => selectTemplate(template, false)}
+                        >
+                          <View style={styles.templateImageContainer}>
+                            {template.localImage ? (
+                              <Image source={template.localImage} style={styles.templateImage} />
+                            ) : template.image?.uri ? (
+                              <Image
+                                source={{ uri: template.image.uri }}
+                                style={styles.templateImage}
+                              />
+                            ) : (
+                              <View style={styles.templateImagePlaceholder}>
+                                <Ionicons
+                                  name="barbell-outline"
+                                  size={24}
+                                  color={colors.textSecondary}
+                                />
+                              </View>
+                            )}
+                          </View>
+                          <View style={styles.templateInfo}>
+                            <Text style={styles.templateName}>{template.name}</Text>
+                            <Text style={styles.templateMeta}>
+                              {getTemplateTotalSets(template)} Sets • {template.equipment}
+                            </Text>
+                          </View>
+                          {!isDefaultWorkout && selectedTemplate?.id === template.id && (
+                            <View style={styles.templateCheckmark}>
+                              <CheckIcon />
+                            </View>
+                          )}
+                        </Pressable>
+                      ))}
+                  </>
+                )}
+
+                <View style={{ height: 40 }} />
+              </ScrollView>
             </Pressable>
           </Animated.View>
         </Pressable>
@@ -1132,34 +1283,20 @@ const styles = StyleSheet.create({
     ...cardStyle,
     marginBottom: spacing.sm,
   },
-  workoutInfoRow: {
-    flexDirection: 'row',
-    padding: spacing.md,
-    gap: spacing.md,
+  inputRow: {
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
   },
-  imagePlaceholder: {
-    width: 72,
-    height: 72,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  workoutTextInputs: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  workoutNameInput: {
+  inputLabel: {
     fontFamily: fonts.medium,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     color: colors.text,
-    padding: 0,
+    marginBottom: spacing.xs,
   },
-  descriptionInput: {
+  inputField: {
     fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textTertiary,
+    fontSize: fontSize.md,
+    color: colors.text,
     padding: 0,
   },
   sectionHeader: {
@@ -1207,24 +1344,10 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textTertiary,
   },
-  tagPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceSecondary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 20,
-    gap: spacing.xs,
-  },
-  tagDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  tagPillText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.primary,
+  colourCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   divider: {
     height: 1,
@@ -1374,74 +1497,32 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     color: colors.text,
   },
-  tagsContainer: {
+  // Colour modal styles
+  colourContainer: {
     paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
-  tagCard: {
-    ...cardStyle,
-    padding: spacing.md,
-  },
-  noTagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  tagDotLarge: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-  noTagText: {
-    flex: 1,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  tagsGrid: {
+  colourGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+    justifyContent: 'center',
+    gap: spacing.lg,
   },
-  tagOption: {
-    flexDirection: 'row',
+  colourOption: {
+    padding: spacing.sm,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colourOptionSelected: {
+    borderColor: colors.text,
+  },
+  colourCircleLarge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: spacing.sm,
-    width: '48%',
-  },
-  tagOptionText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.sm,
-  },
-  customTagSection: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(217, 217, 217, 0.25)',
-    paddingTop: spacing.md,
-  },
-  customTagHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  customTagLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  customTagInput: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.text,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-    paddingVertical: spacing.sm,
+    justifyContent: 'center',
   },
 
   // Repeat modal styles
@@ -1469,37 +1550,50 @@ const styles = StyleSheet.create({
   customDaysSection: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(217, 217, 217, 0.25)',
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
     marginTop: spacing.sm,
   },
   customDaysLabel: {
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    color: colors.text,
     marginBottom: spacing.md,
+    textAlign: 'center',
   },
   daysRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
-  dayChip: {
-    flex: 1,
-    paddingVertical: spacing.sm,
+  dayCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
-    borderRadius: 8,
+    justifyContent: 'center',
     backgroundColor: colors.surfaceSecondary,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  dayChipSelected: {
+  dayCircleSelected: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  dayChipText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.xs,
-    color: colors.text,
+  dayCircleText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
   },
-  dayChipTextSelected: {
+  dayCircleTextSelected: {
     color: colors.textInverse,
+  },
+  selectedDaysPreview: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   doneButton: {
     backgroundColor: colors.primary,
@@ -1508,9 +1602,76 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.lg,
   },
+  doneButtonDisabled: {
+    backgroundColor: colors.border,
+  },
   doneButtonText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.textInverse,
+  },
+  doneButtonTextDisabled: {
+    color: colors.textTertiary,
+  },
+
+  // Template modal styles
+  templateScrollView: {
+    maxHeight: SCREEN_HEIGHT * 0.6,
+    paddingHorizontal: spacing.lg,
+  },
+  templateSectionHeader: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  templateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    marginBottom: spacing.sm,
+  },
+  templateImageContainer: {
+    marginRight: spacing.md,
+  },
+  templateImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  templateImagePlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  templateInfo: {
+    flex: 1,
+  },
+  templateName: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.text,
+    marginBottom: 2,
+  },
+  templateMeta: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  templateCheckmark: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuValueSelected: {
+    color: colors.text,
   },
 });

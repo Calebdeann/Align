@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 type AccomplishId = 'healthier' | 'energy' | 'motivated' | 'body';
 
@@ -20,9 +21,11 @@ const accomplishOptions: AccomplishOption[] = [
 
 export default function AccomplishScreen() {
   const [selected, setSelected] = useState<string | null>(null);
+  const { setAndSave, skipField } = useOnboardingStore();
 
   const handleSelect = (id: string) => {
     setSelected(id);
+    setAndSave('accomplish', id);
     setTimeout(() => {
       router.push('/onboarding/prediction');
     }, 300);
@@ -32,7 +35,10 @@ export default function AccomplishScreen() {
     <QuestionLayout
       question="What would you like to accomplish?"
       progress={94}
-      onSkip={() => router.push('/onboarding/prediction')}
+      onSkip={() => {
+        skipField('accomplish');
+        router.push('/onboarding/prediction');
+      }}
     >
       <View style={optionStyles.optionsContainer}>
         {accomplishOptions.map((option) => {

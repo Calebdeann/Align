@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
-import { colors, radius } from '@/constants/theme';
+import { colors } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const otherGoals = [
   { id: 'confidence', label: 'Gain confidence', icon: '✨' },
@@ -41,9 +42,18 @@ function Checkbox({ checked }: { checked: boolean }) {
 
 export default function OtherGoalsScreen() {
   const [selected, setSelected] = useState<string[]>([]);
+  const { setAndSave, skipField } = useOnboardingStore();
 
   const toggleSelect = (id: string) => {
-    setSelected((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+    const newSelected = selected.includes(id)
+      ? selected.filter((i) => i !== id)
+      : [...selected, id];
+    setSelected(newSelected);
+    setAndSave('otherGoals', newSelected);
+  };
+
+  const handleContinue = () => {
+    router.push('/onboarding/potential');
   };
 
   return (
@@ -51,8 +61,11 @@ export default function OtherGoalsScreen() {
       question="Are there any other goals you want to achieve?"
       progress={30}
       showContinue
-      onContinue={() => router.push('/onboarding/potential')}
-      onSkip={() => router.push('/onboarding/potential')}
+      onContinue={handleContinue}
+      onSkip={() => {
+        skipField('otherGoals');
+        router.push('/onboarding/potential');
+      }}
     >
       <View style={optionStyles.optionsContainer}>
         {otherGoals.map((goal) => {

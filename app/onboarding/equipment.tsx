@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 type EquipmentItem = {
   id: string;
@@ -80,7 +81,12 @@ export default function EquipmentScreen() {
           <View style={[styles.progressBarFill, { width: '85%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/workout-frequency')}>
+        <Pressable
+          onPress={() => {
+            useOnboardingStore.getState().skipField('equipment');
+            router.push('/onboarding/workout-frequency');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -122,7 +128,15 @@ export default function EquipmentScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => router.push('/onboarding/workout-frequency')}
+          onPress={() => {
+            // Get all selected equipment IDs
+            const selectedEquipment = equipment
+              .flatMap((section) => section.items)
+              .filter((item) => item.selected)
+              .map((item) => item.id);
+            useOnboardingStore.getState().setAndSave('equipment', selectedEquipment);
+            router.push('/onboarding/workout-frequency');
+          }}
         >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>

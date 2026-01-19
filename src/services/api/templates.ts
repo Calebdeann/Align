@@ -1,0 +1,437 @@
+import { supabase } from '../supabase';
+import { WorkoutTemplate, TemplateExercise, TemplateSet } from '@/stores/templateStore';
+import { WorkoutImage } from '@/stores/workoutStore';
+
+// =============================================
+// TYPES - Database Schema for Templates
+// =============================================
+
+export interface DbWorkoutTemplate {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  image_type: 'template' | 'camera' | 'gallery' | null;
+  image_uri: string | null;
+  image_template_id: string | null;
+  tag_ids: string[];
+  tag_color: string;
+  estimated_duration: number;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  equipment: string;
+  is_preset: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbTemplateExercise {
+  id: string;
+  template_id: string;
+  exercise_id: string;
+  exercise_name: string;
+  muscle: string;
+  notes: string | null;
+  rest_timer_seconds: number;
+  order_index: number;
+  created_at: string;
+}
+
+export interface DbTemplateSet {
+  id: string;
+  template_exercise_id: string;
+  set_number: number;
+  target_weight: number | null;
+  target_reps: number | null;
+  created_at: string;
+}
+
+// =============================================
+// SAVE USER TEMPLATE
+// =============================================
+
+export async function saveUserTemplate(
+  userId: string,
+  template: Omit<WorkoutTemplate, 'id' | 'createdAt' | 'isPreset'>
+): Promise<string | null> {
+  try {
+    // 1. Insert the template record
+    const { data: savedTemplate, error: templateError } = await supabase
+      .from('workout_templates')
+      .insert({
+        user_id: userId,
+        name: template.name,
+        description: template.description || null,
+        image_type: template.image?.type || null,
+        image_uri: template.image?.uri || null,
+        image_template_id: template.image?.templateId || null,
+        tag_ids: template.tagIds,
+        tag_color: template.tagColor,
+        estimated_duration: template.estimatedDuration,
+        difficulty: template.difficulty,
+        equipment: template.equipment,
+        is_preset: false,
+      })
+      .select('id')
+      .single();
+
+    if (templateError || !savedTemplate) {
+      console.error('Error saving template:', templateError);
+      return null;
+    }
+
+    const templateId = savedTemplate.id;
+
+    // 2. Insert template_exercises for each exercise
+    for (let i = 0; i < template.exercises.length; i++) {
+      const exercise = template.exercises[i];
+
+      const { data: templateExercise, error: exerciseError } = await supabase
+        .from('template_exercises')
+        .insert({
+          template_id: templateId,
+          exercise_id: exercise.exerciseId,
+          exercise_name: exercise.exerciseName,
+          muscle: exercise.muscle,
+          notes: exercise.notes || null,
+          rest_timer_seconds: exercise.restTimerSeconds,
+          order_index: i + 1,
+        })
+        .select('id')
+        .single();
+
+      if (exerciseError || !templateExercise) {
+        console.error('Error saving template exercise:', exerciseError);
+        continue;
+      }
+
+      // 3. Insert template_sets for this exercise
+      const setsToInsert = exercise.sets.map((set) => ({
+        template_exercise_id: templateExercise.id,
+        set_number: set.setNumber,
+        target_weight: set.targetWeight ?? null,
+        target_reps: set.targetReps ?? null,
+      }));
+
+      if (setsToInsert.length > 0) {
+        const { error: setsError } = await supabase.from('template_sets').insert(setsToInsert);
+
+        if (setsError) {
+          console.error('Error saving template sets:', setsError);
+        }
+      }
+    }
+
+    return templateId;
+  } catch (error) {
+    console.error('Error in saveUserTemplate:', error);
+    return null;
+  }
+}
+
+// =============================================
+// UPDATE USER TEMPLATE
+// =============================================
+
+export async function updateUserTemplate(
+  templateId: string,
+  updates: Partial<Omit<WorkoutTemplate, 'id' | 'createdAt' | 'isPreset'>>,
+  exercises?: TemplateExercise[]
+): Promise<boolean> {
+  try {
+    // 1. Update the template record
+    const updateData: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.image !== undefined) {
+      updateData.image_type = updates.image?.type || null;
+      updateData.image_uri = updates.image?.uri || null;
+      updateData.image_template_id = updates.image?.templateId || null;
+    }
+    if (updates.tagIds !== undefined) updateData.tag_ids = updates.tagIds;
+    if (updates.tagColor !== undefined) updateData.tag_color = updates.tagColor;
+    if (updates.estimatedDuration !== undefined)
+      updateData.estimated_duration = updates.estimatedDuration;
+    if (updates.difficulty !== undefined) updateData.difficulty = updates.difficulty;
+    if (updates.equipment !== undefined) updateData.equipment = updates.equipment;
+
+    const { error: updateError } = await supabase
+      .from('workout_templates')
+      .update(updateData)
+      .eq('id', templateId);
+
+    if (updateError) {
+      console.error('Error updating template:', updateError);
+      return false;
+    }
+
+    // 2. If exercises are provided, replace all exercises
+    if (exercises) {
+      // First, delete existing exercises (cascade will delete sets)
+      const { error: deleteError } = await supabase
+        .from('template_exercises')
+        .delete()
+        .eq('template_id', templateId);
+
+      if (deleteError) {
+        console.error('Error deleting old exercises:', deleteError);
+        return false;
+      }
+
+      // Then insert new exercises
+      for (let i = 0; i < exercises.length; i++) {
+        const exercise = exercises[i];
+
+        const { data: templateExercise, error: exerciseError } = await supabase
+          .from('template_exercises')
+          .insert({
+            template_id: templateId,
+            exercise_id: exercise.exerciseId,
+            exercise_name: exercise.exerciseName,
+            muscle: exercise.muscle,
+            notes: exercise.notes || null,
+            rest_timer_seconds: exercise.restTimerSeconds,
+            order_index: i + 1,
+          })
+          .select('id')
+          .single();
+
+        if (exerciseError || !templateExercise) {
+          console.error('Error saving template exercise:', exerciseError);
+          continue;
+        }
+
+        // Insert sets for this exercise
+        const setsToInsert = exercise.sets.map((set) => ({
+          template_exercise_id: templateExercise.id,
+          set_number: set.setNumber,
+          target_weight: set.targetWeight ?? null,
+          target_reps: set.targetReps ?? null,
+        }));
+
+        if (setsToInsert.length > 0) {
+          const { error: setsError } = await supabase.from('template_sets').insert(setsToInsert);
+
+          if (setsError) {
+            console.error('Error saving template sets:', setsError);
+          }
+        }
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in updateUserTemplate:', error);
+    return false;
+  }
+}
+
+// =============================================
+// DELETE USER TEMPLATE
+// =============================================
+
+export async function deleteUserTemplate(templateId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('workout_templates').delete().eq('id', templateId);
+
+    if (error) {
+      console.error('Error deleting template:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in deleteUserTemplate:', error);
+    return false;
+  }
+}
+
+// =============================================
+// GET USER TEMPLATES
+// =============================================
+
+export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[]> {
+  try {
+    // 1. Fetch templates
+    const { data: templates, error: templatesError } = await supabase
+      .from('workout_templates')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (templatesError || !templates) {
+      console.error('Error fetching templates:', templatesError);
+      return [];
+    }
+
+    // 2. For each template, fetch exercises and sets
+    const fullTemplates: WorkoutTemplate[] = [];
+
+    for (const template of templates) {
+      const { data: exercises, error: exercisesError } = await supabase
+        .from('template_exercises')
+        .select('*')
+        .eq('template_id', template.id)
+        .order('order_index', { ascending: true });
+
+      if (exercisesError) {
+        console.error('Error fetching template exercises:', exercisesError);
+        continue;
+      }
+
+      const templateExercises: TemplateExercise[] = [];
+
+      for (const exercise of exercises || []) {
+        const { data: sets, error: setsError } = await supabase
+          .from('template_sets')
+          .select('*')
+          .eq('template_exercise_id', exercise.id)
+          .order('set_number', { ascending: true });
+
+        if (setsError) {
+          console.error('Error fetching template sets:', setsError);
+        }
+
+        const templateSets: TemplateSet[] = (sets || []).map((set) => ({
+          setNumber: set.set_number,
+          targetWeight: set.target_weight ?? undefined,
+          targetReps: set.target_reps ?? undefined,
+        }));
+
+        templateExercises.push({
+          id: exercise.id,
+          exerciseId: exercise.exercise_id,
+          exerciseName: exercise.exercise_name,
+          muscle: exercise.muscle,
+          notes: exercise.notes ?? undefined,
+          restTimerSeconds: exercise.rest_timer_seconds,
+          sets: templateSets,
+        });
+      }
+
+      // Build image object if present
+      let image: WorkoutImage | undefined;
+      if (template.image_type && template.image_uri) {
+        image = {
+          type: template.image_type,
+          uri: template.image_uri,
+          templateId: template.image_template_id ?? undefined,
+        };
+      }
+
+      fullTemplates.push({
+        id: template.id,
+        name: template.name,
+        description: template.description ?? undefined,
+        image,
+        tagIds: template.tag_ids || [],
+        tagColor: template.tag_color,
+        estimatedDuration: template.estimated_duration,
+        difficulty: template.difficulty,
+        equipment: template.equipment,
+        exercises: templateExercises,
+        isPreset: template.is_preset,
+        createdAt: template.created_at,
+        userId: template.user_id,
+      });
+    }
+
+    return fullTemplates;
+  } catch (error) {
+    console.error('Error in getUserTemplates:', error);
+    return [];
+  }
+}
+
+// =============================================
+// GET TEMPLATE BY ID
+// =============================================
+
+export async function getTemplateById(templateId: string): Promise<WorkoutTemplate | null> {
+  try {
+    // 1. Fetch template
+    const { data: template, error: templateError } = await supabase
+      .from('workout_templates')
+      .select('*')
+      .eq('id', templateId)
+      .single();
+
+    if (templateError || !template) {
+      console.error('Error fetching template:', templateError);
+      return null;
+    }
+
+    // 2. Fetch exercises
+    const { data: exercises, error: exercisesError } = await supabase
+      .from('template_exercises')
+      .select('*')
+      .eq('template_id', templateId)
+      .order('order_index', { ascending: true });
+
+    if (exercisesError) {
+      console.error('Error fetching template exercises:', exercisesError);
+      return null;
+    }
+
+    const templateExercises: TemplateExercise[] = [];
+
+    for (const exercise of exercises || []) {
+      const { data: sets, error: setsError } = await supabase
+        .from('template_sets')
+        .select('*')
+        .eq('template_exercise_id', exercise.id)
+        .order('set_number', { ascending: true });
+
+      if (setsError) {
+        console.error('Error fetching template sets:', setsError);
+      }
+
+      const templateSets: TemplateSet[] = (sets || []).map((set) => ({
+        setNumber: set.set_number,
+        targetWeight: set.target_weight ?? undefined,
+        targetReps: set.target_reps ?? undefined,
+      }));
+
+      templateExercises.push({
+        id: exercise.id,
+        exerciseId: exercise.exercise_id,
+        exerciseName: exercise.exercise_name,
+        muscle: exercise.muscle,
+        notes: exercise.notes ?? undefined,
+        restTimerSeconds: exercise.rest_timer_seconds,
+        sets: templateSets,
+      });
+    }
+
+    // Build image object if present
+    let image: WorkoutImage | undefined;
+    if (template.image_type && template.image_uri) {
+      image = {
+        type: template.image_type,
+        uri: template.image_uri,
+        templateId: template.image_template_id ?? undefined,
+      };
+    }
+
+    return {
+      id: template.id,
+      name: template.name,
+      description: template.description ?? undefined,
+      image,
+      tagIds: template.tag_ids || [],
+      tagColor: template.tag_color,
+      estimatedDuration: template.estimated_duration,
+      difficulty: template.difficulty,
+      equipment: template.equipment,
+      exercises: templateExercises,
+      isPreset: template.is_preset,
+      createdAt: template.created_at,
+      userId: template.user_id,
+    };
+  } catch (error) {
+    console.error('Error in getTemplateById:', error);
+    return null;
+  }
+}

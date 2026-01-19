@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { lbsToKg, kgToLbs } from '@/utils/units';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const TICK_SPACING = 6;
@@ -18,13 +20,32 @@ const MAX_KG = Math.round(MAX_LBS * 0.453592); // ~159
 
 export default function WeightScreen() {
   const { currentWeight, setCurrentWeight, setTargetWeight } = useOnboardingStore();
-  const [unit, setUnit] = useState<'kg' | 'lb'>('lb');
-  const [weightLbs, setWeightLbs] = useState(currentWeight);
+  const { weightUnit, setWeightUnit } = useUserPreferencesStore();
+
+  // Derive display unit from preferences ('lbs' -> 'lb' for UI)
+  const unit = weightUnit === 'lbs' ? 'lb' : 'kg';
+
+  // Internal state stores weight in lbs for ruler calculations
+  // currentWeight from store is in kg, convert to lbs for initial value
+  const getInitialWeightLbs = () => {
+    if (currentWeight > 0) {
+      return kgToLbs(currentWeight);
+    }
+    // Default based on unit preference
+    return weightUnit === 'lbs' ? 132.3 : kgToLbs(60);
+  };
+
+  const [weightLbs, setWeightLbs] = useState(getInitialWeightLbs);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Convert between units for display
-  const weightKg = Math.round(weightLbs * 0.453592 * 10) / 10;
+  const weightKg = lbsToKg(weightLbs);
   const displayWeight = unit === 'lb' ? weightLbs.toFixed(1) : weightKg.toFixed(1);
+
+  // Update preferences when user toggles unit
+  const handleUnitChange = (newUnit: 'kg' | 'lb') => {
+    setWeightUnit(newUnit === 'lb' ? 'lbs' : 'kg');
+  };
 
   // When unit changes, scroll to the equivalent position
   useEffect(() => {
@@ -117,7 +138,12 @@ export default function WeightScreen() {
           <View style={[styles.progressBarFill, { width: '70%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/target-weight')}>
+        <Pressable
+          onPress={() => {
+            useOnboardingStore.getState().skipField('currentWeight');
+            router.push('/onboarding/target-weight');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -132,13 +158,13 @@ export default function WeightScreen() {
         <View style={styles.toggleBackground}>
           <Pressable
             style={[styles.toggleOption, unit === 'kg' && styles.toggleOptionActive]}
-            onPress={() => setUnit('kg')}
+            onPress={() => handleUnitChange('kg')}
           >
             <Text style={[styles.toggleText, unit === 'kg' && styles.toggleTextActive]}>kg</Text>
           </Pressable>
           <Pressable
             style={[styles.toggleOption, unit === 'lb' && styles.toggleOptionActive]}
-            onPress={() => setUnit('lb')}
+            onPress={() => handleUnitChange('lb')}
           >
             <Text style={[styles.toggleText, unit === 'lb' && styles.toggleTextActive]}>lb</Text>
           </Pressable>
@@ -185,8 +211,13 @@ export default function WeightScreen() {
         <Pressable
           style={styles.continueButton}
           onPress={() => {
-            setCurrentWeight(weightLbs);
-            setTargetWeight(weightLbs);
+            // Always store weight in kg
+            const weightInKg = lbsToKg(weightLbs);
+            setCurrentWeight(weightInKg);
+            setTargetWeight(weightInKg);
+            // Save to Supabase (in kg)
+            useOnboardingStore.getState().setAndSave('currentWeight', weightInKg);
+            useOnboardingStore.getState().setAndSave('unit', unit === 'lb' ? 'lb' : 'kg');
             router.push('/onboarding/target-weight');
           }}
         >

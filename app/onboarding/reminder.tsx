@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const ITEM_HEIGHT = 60;
 const VISIBLE_ITEMS = 5;
@@ -160,7 +161,12 @@ export default function ReminderScreen() {
           <View style={[styles.progressBarFill, { width: '95%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/first-exercises')}>
+        <Pressable
+          onPress={() => {
+            useOnboardingStore.getState().skipField('reminderTime');
+            router.push('/onboarding/first-exercises');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -261,13 +267,22 @@ export default function ReminderScreen() {
 
       {/* Bottom Section */}
       <View style={styles.bottomSection}>
-        <Pressable onPress={() => router.push('/onboarding/first-exercises')}>
+        <Pressable
+          onPress={() => {
+            useOnboardingStore.getState().setAndSave('notificationsEnabled', false);
+            router.push('/onboarding/first-exercises');
+          }}
+        >
           <Text style={styles.maybeLaterText}>Maybe later</Text>
         </Pressable>
 
         <Pressable
           style={styles.continueButton}
-          onPress={() => router.push('/onboarding/first-exercises')}
+          onPress={() => {
+            useOnboardingStore.getState().setAndSave('notificationsEnabled', true);
+            useOnboardingStore.getState().setAndSave('reminderTime', timeString);
+            router.push('/onboarding/first-exercises');
+          }}
         >
           <Text style={styles.continueText}>Remind me at {timeString}</Text>
         </Pressable>

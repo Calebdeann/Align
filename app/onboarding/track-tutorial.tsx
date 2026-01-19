@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, TextInput, Keyboard } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { filterNumericInput } from '@/utils/units';
 
 type Step = 1 | 2 | 3 | 'complete';
 
@@ -120,7 +121,7 @@ export default function TrackTutorialScreen() {
             ref={weightInputRef}
             style={styles.inputText}
             value={weight}
-            onChangeText={setWeight}
+            onChangeText={(value) => setWeight(filterNumericInput(value))}
             placeholder={SUGGESTED_WEIGHT}
             placeholderTextColor={colors.textSecondary + '30'}
             keyboardType="number-pad"
@@ -142,7 +143,7 @@ export default function TrackTutorialScreen() {
             ref={repsInputRef}
             style={styles.inputText}
             value={reps}
-            onChangeText={setReps}
+            onChangeText={(value) => setReps(filterNumericInput(value, false))}
             placeholder={SUGGESTED_REPS}
             placeholderTextColor={colors.textSecondary + '30'}
             keyboardType="number-pad"

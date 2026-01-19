@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const ITEM_HEIGHT = 50;
 const VISIBLE_ITEMS = 5;
@@ -88,7 +89,12 @@ export default function AgeScreen() {
           <View style={[styles.progressBarFill, { width: '60%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/height')}>
+        <Pressable
+          onPress={() => {
+            useOnboardingStore.getState().skipField('age');
+            router.push('/onboarding/height');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -128,7 +134,13 @@ export default function AgeScreen() {
 
       {/* Continue button */}
       <View style={styles.bottomSection}>
-        <Pressable style={styles.continueButton} onPress={() => router.push('/onboarding/height')}>
+        <Pressable
+          style={styles.continueButton}
+          onPress={() => {
+            useOnboardingStore.getState().setAndSave('age', ages[selectedIndex]);
+            router.push('/onboarding/height');
+          }}
+        >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
       </View>

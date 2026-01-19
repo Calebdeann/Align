@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 type ObstacleId = 'consistency' | 'support' | 'schedule' | 'inspiration';
 
@@ -20,9 +21,11 @@ const obstacleOptions: ObstacleOption[] = [
 
 export default function ObstaclesScreen() {
   const [selected, setSelected] = useState<string | null>(null);
+  const { setAndSave, skipField } = useOnboardingStore();
 
   const handleSelect = (id: string) => {
     setSelected(id);
+    setAndSave('mainObstacle', id);
     setTimeout(() => {
       router.push('/onboarding/accomplish');
     }, 300);
@@ -32,7 +35,10 @@ export default function ObstaclesScreen() {
     <QuestionLayout
       question="What's stopping you from reaching your goals?"
       progress={92}
-      onSkip={() => router.push('/onboarding/accomplish')}
+      onSkip={() => {
+        skipField('mainObstacle');
+        router.push('/onboarding/accomplish');
+      }}
     >
       <View style={optionStyles.optionsContainer}>
         {obstacleOptions.map((option) => {
