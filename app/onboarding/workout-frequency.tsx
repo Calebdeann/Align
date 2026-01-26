@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
@@ -33,6 +34,7 @@ export default function WorkoutFrequencyScreen() {
   const [selectedSpecificDays, setSelectedSpecificDays] = useState<string[]>([]);
 
   const toggleSpecificDay = (dayId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setSelectedSpecificDays((prev) =>
       prev.includes(dayId) ? prev.filter((d) => d !== dayId) : [...prev, dayId]
     );
@@ -55,17 +57,24 @@ export default function WorkoutFrequencyScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '88%' }]} />
+          <View style={[styles.progressBarFill, { width: '64%' }]} />
         </View>
 
         <Pressable
           onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             useOnboardingStore.getState().skipField('workoutFrequency');
             router.push('/onboarding/reminder');
           }}
@@ -84,7 +93,10 @@ export default function WorkoutFrequencyScreen() {
         <View style={styles.tabBackground}>
           <Pressable
             style={[styles.tab, activeTab === 'days-per-week' && styles.tabActive]}
-            onPress={() => setActiveTab('days-per-week')}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              setActiveTab('days-per-week');
+            }}
           >
             <Text style={[styles.tabText, activeTab === 'days-per-week' && styles.tabTextActive]}>
               Days per week
@@ -92,7 +104,10 @@ export default function WorkoutFrequencyScreen() {
           </Pressable>
           <Pressable
             style={[styles.tab, activeTab === 'specific-days' && styles.tabActive]}
-            onPress={() => setActiveTab('specific-days')}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              setActiveTab('specific-days');
+            }}
           >
             <Text style={[styles.tabText, activeTab === 'specific-days' && styles.tabTextActive]}>
               Specific days
@@ -111,7 +126,10 @@ export default function WorkoutFrequencyScreen() {
                 <Pressable
                   key={option}
                   style={[styles.optionCard, isSelected && styles.optionCardSelected]}
-                  onPress={() => setSelectedDaysPerWeek(option)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    setSelectedDaysPerWeek(option);
+                  }}
                 >
                   <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                     {option}
@@ -144,7 +162,10 @@ export default function WorkoutFrequencyScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
-          onPress={handleContinue}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            handleContinue();
+          }}
           disabled={!canContinue}
         >
           <Text style={[styles.continueText, !canContinue && styles.continueTextDisabled]}>
@@ -159,7 +180,7 @@ export default function WorkoutFrequencyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',

@@ -1,4 +1,9 @@
 import { supabase } from '../supabase';
+import {
+  UpdateProfileSchema,
+  UserPreferencesSchema,
+  OnboardingDataSchema,
+} from '@/schemas/user.schema';
 
 export interface UserProfile {
   id: string;
@@ -84,6 +89,13 @@ export async function updateUserProfile(
   userId: string,
   updates: Partial<UserProfile>
 ): Promise<UserProfile | null> {
+  // Validate updates
+  const parseResult = UpdateProfileSchema.safeParse(updates);
+  if (!parseResult.success) {
+    console.error('Invalid profile update input:', parseResult.error.flatten());
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -104,6 +116,13 @@ export async function updateUserPreferences(
   userId: string,
   preferences: UserPreferences
 ): Promise<boolean> {
+  // Validate preferences
+  const parseResult = UserPreferencesSchema.safeParse(preferences);
+  if (!parseResult.success) {
+    console.error('Invalid preferences input:', parseResult.error.flatten());
+    return false;
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({ ...preferences, updated_at: new Date().toISOString() })
@@ -122,6 +141,13 @@ export async function saveOnboardingData(
   userId: string,
   onboardingData: Partial<UserProfile>
 ): Promise<boolean> {
+  // Validate onboarding data
+  const parseResult = OnboardingDataSchema.safeParse(onboardingData);
+  if (!parseResult.success) {
+    console.error('Invalid onboarding data input:', parseResult.error.flatten());
+    return false;
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({ ...onboardingData, updated_at: new Date().toISOString() })

@@ -1,14 +1,32 @@
 import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { Image, ImageSourcePropType } from 'react-native';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
-const locations = [
-  { id: 'commercial', label: 'Commercial Gym', icon: '🏢' },
-  { id: 'small', label: 'Small Gym', icon: '🏠' },
-  { id: 'home', label: 'Home Gym', icon: '🏋️' },
-  { id: 'bodyweight', label: 'Body Weight', icon: '🧘' },
+const locations: { id: string; label: string; icon: ImageSourcePropType }[] = [
+  {
+    id: 'commercial',
+    label: 'Commercial Gym',
+    icon: require('../../assets/images/Onboarding Icons/5. Where Train/fe_building.png'),
+  },
+  {
+    id: 'small',
+    label: 'Small Gym',
+    icon: require('../../assets/images/Onboarding Icons/5. Where Train/icon-park-outline_building-four.png'),
+  },
+  {
+    id: 'home',
+    label: 'Home Gym',
+    icon: require('../../assets/images/Onboarding Icons/5. Where Train/mdi_gym.png'),
+  },
+  {
+    id: 'bodyweight',
+    label: 'Body Weight',
+    icon: require('../../assets/images/Onboarding Icons/5. Where Train/Vector.png'),
+  },
 ];
 
 export default function TrainingLocationScreen() {
@@ -16,20 +34,21 @@ export default function TrainingLocationScreen() {
   const { setAndSave, skipField } = useOnboardingStore();
 
   const handleSelect = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setSelected(id);
     setAndSave('trainingLocation', id);
     setTimeout(() => {
-      router.push('/onboarding/equipment');
+      router.push('/onboarding/workout-frequency');
     }, 300);
   };
 
   return (
     <QuestionLayout
       question="Where do you train?"
-      progress={82}
+      progress={60}
       onSkip={() => {
         skipField('trainingLocation');
-        router.push('/onboarding/equipment');
+        router.push('/onboarding/workout-frequency');
       }}
     >
       <View style={optionStyles.optionsContainer}>
@@ -42,7 +61,11 @@ export default function TrainingLocationScreen() {
               onPress={() => handleSelect(location.id)}
             >
               <View style={optionStyles.optionIcon}>
-                <Text style={{ fontSize: 20, opacity: isSelected ? 1 : 0.8 }}>{location.icon}</Text>
+                <Image
+                  source={location.icon}
+                  style={{ width: 20, height: 20, tintColor: isSelected ? '#FFFFFF' : '#000000' }}
+                  resizeMode="contain"
+                />
               </View>
               <Text
                 style={[optionStyles.optionText, isSelected && optionStyles.optionTextSelected]}

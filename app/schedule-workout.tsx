@@ -11,6 +11,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -19,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore, WorkoutTemplate, getTemplateTotalSets } from '@/stores/templateStore';
+import { useUserProfileStore } from '@/stores/userProfileStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MONTH_NAMES = [
@@ -300,6 +302,7 @@ function getRepeatLabel(repeatOption: string, selectedDays: number[]) {
 }
 
 export default function ScheduleWorkoutScreen() {
+  const userId = useUserProfileStore((state) => state.userId);
   const addWorkout = useWorkoutStore((state) => state.addWorkout);
 
   const [workoutName, setWorkoutName] = useState('');
@@ -448,7 +451,13 @@ export default function ScheduleWorkoutScreen() {
     const colourValue = getSelectedColour();
     const templateName = getTemplateName();
 
+    if (!userId) {
+      Alert.alert('Error', 'You must be logged in to schedule a workout.');
+      return;
+    }
+
     addWorkout({
+      userId,
       name: workoutName || templateName,
       description: description || undefined,
       image: selectedTemplate?.image,

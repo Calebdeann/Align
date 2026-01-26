@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 export default function CompleteScreen() {
@@ -9,13 +10,19 @@ export default function CompleteScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '100%' }]} />
+          <View style={[styles.progressBarFill, { width: '76%' }]} />
         </View>
 
         <View style={styles.skipPlaceholder} />
@@ -30,7 +37,10 @@ export default function CompleteScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => router.push('/onboarding/thank-you')}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/onboarding/thank-you');
+          }}
         >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
@@ -42,7 +52,7 @@ export default function CompleteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',

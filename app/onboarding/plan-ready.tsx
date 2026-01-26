@@ -2,11 +2,24 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 export default function PlanReadyScreen() {
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={{ width: 32 }} />
+
+        <View style={styles.progressBarContainer}>
+          <View style={styles.progressBarBackground} />
+          <View style={[styles.progressBarFill, { width: '98%' }]} />
+        </View>
+
+        <View style={{ width: 32 }} />
+      </View>
+
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.title}>Your plan is ready!</Text>
@@ -15,7 +28,13 @@ export default function PlanReadyScreen() {
 
       {/* Continue Button */}
       <View style={styles.bottomSection}>
-        <Pressable style={styles.continueButton} onPress={() => router.push('/onboarding/signin')}>
+        <Pressable
+          style={styles.continueButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/onboarding/signup');
+          }}
+        >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
       </View>
@@ -26,7 +45,32 @@ export default function PlanReadyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    gap: spacing.md,
+  },
+  progressBarContainer: {
+    flex: 1,
+    height: 4,
+    position: 'relative',
+  },
+  progressBarBackground: {
+    position: 'absolute',
+    width: '100%',
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+  },
+  progressBarFill: {
+    position: 'absolute',
+    height: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
   },
   content: {
     flex: 1,

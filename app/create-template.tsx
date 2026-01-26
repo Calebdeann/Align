@@ -21,6 +21,7 @@ import Svg, { Path, Line } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { useWorkoutStore, PendingExercise } from '@/stores/workoutStore';
+import { ExerciseImage } from '@/components/ExerciseImage';
 import { getWeightUnit, UnitSystem, filterNumericInput } from '@/utils/units';
 import { getCurrentUser } from '@/services/api/user';
 
@@ -337,7 +338,10 @@ const swipeStyles = StyleSheet.create({
 });
 
 export default function CreateTemplateScreen() {
-  const { templateId } = useLocalSearchParams<{ templateId?: string }>();
+  const { templateId, folderId } = useLocalSearchParams<{
+    templateId?: string;
+    folderId?: string;
+  }>();
   const isEditMode = !!templateId;
 
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
@@ -424,6 +428,8 @@ export default function CreateTemplateScreen() {
         exerciseId: pe.id,
         exerciseName: pe.name,
         muscle: pe.muscle,
+        gifUrl: pe.gifUrl,
+        thumbnailUrl: pe.thumbnailUrl,
         sets: [{ setNumber: 1, targetWeight: undefined, targetReps: undefined }],
         restTimerSeconds: 90,
       }));
@@ -631,6 +637,7 @@ export default function CreateTemplateScreen() {
       equipment,
       exercises,
       userId: user?.id, // Include userId for backend sync
+      folderId: folderId || undefined, // Assign to specified folder
     };
 
     if (isEditMode && templateId) {
@@ -730,9 +737,12 @@ export default function CreateTemplateScreen() {
             <View key={exercise.id} style={styles.exerciseCard}>
               {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
-                <View style={styles.exerciseImagePlaceholder}>
-                  <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
-                </View>
+                <ExerciseImage
+                  gifUrl={exercise.gifUrl}
+                  thumbnailUrl={exercise.thumbnailUrl}
+                  size={40}
+                  borderRadius={8}
+                />
                 <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
                 <Pressable
                   style={styles.moreButton}
@@ -861,9 +871,12 @@ export default function CreateTemplateScreen() {
                 >
                   <MinusCircleIcon />
                 </Pressable>
-                <View style={styles.reorderImagePlaceholder}>
-                  <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
-                </View>
+                <ExerciseImage
+                  gifUrl={exercise.gifUrl}
+                  thumbnailUrl={exercise.thumbnailUrl}
+                  size={48}
+                  borderRadius={8}
+                />
                 <Text style={styles.reorderExerciseName}>{exercise.exerciseName}</Text>
                 <View style={styles.dragHandle}>
                   <DragHandleIcon />

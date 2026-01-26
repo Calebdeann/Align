@@ -1,6 +1,8 @@
+import { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, radius } from '@/constants/theme';
 
 interface QuestionLayoutProps {
@@ -22,11 +24,41 @@ export default function QuestionLayout({
   onSkip,
   continueDisabled = false,
 }: QuestionLayoutProps) {
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Reset navigation state when screen comes back into focus
+  useFocusEffect(
+    useCallback(() => {
+      setIsNavigating(false);
+    }, [])
+  );
+
+  const handleSkip = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    onSkip?.();
+  };
+
+  const handleBack = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    router.back();
+  };
+
+  const handleContinue = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    onContinue?.();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header with back, progress bar, skip */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable onPress={handleBack} style={styles.backButton} disabled={isNavigating}>
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
@@ -35,9 +67,13 @@ export default function QuestionLayout({
           <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
         </View>
 
-        <Pressable onPress={onSkip}>
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
+        {onSkip ? (
+          <Pressable onPress={handleSkip} disabled={isNavigating}>
+            <Text style={[styles.skipText, isNavigating && styles.skipTextDisabled]}>Skip</Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 32 }} />
+        )}
       </View>
 
       {/* Question */}
@@ -52,9 +88,12 @@ export default function QuestionLayout({
       {showContinue && (
         <View style={styles.bottomSection}>
           <Pressable
-            style={[styles.continueButton, continueDisabled && styles.continueButtonDisabled]}
-            onPress={onContinue}
-            disabled={continueDisabled}
+            style={[
+              styles.continueButton,
+              (continueDisabled || isNavigating) && styles.continueButtonDisabled,
+            ]}
+            onPress={handleContinue}
+            disabled={continueDisabled || isNavigating}
           >
             <Text style={styles.continueText}>Continue</Text>
           </Pressable>
@@ -67,7 +106,7 @@ export default function QuestionLayout({
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',
@@ -105,6 +144,9 @@ export const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.text,
+  },
+  skipTextDisabled: {
+    opacity: 0.5,
   },
   questionContainer: {
     paddingHorizontal: spacing.lg,
@@ -155,7 +197,7 @@ export const optionStyles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     backgroundColor: '#FFFFFF',
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: 'rgba(239, 239, 239, 0.5)',
     gap: spacing.lg,
   },

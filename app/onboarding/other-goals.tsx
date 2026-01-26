@@ -1,15 +1,33 @@
 import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { Image, ImageSourcePropType } from 'react-native';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
 import { colors } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
-const otherGoals = [
-  { id: 'confidence', label: 'Gain confidence', icon: '✨' },
-  { id: 'strength', label: 'Build strength', icon: '💪' },
-  { id: 'look', label: 'Look better', icon: '🪞' },
-  { id: 'energy', label: 'Feel more energized', icon: '⚡' },
+const otherGoals: { id: string; label: string; icon: ImageSourcePropType }[] = [
+  {
+    id: 'confidence',
+    label: 'Gain confidence',
+    icon: require('../../assets/images/Onboarding Icons/2. Other Goals/bi_stars.png'),
+  },
+  {
+    id: 'strength',
+    label: 'Build strength',
+    icon: require('../../assets/images/Onboarding Icons/2. Other Goals/icon-park-solid_muscle.png'),
+  },
+  {
+    id: 'look',
+    label: 'Look better',
+    icon: require('../../assets/images/Onboarding Icons/2. Other Goals/temaki_dress.png'),
+  },
+  {
+    id: 'energy',
+    label: 'Feel more energized',
+    icon: require('../../assets/images/Onboarding Icons/2. Other Goals/ix_electrical-energy-filled.png'),
+  },
 ];
 
 function Checkbox({ checked }: { checked: boolean }) {
@@ -45,6 +63,7 @@ export default function OtherGoalsScreen() {
   const { setAndSave, skipField } = useOnboardingStore();
 
   const toggleSelect = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     const newSelected = selected.includes(id)
       ? selected.filter((i) => i !== id)
       : [...selected, id];
@@ -59,8 +78,9 @@ export default function OtherGoalsScreen() {
   return (
     <QuestionLayout
       question="Are there any other goals you want to achieve?"
-      progress={30}
+      progress={12}
       showContinue
+      continueDisabled={selected.length === 0}
       onContinue={handleContinue}
       onSkip={() => {
         skipField('otherGoals');
@@ -77,7 +97,11 @@ export default function OtherGoalsScreen() {
               onPress={() => toggleSelect(goal.id)}
             >
               <View style={optionStyles.optionIcon}>
-                <Text style={{ fontSize: 20, opacity: isSelected ? 1 : 0.8 }}>{goal.icon}</Text>
+                <Image
+                  source={goal.icon}
+                  style={{ width: 20, height: 20, tintColor: isSelected ? '#FFFFFF' : '#000000' }}
+                  resizeMode="contain"
+                />
               </View>
               <Text
                 style={[optionStyles.optionText, isSelected && optionStyles.optionTextSelected]}

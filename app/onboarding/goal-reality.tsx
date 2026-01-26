@@ -1,49 +1,60 @@
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { kgToLbs } from '@/utils/units';
 
-const starsTopRight = require('../../assets/images/Top right purple.png');
-const starsLeft = require('../../assets/images/Middle Purple.png');
-const starsBottomRight = require('../../assets/images/Bottom Right Purple.png');
-const purpleThumbsUp = require('../../assets/images/Purple Thumbs Up.png');
+const starsTopRight = require('../../assets/images/TopRightPurple.png');
+const starsLeft = require('../../assets/images/MiddlePurple.png');
+const starsBottomRight = require('../../assets/images/BottomRightPurple.png');
+const purpleThumbsUp = require('../../assets/images/PurpleThumbsUp.png');
 
 export default function GoalRealityScreen() {
   const { currentWeight, targetWeight } = useOnboardingStore();
+  const { weightUnit } = useUserPreferencesStore();
 
-  const diff = Math.abs(targetWeight - currentWeight);
+  // Weights are stored in kg
+  const diffKg = Math.abs(targetWeight - currentWeight);
   const isLosing = targetWeight < currentWeight;
-  const percentChange = (diff / currentWeight) * 100;
+  const percentChange = (diffKg / currentWeight) * 100;
 
   // Determine difficulty message
   let difficultyMessage: string;
-  let isRealistic: boolean;
 
   if (percentChange < 10) {
     difficultyMessage = "It's not hard at all!";
-    isRealistic = true;
   } else if (percentChange < 20) {
     difficultyMessage = "It's a solid challenge!";
-    isRealistic = true;
   } else {
     difficultyMessage = "It's ambitious but achievable!";
-    isRealistic = true;
   }
 
-  const weightText = `${Math.round(diff * 10) / 10}lb`;
+  // Display weight in user's preferred unit
+  const isLbs = weightUnit === 'lbs';
+  const displayDiff = isLbs ? Math.round(kgToLbs(diffKg)) : Math.round(diffKg);
+  const unitLabel = isLbs ? 'lb' : 'kg';
+  const weightText = `${displayDiff}${unitLabel}`;
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '80%' }]} />
+          <View style={[styles.progressBarFill, { width: '40%' }]} />
         </View>
 
         <View style={{ width: 40 }} />
@@ -82,7 +93,10 @@ export default function GoalRealityScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => router.push('/onboarding/goal-speed')}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/onboarding/goal-comparison');
+          }}
         >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
@@ -94,7 +108,7 @@ export default function GoalRealityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',

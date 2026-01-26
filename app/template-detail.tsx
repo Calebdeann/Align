@@ -20,6 +20,8 @@ import {
   getTemplateTotalSets,
   TemplateExercise,
 } from '@/stores/templateStore';
+import { useUserProfileStore } from '@/stores/userProfileStore';
+import { ExerciseImage } from '@/components/ExerciseImage';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -74,9 +76,12 @@ function ExerciseRow({
   return (
     <View>
       <Pressable style={styles.exerciseRow} onPress={onToggle}>
-        <View style={styles.exerciseImagePlaceholder}>
-          <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
-        </View>
+        <ExerciseImage
+          gifUrl={exercise.gifUrl}
+          thumbnailUrl={exercise.thumbnailUrl}
+          size={40}
+          borderRadius={8}
+        />
         <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
         <Ionicons
           name={isExpanded ? 'chevron-down' : 'chevron-forward'}
@@ -112,12 +117,13 @@ function ExerciseRow({
 export default function TemplateDetailScreen() {
   const { templateId } = useLocalSearchParams<{ templateId: string }>();
 
+  const userId = useUserProfileStore((state) => state.userId);
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
   const addTemplate = useTemplateStore((state) => state.addTemplate);
   const isTemplateSaved = useTemplateStore((state) => state.isTemplateSaved);
 
   const template = templateId ? getTemplateById(templateId) : null;
-  const isSaved = templateId ? isTemplateSaved(templateId) : false;
+  const isSaved = templateId ? isTemplateSaved(templateId, userId) : false;
 
   // Track which exercises are expanded
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
@@ -409,7 +415,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   addToLibraryButton: {
-    backgroundColor: '#F8BBD9',
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -421,7 +427,7 @@ const styles = StyleSheet.create({
   addToLibraryText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: colors.text,
+    color: '#FFFFFF',
   },
   addToLibraryTextSaved: {
     color: colors.textSecondary,

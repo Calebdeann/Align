@@ -1,13 +1,37 @@
 import { supabase } from '../supabase';
 import { searchAndRankExercises } from '@/utils/exerciseSearch';
+import { searchAscendExercises, AscendExercise } from './ascendExercises';
+
+// Extended exercise detail from Ascend API
+export interface ExerciseDetail {
+  id: string;
+  name: string;
+  muscle_group: string;
+  equipment?: string[];
+  image_url?: string;
+  // From Ascend API
+  instructions: string[];
+  primaryMuscles: string[];
+  secondaryMuscles: string[];
+}
 
 export interface Exercise {
   id: string;
   name: string;
-  muscle: string;
-  equipment?: string;
+  muscle_group: string;
+  equipment?: string[];
   instructions?: string;
   image_url?: string;
+  thumbnail_url?: string; // Static thumbnail for fast list loading
+  // New fields from ExerciseDB premium
+  exercise_db_id?: string;
+  target_muscles?: string[];
+  secondary_muscles?: string[];
+  body_parts?: string[];
+  instructions_array?: string[];
+  exercise_type?: string;
+  // Computed property for backward compatibility
+  muscle?: string;
 }
 
 // Exercise history entry for detail page
@@ -36,7 +60,11 @@ export async function fetchExercises(): Promise<Exercise[]> {
     return [];
   }
 
-  return data || [];
+  // Add muscle as alias for muscle_group for backward compatibility
+  return (data || []).map((e) => ({
+    ...e,
+    muscle: e.muscle_group,
+  }));
 }
 
 // Search exercises by name or muscle group
@@ -44,7 +72,7 @@ export async function searchExercises(query: string): Promise<Exercise[]> {
   const { data, error } = await supabase
     .from('exercises')
     .select('*')
-    .or(`name.ilike.%${query}%,muscle.ilike.%${query}%`)
+    .or(`name.ilike.%${query}%,muscle_group.ilike.%${query}%`)
     .order('name');
 
   if (error) {
@@ -52,7 +80,10 @@ export async function searchExercises(query: string): Promise<Exercise[]> {
     return [];
   }
 
-  return data || [];
+  return (data || []).map((e) => ({
+    ...e,
+    muscle: e.muscle_group,
+  }));
 }
 
 // Get a single exercise by ID
@@ -64,7 +95,7 @@ export async function getExerciseById(id: string): Promise<Exercise | null> {
     return null;
   }
 
-  return data;
+  return data ? { ...data, muscle: data.muscle_group } : null;
 }
 
 // Filter exercises by muscle group
@@ -72,7 +103,7 @@ export async function getExercisesByMuscle(muscle: string): Promise<Exercise[]> 
   const { data, error } = await supabase
     .from('exercises')
     .select('*')
-    .eq('muscle', muscle)
+    .ilike('muscle_group', muscle)
     .order('name');
 
   if (error) {
@@ -80,15 +111,18 @@ export async function getExercisesByMuscle(muscle: string): Promise<Exercise[]> 
     return [];
   }
 
-  return data || [];
+  return (data || []).map((e) => ({
+    ...e,
+    muscle: e.muscle_group,
+  }));
 }
 
-// Filter exercises by equipment
+// Filter exercises by equipment (equipment is an array column)
 export async function getExercisesByEquipment(equipment: string): Promise<Exercise[]> {
   const { data, error } = await supabase
     .from('exercises')
     .select('*')
-    .eq('equipment', equipment)
+    .contains('equipment', [equipment])
     .order('name');
 
   if (error) {
@@ -96,7 +130,10 @@ export async function getExercisesByEquipment(equipment: string): Promise<Exerci
     return [];
   }
 
-  return data || [];
+  return (data || []).map((e) => ({
+    ...e,
+    muscle: e.muscle_group,
+  }));
 }
 
 // Filter exercises with combined filters (equipment, muscles, and search query)
@@ -104,6 +141,69 @@ interface FilterOptions {
   equipment?: string;
   muscles?: string[]; // Multi-select muscles filter
   query?: string;
+}
+
+// Equipment values that map to "Other" category
+const OTHER_EQUIPMENT = [
+  'smith machine',
+  'weighted',
+  'exercise ball',
+  'medicine ball',
+  'assisted',
+  'roller',
+  'bosu ball',
+];
+
+// Client-side filtering for cached exercises (no API call)
+export function filterExercisesClient(exercises: Exercise[], options: FilterOptions): Exercise[] {
+  let filtered = [...exercises];
+
+  // Equipment filter
+  if (options.equipment && options.equipment !== 'all') {
+    const equipmentLower = options.equipment.toLowerCase();
+
+    if (equipmentLower === 'other') {
+      // "Other" includes misc equipment types
+      filtered = filtered.filter(
+        (e) => e.equipment && e.equipment.some((eq) => OTHER_EQUIPMENT.includes(eq.toLowerCase()))
+      );
+    } else if (equipmentLower === 'body weight' || equipmentLower === 'none') {
+      // Body weight / None
+      filtered = filtered.filter(
+        (e) =>
+          !e.equipment ||
+          e.equipment.length === 0 ||
+          e.equipment.some(
+            (eq) => eq.toLowerCase() === 'body weight' || eq.toLowerCase() === 'bodyweight'
+          )
+      );
+    } else if (equipmentLower === 'machine') {
+      // Machine filter - match all machine types (leverage machine, smith machine, sled machine, etc.)
+      filtered = filtered.filter(
+        (e) => e.equipment && e.equipment.some((eq) => eq.toLowerCase().includes('machine'))
+      );
+    } else {
+      // Specific equipment type
+      filtered = filtered.filter(
+        (e) => e.equipment && e.equipment.some((eq) => eq.toLowerCase() === equipmentLower)
+      );
+    }
+  }
+
+  // Muscle filter
+  if (options.muscles && options.muscles.length > 0) {
+    const musclesLower = options.muscles.map((m) => m.toLowerCase());
+    filtered = filtered.filter(
+      (e) => e.muscle_group && musclesLower.includes(e.muscle_group.toLowerCase())
+    );
+  }
+
+  // Search query with smart ranking
+  if (options.query && options.query.trim()) {
+    return searchAndRankExercises(filtered, options.query);
+  }
+
+  return filtered;
 }
 
 // Helper function to filter exercises by multiple muscles using exercise_muscles table
@@ -149,7 +249,7 @@ async function filterByMuscles(exerciseIds: string[], muscles: string[]): Promis
 export async function filterExercises(options: FilterOptions): Promise<Exercise[]> {
   const { equipment, muscles, query } = options;
 
-  // Fetch all exercises first (we need to filter by muscles using exercise_muscles table)
+  // Fetch all exercises
   const { data, error } = await supabase.from('exercises').select('*').order('name');
 
   if (error) {
@@ -157,30 +257,41 @@ export async function filterExercises(options: FilterOptions): Promise<Exercise[
     return [];
   }
 
-  let exercises = data || [];
+  // Add muscle alias for backward compatibility
+  let exercises = (data || []).map((e) => ({
+    ...e,
+    muscle: e.muscle_group,
+  }));
 
-  // Apply equipment filter
+  // Apply equipment filter (equipment is an array column)
   if (equipment) {
     const equipmentLower = equipment.toLowerCase();
-    if (equipment === 'none') {
+    if (
+      equipment === 'none' ||
+      equipmentLower === 'body weight' ||
+      equipmentLower === 'bodyweight'
+    ) {
       exercises = exercises.filter(
         (e) =>
           !e.equipment ||
-          e.equipment.toLowerCase() === 'none' ||
-          e.equipment.toLowerCase() === 'bodyweight'
+          e.equipment.length === 0 ||
+          e.equipment.some(
+            (eq: string) => eq.toLowerCase() === 'body weight' || eq.toLowerCase() === 'bodyweight'
+          )
       );
     } else {
       exercises = exercises.filter(
-        (e) => e.equipment && e.equipment.toLowerCase() === equipmentLower
+        (e) => e.equipment && e.equipment.some((eq: string) => eq.toLowerCase() === equipmentLower)
       );
     }
   }
 
-  // Apply multi-muscle filter using exercise_muscles table
+  // Apply muscle filter using muscle_group column
   if (muscles && muscles.length > 0) {
-    const exerciseIds = exercises.map((e) => e.id);
-    const matchingIds = await filterByMuscles(exerciseIds, muscles);
-    exercises = exercises.filter((e) => matchingIds.has(e.id));
+    const musclesLower = muscles.map((m) => m.toLowerCase());
+    exercises = exercises.filter(
+      (e) => e.muscle_group && musclesLower.includes(e.muscle_group.toLowerCase())
+    );
   }
 
   // Apply search query with smart ranking
@@ -398,4 +509,47 @@ export async function getExercisePersonalRecords(
     bestSetVolume,
     bestSessionVolume,
   };
+}
+
+// Fetch detailed exercise info from Ascend API (includes instructions and muscles)
+// Returns null if not found or on error
+export async function getExerciseDetailFromAscend(
+  exerciseName: string
+): Promise<ExerciseDetail | null> {
+  try {
+    // Search Ascend API by exercise name
+    const results = await searchAscendExercises(exerciseName, 10);
+
+    if (!results || results.length === 0) {
+      console.warn('No Ascend results for:', exerciseName);
+      return null;
+    }
+
+    // Find exact or close match
+    const nameLower = exerciseName.toLowerCase().trim();
+    const exactMatch = results.find((r) => r.name.toLowerCase().trim() === nameLower);
+    const closeMatch = results.find(
+      (r) => r.name.toLowerCase().includes(nameLower) || nameLower.includes(r.name.toLowerCase())
+    );
+
+    const match = exactMatch || closeMatch || results[0];
+
+    if (!match) {
+      return null;
+    }
+
+    return {
+      id: match.exerciseId,
+      name: match.name,
+      muscle_group: match.targetMuscles?.[0] || 'Unknown',
+      equipment: match.equipments || [],
+      image_url: match.gifUrl,
+      instructions: match.instructions || [],
+      primaryMuscles: match.targetMuscles || [],
+      secondaryMuscles: match.secondaryMuscles || [],
+    };
+  } catch (error) {
+    console.error('Error fetching from Ascend API:', error);
+    return null;
+  }
 }

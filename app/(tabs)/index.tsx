@@ -11,8 +11,12 @@ import {
   DAYS,
   type MonthData,
 } from '@/utils/calendar';
-import { useWorkoutStore, type ScheduledWorkout } from '@/stores/workoutStore';
-import { getWorkoutsByDateRange, type WorkoutHistoryItem } from '@/services/api/workouts';
+import {
+  useWorkoutStore,
+  type ScheduledWorkout,
+  type CachedCompletedWorkout,
+} from '@/stores/workoutStore';
+import { getWorkoutsByDateRange } from '@/services/api/workouts';
 import { getCurrentUser } from '@/services/api/user';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -139,71 +143,85 @@ export default function CalendarScreen() {
   const flatListRef = useRef<FlatList>(null);
   const listFlatListRef = useRef<FlatList>(null);
 
-  // User and completed workouts state
+  // User state
   const [userId, setUserId] = useState<string | null>(null);
-  const [completedWorkouts, setCompletedWorkouts] = useState<WorkoutHistoryItem[]>([]);
   // Track manually unchecked DB workouts (key: workout id, value: true if unchecked)
   const [uncheckedDbWorkouts, setUncheckedDbWorkouts] = useState<Set<string>>(new Set());
 
-  // Get workouts from store
+  // Get workouts from store (both scheduled and cached completed)
   const scheduledWorkouts = useWorkoutStore((state) => state.scheduledWorkouts);
   const getWorkoutsForMonth = useWorkoutStore((state) => state.getWorkoutsForMonth);
   const getWorkoutsForDate = useWorkoutStore((state) => state.getWorkoutsForDate);
   const toggleWorkoutCompletion = useWorkoutStore((state) => state.toggleWorkoutCompletion);
   const isWorkoutCompleted = useWorkoutStore((state) => state.isWorkoutCompleted);
 
-  // Fetch completed workouts function (reusable)
-  const fetchCompletedWorkouts = useCallback(async (uid: string) => {
-    // Fetch workouts for 6 months in past and future
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 6);
-    const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + 6);
+  // Cached completed workouts from store (loads instantly from AsyncStorage)
+  const cachedCompletedWorkouts = useWorkoutStore((state) => state.cachedCompletedWorkouts);
+  const setCachedCompletedWorkouts = useWorkoutStore((state) => state.setCachedCompletedWorkouts);
+  const getCachedCompletedWorkoutsForDate = useWorkoutStore(
+    (state) => state.getCachedCompletedWorkoutsForDate
+  );
 
-    const workouts = await getWorkoutsByDateRange(
-      uid,
-      startDate.toISOString(),
-      endDate.toISOString()
-    );
-    setCompletedWorkouts(workouts);
-  }, []);
+  // Fetch completed workouts and cache them in store (runs in background)
+  const fetchCompletedWorkouts = useCallback(
+    async (uid: string) => {
+      // Fetch workouts for 6 months in past and future
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 6);
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 6);
 
-  // Fetch user on mount
+      const workouts = await getWorkoutsByDateRange(
+        uid,
+        startDate.toISOString(),
+        endDate.toISOString()
+      );
+      // Cache in store for instant loading next time
+      setCachedCompletedWorkouts(workouts);
+    },
+    [setCachedCompletedWorkouts]
+  );
+
+  // Fetch user on mount - don't block rendering
   useEffect(() => {
     async function loadUser() {
       const user = await getCurrentUser();
       if (user) {
         setUserId(user.id);
+        // Fetch in background - cached data already shows instantly
         fetchCompletedWorkouts(user.id);
       }
     }
     loadUser();
   }, [fetchCompletedWorkouts]);
 
-  // Refresh completed workouts when screen is focused (e.g., after saving a workout)
+  // Refresh completed workouts when screen is focused ONLY if coming back from a workout save
+  // We track this with a ref to avoid refetching on every tab switch
+  const lastFocusTime = useRef<number>(0);
   useFocusEffect(
     useCallback(() => {
-      if (userId) {
+      const now = Date.now();
+      // Only refetch if more than 2 seconds since last focus (indicates real navigation, not tab switch spam)
+      // This prevents refetch on initial render and rapid tab switching
+      if (userId && lastFocusTime.current > 0 && now - lastFocusTime.current > 2000) {
         fetchCompletedWorkouts(userId);
       }
+      lastFocusTime.current = now;
     }, [userId, fetchCompletedWorkouts])
   );
 
-  // Helper to get completed workouts for a specific date
+  // Helper to get completed workouts for a specific date (uses store method)
   const getCompletedWorkoutsForDate = useCallback(
-    (dateKey: string): WorkoutHistoryItem[] => {
-      return completedWorkouts.filter((w) => {
-        const completedDate = new Date(w.completedAt).toISOString().split('T')[0];
-        return completedDate === dateKey;
-      });
+    (dateKey: string): CachedCompletedWorkout[] => {
+      return getCachedCompletedWorkoutsForDate(dateKey, userId);
     },
-    [completedWorkouts]
+    [getCachedCompletedWorkoutsForDate, userId]
   );
 
   // Combine scheduled and completed workouts for a date
   const getCombinedWorkoutsForDate = useCallback(
     (dateKey: string): CalendarWorkoutItem[] => {
-      const scheduledWorkouts = getWorkoutsForDate(dateKey);
+      const scheduledWorkouts = getWorkoutsForDate(dateKey, userId);
       const dbCompletedWorkouts = getCompletedWorkoutsForDate(dateKey);
 
       const combined: CalendarWorkoutItem[] = [];
@@ -254,6 +272,7 @@ export default function CalendarScreen() {
       isWorkoutCompleted,
       uncheckedDbWorkouts,
       scheduledWorkouts,
+      cachedCompletedWorkouts, // Re-render when cached workouts update
     ]
   );
 
@@ -526,10 +545,12 @@ export default function CalendarScreen() {
                   const isComplete = isWorkoutCompleted(workout.scheduledWorkoutId, dateKey);
                   if (isComplete) {
                     // If completed, try to find matching DB workout to show details
-                    const matchingDbWorkout = completedWorkouts.find((cw) => {
-                      const completedDate = new Date(cw.completedAt).toISOString().split('T')[0];
+                    const matchingDbWorkout = cachedCompletedWorkouts.find((cw) => {
+                      // Use local date to avoid timezone issues
+                      const completedDate = new Date(cw.completedAt);
+                      const localDateKey = `${completedDate.getFullYear()}-${String(completedDate.getMonth() + 1).padStart(2, '0')}-${String(completedDate.getDate()).padStart(2, '0')}`;
                       return (
-                        completedDate === dateKey &&
+                        localDateKey === dateKey &&
                         (cw.name || '').toLowerCase().trim() === workout.name.toLowerCase().trim()
                       );
                     });
@@ -606,7 +627,12 @@ export default function CalendarScreen() {
         </View>
       );
     },
-    [getCombinedWorkoutsForDate, toggleWorkoutCompletion, isWorkoutCompleted, completedWorkouts]
+    [
+      getCombinedWorkoutsForDate,
+      toggleWorkoutCompletion,
+      isWorkoutCompleted,
+      cachedCompletedWorkouts,
+    ]
   );
 
   // List View

@@ -11,8 +11,20 @@ Align is a women-focused workout tracker and scheduler app. Built with React Nat
 - **State Management:** Zustand
 - **Backend:** Supabase (Auth, Database, Storage)
 - **Auth:** Apple Sign-In + Google Sign-In
+- **Validation:** Zod (API input validation)
+- **Exercise API:** Ascend API (ExerciseDB) - https://www.ascendapi.com/api/v1
 - **Bundle ID:** com.aligntracker.app
 - **Language:** TypeScript
+
+## Exercise Library
+
+**IMPORTANT:** All exercise images/animations MUST come from the Ascend API (ExerciseDB).
+
+- **API:** https://www.ascendapi.com/api/v1
+- **GIF URL format:** `https://static.exercisedb.dev/media/{exerciseId}.gif`
+- **Documentation:** https://exercisedb.notion.site/Table-of-Contents-1a6983b728ca80b69e85c5c74133220e
+- **Do NOT** use other image sources (MuscleWiki, GitHub, etc.)
+- Exercise data is stored in Supabase `exercises` table with `image_url` pointing to ExerciseDB GIFs
 
 ## Current Phase
 
@@ -76,14 +88,21 @@ align/
 │   │   └── theme.ts            # Colors, fonts, spacing
 │   ├── hooks/                  # Custom React hooks
 │   ├── lib/                    # Third-party library configs
+│   ├── schemas/                # Zod validation schemas
+│   │   ├── common.schema.ts    # Shared validation patterns
+│   │   ├── workout.schema.ts   # Workout validation
+│   │   ├── template.schema.ts  # Template validation
+│   │   └── user.schema.ts      # User/profile validation
 │   ├── services/               # API & external services
-│   │   └── supabase.ts         # Supabase client
+│   │   ├── supabase.ts         # Supabase client
+│   │   └── api/                # API functions (workouts, templates, user)
 │   ├── stores/                 # Zustand state stores
 │   │   └── onboardingStore.ts  # Onboarding state
 │   ├── types/                  # TypeScript type definitions
 │   │   └── index.ts            # Shared types
 │   └── utils/                  # Helper functions
-│       └── calendar.ts         # Calendar date utilities
+│       ├── calendar.ts         # Calendar date utilities
+│       └── logger.ts           # Structured logging utility
 │
 ├── assets/                     # Static assets
 │   ├── fonts/                  # Custom fonts
@@ -91,9 +110,60 @@ align/
 │   ├── Figma_App/              # Figma exports for main app
 │   └── Figma_Onboarding/       # Figma exports for onboarding
 │
+├── supabase/                   # Supabase configuration
+│   └── migrations/             # SQL migrations (RLS policies, schema)
 ├── ios/                        # Native iOS project (dev builds)
 └── .claude/                    # Claude project files
 ```
+
+## Data Storage Architecture
+
+### Per-User Namespaced Storage
+
+User data is stored in AsyncStorage with per-user namespaced keys to ensure complete data isolation between accounts on the same device.
+
+**Storage Key Format:** `{baseKey}-{userId}`
+
+- Example: `workout-store-abc123def456`
+
+**Stores Using Per-User Storage:**
+| Store | Base Key | Persisted Data |
+|-------|----------|----------------|
+| workoutStore | `workout-store` | Scheduled workouts, active workout, cached completed workouts |
+| templateStore | `template-store` | User-created templates, folders |
+
+**Stores Using Device-Wide Storage:**
+| Store | Key | Persisted Data |
+|-------|-----|----------------|
+| userPreferencesStore | `user-preferences` | Unit preferences (kg/lbs, etc.) |
+
+**Stores Without Persistence:**
+
+- `userProfileStore` - In-memory only, syncs from Supabase
+- `onboardingStore` - In-memory only, syncs to Supabase during flow
+
+### Key Files
+
+- `src/services/authState.ts` - Centralized auth state listener
+- `src/lib/userNamespacedStorage.ts` - Custom storage adapter with migration
+- `src/lib/storeManager.ts` - Store reset/rehydration on auth changes
+
+### How It Works
+
+1. **App Start:** `initializeStoreManager()` subscribes to auth changes
+2. **User Login:** Storage adapter reads from `{baseKey}-{userId}`, migrates legacy data if needed
+3. **User Logout:** Stores reset to initial state, next user gets fresh state
+4. **User Switch:** Previous user's data stays in their namespaced key, new user's data loads
+5. **Account Delete:** User's namespaced storage keys are explicitly deleted
+
+### Migration from Legacy Keys
+
+On first login after upgrade, the storage adapter:
+
+1. Checks if user-specific data exists (`workout-store-{userId}`)
+2. If not, checks for legacy data in global key (`workout-store`)
+3. Filters legacy data by `userId` field and migrates to namespaced key
+4. Legacy data is preserved (not deleted) for other users who may need migration
 
 ## Key Patterns
 
@@ -114,6 +184,43 @@ Use `QuestionLayout` component with `optionStyles` for all multi-select/single-s
 2. Follow Figma designs exactly - don't improvise UI
 3. Ask before adding new dependencies
 4. Keep components small and focused
+5. All API write functions must validate input with Zod schemas before DB operations
+6. RLS policies enforce data isolation - users can only access their own data
+
+## Backend Security
+
+### Row Level Security (RLS)
+
+All user data tables have RLS policies enabled. This means:
+
+- Users can only read/write their own data
+- Even if app code has a bug, the database enforces data isolation
+- Policies are defined in `supabase/migrations/`
+
+**Protected Tables:**
+
+- `profiles`, `workouts`, `workout_exercises`, `workout_sets`, `workout_muscles`
+- `workout_templates`, `template_exercises`, `template_sets`
+- `user_exercise_preferences`
+
+**Reference Tables (read-only for users):**
+
+- `exercises`, `exercise_muscles`
+
+### Input Validation
+
+All API write functions validate input using Zod schemas before database operations:
+
+- Schemas located in `src/schemas/`
+- Validates types, lengths, ranges, and formats
+- Prevents malformed data from reaching the database
+
+### Useful Commands
+
+```bash
+npm run types:generate  # Generate TypeScript types from Supabase schema
+npm run db:push         # Push migrations to Supabase
+```
 
 ## Security - Credentials Handling
 
@@ -176,3 +283,9 @@ Google Sign-In:
 - **Font:** Quicksand
 - **Bundle ID:** com.aligntracker.app
 - **Target:** iOS first
+
+## Response Format
+
+At the end of every response after completing a task, include:
+
+**Completed:** (A 1 sentence explanation of what was just done)

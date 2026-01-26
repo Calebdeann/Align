@@ -4,33 +4,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
-import {
-  Exercise,
-  ExerciseHistoryEntry,
-  ExercisePersonalRecords,
-  getExerciseById,
-  getExerciseHistory,
-  getExercisePersonalRecords,
-} from '@/services/api/exercises';
-import { getCurrentUser } from '@/services/api/user';
-import { UnitSystem, kgToLbs, getWeightUnit } from '@/utils/units';
-import {
-  AnimationPlaceholder,
-  ExerciseTabBar,
-  ExerciseDetailTab,
-  StatCard,
-  HistoryItem,
-} from '@/components/exercise';
+import { Exercise, getExerciseById } from '@/services/api/exercises';
+import { ExerciseImage } from '@/components/ExerciseImage';
+
+// Muscle chip component
+function MuscleChip({ muscle }: { muscle: string }) {
+  return (
+    <View style={styles.muscleChip}>
+      <Text style={styles.muscleChipText}>{muscle}</Text>
+    </View>
+  );
+}
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const [activeTab, setActiveTab] = useState<ExerciseDetailTab>('summary');
   const [exercise, setExercise] = useState<Exercise | null>(null);
-  const [personalRecords, setPersonalRecords] = useState<ExercisePersonalRecords | null>(null);
-  const [history, setHistory] = useState<ExerciseHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [units] = useState<UnitSystem>('metric');
 
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
@@ -50,27 +40,13 @@ export default function ExerciseDetailScreen() {
     setIsLoading(true);
 
     try {
-      // Load exercise details
+      // Load exercise from Supabase (now includes all detail fields)
       const exerciseData = await getExerciseById(id);
       if (!isMountedRef.current) return;
       setExercise(exerciseData);
-
-      // Load user data and exercise stats
-      const user = await getCurrentUser();
-      if (!isMountedRef.current) return;
-
-      if (user) {
-        const [recordsData, historyData] = await Promise.all([
-          getExercisePersonalRecords(user.id, id),
-          getExerciseHistory(user.id, id),
-        ]);
-        if (!isMountedRef.current) return;
-        setPersonalRecords(recordsData);
-        setHistory(historyData);
-      }
+      setIsLoading(false);
     } catch (error) {
       console.error('Error loading exercise data:', error);
-    } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
       }
@@ -79,29 +55,6 @@ export default function ExerciseDetailScreen() {
 
   const handleBack = () => {
     router.back();
-  };
-
-  const formatWeight = (weightKg: number): string => {
-    const weight = units === 'imperial' ? Math.round(kgToLbs(weightKg)) : Math.round(weightKg);
-    return `${weight} ${getWeightUnit(units)}`;
-  };
-
-  const formatVolume = (volumeKg: number): string => {
-    const volume = units === 'imperial' ? Math.round(kgToLbs(volumeKg)) : Math.round(volumeKg);
-    return `${volume.toLocaleString()} ${getWeightUnit(units)}`;
-  };
-
-  // Parse instructions into numbered steps
-  const parseInstructions = (instructions: string | undefined): string[] => {
-    if (!instructions) return [];
-
-    // Split by newlines or numbered format (1. 2. etc.)
-    const lines = instructions
-      .split(/\n|(?=\d+\.)/)
-      .map((line) => line.replace(/^\d+\.\s*/, '').trim())
-      .filter((line) => line.length > 0);
-
-    return lines;
   };
 
   if (isLoading) {
@@ -138,7 +91,14 @@ export default function ExerciseDetailScreen() {
     );
   }
 
-  const instructions = parseInstructions(exercise.instructions);
+  // Use data from local database (no more API calls needed)
+  const rawInstructions = exercise.instructions_array || [];
+  const instructions = rawInstructions.map((step) =>
+    step.replace(/^step\s*:?\s*\d+\s*:?\s*/i, '').trim()
+  );
+  const primaryMuscles = exercise.target_muscles || [exercise.muscle_group];
+  const secondaryMuscles = exercise.secondary_muscles || [];
+  const equipment = exercise.equipment || [];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -147,147 +107,77 @@ export default function ExerciseDetailScreen() {
         <Pressable onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {exercise.name}
-          </Text>
-          <Text style={styles.headerSubtitle}>{exercise.muscle}</Text>
-        </View>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {exercise.name}
+        </Text>
         <View style={styles.placeholder} />
       </View>
 
-      {/* Tab Bar */}
-      <ExerciseTabBar activeTab={activeTab} onTabChange={setActiveTab} />
-
-      {/* Content */}
       <ScrollView showsVerticalScrollIndicator={false}>
-        {activeTab === 'summary' && (
-          <View>
-            <Text style={styles.sectionTitle}>Personal Records</Text>
+        {/* Large GIF Animation */}
+        <View style={styles.gifContainer}>
+          <ExerciseImage gifUrl={exercise.image_url} size={280} borderRadius={16} animated={true} />
+        </View>
 
-            {personalRecords &&
-            (personalRecords.heaviestWeight ||
-              personalRecords.bestOneRepMax ||
-              personalRecords.bestSetVolume ||
-              personalRecords.bestSessionVolume) ? (
-              <View style={styles.statsGrid}>
-                <View style={styles.statsRow}>
-                  <StatCard
-                    icon={<Ionicons name="barbell" size={24} color={colors.primary} />}
-                    label="Heaviest Weight"
-                    value={
-                      personalRecords.heaviestWeight
-                        ? formatWeight(personalRecords.heaviestWeight.weightKg)
-                        : '-'
-                    }
-                  />
-                  <View style={styles.statsSpacer} />
-                  <StatCard
-                    icon={<Ionicons name="trophy" size={24} color={colors.primary} />}
-                    label="Best 1RM"
-                    value={
-                      personalRecords.bestOneRepMax
-                        ? formatWeight(personalRecords.bestOneRepMax.value)
-                        : '-'
-                    }
-                    subValue={
-                      personalRecords.bestOneRepMax
-                        ? `${formatWeight(personalRecords.bestOneRepMax.weightKg)} x ${personalRecords.bestOneRepMax.reps}`
-                        : undefined
-                    }
-                  />
-                </View>
-                <View style={styles.statsRow}>
-                  <StatCard
-                    icon={<Ionicons name="flame" size={24} color={colors.primary} />}
-                    label="Best Set Volume"
-                    value={
-                      personalRecords.bestSetVolume
-                        ? formatVolume(personalRecords.bestSetVolume.volume)
-                        : '-'
-                    }
-                    subValue={
-                      personalRecords.bestSetVolume
-                        ? `${formatWeight(personalRecords.bestSetVolume.weightKg)} x ${personalRecords.bestSetVolume.reps}`
-                        : undefined
-                    }
-                  />
-                  <View style={styles.statsSpacer} />
-                  <StatCard
-                    icon={<Ionicons name="stats-chart" size={24} color={colors.primary} />}
-                    label="Best Session"
-                    value={
-                      personalRecords.bestSessionVolume
-                        ? formatVolume(personalRecords.bestSessionVolume.volume)
-                        : '-'
-                    }
-                  />
-                </View>
-              </View>
-            ) : (
-              <View style={styles.emptyStateContainer}>
-                <Ionicons name="fitness-outline" size={48} color={colors.textTertiary} />
-                <Text style={styles.emptyStateText}>No personal records yet</Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Complete a workout with this exercise to see your stats!
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {activeTab === 'history' && (
-          <View>
-            {history.length > 0 ? (
-              history.map((entry) => (
-                <HistoryItem key={entry.workoutId} entry={entry} units={units} />
+        {/* Primary Muscles */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Primary Muscles</Text>
+          <View style={styles.muscleChipsContainer}>
+            {primaryMuscles.length > 0 ? (
+              primaryMuscles.map((muscle, index) => (
+                <MuscleChip key={`primary-${index}`} muscle={muscle} />
               ))
             ) : (
-              <View style={styles.emptyStateContainer}>
-                <Ionicons name="time-outline" size={48} color={colors.textTertiary} />
-                <Text style={styles.emptyStateText}>No history yet</Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Complete a workout with this exercise to see your history!
-                </Text>
-              </View>
+              <Text style={styles.noDataText}>{exercise.muscle_group || 'Unknown'}</Text>
             )}
+          </View>
+        </View>
+
+        {/* Secondary Muscles */}
+        {secondaryMuscles.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Secondary Muscles</Text>
+            <View style={styles.muscleChipsContainer}>
+              {secondaryMuscles.map((muscle, index) => (
+                <MuscleChip key={`secondary-${index}`} muscle={muscle} />
+              ))}
+            </View>
           </View>
         )}
 
-        {activeTab === 'howto' && (
-          <View>
-            {/* Only show animation placeholder if there are instructions */}
-            {instructions.length > 0 && <AnimationPlaceholder height={200} />}
+        {/* How to Perform */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>How to Perform</Text>
 
-            <Text style={styles.sectionTitle}>How to Perform</Text>
+          {instructions.length > 0 ? (
+            <View style={styles.instructionsContainer}>
+              {instructions.map((step, index) => (
+                <View key={index} style={styles.instructionStep}>
+                  <Text style={styles.stepText}>
+                    <Text style={styles.stepLabel}>Step {index + 1}: </Text>
+                    {step}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.noInstructionsContainer}>
+              <Ionicons name="help-circle-outline" size={32} color={colors.textTertiary} />
+              <Text style={styles.noInstructionsText}>Instructions coming soon</Text>
+              <Text style={styles.noInstructionsSubtext}>
+                Search YouTube for "{exercise.name}" to learn proper form.
+              </Text>
+            </View>
+          )}
+        </View>
 
-            {instructions.length > 0 ? (
-              <View style={styles.instructionsContainer}>
-                {instructions.map((step, index) => (
-                  <View key={index} style={styles.instructionStep}>
-                    <View style={styles.stepNumber}>
-                      <Text style={styles.stepNumberText}>{index + 1}</Text>
-                    </View>
-                    <Text style={styles.stepText}>{step}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyStateContainer}>
-                <Ionicons name="help-circle-outline" size={48} color={colors.textTertiary} />
-                <Text style={styles.emptyStateText}>Instructions coming soon</Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Search YouTube for "{exercise.name}" to learn proper form.
-                </Text>
-              </View>
-            )}
-
-            {exercise.equipment && (
-              <View style={styles.equipmentContainer}>
-                <Text style={styles.equipmentLabel}>Equipment</Text>
-                <Text style={styles.equipmentValue}>{exercise.equipment}</Text>
-              </View>
-            )}
+        {/* Equipment */}
+        {equipment.length > 0 && (
+          <View style={styles.equipmentSection}>
+            <Text style={styles.equipmentLabel}>Equipment</Text>
+            <Text style={styles.equipmentValue}>
+              {Array.isArray(equipment) ? equipment.join(', ') : equipment}
+            </Text>
           </View>
         )}
 
@@ -312,20 +202,14 @@ const styles = StyleSheet.create({
   backButton: {
     padding: spacing.xs,
   },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-    marginHorizontal: spacing.md,
-  },
   headerTitle: {
+    flex: 1,
     fontFamily: fonts.bold,
     fontSize: fontSize.lg,
     color: colors.text,
-  },
-  headerSubtitle: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    textAlign: 'center',
+    textTransform: 'capitalize',
+    marginHorizontal: spacing.md,
   },
   placeholder: {
     width: 32,
@@ -345,71 +229,81 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
   },
-  sectionTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
-    color: colors.text,
+  gifContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  section: {
     paddingHorizontal: spacing.lg,
     marginTop: spacing.md,
-    marginBottom: spacing.md,
   },
-  statsGrid: {
-    paddingHorizontal: spacing.lg,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    marginBottom: spacing.sm,
-  },
-  statsSpacer: {
-    width: spacing.sm,
-  },
-  emptyStateContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-  },
-  emptyStateText: {
+  sectionTitle: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.text,
-    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
-  emptyStateSubtext: {
+  muscleChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  muscleChip: {
+    backgroundColor: colors.primary + '15',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+  },
+  muscleChipText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    textTransform: 'capitalize',
+  },
+  noDataText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textTransform: 'capitalize',
+  },
+  instructionsContainer: {
+    gap: spacing.md,
+  },
+  instructionStep: {
+    marginBottom: spacing.xs,
+  },
+  stepLabel: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  stepText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.text,
+    lineHeight: 24,
+  },
+  noInstructionsContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+  },
+  noInstructionsText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.text,
+    marginTop: spacing.sm,
+  },
+  noInstructionsSubtext: {
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginTop: spacing.xs,
     textAlign: 'center',
   },
-  instructionsContainer: {
-    paddingHorizontal: spacing.lg,
-  },
-  instructionStep: {
-    flexDirection: 'row',
-    marginBottom: spacing.md,
-  },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.sm,
-  },
-  stepNumberText: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.sm,
-    color: '#FFFFFF',
-  },
-  stepText: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.text,
-    lineHeight: 24,
-  },
-  equipmentContainer: {
+  equipmentSection: {
     ...cardStyle,
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,
@@ -427,6 +321,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.text,
+    textTransform: 'capitalize',
   },
   bottomSpacer: {
     height: 40,

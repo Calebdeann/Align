@@ -14,6 +14,7 @@ export const colors = {
 
   // Backgrounds
   background: '#FFFFFF',
+  backgroundOnboarding: '#FAFAFA', // Light gray for onboarding screens
   surface: '#F5F5F5',
   surfaceSecondary: '#FAFAFA',
 

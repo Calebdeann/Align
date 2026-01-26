@@ -31,6 +31,7 @@ import { formatPreviousSet, getWeightUnit, UnitSystem, filterNumericInput } from
 import ClockModal from '@/components/workout/ClockModal';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
+import { ExerciseImage } from '@/components/ExerciseImage';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -38,6 +39,7 @@ interface Exercise {
   id: string;
   name: string;
   muscle: string;
+  gifUrl?: string;
 }
 
 // Set types: 'normal' shows the set number, others show their first letter
@@ -291,9 +293,12 @@ function DraggableExerciseRow({
       <Pressable style={styles.removeButton} onPress={onRemove}>
         <MinusCircleIcon />
       </Pressable>
-      <View style={styles.reorderImagePlaceholder}>
-        <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
-      </View>
+      <ExerciseImage
+        gifUrl={workoutExercise.exercise.gifUrl}
+        thumbnailUrl={workoutExercise.exercise.thumbnailUrl}
+        size={48}
+        borderRadius={8}
+      />
       <Text style={styles.reorderExerciseName}>{workoutExercise.exercise.name}</Text>
       <View style={styles.dragHandle} {...panResponder.panHandlers}>
         <DragHandleIcon />
@@ -358,6 +363,7 @@ function createDefaultSets(
 }
 
 const DELETE_BUTTON_WIDTH = 80;
+const SET_ROW_HEIGHT = 48; // Approximate height of set row
 
 interface SwipeableSetRowProps {
   set: ExerciseSet;
@@ -402,22 +408,27 @@ function SwipeableSetRow({
     }
   };
   const translateX = useRef(new Animated.Value(0)).current;
+  const rowHeight = useRef(new Animated.Value(SET_ROW_HEIGHT)).current;
+  const rowOpacity = useRef(new Animated.Value(1)).current;
   const isSwipedOpen = useRef(false);
+  const isDeleting = useRef(false);
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => !isDeleting.current,
       onMoveShouldSetPanResponder: (
         _: GestureResponderEvent,
         gestureState: PanResponderGestureState
       ) => {
+        if (isDeleting.current) return false;
         // Capture horizontal swipes with lower threshold
         return (
           Math.abs(gestureState.dx) > 5 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy)
         );
       },
       onPanResponderGrant: () => {
-        // Stop any ongoing animations
+        // Stop any ongoing animations and get current value
+        translateX.stopAnimation();
       },
       onPanResponderMove: (_, gestureState) => {
         // Swipe left (negative dx) to reveal delete on right
@@ -438,27 +449,27 @@ function SwipeableSetRow({
         if (gestureState.dx < -DELETE_BUTTON_WIDTH / 3 && !isSwipedOpen.current) {
           Animated.spring(translateX, {
             toValue: -DELETE_BUTTON_WIDTH,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 10,
+            useNativeDriver: false,
+            tension: 200,
+            friction: 20,
           }).start();
           isSwipedOpen.current = true;
         } else if (gestureState.dx > 20 && isSwipedOpen.current) {
           // Closing: swipe right when open
           Animated.spring(translateX, {
             toValue: 0,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 10,
+            useNativeDriver: false,
+            tension: 200,
+            friction: 20,
           }).start();
           isSwipedOpen.current = false;
         } else {
           // Snap back to current state
           Animated.spring(translateX, {
             toValue: isSwipedOpen.current ? -DELETE_BUTTON_WIDTH : 0,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 10,
+            useNativeDriver: false,
+            tension: 200,
+            friction: 20,
           }).start();
         }
       },
@@ -466,30 +477,52 @@ function SwipeableSetRow({
   ).current;
 
   const handleDelete = () => {
-    Animated.timing(translateX, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
+    if (isDeleting.current) return;
+    isDeleting.current = true;
+
+    // Slide the row off screen to the left, fade out, and collapse height simultaneously
+    Animated.parallel([
+      Animated.timing(translateX, {
+        toValue: -400, // Slide off screen
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(rowOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(rowHeight, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start(() => {
       onDelete(exerciseIndex, setIndex);
     });
   };
 
+  // Calculate the delete button opacity based on swipe position
+  const deleteButtonOpacity = translateX.interpolate({
+    inputRange: [-DELETE_BUTTON_WIDTH, -10, 0],
+    outputRange: [1, 0.5, 0],
+    extrapolate: 'clamp',
+  });
+
   return (
-    <View style={swipeStyles.container}>
-      {/* Delete button revealed on right side when swiping left */}
-      <View style={swipeStyles.deleteButtonContainer}>
+    <Animated.View style={[swipeStyles.container, { height: rowHeight, opacity: rowOpacity }]}>
+      {/* Delete button - only visible when swiping */}
+      <Animated.View style={[swipeStyles.deleteButtonContainer, { opacity: deleteButtonOpacity }]}>
         <Pressable style={swipeStyles.deleteButton} onPress={handleDelete}>
           <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
         </Pressable>
-      </View>
+      </Animated.View>
 
-      {/* Swipeable row */}
+      {/* Swipeable row content */}
       <Animated.View
         style={[
           styles.setRow,
           set.completed && styles.setRowCompleted,
-          swipeStyles.swipeableRow,
           { transform: [{ translateX }] },
         ]}
         {...panResponder.panHandlers}
@@ -537,14 +570,14 @@ function SwipeableSetRow({
           </View>
         </Pressable>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 
 const swipeStyles = StyleSheet.create({
   container: {
     position: 'relative',
-    overflow: 'hidden',
+    backgroundColor: colors.background,
   },
   deleteButtonContainer: {
     position: 'absolute',
@@ -553,16 +586,15 @@ const swipeStyles = StyleSheet.create({
     bottom: 0,
     width: DELETE_BUTTON_WIDTH,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E53935',
+    borderRadius: 8,
   },
   deleteButton: {
-    backgroundColor: 'rgba(229, 57, 53, 0.5)',
+    width: DELETE_BUTTON_WIDTH,
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
-  },
-  swipeableRow: {
-    backgroundColor: colors.background,
   },
 });
 
@@ -1378,9 +1410,12 @@ export default function ActiveWorkoutScreen() {
             >
               {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
-                <View style={styles.exerciseImagePlaceholder}>
-                  <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
-                </View>
+                <ExerciseImage
+                  gifUrl={workoutExercise.exercise.gifUrl}
+                  thumbnailUrl={workoutExercise.exercise.thumbnailUrl}
+                  size={40}
+                  borderRadius={8}
+                />
                 <Pressable
                   style={styles.exerciseTitlePressable}
                   onPress={() => router.push(`/exercise/${workoutExercise.exercise.id}`)}
@@ -1686,9 +1721,12 @@ export default function ActiveWorkoutScreen() {
                         ]}
                       />
 
-                      <View style={styles.supersetExerciseImagePlaceholder}>
-                        <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
-                      </View>
+                      <ExerciseImage
+                        gifUrl={workoutExercise.exercise.gifUrl}
+                        thumbnailUrl={workoutExercise.exercise.thumbnailUrl}
+                        size={40}
+                        borderRadius={8}
+                      />
 
                       <View style={styles.supersetExerciseInfo}>
                         <Text style={styles.supersetExerciseName}>
@@ -2028,6 +2066,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     marginHorizontal: -spacing.sm,
     borderRadius: 8,
+    backgroundColor: colors.background,
   },
   setRowCompleted: {
     backgroundColor: 'rgba(148, 122, 255, 0.2)',

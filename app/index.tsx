@@ -1,6 +1,8 @@
-import { View, Text, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { Image } from 'react-native';
+import { Link, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -10,35 +12,48 @@ export default function OnboardingWelcome() {
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         {/* Star decorations - positioned to match Figma */}
-        <Image source={require('../assets/images/Top Right.png')} style={styles.starsTopRight} />
-        <Image source={require('../assets/images/Middle.png')} style={styles.starsLeft} />
         <Image
-          source={require('../assets/images/Bottom Right.png')}
+          source={require('../assets/images/stars1.png')}
+          style={styles.starsTopRight}
+          resizeMode="contain"
+        />
+        <Image
+          source={require('../assets/images/stars2.png')}
+          style={styles.starsLeft}
+          resizeMode="contain"
+        />
+        <Image
+          source={require('../assets/images/stars3.png')}
           style={styles.starsBottomRight}
+          resizeMode="contain"
         />
 
         {/* Main content - positioned slightly above center */}
         <View style={styles.content}>
           <Text style={styles.logo}>ALIGN</Text>
           <Pressable onPress={() => router.replace('/home')}>
-            <Text style={styles.tagline}>BUILT FOR THE GIRLS</Text>
+            <Text style={styles.tagline}>FOR THE GIRLS</Text>
           </Pressable>
         </View>
 
         {/* Bottom buttons */}
         <View style={styles.bottomSection}>
-          <Pressable
-            style={styles.getStartedButton}
-            onPress={() => router.push('/onboarding/welcome')}
-          >
-            <Text style={styles.getStartedText}>Get Started</Text>
-          </Pressable>
+          <Link href="/onboarding/intro" asChild>
+            <Pressable
+              style={styles.getStartedButton}
+              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)}
+            >
+              <Text style={styles.getStartedText}>Get Started</Text>
+            </Pressable>
+          </Link>
 
-          <Pressable onPress={() => router.push('/onboarding/signin')}>
-            <Text style={styles.signInText}>
-              Already have an account? <Text style={styles.signInBold}>Sign in</Text>
-            </Text>
-          </Pressable>
+          <Link href="/onboarding/signin" asChild>
+            <Pressable onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)}>
+              <Text style={styles.signInText}>
+                Already have an account? <Text style={styles.signInBold}>Sign in</Text>
+              </Text>
+            </Pressable>
+          </Link>
         </View>
       </SafeAreaView>
     </View>
@@ -59,7 +74,6 @@ const styles = StyleSheet.create({
     right: 60,
     width: 90,
     height: 90,
-    resizeMode: 'contain',
   },
   starsLeft: {
     position: 'absolute',
@@ -67,7 +81,6 @@ const styles = StyleSheet.create({
     left: 24,
     width: 70,
     height: 70,
-    resizeMode: 'contain',
   },
   starsBottomRight: {
     position: 'absolute',
@@ -75,7 +88,6 @@ const styles = StyleSheet.create({
     right: 40,
     width: 110,
     height: 110,
-    resizeMode: 'contain',
   },
   content: {
     flex: 1,
@@ -112,7 +124,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   getStartedText: {
-    fontFamily: fonts.semiBold,
+    fontFamily: fonts.bold,
     fontSize: fontSize.lg,
     color: colors.primary,
   },

@@ -1,19 +1,12 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  ScrollView,
-  Image,
-  Modal,
-  Dimensions,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Modal, Dimensions } from 'react-native';
+import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useTemplateStore, WorkoutTemplate, getTemplateTotalSets } from '@/stores/templateStore';
+import { useUserProfileStore } from '@/stores/userProfileStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -144,9 +137,13 @@ function CategoryModal({
 }
 
 export default function ExploreTemplatesScreen() {
+  const userId = useUserProfileStore((state) => state.userId);
   const presetTemplates = useTemplateStore((state) => state.presetTemplates);
   const addTemplate = useTemplateStore((state) => state.addTemplate);
-  const isTemplateSaved = useTemplateStore((state) => state.isTemplateSaved);
+  const isTemplateSavedFn = useTemplateStore((state) => state.isTemplateSaved);
+
+  // Wrapper to pass userId to isTemplateSaved
+  const isTemplateSaved = (id: string) => isTemplateSavedFn(id, userId);
 
   const [showAll, setShowAll] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);

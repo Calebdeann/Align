@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -119,6 +119,8 @@ export default function WorkoutPreviewScreen() {
   const scheduledWorkouts = useWorkoutStore((state) => state.scheduledWorkouts);
   const startWorkoutFromTemplate = useWorkoutStore((state) => state.startWorkoutFromTemplate);
   const startActiveWorkout = useWorkoutStore((state) => state.startActiveWorkout);
+  const removeWorkout = useWorkoutStore((state) => state.removeWorkout);
+  const removeWorkoutOccurrence = useWorkoutStore((state) => state.removeWorkoutOccurrence);
 
   // Get template store
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
@@ -146,6 +148,54 @@ export default function WorkoutPreviewScreen() {
     if (!workout?.templateId) return null;
     return getTemplateById(workout.templateId);
   }, [workout, getTemplateById]);
+
+  // Handle delete workout
+  const handleDeleteWorkout = () => {
+    if (!workout) return;
+
+    const isRecurring = workout.repeat.type !== 'never';
+
+    if (isRecurring) {
+      // Recurring workout - ask which to delete
+      Alert.alert('Delete Workout', 'This is a recurring workout. What would you like to delete?', [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Just This One',
+          onPress: () => {
+            removeWorkoutOccurrence(workout.id, dateKey);
+            router.back();
+          },
+        },
+        {
+          text: 'All Future Workouts',
+          style: 'destructive',
+          onPress: () => {
+            removeWorkout(workout.id);
+            router.back();
+          },
+        },
+      ]);
+    } else {
+      // Single workout - confirm deletion
+      Alert.alert('Delete Workout', `Are you sure you want to delete "${workout.name}"?`, [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            removeWorkout(workout.id);
+            router.back();
+          },
+        },
+      ]);
+    }
+  };
 
   // Handle starting workout
   const handleStartWorkout = () => {
@@ -325,6 +375,11 @@ export default function WorkoutPreviewScreen() {
             </View>
           </View>
         )}
+
+        {/* Delete Workout Button */}
+        <Pressable style={styles.deleteButton} onPress={handleDeleteWorkout}>
+          <Text style={styles.deleteButtonText}>Delete Workout</Text>
+        </Pressable>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -565,5 +620,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.textInverse,
+  },
+  deleteButton: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  deleteButtonText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.error,
   },
 });

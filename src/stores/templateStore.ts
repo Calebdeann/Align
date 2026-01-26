@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ImageSourcePropType } from 'react-native';
+import { createUserNamespacedStorage } from '@/lib/userNamespacedStorage';
 import { WorkoutImage } from './workoutStore';
 import { colors } from '@/constants/theme';
 
@@ -31,6 +31,8 @@ export interface TemplateExercise {
   exerciseId: string;
   exerciseName: string;
   muscle: string;
+  gifUrl?: string;
+  thumbnailUrl?: string;
   sets: TemplateSet[];
   notes?: string;
   restTimerSeconds: number;
@@ -87,7 +89,8 @@ interface TemplateStore {
   createTemplate: (input: TemplateInput) => WorkoutTemplate;
   updateTemplate: (id: string, updates: Partial<TemplateInput>) => void;
   getTemplateById: (id: string) => WorkoutTemplate | undefined;
-  isTemplateSaved: (presetId: string) => boolean;
+  getTemplatesForUser: (userId: string | null) => WorkoutTemplate[];
+  isTemplateSaved: (presetId: string, userId: string | null) => boolean;
   updateTemplateFromWorkout: (templateId: string, exercises: TemplateExercise[]) => void;
   reorderTemplates: (reorderedTemplates: WorkoutTemplate[]) => void;
 
@@ -1494,14 +1497,22 @@ export const useTemplateStore = create<TemplateStore>()(
         return templates.find((t) => t.id === id) || presetTemplates.find((t) => t.id === id);
       },
 
-      // Check if a preset template is saved in user's library
-      isTemplateSaved: (presetId) => {
+      // Get all templates belonging to a specific user
+      getTemplatesForUser: (userId) => {
         const { templates } = get();
-        // Check if any user template was created from this preset
+        if (!userId) return [];
+        return templates.filter((t) => t.userId === userId);
+      },
+
+      // Check if a preset template is saved in user's library
+      isTemplateSaved: (presetId, userId) => {
+        const { templates } = get();
+        // Check if any user template was created from this preset by this user
         return templates.some(
           (t) =>
-            t.id === presetId ||
-            t.name === get().presetTemplates.find((p) => p.id === presetId)?.name
+            t.userId === userId &&
+            (t.id === presetId ||
+              t.name === get().presetTemplates.find((p) => p.id === presetId)?.name)
         );
       },
 
@@ -1654,7 +1665,7 @@ export const useTemplateStore = create<TemplateStore>()(
     }),
     {
       name: 'template-store',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => createUserNamespacedStorage('template-store')),
       // Only persist user templates and folders, not preset templates (they're hardcoded)
       partialize: (state) => ({
         templates: state.templates,

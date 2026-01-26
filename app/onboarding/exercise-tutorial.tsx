@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Keyboard, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { filterNumericInput } from '@/utils/units';
+import { ExerciseImage } from '@/components/ExerciseImage';
 
 type TutorialStep = 'weight' | 'reps' | 'checkmark' | 'complete';
 
@@ -27,7 +29,7 @@ const hints: Record<TutorialStep, { title: string; subtitle: string }> = {
 };
 
 export default function ExerciseTutorialScreen() {
-  const { exerciseName } = useLocalSearchParams<{ exerciseName: string }>();
+  const { exerciseName, gifUrl } = useLocalSearchParams<{ exerciseName: string; gifUrl: string }>();
   const [step, setStep] = useState<TutorialStep>('weight');
   const [kg, setKg] = useState('');
   const [reps, setReps] = useState('');
@@ -147,6 +149,7 @@ export default function ExerciseTutorialScreen() {
   };
 
   const handleCheck = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setIsChecked(true);
     setStep('complete');
     playCelebration();
@@ -158,7 +161,13 @@ export default function ExerciseTutorialScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
@@ -167,7 +176,12 @@ export default function ExerciseTutorialScreen() {
           <View style={[styles.progressBarFill, { width: '95%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/complete')}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/onboarding/complete');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -179,8 +193,8 @@ export default function ExerciseTutorialScreen() {
 
       {/* Exercise Info */}
       <View style={styles.exerciseInfo}>
-        <View style={styles.exerciseIcon} />
-        <Text style={styles.exerciseType}>Chest Press (Machine)</Text>
+        <ExerciseImage gifUrl={gifUrl} size={40} borderRadius={8} />
+        <Text style={styles.exerciseType}>{exerciseName || 'Exercise'}</Text>
       </View>
 
       {/* Rest Timer */}
@@ -293,6 +307,7 @@ export default function ExerciseTutorialScreen() {
           style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
           onPress={() => {
             if (canContinue) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               router.push('/onboarding/complete');
             }
           }}
@@ -356,7 +371,7 @@ export default function ExerciseTutorialScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background, // White background for exercise images to blend
   },
   header: {
     flexDirection: 'row',
@@ -412,12 +427,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     gap: spacing.md,
-  },
-  exerciseIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: colors.border,
-    borderRadius: 8,
   },
   exerciseType: {
     fontFamily: fonts.medium,

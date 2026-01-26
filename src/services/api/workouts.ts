@@ -1,4 +1,10 @@
 import { supabase } from '../supabase';
+import { z } from 'zod';
+import {
+  SaveWorkoutInputSchema,
+  UserExercisePreferenceSchema,
+  type SaveWorkoutInput as ValidatedSaveWorkoutInput,
+} from '@/schemas/workout.schema';
 
 // =============================================
 // TYPES - Normalized Database Schema
@@ -89,6 +95,7 @@ export interface SaveWorkoutInput {
 // Type for workout history display
 export interface WorkoutHistoryItem {
   id: string;
+  userId: string;
   name: string | null;
   completedAt: string;
   durationSeconds: number;
@@ -108,23 +115,33 @@ export interface PreviousSetData {
 // =============================================
 
 export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<string | null> {
+  // Validate input before any database operations
+  const parseResult = SaveWorkoutInputSchema.safeParse(input);
+  if (!parseResult.success) {
+    console.error('Invalid workout input:', parseResult.error.flatten());
+    return null;
+  }
+
+  // Use validated input from here on
+  const validatedInput = parseResult.data;
+
   try {
     // Generate a default workout name if none provided
     const workoutName =
-      input.name ||
+      validatedInput.name ||
       `Workout - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
     // 1. Insert the workout record
     const { data: workout, error: workoutError } = await supabase
       .from('workouts')
       .insert({
-        user_id: input.userId,
+        user_id: validatedInput.userId,
         name: workoutName,
-        started_at: input.startedAt.toISOString(),
-        completed_at: input.completedAt.toISOString(),
-        duration_seconds: input.durationSeconds,
-        notes: input.notes || null,
-        source_template_id: input.sourceTemplateId || null,
+        started_at: validatedInput.startedAt.toISOString(),
+        completed_at: validatedInput.completedAt.toISOString(),
+        duration_seconds: validatedInput.durationSeconds,
+        notes: validatedInput.notes || null,
+        source_template_id: validatedInput.sourceTemplateId || null,
       })
       .select('id')
       .single();
@@ -140,8 +157,8 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
     const muscleSetCounts = new Map<string, { primary: number; secondary: number }>();
 
     // 2. Insert workout_exercises for each exercise
-    for (let i = 0; i < input.exercises.length; i++) {
-      const exercise = input.exercises[i];
+    for (let i = 0; i < validatedInput.exercises.length; i++) {
+      const exercise = validatedInput.exercises[i];
       const completedSetsCount = exercise.sets.filter((s) => s.completed).length;
 
       const { data: workoutExercise, error: exerciseError } = await supabase
@@ -376,6 +393,7 @@ export async function getWorkoutHistory(userId: string, limit = 20): Promise<Wor
 
       return {
         id: workout.id,
+        userId, // Include userId for per-user filtering
         name: workout.name,
         completedAt: workout.completed_at,
         durationSeconds: workout.duration_seconds,
@@ -533,6 +551,17 @@ export async function saveUserExercisePreference(
   exerciseId: string,
   restTimerSeconds: number
 ): Promise<boolean> {
+  // Validate input
+  const parseResult = UserExercisePreferenceSchema.safeParse({
+    userId,
+    exerciseId,
+    restTimerSeconds,
+  });
+  if (!parseResult.success) {
+    console.error('Invalid exercise preference input:', parseResult.error.flatten());
+    return false;
+  }
+
   try {
     const { error } = await supabase.from('user_exercise_preferences').upsert(
       {
@@ -591,6 +620,7 @@ export async function getWorkoutsByDateRange(
 
     return workouts.map((workout) => ({
       id: workout.id,
+      userId, // Include userId for per-user filtering in store
       name: workout.name,
       completedAt: workout.completed_at,
       durationSeconds: workout.duration_seconds,

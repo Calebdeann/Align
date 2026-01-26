@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
-const LeafLeft = require('../../assets/images/Leaf Left.png');
-const LeafRight = require('../../assets/images/Leaf Right.png');
-const Girl1 = require('../../assets/images/Girl 1.png');
-const Girl2 = require('../../assets/images/Girl 2.png');
-const Girl3 = require('../../assets/images/Girl 3.png');
+const LeafLeft = require('../../assets/images/LeafLeft.png');
+const LeafRight = require('../../assets/images/LeafRight.png');
+const Girl1 = require('../../assets/images/Girl1.png');
+const Girl2 = require('../../assets/images/Girl2.png');
+const Girl3 = require('../../assets/images/Girl3.png');
+const EllieSullivan = require('../../assets/images/EllieSullivan.jpg');
+const AlexisSandra = require('../../assets/images/AlexisSandra.jpg');
 
 const LEAF_GOLD = '#D4A574';
 
@@ -18,6 +22,7 @@ interface Review {
   name: string;
   rating: number;
   text: string;
+  avatar: ReturnType<typeof require>;
 }
 
 const reviews: Review[] = [
@@ -26,12 +31,14 @@ const reviews: Review[] = [
     name: 'Ellie Sullivan',
     rating: 5,
     text: 'I lost 15 lbs in 2 months! I was about to go on Ozempic but decided to give this app a shot and it worked :)',
+    avatar: EllieSullivan,
   },
   {
     id: '2',
     name: 'Alexis Sandra',
     rating: 5,
     text: 'This app changed my fitness journey completely. The workouts are perfect and easy to follow!',
+    avatar: AlexisSandra,
   },
 ];
 
@@ -52,6 +59,7 @@ export default function ReviewsScreen() {
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
   const handleRatePress = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setIsButtonDisabled(true);
 
     // Check if store review is available and request it
@@ -68,6 +76,7 @@ export default function ReviewsScreen() {
   };
 
   const handleContinue = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     router.push('/onboarding/generate-plan');
   };
 
@@ -75,13 +84,19 @@ export default function ReviewsScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '92%' }]} />
+          <View style={[styles.progressBarFill, { width: '88%' }]} />
         </View>
 
         <View style={styles.skipPlaceholder} />
@@ -123,7 +138,7 @@ export default function ReviewsScreen() {
           {reviews.map((review) => (
             <View key={review.id} style={styles.reviewCard}>
               <View style={styles.reviewHeader}>
-                <View style={styles.reviewAvatar} />
+                <Image source={review.avatar} style={styles.reviewAvatar} />
                 <Text style={styles.reviewName}>{review.name}</Text>
                 <StarRating rating={review.rating} />
               </View>
@@ -152,7 +167,7 @@ export default function ReviewsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',
@@ -299,7 +314,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.border,
     marginRight: spacing.md,
   },
   reviewName: {

@@ -2,25 +2,41 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { ExerciseImage } from '@/components/ExerciseImage';
 
+// Exercise GIF URLs from Ascend API (ExerciseDB)
 const exercises = [
-  { id: 'hip-thrust', label: 'Hip Thrust' },
-  { id: 'barbell-squat', label: 'Barbell Squat' },
-  { id: 'leg-extension', label: 'Leg Extension' },
-  { id: 'shoulder-press', label: 'Shoulder Press' },
+  { id: 'qKBpF7I', label: 'Hip Thrust', gifUrl: 'https://static.exercisedb.dev/media/qKBpF7I.gif' },
+  {
+    id: 'qXTaZnJ',
+    label: 'Barbell Squat',
+    gifUrl: 'https://static.exercisedb.dev/media/qXTaZnJ.gif',
+  },
+  {
+    id: 'my33uHU',
+    label: 'Leg Extension',
+    gifUrl: 'https://static.exercisedb.dev/media/my33uHU.gif',
+  },
+  {
+    id: 'znQUdHY',
+    label: 'Shoulder Press',
+    gifUrl: 'https://static.exercisedb.dev/media/znQUdHY.gif',
+  },
 ];
 
 export default function FirstExercisesScreen() {
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
 
   const handleSelect = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setSelectedExercise(id);
     const exercise = exercises.find((e) => e.id === id);
     setTimeout(() => {
       router.push({
         pathname: '/onboarding/exercise-tutorial',
-        params: { exerciseName: exercise?.label || 'Exercise' },
+        params: { exerciseName: exercise?.label || 'Exercise', gifUrl: exercise?.gifUrl || '' },
       });
     }, 300);
   };
@@ -29,16 +45,27 @@ export default function FirstExercisesScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '92%' }]} />
+          <View style={[styles.progressBarFill, { width: '72%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/complete')}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/onboarding/complete');
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
@@ -62,7 +89,7 @@ export default function FirstExercisesScreen() {
                 style={[styles.exerciseCard, isSelected && styles.exerciseCardSelected]}
                 onPress={() => handleSelect(exercise.id)}
               >
-                <View style={styles.exerciseImage} />
+                <ExerciseImage gifUrl={exercise.gifUrl} size={60} borderRadius={8} />
                 <Text style={[styles.exerciseLabel, isSelected && styles.exerciseLabelSelected]}>
                   {exercise.label}
                 </Text>
@@ -78,7 +105,7 @@ export default function FirstExercisesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background, // White background for exercise images to blend
   },
   header: {
     flexDirection: 'row',
@@ -156,12 +183,6 @@ const styles = StyleSheet.create({
   exerciseCardSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
-  },
-  exerciseImage: {
-    width: 60,
-    height: 60,
-    backgroundColor: colors.border,
-    borderRadius: 8,
   },
   exerciseLabel: {
     fontFamily: fonts.semiBold,

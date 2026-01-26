@@ -1,50 +1,180 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { router } from 'expo-router';
+import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop, G } from 'react-native-svg';
 import QuestionLayout from '@/components/QuestionLayout';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CHART_WIDTH = SCREEN_WIDTH - spacing.lg * 2 - 40; // Account for padding and Y-axis
+const CHART_HEIGHT = 200;
+
+// Chart colors - purple brand gradient flowing to warm coral
+// Colors chosen to blend smoothly along the curve
+const COLOR_START = '#947AFF'; // Our brand purple (0%)
+const COLOR_3DAYS = '#A855F7'; // Violet purple (~22%)
+const COLOR_7DAYS = '#D946EF'; // Magenta/fuchsia (~42%)
+const COLOR_END = '#F472B6'; // Warm pink/coral (100%)
+
 export default function PotentialScreen() {
+  // Define the curve points
+  const startX = 0;
+  const startY = CHART_HEIGHT - 30; // Start near bottom
+
+  const point3Days = { x: CHART_WIDTH * 0.22, y: CHART_HEIGHT - 70 };
+  const point7Days = { x: CHART_WIDTH * 0.42, y: CHART_HEIGHT - 95 };
+  const point30Days = { x: CHART_WIDTH * 0.85, y: CHART_HEIGHT - 170 };
+
+  // Create smooth curve path
+  const curvePath = `
+    M ${startX} ${startY}
+    Q ${point3Days.x * 0.5} ${startY - 10}, ${point3Days.x} ${point3Days.y}
+    Q ${(point3Days.x + point7Days.x) / 2} ${point3Days.y - 15}, ${point7Days.x} ${point7Days.y}
+    Q ${(point7Days.x + point30Days.x) / 2} ${point7Days.y - 20}, ${point30Days.x} ${point30Days.y}
+  `;
+
+  // Create fill path (closes the curve to bottom)
+  const fillPath = `
+    ${curvePath}
+    L ${point30Days.x} ${CHART_HEIGHT}
+    L ${startX} ${CHART_HEIGHT}
+    Z
+  `;
+
   return (
     <QuestionLayout
       question="You have great potential to crush your goals"
-      progress={40}
+      progress={16}
       showContinue
       onContinue={() => router.push('/onboarding/referral')}
-      onSkip={() => router.push('/onboarding/referral')}
     >
       <View style={styles.content}>
-        {/* Graph placeholder */}
-        <View style={styles.graphContainer}>
-          <View style={styles.graphYAxis}>
-            <Text style={styles.axisLabel}>H</Text>
-            <Text style={styles.axisLabel}>A</Text>
-            <Text style={styles.axisLabel}>P</Text>
-            <Text style={styles.axisLabel}>P</Text>
-            <Text style={styles.axisLabel}>I</Text>
-            <Text style={styles.axisLabel}>N</Text>
-            <Text style={styles.axisLabel}>E</Text>
-            <Text style={styles.axisLabel}>S</Text>
-            <Text style={styles.axisLabel}>S</Text>
+        {/* Chart Container */}
+        <View style={styles.chartContainer}>
+          {/* Y-Axis Label */}
+          <View style={styles.yAxisContainer}>
+            <Text style={styles.yAxisLabel}>Goal Reacher</Text>
           </View>
-          <View style={styles.graphArea}>
-            {/* Simplified graph representation */}
-            <View style={styles.graphLine}>
-              <View style={[styles.milestone, { left: '15%', bottom: '20%' }]}>
-                <View style={[styles.milestoneDot, { backgroundColor: '#4CAF50' }]} />
-                <Text style={styles.milestoneText}>7d</Text>
-              </View>
-              <View style={[styles.milestone, { left: '45%', bottom: '45%' }]}>
-                <View style={[styles.milestoneDot, { backgroundColor: colors.primary }]} />
-                <Text style={styles.milestoneText}>14d</Text>
-              </View>
-              <View style={[styles.milestone, { left: '75%', bottom: '70%' }]}>
-                <View style={[styles.milestoneDot, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.checkmark}>✓</Text>
-                </View>
-                <Text style={styles.milestoneText}>30d</Text>
-              </View>
+
+          {/* Chart Area */}
+          <View style={styles.chartArea}>
+            <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 40}>
+              <Defs>
+                {/* Gradient for the fill - smooth 4-stop gradient */}
+                <LinearGradient id="fillGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <Stop offset="0%" stopColor={COLOR_START} stopOpacity="0.12" />
+                  <Stop offset="22%" stopColor={COLOR_3DAYS} stopOpacity="0.15" />
+                  <Stop offset="42%" stopColor={COLOR_7DAYS} stopOpacity="0.18" />
+                  <Stop offset="100%" stopColor={COLOR_END} stopOpacity="0.22" />
+                </LinearGradient>
+
+                {/* Gradient for the line - matches circle positions */}
+                <LinearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <Stop offset="0%" stopColor={COLOR_START} />
+                  <Stop offset="22%" stopColor={COLOR_3DAYS} />
+                  <Stop offset="42%" stopColor={COLOR_7DAYS} />
+                  <Stop offset="100%" stopColor={COLOR_END} />
+                </LinearGradient>
+              </Defs>
+
+              {/* Y-axis line */}
+              <Line x1={0} y1={0} x2={0} y2={CHART_HEIGHT} stroke="#333" strokeWidth={2.5} />
+
+              {/* X-axis line */}
+              <Line
+                x1={0}
+                y1={CHART_HEIGHT}
+                x2={CHART_WIDTH}
+                y2={CHART_HEIGHT}
+                stroke="#333"
+                strokeWidth={2.5}
+              />
+
+              {/* Gradient fill under curve */}
+              <Path d={fillPath} fill="url(#fillGradient)" />
+
+              {/* Main curve line */}
+              <Path
+                d={curvePath}
+                stroke="url(#lineGradient)"
+                strokeWidth={4}
+                fill="none"
+                strokeLinecap="round"
+              />
+
+              {/* Dashed vertical lines - matching gradient colors */}
+              <Line
+                x1={point3Days.x}
+                y1={point3Days.y}
+                x2={point3Days.x}
+                y2={CHART_HEIGHT}
+                stroke={COLOR_3DAYS}
+                strokeWidth={1.5}
+                strokeDasharray="4,4"
+              />
+              <Line
+                x1={point7Days.x}
+                y1={point7Days.y}
+                x2={point7Days.x}
+                y2={CHART_HEIGHT}
+                stroke={COLOR_7DAYS}
+                strokeWidth={1.5}
+                strokeDasharray="4,4"
+              />
+              <Line
+                x1={point30Days.x}
+                y1={point30Days.y}
+                x2={point30Days.x}
+                y2={CHART_HEIGHT}
+                stroke={COLOR_END}
+                strokeWidth={1.5}
+                strokeDasharray="4,4"
+              />
+
+              {/* Milestone circles - colors match gradient at their position */}
+              {/* 3 Days */}
+              <Circle
+                cx={point3Days.x}
+                cy={point3Days.y}
+                r={10}
+                fill="white"
+                stroke={COLOR_3DAYS}
+                strokeWidth={3}
+              />
+
+              {/* 7 Days */}
+              <Circle
+                cx={point7Days.x}
+                cy={point7Days.y}
+                r={10}
+                fill="white"
+                stroke={COLOR_7DAYS}
+                strokeWidth={3}
+              />
+
+              {/* 30 Days / Goal */}
+              <Circle
+                cx={point30Days.x}
+                cy={point30Days.y}
+                r={10}
+                fill="white"
+                stroke={COLOR_END}
+                strokeWidth={3}
+              />
+            </Svg>
+
+            {/* X-axis labels */}
+            <View style={styles.xAxisLabels}>
+              <Text style={[styles.xLabel, { left: point3Days.x - 20 }]}>3 Days</Text>
+              <Text style={[styles.xLabel, { left: point7Days.x - 20 }]}>7 Days</Text>
+              <Text style={[styles.xLabel, styles.xLabel30Days, { left: point30Days.x - 25 }]}>
+                30 Days
+              </Text>
             </View>
-            <Text style={styles.axisLabelX}>TIME</Text>
+
+            {/* Goal label */}
+            <Text style={[styles.goalLabel, { left: point30Days.x - 15, top: point30Days.y - 30 }]}>
+              Goal
+            </Text>
           </View>
         </View>
 
@@ -69,70 +199,56 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
   },
-  graphContainer: {
+  chartContainer: {
     flexDirection: 'row',
-    height: 200,
     marginBottom: spacing.xl,
+    marginTop: spacing.md,
   },
-  graphYAxis: {
-    width: 20,
-    justifyContent: 'space-between',
+  yAxisContainer: {
+    width: 30,
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    marginRight: spacing.sm,
   },
-  axisLabel: {
-    fontFamily: fonts.medium,
-    fontSize: 10,
-    color: colors.textTertiary,
+  yAxisLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: '#333',
+    transform: [{ rotate: '-90deg' }],
+    width: 100,
+    textAlign: 'center',
   },
-  graphArea: {
+  chartArea: {
     flex: 1,
     position: 'relative',
-    borderLeftWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
-    marginLeft: spacing.sm,
   },
-  graphLine: {
+  xAxisLabels: {
     position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  milestone: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  milestoneDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  milestoneText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
-    marginTop: 4,
-  },
-  axisLabelX: {
-    position: 'absolute',
-    bottom: -20,
+    bottom: 0,
+    left: 0,
     right: 0,
+    height: 30,
+  },
+  xLabel: {
+    position: 'absolute',
     fontFamily: fonts.medium,
-    fontSize: 10,
-    color: colors.textTertiary,
+    fontSize: 12,
+    color: '#333',
+    bottom: 12,
+  },
+  xLabel30Days: {
+    fontFamily: fonts.bold,
+  },
+  goalLabel: {
+    position: 'absolute',
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: COLOR_END,
   },
   textContainer: {
     alignItems: 'center',
     paddingHorizontal: spacing.md,
+    marginTop: spacing.lg,
   },
   motivationalText: {
     fontFamily: fonts.regular,

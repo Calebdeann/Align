@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Image, ImageSourcePropType } from 'react-native';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
@@ -9,14 +10,30 @@ type ObstacleId = 'consistency' | 'support' | 'schedule' | 'inspiration';
 interface ObstacleOption {
   id: ObstacleId;
   label: string;
-  icon: string;
+  icon: ImageSourcePropType;
 }
 
 const obstacleOptions: ObstacleOption[] = [
-  { id: 'consistency', label: 'Lack of consistency', icon: '📉' },
-  { id: 'support', label: 'Limited support', icon: '🤝' },
-  { id: 'schedule', label: 'Busy schedule', icon: '📅' },
-  { id: 'inspiration', label: 'Lack of workout inspiration', icon: '💡' },
+  {
+    id: 'consistency',
+    label: 'Lack of consistency',
+    icon: require('../../assets/images/Onboarding Icons/3. Stopping you/solar_chart-2-bold.png'),
+  },
+  {
+    id: 'support',
+    label: 'Limited support',
+    icon: require('../../assets/images/Onboarding Icons/3. Stopping you/material-symbols_handshake.png'),
+  },
+  {
+    id: 'schedule',
+    label: 'Busy schedule',
+    icon: require('../../assets/images/Onboarding Icons/3. Stopping you/bx_calendar.png'),
+  },
+  {
+    id: 'inspiration',
+    label: 'Lack of workout inspiration',
+    icon: require('../../assets/images/Onboarding Icons/3. Stopping you/mdi_fire.png'),
+  },
 ];
 
 export default function ObstaclesScreen() {
@@ -24,6 +41,7 @@ export default function ObstaclesScreen() {
   const { setAndSave, skipField } = useOnboardingStore();
 
   const handleSelect = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setSelected(id);
     setAndSave('mainObstacle', id);
     setTimeout(() => {
@@ -34,7 +52,7 @@ export default function ObstaclesScreen() {
   return (
     <QuestionLayout
       question="What's stopping you from reaching your goals?"
-      progress={92}
+      progress={48}
       onSkip={() => {
         skipField('mainObstacle');
         router.push('/onboarding/accomplish');
@@ -50,7 +68,10 @@ export default function ObstaclesScreen() {
               onPress={() => handleSelect(option.id)}
             >
               <View style={optionStyles.optionIcon}>
-                <Text style={{ fontSize: 20, opacity: isSelected ? 1 : 0.8 }}>{option.icon}</Text>
+                <Image
+                  source={option.icon}
+                  style={{ width: 20, height: 20, tintColor: isSelected ? '#FFFFFF' : '#000000' }}
+                />
               </View>
               <Text
                 style={[optionStyles.optionText, isSelected && optionStyles.optionTextSelected]}

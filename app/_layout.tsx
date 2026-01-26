@@ -4,8 +4,11 @@ import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colors } from '@/constants/theme';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { useUserProfileStore } from '@/stores/userProfileStore';
+import { initializeStoreManager } from '@/lib/storeManager';
 
 // Keep splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -15,12 +18,20 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
   const initializeFromLocale = useUserPreferencesStore((state) => state.initializeFromLocale);
+  const fetchProfile = useUserProfileStore((state) => state.fetchProfile);
 
   useEffect(() => {
     async function prepare() {
       try {
+        // Initialize store manager to handle auth state changes
+        // This enables per-user data isolation in Zustand stores
+        initializeStoreManager();
+
         // Initialize unit preferences based on device locale
         initializeFromLocale();
+
+        // Pre-fetch user profile so it's ready when navigating to Profile tab
+        fetchProfile();
 
         // Load fonts using Font.loadAsync instead of useFonts hook
         await Font.loadAsync({
@@ -38,7 +49,7 @@ export default function RootLayout() {
     }
 
     prepare();
-  }, [initializeFromLocale]);
+  }, [initializeFromLocale, fetchProfile]);
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
@@ -54,19 +65,23 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="profile" />
-        <Stack.Screen name="active-workout" />
-        <Stack.Screen name="add-exercise" />
-        <Stack.Screen name="save-workout" />
-        <Stack.Screen name="explore-templates" />
-        <Stack.Screen name="template-detail" />
-        <Stack.Screen name="create-template" />
-        <Stack.Screen name="workout-details" />
-      </Stack>
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="profile" />
+          <Stack.Screen name="active-workout" />
+          <Stack.Screen name="add-exercise" />
+          <Stack.Screen name="save-workout" />
+          <Stack.Screen name="explore-templates" />
+          <Stack.Screen name="template-detail" />
+          <Stack.Screen name="create-template" />
+          <Stack.Screen name="workout-details" />
+        </Stack>
+      </View>
+    </GestureHandlerRootView>
   );
 }

@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { filterNumericInput } from '@/utils/units';
+import { ExerciseImage } from '@/components/ExerciseImage';
 
 type Step = 1 | 2 | 3 | 'complete';
 
@@ -11,7 +13,7 @@ const SUGGESTED_WEIGHT = '20';
 const SUGGESTED_REPS = '10';
 
 export default function TrackTutorialScreen() {
-  const { exerciseName } = useLocalSearchParams<{ exerciseName: string }>();
+  const { exerciseName, gifUrl } = useLocalSearchParams<{ exerciseName: string; gifUrl: string }>();
   const [step, setStep] = useState<Step>(1);
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
@@ -19,6 +21,8 @@ export default function TrackTutorialScreen() {
 
   const repsInputRef = useRef<TextInput>(null);
   const weightInputRef = useRef<TextInput>(null);
+  const weightTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const repsTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-focus weight input on mount to open keyboard
   useEffect(() => {
@@ -26,6 +30,36 @@ export default function TrackTutorialScreen() {
       weightInputRef.current?.focus();
     }, 300);
   }, []);
+
+  // Auto-advance after 2s delay when weight is entered
+  useEffect(() => {
+    if (weightTimerRef.current) {
+      clearTimeout(weightTimerRef.current);
+    }
+    if (weight.trim() && step === 1) {
+      weightTimerRef.current = setTimeout(() => {
+        handleWeightSubmit();
+      }, 2000);
+    }
+    return () => {
+      if (weightTimerRef.current) clearTimeout(weightTimerRef.current);
+    };
+  }, [weight, step]);
+
+  // Auto-advance after 2s delay when reps is entered
+  useEffect(() => {
+    if (repsTimerRef.current) {
+      clearTimeout(repsTimerRef.current);
+    }
+    if (reps.trim() && step === 2) {
+      repsTimerRef.current = setTimeout(() => {
+        handleRepsSubmit();
+      }, 2000);
+    }
+    return () => {
+      if (repsTimerRef.current) clearTimeout(repsTimerRef.current);
+    };
+  }, [reps, step]);
 
   const handleWeightSubmit = () => {
     if (weight.trim()) {
@@ -45,6 +79,9 @@ export default function TrackTutorialScreen() {
   };
 
   const handleCheck = () => {
+    // Only allow checking if both weight and reps are filled
+    if (!weight.trim() || !reps.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setIsChecked(true);
     setStep('complete');
   };
@@ -69,7 +106,13 @@ export default function TrackTutorialScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
@@ -78,18 +121,16 @@ export default function TrackTutorialScreen() {
           <View style={[styles.progressBarFill, { width: '78%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/thank-you')}>
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
+        <View style={{ width: 32 }} />
       </View>
 
       {/* Title */}
-      <Text style={styles.titleText}>{exerciseName || 'Leg Extension'}</Text>
+      <Text style={styles.titleText}>{exerciseName || 'Hip Thrust'}</Text>
 
       {/* Exercise info */}
       <View style={styles.exerciseInfo}>
-        <View style={styles.exerciseIcon} />
-        <Text style={styles.exerciseName}>Chest Press (Machine)</Text>
+        <ExerciseImage gifUrl={gifUrl} size={40} borderRadius={8} />
+        <Text style={styles.exerciseName}>{exerciseName || 'Hip Thrust'}</Text>
       </View>
 
       {/* Rest timer */}
@@ -109,69 +150,78 @@ export default function TrackTutorialScreen() {
 
       {/* Set row */}
       <View style={[styles.setRow, isChecked && styles.setRowCompleted]}>
-        <Text style={[styles.setNumber, styles.setColumn]}>1</Text>
-        <Text style={[styles.previousValue, styles.previousColumn]}>-</Text>
+        <View style={styles.setColumn}>
+          <Text style={styles.setNumber}>1</Text>
+        </View>
+        <View style={styles.previousColumn}>
+          <Text style={styles.previousValue}>-</Text>
+        </View>
 
         {/* Weight input */}
-        <Pressable
-          style={[styles.inputBox, styles.kgColumn, step === 1 && styles.inputBoxHighlighted]}
-          onPress={() => weightInputRef.current?.focus()}
-        >
-          <TextInput
-            ref={weightInputRef}
-            style={styles.inputText}
-            value={weight}
-            onChangeText={(value) => setWeight(filterNumericInput(value))}
-            placeholder={SUGGESTED_WEIGHT}
-            placeholderTextColor={colors.textSecondary + '30'}
-            keyboardType="number-pad"
-            onSubmitEditing={handleWeightSubmit}
-            onBlur={() => {
-              if (weight.trim() && step === 1) {
-                handleWeightSubmit();
-              }
-            }}
-          />
-        </Pressable>
+        <View style={styles.kgColumn}>
+          <Pressable
+            style={[styles.inputBox, step === 1 && styles.inputBoxHighlighted]}
+            onPress={() => weightInputRef.current?.focus()}
+          >
+            <TextInput
+              ref={weightInputRef}
+              style={styles.inputText}
+              value={weight}
+              onChangeText={(value) => setWeight(filterNumericInput(value))}
+              placeholder={SUGGESTED_WEIGHT}
+              placeholderTextColor={colors.textSecondary + '30'}
+              keyboardType="number-pad"
+              onSubmitEditing={handleWeightSubmit}
+              onBlur={() => {
+                if (weight.trim() && step === 1) {
+                  handleWeightSubmit();
+                }
+              }}
+            />
+          </Pressable>
+        </View>
 
         {/* Reps input */}
-        <Pressable
-          style={[styles.inputBox, styles.repsColumn, step === 2 && styles.inputBoxHighlighted]}
-          onPress={() => repsInputRef.current?.focus()}
-        >
-          <TextInput
-            ref={repsInputRef}
-            style={styles.inputText}
-            value={reps}
-            onChangeText={(value) => setReps(filterNumericInput(value, false))}
-            placeholder={SUGGESTED_REPS}
-            placeholderTextColor={colors.textSecondary + '30'}
-            keyboardType="number-pad"
-            onSubmitEditing={handleRepsSubmit}
-            onBlur={() => {
-              if (reps.trim() && step === 2) {
-                handleRepsSubmit();
-              }
-            }}
-          />
-        </Pressable>
+        <View style={styles.repsColumn}>
+          <Pressable
+            style={[styles.inputBox, step === 2 && styles.inputBoxHighlighted]}
+            onPress={() => repsInputRef.current?.focus()}
+          >
+            <TextInput
+              ref={repsInputRef}
+              style={styles.inputText}
+              value={reps}
+              onChangeText={(value) => setReps(filterNumericInput(value, false))}
+              placeholder={SUGGESTED_REPS}
+              placeholderTextColor={colors.textSecondary + '30'}
+              keyboardType="number-pad"
+              onSubmitEditing={handleRepsSubmit}
+              onBlur={() => {
+                if (reps.trim() && step === 2) {
+                  handleRepsSubmit();
+                }
+              }}
+            />
+          </Pressable>
+        </View>
 
         {/* Checkbox */}
-        <Pressable
-          style={[
-            styles.checkbox,
-            styles.checkColumn,
-            step === 3 && styles.checkboxHighlighted,
-            isChecked && styles.checkboxChecked,
-          ]}
-          onPress={step === 3 ? handleCheck : undefined}
-        >
-          {isChecked ? (
-            <Text style={styles.checkmark}>✓</Text>
-          ) : (
-            <Text style={styles.checkmarkEmpty}>✓</Text>
-          )}
-        </Pressable>
+        <View style={styles.checkColumn}>
+          <Pressable
+            style={[
+              styles.checkbox,
+              step === 3 && styles.checkboxHighlighted,
+              isChecked && styles.checkboxChecked,
+            ]}
+            onPress={handleCheck}
+          >
+            {isChecked ? (
+              <Text style={styles.checkmark}>✓</Text>
+            ) : (
+              <Text style={styles.checkmarkEmpty}>✓</Text>
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {/* Add Set button */}
@@ -194,6 +244,7 @@ export default function TrackTutorialScreen() {
           style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
           onPress={() => {
             if (canContinue) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               router.push('/onboarding/complete');
             }
           }}
@@ -209,7 +260,7 @@ export default function TrackTutorialScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background, // White background for exercise images to blend
   },
   header: {
     flexDirection: 'row',
@@ -260,13 +311,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     marginTop: spacing.lg,
-  },
-  exerciseIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: colors.border,
-    marginRight: spacing.md,
+    gap: spacing.md,
   },
   exerciseName: {
     fontFamily: fonts.semiBold,
@@ -302,21 +347,21 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   setColumn: {
-    width: 40,
+    flex: 1,
+    textAlign: 'center',
   },
   previousColumn: {
-    width: 70,
+    flex: 1.5,
+    textAlign: 'center',
   },
   kgColumn: {
-    width: 70,
-    marginRight: spacing.sm,
+    flex: 1,
   },
   repsColumn: {
-    width: 70,
-    marginRight: spacing.sm,
+    flex: 1,
   },
   checkColumn: {
-    width: 40,
+    flex: 0.8,
     alignItems: 'center',
   },
   setRow: {
@@ -331,23 +376,26 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   setNumber: {
-    fontFamily: fonts.semiBold,
+    fontFamily: fonts.bold,
     fontSize: fontSize.md,
     color: colors.text,
+    textAlign: 'center',
   },
   previousValue: {
     fontFamily: fonts.regular,
     fontSize: fontSize.md,
     color: colors.textSecondary,
+    textAlign: 'center',
   },
   inputBox: {
-    height: 44,
+    height: 40,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.background,
+    marginHorizontal: 4,
   },
   inputBoxHighlighted: {
     borderColor: colors.primary,

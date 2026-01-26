@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
@@ -23,42 +24,45 @@ export default function GoalComparisonScreen() {
   const subtextOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Sequence: bars grow up, then text fades in 0.3s after
+    // Sequence: bars grow up smoothly, then text fades in
     Animated.sequence([
       // Small delay before starting
-      Animated.delay(300),
-      // Both bars grow simultaneously
+      Animated.delay(50),
+      // Both bars grow simultaneously with smooth easing
       Animated.parallel([
-        Animated.spring(grayBarHeight, {
+        Animated.timing(grayBarHeight, {
           toValue: BAR_HEIGHT * GRAY_BAR_PERCENT,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: false,
-          friction: 8,
-          tension: 40,
         }),
-        Animated.spring(purpleBarHeight, {
+        Animated.timing(purpleBarHeight, {
           toValue: BAR_HEIGHT * PURPLE_BAR_PERCENT,
+          duration: 500,
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: false,
-          friction: 8,
-          tension: 40,
         }),
       ]),
-      // 0.3s delay before text appears
-      Animated.delay(300),
-      // All text fades in together quickly
+      // Short delay before text appears
+      Animated.delay(100),
+      // All text fades in together smoothly
       Animated.parallel([
         Animated.timing(grayTextOpacity, {
           toValue: 1,
           duration: 200,
+          easing: Easing.out(Easing.ease),
           useNativeDriver: false,
         }),
         Animated.timing(purpleTextOpacity, {
           toValue: 1,
           duration: 200,
+          easing: Easing.out(Easing.ease),
           useNativeDriver: false,
         }),
         Animated.timing(subtextOpacity, {
           toValue: 1,
           duration: 200,
+          easing: Easing.out(Easing.ease),
           useNativeDriver: false,
         }),
       ]),
@@ -69,18 +73,22 @@ export default function GoalComparisonScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '90%' }]} />
+          <View style={[styles.progressBarFill, { width: '44%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/obstacles')}>
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
+        <View style={{ width: 32 }} />
       </View>
 
       {/* Title */}
@@ -128,7 +136,10 @@ export default function GoalComparisonScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => router.push('/onboarding/obstacles')}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/onboarding/obstacles');
+          }}
         >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
@@ -140,7 +151,7 @@ export default function GoalComparisonScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',
@@ -173,11 +184,6 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: colors.primary,
     borderRadius: 2,
-  },
-  skipText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
   },
   titleContainer: {
     paddingHorizontal: spacing.lg,

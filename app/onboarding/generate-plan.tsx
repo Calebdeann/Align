@@ -1,14 +1,28 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
+const PurpleCheckCircle = require('../../assets/images/PurpleCheckCircle.png');
+
 export default function GeneratePlanScreen() {
+  const handleSkip = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    router.push('/onboarding/generating-plan');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
@@ -17,14 +31,14 @@ export default function GeneratePlanScreen() {
           <View style={[styles.progressBarFill, { width: '96%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/generating-plan')}>
+        <Pressable onPress={handleSkip}>
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
 
-      {/* Icon placeholder */}
-      <View style={styles.iconContainer}>
-        <View style={styles.iconPlaceholder} />
+      {/* Purple Check Circle Image */}
+      <View style={styles.imageContainer}>
+        <Image source={PurpleCheckCircle} style={styles.circleImage} resizeMode="contain" />
       </View>
 
       {/* All done badge */}
@@ -45,7 +59,10 @@ export default function GeneratePlanScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => router.push('/onboarding/generating-plan')}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/onboarding/generating-plan');
+          }}
         >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
@@ -57,7 +74,7 @@ export default function GeneratePlanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',
@@ -96,15 +113,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.text,
   },
-  iconContainer: {
+  imageContainer: {
     alignItems: 'center',
     marginTop: 60,
   },
-  iconPlaceholder: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: colors.border,
+  circleImage: {
+    width: 224,
+    height: 224,
   },
   badgeContainer: {
     flexDirection: 'row',

@@ -1,30 +1,47 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { ExerciseImage } from '@/components/ExerciseImage';
 
 interface Exercise {
   id: string;
   name: string;
+  gifUrl: string;
 }
 
+// Exercise GIF URLs from Ascend API (ExerciseDB)
 const exercises: Exercise[] = [
-  { id: 'hip-thrust', name: 'Hip Thrust' },
-  { id: 'barbell-squat', name: 'Barbell Squat' },
-  { id: 'leg-extension', name: 'Leg Extension' },
-  { id: 'shoulder-press', name: 'Shoulder Press' },
+  { id: 'qKBpF7I', name: 'Hip Thrust', gifUrl: 'https://static.exercisedb.dev/media/qKBpF7I.gif' },
+  {
+    id: 'qXTaZnJ',
+    name: 'Barbell Squat',
+    gifUrl: 'https://static.exercisedb.dev/media/qXTaZnJ.gif',
+  },
+  {
+    id: 'rkg41Fb',
+    name: 'Lat Pull Down',
+    gifUrl: 'https://static.exercisedb.dev/media/rkg41Fb.gif',
+  },
+  {
+    id: 'znQUdHY',
+    name: 'Shoulder Press (Dumbbells)',
+    gifUrl: 'https://static.exercisedb.dev/media/znQUdHY.gif',
+  },
 ];
 
 export default function TrackExerciseSelectScreen() {
   const [selected, setSelected] = useState<string | null>(null);
 
-  const handleSelect = (id: string, name: string) => {
-    setSelected(id);
+  const handleSelect = (exercise: Exercise) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSelected(exercise.id);
     setTimeout(() => {
       router.push({
         pathname: '/onboarding/track-tutorial',
-        params: { exerciseName: name },
+        params: { exerciseName: exercise.name, gifUrl: exercise.gifUrl },
       });
     }, 300);
   };
@@ -33,7 +50,13 @@ export default function TrackExerciseSelectScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
@@ -42,9 +65,7 @@ export default function TrackExerciseSelectScreen() {
           <View style={[styles.progressBarFill, { width: '75%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/track-tutorial')}>
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
+        <View style={{ width: 32 }} />
       </View>
 
       {/* Title */}
@@ -63,9 +84,11 @@ export default function TrackExerciseSelectScreen() {
             <Pressable
               key={exercise.id}
               style={[styles.optionCard, isSelected && styles.optionCardSelected]}
-              onPress={() => handleSelect(exercise.id, exercise.name)}
+              onPress={() => handleSelect(exercise)}
             >
-              <View style={styles.imagePlaceholder} />
+              <View style={styles.imageContainer}>
+                <ExerciseImage gifUrl={exercise.gifUrl} size={50} borderRadius={8} />
+              </View>
               <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                 {exercise.name}
               </Text>
@@ -80,7 +103,7 @@ export default function TrackExerciseSelectScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background, // White background for exercise images to blend
   },
   header: {
     flexDirection: 'row',
@@ -157,11 +180,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.primary + '10',
   },
-  imagePlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: colors.border,
+  imageContainer: {
     marginRight: spacing.lg,
   },
   optionText: {

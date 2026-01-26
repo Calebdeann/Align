@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Pressable, Image, Share } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Share } from 'react-native';
+import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,13 +7,13 @@ import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 
 const SAMPLE_AVATARS = [
-  require('../../assets/images/Girl 1.png'),
-  require('../../assets/images/Girl 1.png'),
-  require('../../assets/images/Girl 1.png'),
-  require('../../assets/images/Girl 1.png'),
-  require('../../assets/images/Girl 1.png'),
-  require('../../assets/images/Girl 1.png'),
-  require('../../assets/images/Girl 1.png'),
+  require('../../assets/images/Girl1.png'),
+  require('../../assets/images/Girl1.png'),
+  require('../../assets/images/Girl1.png'),
+  require('../../assets/images/Girl1.png'),
+  require('../../assets/images/Girl1.png'),
+  require('../../assets/images/Girl1.png'),
+  require('../../assets/images/Girl1.png'),
 ];
 
 // Generate a deterministic referral code from user ID (always same for same user)

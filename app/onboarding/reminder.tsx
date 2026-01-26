@@ -7,9 +7,14 @@ import {
   FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+// TODO: Re-enable when Push Notifications capability is added in Apple Developer Portal
+// import * as Notifications from 'expo-notifications';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
@@ -30,6 +35,11 @@ export default function ReminderScreen() {
   const [selectedMinuteIndex, setSelectedMinuteIndex] = useState(0); // Default 00
   const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(0); // Default AM
 
+  // Track previous indices for haptic feedback
+  const lastHourIndexRef = useRef(hours.indexOf(9));
+  const lastMinuteIndexRef = useRef(0);
+  const lastPeriodIndexRef = useRef(0);
+
   const getItemLayout = (_: any, index: number) => ({
     length: ITEM_HEIGHT,
     offset: ITEM_HEIGHT * index,
@@ -40,6 +50,13 @@ export default function ReminderScreen() {
     const y = event.nativeEvent.contentOffset.y;
     const index = Math.round(y / ITEM_HEIGHT);
     const clampedIndex = Math.min(Math.max(index, 0), hours.length - 1);
+
+    // Trigger haptic when selection changes
+    if (clampedIndex !== lastHourIndexRef.current) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      lastHourIndexRef.current = clampedIndex;
+    }
+
     setSelectedHourIndex(clampedIndex);
   }, []);
 
@@ -47,6 +64,13 @@ export default function ReminderScreen() {
     const y = event.nativeEvent.contentOffset.y;
     const index = Math.round(y / ITEM_HEIGHT);
     const clampedIndex = Math.min(Math.max(index, 0), minutes.length - 1);
+
+    // Trigger haptic when selection changes
+    if (clampedIndex !== lastMinuteIndexRef.current) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      lastMinuteIndexRef.current = clampedIndex;
+    }
+
     setSelectedMinuteIndex(clampedIndex);
   }, []);
 
@@ -54,6 +78,13 @@ export default function ReminderScreen() {
     const y = event.nativeEvent.contentOffset.y;
     const index = Math.round(y / ITEM_HEIGHT);
     const clampedIndex = Math.min(Math.max(index, 0), periods.length - 1);
+
+    // Trigger haptic when selection changes
+    if (clampedIndex !== lastPeriodIndexRef.current) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      lastPeriodIndexRef.current = clampedIndex;
+    }
+
     setSelectedPeriodIndex(clampedIndex);
   }, []);
 
@@ -152,23 +183,22 @@ export default function ReminderScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '95%' }]} />
+          <View style={[styles.progressBarFill, { width: '68%' }]} />
         </View>
 
-        <Pressable
-          onPress={() => {
-            useOnboardingStore.getState().skipField('reminderTime');
-            router.push('/onboarding/first-exercises');
-          }}
-        >
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
+        <View style={{ width: 32 }} />
       </View>
 
       {/* Question */}
@@ -178,15 +208,18 @@ export default function ReminderScreen() {
 
       {/* Notification Preview Card */}
       <View style={styles.notificationCard}>
-        <View style={styles.notificationIcon} />
+        <Image
+          source={require('../../assets/images/AlignLogo.png')}
+          style={styles.notificationIcon}
+        />
         <View style={styles.notificationContent}>
           <View style={styles.notificationHeader}>
             <Text style={styles.notificationTitle}>Align</Text>
             <Text style={styles.notificationTime}>2h ago</Text>
           </View>
-          <Text style={styles.notificationHeadline}>Todays workout: Chest & Shoulders</Text>
+          <Text style={styles.notificationHeadline}>Todays Workout: Glutes 🍑🔥</Text>
           <Text style={styles.notificationBody}>
-            Bench Press, Dumbbell Shoulder Press, Dumbell Lateral Raise
+            Hip Thrusts, Romanian Deadlifts, Bulgarian Split Squats
           </Text>
         </View>
       </View>
@@ -269,6 +302,7 @@ export default function ReminderScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             useOnboardingStore.getState().setAndSave('notificationsEnabled', false);
             router.push('/onboarding/first-exercises');
           }}
@@ -278,9 +312,18 @@ export default function ReminderScreen() {
 
         <Pressable
           style={styles.continueButton}
-          onPress={() => {
+          onPress={async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+            // TODO: Re-enable when Push Notifications capability is added in Apple Developer Portal
+            // Request notification permissions
+            // const { status } = await Notifications.requestPermissionsAsync();
+            // const granted = status === 'granted';
+
+            // Save preferences (for now, just save as true since we can't request permissions yet)
             useOnboardingStore.getState().setAndSave('notificationsEnabled', true);
             useOnboardingStore.getState().setAndSave('reminderTime', timeString);
+
             router.push('/onboarding/first-exercises');
           }}
         >
@@ -294,7 +337,7 @@ export default function ReminderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',
@@ -358,7 +401,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 10,
-    backgroundColor: colors.border,
   },
   notificationContent: {
     flex: 1,

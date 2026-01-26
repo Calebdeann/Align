@@ -1,72 +1,59 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   TextInput,
-  ScrollView,
   ActivityIndicator,
   Modal,
   Animated,
   Dimensions,
+  SectionList,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
-import { fetchExercises, filterExercises, Exercise } from '@/services/api/exercises';
+import { filterExercisesClient, Exercise } from '@/services/api/exercises';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useExerciseStore } from '@/stores/exerciseStore';
+import { ExerciseImage } from '@/components/ExerciseImage';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Equipment options
+// Equipment options (IDs and labels match ExerciseDB values)
 const EQUIPMENT_OPTIONS = [
   { id: 'all', label: 'All Equipment' },
-  { id: 'none', label: 'None (Bodyweight)' },
+  { id: 'body weight', label: 'Body Weight' },
   { id: 'barbell', label: 'Barbell' },
   { id: 'dumbbell', label: 'Dumbbell' },
   { id: 'kettlebell', label: 'Kettlebell' },
   { id: 'cable', label: 'Cable' },
+  { id: 'band', label: 'Band' },
   { id: 'machine', label: 'Machine' },
-  { id: 'smith machine', label: 'Smith Machine' },
-  { id: 'resistance band', label: 'Resistance Band' },
-  { id: 'ez bar', label: 'EZ Bar' },
-  { id: 'trap bar', label: 'Trap Bar' },
-  { id: 'medicine ball', label: 'Medicine Ball' },
-  { id: 'stability ball', label: 'Stability Ball' },
-  { id: 'foam roller', label: 'Foam Roller' },
-  { id: 'pull-up bar', label: 'Pull-up Bar' },
-  { id: 'dip station', label: 'Dip Station' },
-  { id: 'bench', label: 'Bench' },
-  { id: 'box', label: 'Box/Platform' },
-  { id: 'suspension trainer', label: 'Suspension Trainer (TRX)' },
-  { id: 'battle ropes', label: 'Battle Ropes' },
+  { id: 'other', label: 'Other' },
 ];
 
-// Muscle options
+// Muscle options (IDs and labels match ExerciseDB target values)
 const MUSCLE_OPTIONS = [
   { id: 'all', label: 'All Muscles' },
-  { id: 'abdominals', label: 'Abdominals' },
-  { id: 'abductors', label: 'Abductors' },
-  { id: 'adductors', label: 'Adductors' },
+  { id: 'abs', label: 'Abs' },
   { id: 'biceps', label: 'Biceps' },
   { id: 'calves', label: 'Calves' },
-  { id: 'cardio', label: 'Cardio' },
-  { id: 'chest', label: 'Chest' },
+  { id: 'delts', label: 'Delts' },
   { id: 'forearms', label: 'Forearms' },
   { id: 'glutes', label: 'Glutes' },
   { id: 'hamstrings', label: 'Hamstrings' },
   { id: 'lats', label: 'Lats' },
-  { id: 'lower back', label: 'Lower Back' },
-  { id: 'middle back', label: 'Middle Back' },
-  { id: 'neck', label: 'Neck' },
-  { id: 'quadriceps', label: 'Quadriceps' },
-  { id: 'shoulders', label: 'Shoulders' },
+  { id: 'pectorals', label: 'Pectorals' },
+  { id: 'quads', label: 'Quads' },
+  { id: 'spine', label: 'Spine' },
   { id: 'traps', label: 'Traps' },
   { id: 'triceps', label: 'Triceps' },
-  { id: 'full body', label: 'Full Body' },
+  { id: 'upper back', label: 'Upper Back' },
 ];
 
 // SVG Icons
@@ -117,7 +104,7 @@ interface ExerciseItemProps {
   isSelected: boolean;
   isAlreadyAdded: boolean;
   onToggle: () => void;
-  onInfoPress: () => void;
+  onPressName: () => void;
 }
 
 function ExerciseItem({
@@ -125,22 +112,25 @@ function ExerciseItem({
   isSelected,
   isAlreadyAdded,
   onToggle,
-  onInfoPress,
+  onPressName,
 }: ExerciseItemProps) {
   const showSelected = isSelected || isAlreadyAdded;
 
   return (
     <View style={[styles.exerciseItem, isAlreadyAdded && styles.exerciseItemDisabled]}>
       <View style={[styles.exerciseIndicator, showSelected && styles.exerciseIndicatorSelected]} />
-      <Pressable style={styles.exerciseImagePlaceholder} onPress={onInfoPress}>
-        <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
-      </Pressable>
-      <Pressable style={styles.exerciseInfo} onPress={onInfoPress}>
+      <ExerciseImage
+        gifUrl={exercise.image_url}
+        thumbnailUrl={exercise.thumbnail_url}
+        size={44}
+        borderRadius={8}
+      />
+      <Pressable style={styles.exerciseInfo} onPress={onPressName} disabled={isAlreadyAdded}>
         <Text style={[styles.exerciseName, isAlreadyAdded && styles.exerciseNameDisabled]}>
           {exercise.name}
         </Text>
         <Text style={styles.exerciseMuscle}>
-          {isAlreadyAdded ? 'Already in workout' : exercise.muscle}
+          {isAlreadyAdded ? 'Already in workout' : exercise.muscle_group}
         </Text>
       </Pressable>
       <Pressable
@@ -207,11 +197,7 @@ function FilterModal({ visible, title, options, selectedId, onSelect, onClose }:
               <View style={styles.modalCloseButton} />
             </View>
 
-            <ScrollView
-              style={styles.filterOptionsScroll}
-              showsVerticalScrollIndicator={false}
-              bounces={false}
-            >
+            <ScrollView style={styles.filterOptionsScroll} showsVerticalScrollIndicator={true}>
               {options.map((option) => (
                 <Pressable
                   key={option.id}
@@ -232,7 +218,6 @@ function FilterModal({ visible, title, options, selectedId, onSelect, onClose }:
                   {selectedId === option.id && <CheckIcon />}
                 </Pressable>
               ))}
-              <View style={{ height: 40 }} />
             </ScrollView>
           </Pressable>
         </Animated.View>
@@ -241,233 +226,170 @@ function FilterModal({ visible, title, options, selectedId, onSelect, onClose }:
   );
 }
 
-// Multi-select filter modal for muscles
-interface MultiSelectFilterModalProps {
-  visible: boolean;
-  title: string;
-  options: FilterOption[];
-  selectedIds: string[];
-  onToggle: (id: string) => void;
-  onClear: () => void;
-  onClose: () => void;
-}
-
-function MultiSelectFilterModal({
-  visible,
-  title,
-  options,
-  selectedIds,
-  onToggle,
-  onClear,
-  onClose,
-}: MultiSelectFilterModalProps) {
-  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: SCREEN_HEIGHT,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [visible]);
-
-  // Filter out the "all" option for multi-select display
-  const selectableOptions = options.filter((o) => o.id !== 'all');
-
+// Section header component
+function SectionHeader({ title }: { title: string }) {
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-          <Pressable onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modalHandle} />
-
-            <View style={styles.modalHeader}>
-              <Pressable style={styles.modalCloseButton} onPress={onClose}>
-                <CloseIcon />
-              </Pressable>
-              <Text style={styles.modalTitle}>{title}</Text>
-              <Pressable
-                style={styles.modalCloseButton}
-                onPress={onClear}
-                disabled={selectedIds.length === 0}
-              >
-                {selectedIds.length > 0 && <Text style={styles.clearText}>Clear</Text>}
-              </Pressable>
-            </View>
-
-            {selectedIds.length > 0 && (
-              <View style={styles.selectedChipsContainer}>
-                {selectedIds.map((id) => {
-                  const option = options.find((o) => o.id === id);
-                  return (
-                    <Pressable key={id} style={styles.selectedChip} onPress={() => onToggle(id)}>
-                      <Text style={styles.selectedChipText}>{option?.label}</Text>
-                      <Ionicons name="close" size={14} color={colors.primary} />
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-
-            <ScrollView
-              style={styles.filterOptionsScroll}
-              showsVerticalScrollIndicator={false}
-              bounces={false}
-            >
-              {selectableOptions.map((option) => {
-                const isSelected = selectedIds.includes(option.id);
-                return (
-                  <Pressable
-                    key={option.id}
-                    style={styles.filterOptionItem}
-                    onPress={() => onToggle(option.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterOptionText,
-                        isSelected && styles.filterOptionTextSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                    <View
-                      style={[
-                        styles.multiSelectCheckbox,
-                        isSelected && styles.multiSelectCheckboxSelected,
-                      ]}
-                    >
-                      {isSelected && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-                    </View>
-                  </Pressable>
-                );
-              })}
-              <View style={{ height: 40 }} />
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <Pressable style={styles.applyButton} onPress={onClose}>
-                <Text style={styles.applyButtonText}>
-                  {selectedIds.length > 0 ? `Apply (${selectedIds.length} selected)` : 'Show All'}
-                </Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Animated.View>
-      </Pressable>
-    </Modal>
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
   );
 }
 
 export default function AddExerciseScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const params = useLocalSearchParams();
 
   // Filter state
+  const [selectedMuscle, setSelectedMuscle] = useState('all');
   const [selectedEquipment, setSelectedEquipment] = useState('all');
-  const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]); // Multi-select for muscles
-  const [showEquipmentModal, setShowEquipmentModal] = useState(false);
   const [showMuscleModal, setShowMuscleModal] = useState(false);
+  const [showEquipmentModal, setShowEquipmentModal] = useState(false);
+
+  // Exercise store (cached exercises)
+  const { allExercises, isLoaded, isLoading, error, loadExercises, getPopularExercises } =
+    useExerciseStore();
 
   // Parse existing exercise IDs from params
   const existingExerciseIds: string[] = params.existingExerciseIds
     ? JSON.parse(params.existingExerciseIds as string)
     : [];
 
-  // Fetch exercises on mount
+  // Load exercises on mount (will use cache if already loaded)
   useEffect(() => {
     loadExercises();
   }, []);
 
-  // Reload when filters change
-  useEffect(() => {
-    loadExercises();
-  }, [selectedEquipment, selectedMuscles]);
-
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadExercises();
+      setDebouncedQuery(searchQuery);
     }, 300);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  async function loadExercises() {
-    setIsLoading(true);
-    setError(null);
+  // Check if filters are active
+  const hasActiveFilters = selectedMuscle !== 'all' || selectedEquipment !== 'all';
 
-    const equipment = selectedEquipment === 'all' ? undefined : selectedEquipment;
-    const muscles = selectedMuscles.length > 0 ? selectedMuscles : undefined;
-    const query = searchQuery.trim() || undefined;
-
-    const data = await filterExercises({ equipment, muscles, query });
-
-    if (data.length === 0 && !equipment && !muscles && !query) {
-      setError('No exercises found. Make sure to run the seed SQL in Supabase.');
+  // Get sections data: Popular at top, then All Exercises below
+  const sections = useMemo(() => {
+    // If searching, show search results only
+    if (debouncedQuery.trim()) {
+      const searchResults = filterExercisesClient(allExercises, { query: debouncedQuery });
+      return [{ title: `Results for "${debouncedQuery}"`, data: searchResults }];
     }
-    setExercises(data);
-    setIsLoading(false);
-  }
 
-  // Toggle muscle selection for multi-select
-  const toggleMuscleFilter = (muscleId: string) => {
-    setSelectedMuscles((prev) =>
-      prev.includes(muscleId) ? prev.filter((m) => m !== muscleId) : [...prev, muscleId]
-    );
-  };
+    // Get popular exercises (always unfiltered)
+    const popular = getPopularExercises();
 
-  const clearMuscleFilters = () => {
-    setSelectedMuscles([]);
-  };
+    // Get all exercises with filters applied
+    const allFiltered = filterExercisesClient(allExercises, {
+      muscles: selectedMuscle !== 'all' ? [selectedMuscle] : undefined,
+      equipment: selectedEquipment !== 'all' ? selectedEquipment : undefined,
+    });
 
-  const toggleExercise = (id: string) => {
-    if (existingExerciseIds.includes(id)) return;
+    // Filter out popular exercises from "All Exercises" to avoid duplicates
+    const popularIds = new Set(popular.map((e) => e.id));
+    const allWithoutPopular = allFiltered.filter((e) => !popularIds.has(e.id));
 
-    setSelectedExercises((prev) =>
-      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]
-    );
-  };
+    const result = [];
+
+    // Only show Popular section if no filters are active
+    if (!hasActiveFilters && popular.length > 0) {
+      result.push({ title: 'Popular', data: popular });
+    }
+
+    if (allWithoutPopular.length > 0 || hasActiveFilters) {
+      result.push({
+        title: 'All Exercises',
+        data: hasActiveFilters ? allFiltered : allWithoutPopular,
+      });
+    }
+
+    return result;
+  }, [
+    allExercises,
+    debouncedQuery,
+    selectedMuscle,
+    selectedEquipment,
+    getPopularExercises,
+    hasActiveFilters,
+  ]);
+
+  const toggleExercise = useCallback(
+    (exerciseId: string) => {
+      if (existingExerciseIds.includes(exerciseId)) return;
+
+      setSelectedExercises((prev) =>
+        prev.includes(exerciseId) ? prev.filter((e) => e !== exerciseId) : [...prev, exerciseId]
+      );
+    },
+    [existingExerciseIds]
+  );
 
   const setPendingExercises = useWorkoutStore((state) => state.setPendingExercises);
 
   const handleAddExercises = () => {
-    const selected = exercises.filter((e) => selectedExercises.includes(e.id));
-    // Store the selected exercises in the global store
-    setPendingExercises(selected.map((e) => ({ id: e.id, name: e.name, muscle: e.muscle })));
-    // Go back to active-workout - it will pick up the pending exercises from the store
+    const selected = allExercises.filter((e) => selectedExercises.includes(e.id));
+    setPendingExercises(
+      selected.map((e) => ({
+        id: e.id,
+        name: e.name,
+        muscle: e.muscle_group || 'Unknown',
+        gifUrl: e.image_url || '',
+        thumbnailUrl: e.thumbnail_url || '',
+      }))
+    );
     router.back();
   };
 
+  // Navigate to exercise detail
+  const handlePressExerciseName = (exerciseId: string) => {
+    router.push(`/exercise/${exerciseId}`);
+  };
+
   // Get display labels for filters
-  const equipmentLabel =
-    EQUIPMENT_OPTIONS.find((o) => o.id === selectedEquipment)?.label || 'All Equipment';
   const muscleLabel =
-    selectedMuscles.length === 0
+    selectedMuscle === 'all'
       ? 'All Muscles'
-      : selectedMuscles.length === 1
-        ? MUSCLE_OPTIONS.find((o) => o.id === selectedMuscles[0])?.label || 'Muscle'
-        : `${selectedMuscles.length} Muscles`;
+      : MUSCLE_OPTIONS.find((o) => o.id === selectedMuscle)?.label || 'Muscle';
 
-  // Check if filters are active
-  const hasActiveFilters = selectedEquipment !== 'all' || selectedMuscles.length > 0;
+  const equipmentLabel =
+    selectedEquipment === 'all'
+      ? 'All Equipment'
+      : EQUIPMENT_OPTIONS.find((o) => o.id === selectedEquipment)?.label || 'Equipment';
 
-  // Split exercises: first 3 as "recent", rest as "all"
-  // In the future, "recent" could be based on actual user history
-  const recentExercises = hasActiveFilters ? [] : exercises.slice(0, 3);
-  const allExercises = hasActiveFilters ? exercises : exercises.slice(3);
+  // Clear all filters
+  const clearFilters = () => {
+    setSelectedMuscle('all');
+    setSelectedEquipment('all');
+    setSearchQuery('');
+  };
+
+  // Render item for SectionList
+  const renderItem = useCallback(
+    ({ item }: { item: Exercise }) => (
+      <ExerciseItem
+        exercise={item}
+        isSelected={selectedExercises.includes(item.id)}
+        isAlreadyAdded={existingExerciseIds.includes(item.id)}
+        onToggle={() => toggleExercise(item.id)}
+        onPressName={() => handlePressExerciseName(item.id)}
+      />
+    ),
+    [selectedExercises, existingExerciseIds, toggleExercise]
+  );
+
+  // Render section header
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: { title: string } }) => <SectionHeader title={section.title} />,
+    []
+  );
+
+  // Check if list is empty
+  const isEmpty = sections.length === 0 || sections.every((s) => s.data.length === 0);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -477,9 +399,7 @@ export default function AddExerciseScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Add Exercise</Text>
-        <Pressable onPress={() => {}}>
-          <Text style={styles.createText}>Create</Text>
-        </Pressable>
+        <View style={{ width: 50 }} />
       </View>
 
       {/* Search Bar */}
@@ -499,8 +419,24 @@ export default function AddExerciseScreen() {
         )}
       </View>
 
-      {/* Filter Buttons */}
+      {/* Filter Buttons (always visible) */}
       <View style={styles.filterRow}>
+        <Pressable
+          style={[styles.filterButton, selectedMuscle !== 'all' && styles.filterButtonActive]}
+          onPress={() => setShowMuscleModal(true)}
+        >
+          <Text
+            style={[
+              styles.filterButtonText,
+              selectedMuscle !== 'all' && styles.filterButtonTextActive,
+            ]}
+            numberOfLines={1}
+          >
+            {muscleLabel}
+          </Text>
+          <ChevronDownIcon />
+        </Pressable>
+
         <Pressable
           style={[styles.filterButton, selectedEquipment !== 'all' && styles.filterButtonActive]}
           onPress={() => setShowEquipmentModal(true)}
@@ -516,25 +452,10 @@ export default function AddExerciseScreen() {
           </Text>
           <ChevronDownIcon />
         </Pressable>
-        <Pressable
-          style={[styles.filterButton, selectedMuscles.length > 0 && styles.filterButtonActive]}
-          onPress={() => setShowMuscleModal(true)}
-        >
-          <Text
-            style={[
-              styles.filterButtonText,
-              selectedMuscles.length > 0 && styles.filterButtonTextActive,
-            ]}
-            numberOfLines={1}
-          >
-            {muscleLabel}
-          </Text>
-          <ChevronDownIcon />
-        </Pressable>
       </View>
 
       {/* Loading State */}
-      {isLoading && (
+      {isLoading && !isLoaded && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -552,67 +473,36 @@ export default function AddExerciseScreen() {
       )}
 
       {/* Exercise List */}
-      {!isLoading && !error && (
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {recentExercises.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Recent Exercises</Text>
-              {recentExercises.map((exercise) => (
-                <ExerciseItem
-                  key={exercise.id}
-                  exercise={exercise}
-                  isSelected={selectedExercises.includes(exercise.id)}
-                  isAlreadyAdded={existingExerciseIds.includes(exercise.id)}
-                  onToggle={() => toggleExercise(exercise.id)}
-                  onInfoPress={() => router.push(`/exercise/${exercise.id}`)}
-                />
-              ))}
-            </>
-          )}
-
-          {allExercises.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>
-                {hasActiveFilters ? `Filtered Exercises (${exercises.length})` : 'All Exercises'}
-              </Text>
-              {allExercises.map((exercise) => (
-                <ExerciseItem
-                  key={exercise.id}
-                  exercise={exercise}
-                  isSelected={selectedExercises.includes(exercise.id)}
-                  isAlreadyAdded={existingExerciseIds.includes(exercise.id)}
-                  onToggle={() => toggleExercise(exercise.id)}
-                  onInfoPress={() => router.push(`/exercise/${exercise.id}`)}
-                />
-              ))}
-            </>
-          )}
-
-          {exercises.length === 0 && (
+      {isLoaded && !error && (
+        <View style={styles.listContainer}>
+          {!isEmpty ? (
+            <SectionList
+              sections={sections}
+              renderItem={renderItem}
+              renderSectionHeader={renderSectionHeader}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 100 }}
+              stickySectionHeadersEnabled={false}
+            />
+          ) : (
             <View style={styles.emptyContainer}>
+              <Ionicons name="search-outline" size={48} color={colors.textSecondary} />
               <Text style={styles.emptyText}>
-                {searchQuery
-                  ? `No exercises found for "${searchQuery}"`
+                {debouncedQuery
+                  ? `No exercises found for "${debouncedQuery}"`
                   : hasActiveFilters
                     ? 'No exercises match the selected filters'
                     : 'No exercises found'}
               </Text>
-              {hasActiveFilters && (
-                <Pressable
-                  style={styles.clearFiltersButton}
-                  onPress={() => {
-                    setSelectedEquipment('all');
-                    setSelectedMuscles([]);
-                  }}
-                >
+              {(hasActiveFilters || debouncedQuery) && (
+                <Pressable style={styles.clearFiltersButton} onPress={clearFilters}>
                   <Text style={styles.clearFiltersText}>Clear Filters</Text>
                 </Pressable>
               )}
             </View>
           )}
-
-          <View style={styles.bottomSpacer} />
-        </ScrollView>
+        </View>
       )}
 
       {/* Add Button */}
@@ -626,6 +516,16 @@ export default function AddExerciseScreen() {
         </View>
       )}
 
+      {/* Muscle Filter Modal */}
+      <FilterModal
+        visible={showMuscleModal}
+        title="Select Muscle"
+        options={MUSCLE_OPTIONS}
+        selectedId={selectedMuscle}
+        onSelect={setSelectedMuscle}
+        onClose={() => setShowMuscleModal(false)}
+      />
+
       {/* Equipment Filter Modal */}
       <FilterModal
         visible={showEquipmentModal}
@@ -634,17 +534,6 @@ export default function AddExerciseScreen() {
         selectedId={selectedEquipment}
         onSelect={setSelectedEquipment}
         onClose={() => setShowEquipmentModal(false)}
-      />
-
-      {/* Muscle Filter Modal (Multi-Select) */}
-      <MultiSelectFilterModal
-        visible={showMuscleModal}
-        title="Select Muscles"
-        options={MUSCLE_OPTIONS}
-        selectedIds={selectedMuscles}
-        onToggle={toggleMuscleFilter}
-        onClear={clearMuscleFilters}
-        onClose={() => setShowMuscleModal(false)}
       />
     </SafeAreaView>
   );
@@ -669,11 +558,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
     color: colors.text,
-  },
-  createText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.primary,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -752,14 +636,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   emptyContainer: {
-    paddingVertical: spacing.xl,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: spacing.xl,
   },
   emptyText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.textSecondary,
     textAlign: 'center',
+    marginTop: spacing.md,
   },
   clearFiltersButton: {
     marginTop: spacing.md,
@@ -773,42 +660,36 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: '#FFFFFF',
   },
-  scrollView: {
+  listContainer: {
     flex: 1,
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
+  },
+  sectionHeader: {
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
   sectionTitle: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.text,
   },
   exerciseItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: spacing.lg,
+    gap: spacing.md,
   },
   exerciseIndicator: {
     width: 3,
     height: 40,
     backgroundColor: 'transparent',
     borderRadius: 2,
-    marginRight: spacing.sm,
   },
   exerciseIndicatorSelected: {
     backgroundColor: colors.primary,
-  },
-  exerciseImagePlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
   },
   exerciseInfo: {
     flex: 1,
@@ -817,12 +698,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.text,
+    textTransform: 'capitalize',
   },
   exerciseMuscle: {
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginTop: 2,
+    textTransform: 'capitalize',
   },
   checkbox: {
     width: 24,
@@ -836,9 +719,6 @@ const styles = StyleSheet.create({
   checkboxSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
-  },
-  bottomSpacer: {
-    height: 100,
   },
   addButtonContainer: {
     position: 'absolute',
@@ -882,6 +762,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: SCREEN_HEIGHT * 0.7,
+    paddingBottom: 40,
   },
   modalHandle: {
     width: 36,
@@ -912,13 +793,14 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   filterOptionsScroll: {
-    paddingHorizontal: spacing.lg,
+    maxHeight: SCREEN_HEIGHT * 0.5,
   },
   filterOptionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 16,
+    paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border + '30',
   },
@@ -930,64 +812,5 @@ const styles = StyleSheet.create({
   filterOptionTextSelected: {
     color: colors.primary,
     fontFamily: fonts.semiBold,
-  },
-  // Multi-select modal styles
-  clearText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.primary,
-  },
-  selectedChipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border + '30',
-  },
-  selectedChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary + '15',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
-  },
-  selectedChipText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.primary,
-  },
-  multiSelectCheckbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  multiSelectCheckboxSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  modalFooter: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border + '30',
-  },
-  applyButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: '#FFFFFF',
   },
 });

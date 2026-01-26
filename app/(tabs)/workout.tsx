@@ -9,13 +9,13 @@ import {
   Modal,
   Animated,
   Dimensions,
-  Image,
   PanResponder,
   GestureResponderEvent,
   PanResponderGestureState,
   Alert,
   TextInput,
 } from 'react-native';
+import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
@@ -993,18 +993,20 @@ export default function WorkoutScreen() {
           </Pressable>
         </View>
 
-        {/* My Templates */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Templates</Text>
-          <View style={styles.sectionHeaderRight}>
-            {/* Folder icon - create new folder */}
-            <Pressable onPress={openCreateFolderModal} style={styles.folderButton}>
-              <FolderIcon />
-            </Pressable>
+        {/* My Templates - only show section if there's at least 1 template */}
+        {templates.length > 0 && (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>My Templates</Text>
+            <View style={styles.sectionHeaderRight}>
+              {/* Folder icon - create new folder */}
+              <Pressable onPress={openCreateFolderModal} style={styles.folderButton}>
+                <FolderIcon />
+              </Pressable>
+            </View>
           </View>
-        </View>
+        )}
 
-        {templates.length === 0 && folders.length === 0 ? (
+        {templates.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="fitness-outline" size={48} color={colors.border} />
             <Text style={styles.emptyStateText}>No templates yet</Text>
@@ -1012,9 +1014,14 @@ export default function WorkoutScreen() {
           </View>
         ) : (
           <View style={styles.templatesList}>
-            {/* Render folders with their templates */}
+            {/* Render folders with their templates - only show folders that have templates */}
             {folders.map((folder) => {
               const folderTemplates = getTemplatesInFolder(folder.id);
+
+              // Only render folder if it has at least 1 template
+              if (folderTemplates.length === 0) {
+                return null;
+              }
 
               return (
                 <View key={folder.id} style={styles.folderContainer}>
@@ -1046,21 +1053,6 @@ export default function WorkoutScreen() {
                           onPress={() => handleTemplatePress(template)}
                         />
                       ))}
-                      {/* Add New Template - only show when folder is empty */}
-                      {folderTemplates.length === 0 && (
-                        <Pressable
-                          style={styles.addTemplateBox}
-                          onPress={() => {
-                            router.push({
-                              pathname: '/create-template',
-                              params: { folderId: folder.id },
-                            });
-                          }}
-                        >
-                          <Text style={styles.addTemplateIcon}>+</Text>
-                          <Text style={styles.addTemplateText}>Add New Template</Text>
-                        </Pressable>
-                      )}
                     </View>
                   )}
                 </View>

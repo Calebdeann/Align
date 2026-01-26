@@ -478,9 +478,11 @@ export default function SaveWorkoutScreen() {
 
       if (workoutId) {
         // Auto-mark any matching scheduled workout as complete for today
-        const todayKey = completedAt.toISOString().split('T')[0]; // YYYY-MM-DD
+        // Use local date to match how calendar displays dates
+        const todayKey = `${completedAt.getFullYear()}-${String(completedAt.getMonth() + 1).padStart(2, '0')}-${String(completedAt.getDate()).padStart(2, '0')}`;
         markScheduledWorkoutComplete(
           todayKey,
+          workoutData.userId,
           workoutData.sourceTemplateId,
           workoutTitle || workoutData.templateName
         );
@@ -490,7 +492,8 @@ export default function SaveWorkoutScreen() {
             text: 'OK',
             onPress: () => {
               router.dismissAll();
-              router.replace('/(tabs)/workout');
+              // Navigate to Planner tab so user can see their saved workout
+              router.replace('/(tabs)');
             },
           },
         ]);

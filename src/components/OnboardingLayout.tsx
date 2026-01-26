@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 interface OnboardingLayoutProps {
@@ -71,7 +72,12 @@ export default function OnboardingLayout({
       {/* Header content with fade animation */}
       <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
         {onTitlePress ? (
-          <Pressable onPress={onTitlePress}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              onTitlePress();
+            }}
+          >
             <Text style={styles.title}>{title}</Text>
           </Pressable>
         ) : (
@@ -92,11 +98,22 @@ export default function OnboardingLayout({
 
       {/* Bottom buttons */}
       <View style={styles.bottomSection}>
-        <Pressable onPress={onSkip}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            onSkip();
+          }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
 
-        <Pressable style={styles.continueButton} onPress={onContinue}>
+        <Pressable
+          style={styles.continueButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            onContinue();
+          }}
+        >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
       </View>

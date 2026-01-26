@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Modal } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Modal, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { useWorkoutStore } from '@/stores/workoutStore';
 
 const DEV_MODE = true; // Set to false for production
 
@@ -20,8 +21,7 @@ const screens: Record<number, string> = {
   13: '/onboarding/weight',
   14: '/onboarding/target-weight',
   15: '/onboarding/goal-reality',
-  16: '/onboarding/goal-speed',
-  17: '/onboarding/goal-comparison',
+  16: '/onboarding/goal-comparison',
   18: '/onboarding/obstacles',
   19: '/onboarding/accomplish',
   20: '/onboarding/prediction',
@@ -29,7 +29,6 @@ const screens: Record<number, string> = {
   25: '/onboarding/track-exercise-select',
   26: '/onboarding/track-tutorial',
   30: '/onboarding/thank-you',
-  31: '/onboarding/apple-health',
   32: '/onboarding/reviews',
   33: '/onboarding/generate-plan',
   34: '/home',
@@ -38,6 +37,7 @@ const screens: Record<number, string> = {
 export default function DevNavigator() {
   const [showModal, setShowModal] = useState(false);
   const [input, setInput] = useState('');
+  const clearAllScheduledWorkouts = useWorkoutStore((state) => state.clearAllScheduledWorkouts);
 
   if (!DEV_MODE) return null;
 
@@ -49,6 +49,24 @@ export default function DevNavigator() {
       setShowModal(false);
       setInput('');
     }
+  };
+
+  const handleClearWorkouts = () => {
+    Alert.alert(
+      'Clear All Workouts',
+      'This will remove all scheduled workouts from the calendar. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            clearAllScheduledWorkouts();
+            setShowModal(false);
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -72,6 +90,9 @@ export default function DevNavigator() {
             />
             <Pressable style={styles.goButton} onPress={handleGo}>
               <Text style={styles.goText}>Go</Text>
+            </Pressable>
+            <Pressable style={styles.clearButton} onPress={handleClearWorkouts}>
+              <Text style={styles.clearText}>Clear Workouts</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -138,5 +159,18 @@ const styles = StyleSheet.create({
   goText: {
     color: '#FFF',
     fontWeight: '600',
+  },
+  clearButton: {
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FF4444',
+  },
+  clearText: {
+    color: '#FF4444',
+    fontWeight: '600',
+    fontSize: 12,
   },
 });

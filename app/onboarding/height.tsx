@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,117 +8,177 @@ import {
   PanResponder,
   Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const TICK_SPACING = 12; // Increased for better readability
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Height range: 4ft 0in (48in) to 8ft 0in (96in)
-const MIN_INCHES = 48;
-const MAX_INCHES = 96;
-const TOTAL_INCHES = MAX_INCHES - MIN_INCHES;
-const RULER_HEIGHT = TOTAL_INCHES * TICK_SPACING;
+// Range: 110cm - 231cm (3'10" - 7'7")
+const CM_MIN = 110;
+const CM_MAX = 231;
+const CM_RANGE = CM_MAX - CM_MIN;
+
+// 20px between each tick
+const TICK_SPACING = 20;
+const TOTAL_RULER_HEIGHT = CM_RANGE * TICK_SPACING;
+
+// Tick dimensions - width means horizontal length (going right)
+const TICK_COLOR = '#E0E0E0';
+const SHORT_TICK_WIDTH = 20; // horizontal length
+const SHORT_TICK_HEIGHT = 2; // vertical thickness
+const LONG_TICK_WIDTH = 40; // double horizontal length
+const LONG_TICK_HEIGHT = 2; // same vertical thickness
+
+// Default height is middle of range (110-231cm)
+const DEFAULT_HEIGHT_CM = 170;
 
 export default function HeightScreen() {
   const { measurementUnit, setMeasurementUnit } = useUserPreferencesStore();
-
-  // Derive display unit from preferences
   const unit = measurementUnit === 'cm' ? 'cm' : 'ft';
 
-  const [heightInches, setHeightInches] = useState(63);
+  const [heightCm, setHeightCm] = useState(DEFAULT_HEIGHT_CM);
+  const lastHeightRef = useRef(DEFAULT_HEIGHT_CM);
 
-  // Update preferences when user toggles unit
+  const scrollY = useRef(new Animated.Value((DEFAULT_HEIGHT_CM - CM_MIN) * TICK_SPACING)).current;
+  const lastOffset = useRef((DEFAULT_HEIGHT_CM - CM_MIN) * TICK_SPACING);
+
+  // Listen to scrollY changes to update height display during animations
+  // Also clamp the value to prevent scrolling past bounds
+  useEffect(() => {
+    const listenerId = scrollY.addListener(({ value }) => {
+      // Clamp value to valid range
+      if (value < 0) {
+        scrollY.setValue(0);
+        lastOffset.current = 0;
+        return;
+      }
+      if (value > TOTAL_RULER_HEIGHT) {
+        scrollY.setValue(TOTAL_RULER_HEIGHT);
+        lastOffset.current = TOTAL_RULER_HEIGHT;
+        return;
+      }
+
+      const newCm = Math.round(CM_MIN + value / TICK_SPACING);
+      const clampedCm = Math.min(Math.max(newCm, CM_MIN), CM_MAX);
+      if (clampedCm !== lastHeightRef.current) {
+        setHeightCm(clampedCm);
+      }
+    });
+
+    return () => {
+      scrollY.removeListener(listenerId);
+    };
+  }, [scrollY]);
+
   const handleUnitChange = (newUnit: 'cm' | 'ft') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setMeasurementUnit(newUnit === 'cm' ? 'cm' : 'in');
+    // Reset to default height when switching units
+    const defaultOffset = (DEFAULT_HEIGHT_CM - CM_MIN) * TICK_SPACING;
+    setHeightCm(DEFAULT_HEIGHT_CM);
+    lastHeightRef.current = DEFAULT_HEIGHT_CM;
+    lastOffset.current = defaultOffset;
+    scrollY.setValue(defaultOffset);
   };
 
-  // Single scroll value - both units use same ruler structure
-  const scrollY = useRef(new Animated.Value((63 - MIN_INCHES) * TICK_SPACING)).current;
-  const lastOffset = useRef((63 - MIN_INCHES) * TICK_SPACING);
+  const totalInches = Math.round(heightCm / 2.54);
+  const displayFeet = Math.floor(totalInches / 12);
+  const displayInches = totalInches % 12;
 
-  const feet = Math.floor(heightInches / 12);
-  const inches = heightInches % 12;
-  const cm = Math.round(heightInches * 2.54);
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: () => {
-          scrollY.stopAnimation();
-        },
-        onPanResponderMove: (_, gestureState) => {
-          const newOffset = lastOffset.current - gestureState.dy;
-          const clampedOffset = Math.min(Math.max(newOffset, 0), RULER_HEIGHT);
-          scrollY.setValue(clampedOffset);
-          const newInches = Math.round(MIN_INCHES + clampedOffset / TICK_SPACING);
-          setHeightInches(Math.min(Math.max(newInches, MIN_INCHES), MAX_INCHES));
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          const newOffset = lastOffset.current - gestureState.dy;
-          const clampedOffset = Math.min(Math.max(newOffset, 0), RULER_HEIGHT);
-          const snappedOffset = Math.round(clampedOffset / TICK_SPACING) * TICK_SPACING;
-          lastOffset.current = snappedOffset;
-          const newInches = Math.round(MIN_INCHES + snappedOffset / TICK_SPACING);
-          setHeightInches(Math.min(Math.max(newInches, MIN_INCHES), MAX_INCHES));
-          Animated.spring(scrollY, {
-            toValue: snappedOffset,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 12,
-          }).start();
-        },
-      }),
-    []
-  );
-
-  // Generate ruler ticks for feet/inches
-  const feetRulerTicks = useMemo(() => {
-    const ticks = [];
-    for (let i = MIN_INCHES; i <= MAX_INCHES; i++) {
-      const ft = Math.floor(i / 12);
-      const inch = i % 12;
-      const isFoot = inch === 0;
-      const isHalfFoot = inch === 6;
-
-      ticks.push(
-        <View key={i} style={styles.tickRow}>
-          <View
-            style={[
-              styles.tick,
-              isFoot ? styles.tickMajor : isHalfFoot ? styles.tickMedium : styles.tickMinor,
-            ]}
-          />
-          {isFoot && <Text style={styles.tickLabel}>{ft}ft</Text>}
-        </View>
-      );
+  useEffect(() => {
+    if (heightCm !== lastHeightRef.current) {
+      Haptics.selectionAsync();
+      lastHeightRef.current = heightCm;
     }
-    return ticks;
-  }, []);
+  }, [heightCm]);
 
-  // Generate ruler ticks for centimeters - same spacing as ft for consistency
-  const cmRulerTicks = useMemo(() => {
+  // Track velocity for momentum scrolling
+  const velocityRef = useRef(0);
+  const lastMoveTimeRef = useRef(0);
+  const lastDyRef = useRef(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        scrollY.stopAnimation((value) => {
+          lastOffset.current = value;
+        });
+        velocityRef.current = 0;
+        lastMoveTimeRef.current = Date.now();
+        lastDyRef.current = 0;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const newOffset = lastOffset.current - gestureState.dy;
+        const clampedOffset = Math.min(Math.max(newOffset, 0), TOTAL_RULER_HEIGHT);
+        scrollY.setValue(clampedOffset);
+
+        // Calculate velocity for momentum
+        const now = Date.now();
+        const dt = now - lastMoveTimeRef.current;
+        if (dt > 0) {
+          const ddy = gestureState.dy - lastDyRef.current;
+          velocityRef.current = (-ddy / dt) * 1000; // pixels per second
+        }
+        lastMoveTimeRef.current = now;
+        lastDyRef.current = gestureState.dy;
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const currentOffset = lastOffset.current - gestureState.dy;
+        const velocity = velocityRef.current;
+
+        // Clamp current position first
+        const clampedOffset = Math.min(Math.max(currentOffset, 0), TOTAL_RULER_HEIGHT);
+
+        // Calculate where velocity would take us (approximate decay distance)
+        // decay formula: distance ≈ velocity / (1 - deceleration) * timeConstant
+        // For deceleration 0.997, rough multiplier is ~300-400
+        const estimatedDistance = velocity * 0.3;
+        let targetOffset = clampedOffset + estimatedDistance;
+
+        // Clamp target to bounds
+        targetOffset = Math.min(Math.max(targetOffset, 0), TOTAL_RULER_HEIGHT);
+
+        // Snap to nearest cm
+        const snappedCm = Math.round(CM_MIN + targetOffset / TICK_SPACING);
+        const finalCm = Math.min(Math.max(snappedCm, CM_MIN), CM_MAX);
+        const finalOffset = (finalCm - CM_MIN) * TICK_SPACING;
+        lastOffset.current = finalOffset;
+
+        // Always use spring animation directly to clamped position
+        // This prevents any overshoot past bounds
+        Animated.spring(scrollY, {
+          toValue: finalOffset,
+          useNativeDriver: false,
+          tension: Math.abs(velocity) > 100 ? 80 : 200,
+          friction: Math.abs(velocity) > 100 ? 12 : 20,
+        }).start();
+      },
+    })
+  ).current;
+
+  // Generate ruler ticks - 5 short, 1 long pattern (memoized for performance)
+  const rulerTicks = useMemo(() => {
     const ticks = [];
-    // Use same number of ticks as inches but label with cm values
-    for (let i = MIN_INCHES; i <= MAX_INCHES; i++) {
-      const cmValue = Math.round(i * 2.54);
-      const isTen = cmValue % 10 === 0;
-      const isFive = cmValue % 5 === 0 && !isTen;
+    for (let i = 0; i <= CM_RANGE; i++) {
+      const isLong = i % 6 === 0;
 
       ticks.push(
         <View key={i} style={styles.tickRow}>
           <View
             style={[
               styles.tick,
-              isTen ? styles.tickMajor : isFive ? styles.tickMedium : styles.tickMinor,
+              {
+                width: isLong ? LONG_TICK_WIDTH : SHORT_TICK_WIDTH,
+                height: isLong ? LONG_TICK_HEIGHT : SHORT_TICK_HEIGHT,
+              },
             ]}
           />
-          {isTen && <Text style={styles.tickLabel}>{cmValue}</Text>}
         </View>
       );
     }
@@ -129,17 +189,24 @@ export default function HeightScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '65%' }]} />
+          <View style={[styles.progressBarFill, { width: '28%' }]} />
         </View>
 
         <Pressable
           onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             useOnboardingStore.getState().skipField('heightInches');
             router.push('/onboarding/weight');
           }}
@@ -174,7 +241,7 @@ export default function HeightScreen() {
 
       {/* Main draggable area */}
       <View style={styles.mainArea} {...panResponder.panHandlers}>
-        {/* Left side ruler */}
+        {/* Ruler on left - starts from x=0 */}
         <View style={styles.rulerContainer}>
           <Animated.View
             style={[
@@ -182,36 +249,31 @@ export default function HeightScreen() {
               {
                 transform: [
                   {
-                    translateY: Animated.subtract(new Animated.Value(120), scrollY),
+                    translateY: Animated.multiply(scrollY, -1),
                   },
                 ],
               },
             ]}
           >
-            {unit === 'ft' ? feetRulerTicks : cmRulerTicks}
+            {rulerTicks}
           </Animated.View>
         </View>
 
-        {/* Center display area */}
-        <View style={styles.centerDisplay}>
-          <View style={styles.heightDisplay}>
-            {unit === 'ft' ? (
-              <View style={styles.heightRow}>
-                <Text style={styles.heightNumber}>{feet}</Text>
-                <Text style={styles.heightUnit}>ft</Text>
-                <Text style={styles.heightNumber}>{inches}</Text>
-                <Text style={styles.heightUnit}>in</Text>
-              </View>
-            ) : (
-              <View style={styles.heightRow}>
-                <Text style={styles.heightNumber}>{cm}</Text>
-                <Text style={styles.heightUnit}>cm</Text>
-              </View>
-            )}
-          </View>
+        {/* Purple indicator line - absolute positioned, starts from left edge */}
+        <View style={styles.indicatorLine} />
 
-          {/* Purple indicator line - under the number */}
-          <View style={styles.indicatorLine} />
+        {/* Height text - absolutely centered on screen */}
+        <View style={styles.textContainer}>
+          {unit === 'cm' ? (
+            <View style={styles.heightRow}>
+              <Text style={styles.heightText}>{heightCm}</Text>
+              <Text style={styles.unitLabel}>cm</Text>
+            </View>
+          ) : (
+            <Text style={styles.heightText}>
+              {displayFeet}'{displayInches}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -220,7 +282,8 @@ export default function HeightScreen() {
         <Pressable
           style={styles.continueButton}
           onPress={() => {
-            useOnboardingStore.getState().setAndSave('heightInches', heightInches);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            useOnboardingStore.getState().setAndSave('heightInches', totalInches);
             router.push('/onboarding/weight');
           }}
         >
@@ -234,7 +297,7 @@ export default function HeightScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',
@@ -324,76 +387,63 @@ const styles = StyleSheet.create({
   },
   mainArea: {
     flex: 1,
-    flexDirection: 'row',
+    position: 'relative',
   },
   rulerContainer: {
-    width: 110,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: LONG_TICK_WIDTH,
     overflow: 'hidden',
-    justifyContent: 'center',
   },
   rulerContent: {
     position: 'absolute',
     left: 0,
-    right: 0,
+    top: '35%',
+    width: LONG_TICK_WIDTH,
   },
   tickRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     height: TICK_SPACING,
-    paddingLeft: spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   tick: {
-    backgroundColor: colors.border,
+    backgroundColor: TICK_COLOR,
   },
-  tickMajor: {
-    width: 28,
-    height: 2,
+  indicatorLine: {
+    position: 'absolute',
+    left: 0,
+    top: '35%',
+    marginTop: -1.5,
+    width: SCREEN_WIDTH * 0.26,
+    height: 3,
+    backgroundColor: colors.primary,
   },
-  tickMedium: {
-    width: 18,
-    height: 1.5,
-  },
-  tickMinor: {
-    width: 10,
-    height: 1,
-  },
-  tickLabel: {
-    fontFamily: fonts.medium,
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginLeft: spacing.sm,
-  },
-  centerDisplay: {
-    flex: 1,
+  textContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '35%',
+    transform: [{ translateY: -40 }],
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingRight: 80,
-  },
-  heightDisplay: {
-    alignItems: 'center',
   },
   heightRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
-  heightNumber: {
+  heightText: {
     fontFamily: fonts.bold,
-    fontSize: 64,
+    fontSize: 80,
     color: colors.text,
+    textAlign: 'center',
   },
-  heightUnit: {
+  unitLabel: {
     fontFamily: fonts.medium,
-    fontSize: fontSize.lg,
-    color: colors.text,
+    fontSize: 24,
+    color: colors.textSecondary,
     marginLeft: 4,
-    marginRight: spacing.md,
-  },
-  indicatorLine: {
-    width: SCREEN_WIDTH / 2,
-    height: 2,
-    backgroundColor: colors.primary,
-    marginTop: spacing.sm,
-    marginRight: SCREEN_WIDTH / 4,
   },
   bottomSection: {
     paddingHorizontal: spacing.lg,

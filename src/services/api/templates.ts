@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import { WorkoutTemplate, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { WorkoutImage } from '@/stores/workoutStore';
+import { CreateTemplateInputSchema, UpdateTemplateInputSchema } from '@/schemas/template.schema';
 
 // =============================================
 // TYPES - Database Schema for Templates
@@ -53,6 +54,36 @@ export async function saveUserTemplate(
   userId: string,
   template: Omit<WorkoutTemplate, 'id' | 'createdAt' | 'isPreset'>
 ): Promise<string | null> {
+  // Validate input before any database operations
+  const parseResult = CreateTemplateInputSchema.safeParse({
+    userId,
+    name: template.name,
+    description: template.description,
+    image: template.image,
+    tagIds: template.tagIds,
+    tagColor: template.tagColor,
+    estimatedDuration: template.estimatedDuration,
+    difficulty: template.difficulty,
+    equipment: template.equipment,
+    exercises: template.exercises.map((ex) => ({
+      exerciseId: ex.exerciseId,
+      exerciseName: ex.exerciseName,
+      muscle: ex.muscle,
+      notes: ex.notes,
+      restTimerSeconds: ex.restTimerSeconds,
+      sets: ex.sets.map((s) => ({
+        setNumber: s.setNumber,
+        targetWeight: s.targetWeight,
+        targetReps: s.targetReps,
+      })),
+    })),
+  });
+
+  if (!parseResult.success) {
+    console.error('Invalid template input:', parseResult.error.flatten());
+    return null;
+  }
+
   try {
     // 1. Insert the template record
     const { data: savedTemplate, error: templateError } = await supabase
@@ -137,6 +168,35 @@ export async function updateUserTemplate(
   updates: Partial<Omit<WorkoutTemplate, 'id' | 'createdAt' | 'isPreset'>>,
   exercises?: TemplateExercise[]
 ): Promise<boolean> {
+  // Validate updates
+  const parseResult = UpdateTemplateInputSchema.safeParse({
+    name: updates.name,
+    description: updates.description,
+    image: updates.image,
+    tagIds: updates.tagIds,
+    tagColor: updates.tagColor,
+    estimatedDuration: updates.estimatedDuration,
+    difficulty: updates.difficulty,
+    equipment: updates.equipment,
+    exercises: exercises?.map((ex) => ({
+      exerciseId: ex.exerciseId,
+      exerciseName: ex.exerciseName,
+      muscle: ex.muscle,
+      notes: ex.notes,
+      restTimerSeconds: ex.restTimerSeconds,
+      sets: ex.sets.map((s) => ({
+        setNumber: s.setNumber,
+        targetWeight: s.targetWeight,
+        targetReps: s.targetReps,
+      })),
+    })),
+  });
+
+  if (!parseResult.success) {
+    console.error('Invalid template update input:', parseResult.error.flatten());
+    return false;
+  }
+
   try {
     // 1. Update the template record
     const updateData: Record<string, any> = {

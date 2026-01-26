@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 const programDetails = [
@@ -36,12 +37,18 @@ const progressSegments = [
 ];
 
 // Animated checkmark component
-function AnimatedCheck({ visible }: { visible: boolean }) {
+function AnimatedCheck({ visible, onAppear }: { visible: boolean; onAppear?: () => void }) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const hasTriggered = useRef(false);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !hasTriggered.current) {
+      hasTriggered.current = true;
+      // Trigger heavy haptic when checkmark appears
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      onAppear?.();
+
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
@@ -85,7 +92,24 @@ export default function GeneratingPlanScreen() {
     false,
     false,
   ]);
+  const [isLoading, setIsLoading] = useState(true);
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const hapticInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // Constant light haptic feedback while loading
+  useEffect(() => {
+    if (isLoading) {
+      hapticInterval.current = setInterval(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }, 150);
+    }
+
+    return () => {
+      if (hapticInterval.current) {
+        clearInterval(hapticInterval.current);
+      }
+    };
+  }, [isLoading]);
 
   useEffect(() => {
     const animations = progressSegments.map((segment) =>
@@ -98,6 +122,7 @@ export default function GeneratingPlanScreen() {
     );
 
     Animated.sequence(animations).start(() => {
+      setIsLoading(false);
       setTimeout(() => {
         router.push('/onboarding/plan-ready');
       }, 500);
@@ -186,7 +211,7 @@ export default function GeneratingPlanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   content: {
     flex: 1,

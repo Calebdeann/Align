@@ -5,12 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Image,
   Switch,
   Modal,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +19,7 @@ import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { signOut, deleteUserAccount } from '@/services/api/user';
 import { useUserProfileStore, getHighResAvatarUrl } from '@/stores/userProfileStore';
 import { supabase } from '@/services/supabase';
+import { clearUserDataFromStorage } from '@/lib/storeManager';
 
 // Required for web browser auth to close properly
 WebBrowser.maybeCompleteAuthSession();
@@ -179,6 +180,9 @@ export default function ProfileScreen() {
         Alert.alert('Error', 'Failed to delete account. Please try again.');
         return;
       }
+
+      // Clear user's local storage (workouts, templates) before signing out
+      await clearUserDataFromStorage(userId);
 
       // Sign out the user
       await signOut();

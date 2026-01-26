@@ -1,167 +1,269 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Animated, Dimensions, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import Svg, { Path, Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
+import Svg, {
+  Path,
+  Defs,
+  LinearGradient,
+  Stop,
+  Circle,
+  Line,
+  ClipPath,
+  Rect,
+} from 'react-native-svg';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const GRAPH_WIDTH = SCREEN_WIDTH - spacing.lg * 4;
-const GRAPH_HEIGHT = 200;
+const GRAPH_WIDTH = SCREEN_WIDTH;
+const GRAPH_HEIGHT = 350;
 
 export default function PredictionScreen() {
-  const { currentWeight, targetWeight, weeklyGoal } = useOnboardingStore();
+  const { currentWeight, targetWeight } = useOnboardingStore();
 
   const isLosing = targetWeight < currentWeight;
-  const weightDiff = Math.abs(targetWeight - currentWeight);
-  const weeksToGoal = Math.ceil(weightDiff / (weeklyGoal || 0.5));
 
-  // Calculate target date
+  // Calculate target date - 1 month from now
   const targetDate = new Date();
-  targetDate.setDate(targetDate.getDate() + weeksToGoal * 7);
+  targetDate.setMonth(targetDate.getMonth() + 1);
   const targetDateString = targetDate.toLocaleDateString('en-US', {
-    month: 'long',
+    month: 'short',
     day: 'numeric',
-    year: 'numeric',
   });
 
   // Animation values
   const fadeIn = useRef(new Animated.Value(0)).current;
-  const graphProgress = useRef(new Animated.Value(0)).current;
+  const graphReveal = useRef(new Animated.Value(0)).current;
+  const endCircleScale = useRef(new Animated.Value(0)).current;
+  const startCircleScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Sequence: fade in title -> reveal graph left to right -> pop circles
     Animated.sequence([
       Animated.delay(200),
-      Animated.parallel([
-        Animated.timing(fadeIn, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(graphProgress, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: false,
-        }),
-      ]),
+      Animated.timing(fadeIn, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(startCircleScale, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.out(Easing.back(2)),
+        useNativeDriver: true,
+      }),
+      Animated.timing(graphReveal, {
+        toValue: 1,
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+      Animated.timing(endCircleScale, {
+        toValue: 1,
+        duration: 400,
+        easing: Easing.out(Easing.back(3)),
+        useNativeDriver: true,
+      }),
     ]).start();
   }, []);
 
-  // Generate curved path for the graph
+  // Light purple color for gradient
+  const lightPurple = '#DEB8FF';
+
+  // Graph positioning
+  const circleStartX = 65; // Where the start circle sits
+  const circleEndX = GRAPH_WIDTH - 65; // Where the end circle sits
+
+  // Y positions for the circles (on the curve)
+  const topY = 50; // Top of curve
+  const bottomY = GRAPH_HEIGHT - 80; // Bottom of curve
+
+  // For weight loss: start high, end low
+  // For weight gain: start low, end high
+  const circleStartY = isLosing ? topY : bottomY;
+  const circleEndY = isLosing ? bottomY : topY;
+
+  // Generate S-curve path with proper bezier control points
+  // The curve should be flat at start, steep in middle, flat at end
   const generatePath = () => {
-    const startY = isLosing ? 30 : GRAPH_HEIGHT - 50;
-    const endY = isLosing ? GRAPH_HEIGHT - 50 : 30;
-    const midY = (startY + endY) / 2;
+    // Extend curve beyond circles to screen edges
+    const extendLeft = 60;
+    const extendRight = 60;
 
-    // Create a smooth curve using quadratic bezier
-    const startX = 20;
-    const endX = GRAPH_WIDTH - 20;
-    const midX = (startX + endX) / 2;
+    const startX = -extendLeft;
+    const endX = GRAPH_WIDTH + extendRight;
 
-    return `M ${startX} ${startY} Q ${midX} ${midY + (isLosing ? 40 : -40)} ${endX} ${endY}`;
+    // Y values stay flat at the edges
+    const startY = circleStartY;
+    const endY = circleEndY;
+
+    // Control points for S-curve
+    // First control point: keeps start flat, then pulls toward middle
+    const cp1x = circleStartX + (circleEndX - circleStartX) * 0.4;
+    const cp1y = startY;
+
+    // Second control point: pulls from middle toward end, keeps end flat
+    const cp2x = circleStartX + (circleEndX - circleStartX) * 0.6;
+    const cp2y = endY;
+
+    return `M ${startX} ${startY} L ${circleStartX} ${circleStartY} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${circleEndX} ${circleEndY} L ${endX} ${endY}`;
   };
 
   // Generate gradient fill path
   const generateFillPath = () => {
-    const startY = isLosing ? 30 : GRAPH_HEIGHT - 50;
-    const endY = isLosing ? GRAPH_HEIGHT - 50 : 30;
-    const midY = (startY + endY) / 2;
+    const extendLeft = 60;
+    const extendRight = 60;
 
-    const startX = 20;
-    const endX = GRAPH_WIDTH - 20;
-    const midX = (startX + endX) / 2;
+    const startX = -extendLeft;
+    const endX = GRAPH_WIDTH + extendRight;
 
-    return `M ${startX} ${startY} Q ${midX} ${midY + (isLosing ? 40 : -40)} ${endX} ${endY} L ${endX} ${GRAPH_HEIGHT} L ${startX} ${GRAPH_HEIGHT} Z`;
+    const startY = circleStartY;
+    const endY = circleEndY;
+
+    const cp1x = circleStartX + (circleEndX - circleStartX) * 0.4;
+    const cp1y = startY;
+    const cp2x = circleStartX + (circleEndX - circleStartX) * 0.6;
+    const cp2y = endY;
+
+    return `M ${startX} ${startY} L ${circleStartX} ${circleStartY} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${circleEndX} ${circleEndY} L ${endX} ${endY} L ${endX} ${GRAPH_HEIGHT} L ${startX} ${GRAPH_HEIGHT} Z`;
   };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '96%' }]} />
+          <View style={[styles.progressBarFill, { width: '56%' }]} />
         </View>
 
-        <Pressable onPress={() => router.push('/onboarding/training-location')}>
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
+        <View style={{ width: 32 }} />
       </View>
 
       {/* Title */}
       <Animated.View style={[styles.titleContainer, { opacity: fadeIn }]}>
-        <Text style={styles.titleText}>We predict you'll be</Text>
-        <Text style={styles.weightText}>{Math.round(targetWeight)} kg</Text>
-        <Text style={styles.titleText}>by {targetDateString}</Text>
+        <Text style={styles.titleText}>We predict that you'll be</Text>
+        <Text style={styles.weightDateText}>
+          <Text style={styles.weightText}>{Math.round(targetWeight)}kg</Text>
+          <Text style={styles.byText}> by </Text>
+          <Text style={styles.dateText}>{targetDateString}</Text>
+        </Text>
       </Animated.View>
 
-      {/* Graph Card */}
-      <Animated.View style={[styles.graphCard, { opacity: fadeIn }]}>
+      {/* Graph - Full Width */}
+      <Animated.View style={[styles.graphContainer, { opacity: fadeIn }]}>
         <Svg width={GRAPH_WIDTH} height={GRAPH_HEIGHT}>
           <Defs>
             <LinearGradient id="graphGradient" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={colors.primary} stopOpacity={isLosing ? '0.3' : '0.1'} />
-              <Stop offset="1" stopColor={colors.primary} stopOpacity={isLosing ? '0.05' : '0.3'} />
+              <Stop offset="0" stopColor={lightPurple} stopOpacity="0.6" />
+              <Stop offset="1" stopColor={lightPurple} stopOpacity="0.1" />
             </LinearGradient>
+            <LinearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={lightPurple} />
+              <Stop offset="1" stopColor={colors.primary} />
+            </LinearGradient>
+            <ClipPath id="graphClip">
+              <AnimatedRect
+                x="0"
+                y="0"
+                height={GRAPH_HEIGHT}
+                width={graphReveal.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [circleStartX, GRAPH_WIDTH + 60],
+                })}
+              />
+            </ClipPath>
           </Defs>
 
-          {/* Gradient fill under curve */}
-          <Path d={generateFillPath()} fill="url(#graphGradient)" />
+          {/* Gradient fill under curve - clipped for reveal animation */}
+          <Path d={generateFillPath()} fill="url(#graphGradient)" clipPath="url(#graphClip)" />
 
-          {/* Main curve line */}
+          {/* Vertical dashed line at start */}
+          <Line
+            x1={circleStartX}
+            y1={circleStartY}
+            x2={circleStartX}
+            y2={GRAPH_HEIGHT}
+            stroke={lightPurple}
+            strokeWidth={1.5}
+            strokeDasharray="6,6"
+            opacity={0.7}
+          />
+
+          {/* Vertical dashed line at end - clipped for reveal */}
+          <Line
+            x1={circleEndX}
+            y1={circleEndY}
+            x2={circleEndX}
+            y2={GRAPH_HEIGHT}
+            stroke={colors.primary}
+            strokeWidth={1.5}
+            strokeDasharray="6,6"
+            opacity={0.7}
+            clipPath="url(#graphClip)"
+          />
+
+          {/* Main curve line - clipped for reveal animation */}
           <Path
             d={generatePath()}
-            stroke={colors.primary}
-            strokeWidth={3}
+            stroke="url(#lineGradient)"
+            strokeWidth={2.5}
             fill="none"
             strokeLinecap="round"
+            clipPath="url(#graphClip)"
           />
 
-          {/* Start point */}
-          <Circle
-            cx={20}
-            cy={isLosing ? 30 : GRAPH_HEIGHT - 50}
-            r={8}
-            fill={colors.background}
-            stroke={colors.textSecondary}
-            strokeWidth={3}
+          {/* Start point - animated scale */}
+          <AnimatedCircle
+            cx={circleStartX}
+            cy={circleStartY}
+            r={startCircleScale.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 8],
+            })}
+            fill={lightPurple}
           />
 
-          {/* End point (goal) */}
-          <Circle
-            cx={GRAPH_WIDTH - 20}
-            cy={isLosing ? GRAPH_HEIGHT - 50 : 30}
-            r={10}
+          {/* End point (goal) - animated scale */}
+          <AnimatedCircle
+            cx={circleEndX}
+            cy={circleEndY}
+            r={endCircleScale.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 8],
+            })}
             fill={colors.primary}
-            stroke={colors.background}
-            strokeWidth={3}
           />
         </Svg>
 
-        {/* Labels */}
+        {/* Labels below graph */}
         <View style={styles.graphLabels}>
-          <View style={styles.labelLeft}>
-            <Text style={styles.labelWeight}>{Math.round(currentWeight)} kg</Text>
-            <Text style={styles.labelDate}>Today</Text>
-          </View>
-          <View style={styles.labelRight}>
-            <Text style={[styles.labelWeight, { color: colors.primary }]}>
-              {Math.round(targetWeight)} kg
-            </Text>
-            <Text style={styles.labelDate}>Goal</Text>
-          </View>
+          <Text style={styles.labelText}>Today</Text>
+          <Text style={styles.labelText}>{targetDateString}</Text>
         </View>
       </Animated.View>
 
       {/* Potential text */}
       <Animated.View style={[styles.potentialContainer, { opacity: fadeIn }]}>
-        <Text style={styles.potentialEmoji}>✨</Text>
-        <Text style={styles.potentialText}>You have massive potential</Text>
+        <Text style={styles.potentialTitle}>You have massive potential</Text>
+        <Text style={styles.potentialSubtitle}>
+          We are starting to get a clear picture of you and your body.
+        </Text>
       </Animated.View>
 
       {/* Spacer */}
@@ -171,7 +273,10 @@ export default function PredictionScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => router.push('/onboarding/training-location')}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/onboarding/training-location');
+          }}
         >
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
@@ -183,7 +288,7 @@ export default function PredictionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',
@@ -217,76 +322,70 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: 2,
   },
-  skipText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
   titleContainer: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.xl,
     alignItems: 'center',
   },
   titleText: {
     fontFamily: fonts.medium,
-    fontSize: 22,
-    color: colors.text,
+    fontSize: 18,
+    color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 30,
+    marginBottom: spacing.xs,
+  },
+  weightDateText: {
+    textAlign: 'center',
   },
   weightText: {
     fontFamily: fonts.bold,
-    fontSize: 42,
+    fontSize: 32,
     color: colors.primary,
-    textAlign: 'center',
-    marginVertical: spacing.xs,
   },
-  graphCard: {
-    marginHorizontal: spacing.lg,
+  byText: {
+    fontFamily: fonts.bold,
+    fontSize: 32,
+    color: colors.text,
+  },
+  dateText: {
+    fontFamily: fonts.bold,
+    fontSize: 32,
+    color: colors.primary,
+  },
+  graphContainer: {
     marginTop: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    padding: spacing.lg,
     alignItems: 'center',
   },
   graphLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    marginTop: spacing.sm,
   },
-  labelLeft: {
-    alignItems: 'flex-start',
-  },
-  labelRight: {
-    alignItems: 'flex-end',
-  },
-  labelWeight: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.lg,
-    color: colors.text,
-  },
-  labelDate: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
+  labelText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
     color: colors.textSecondary,
-    marginTop: 2,
   },
   potentialContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
     marginTop: spacing.xl,
-    gap: spacing.sm,
   },
-  potentialEmoji: {
-    fontSize: 24,
-  },
-  potentialText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
+  potentialTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 22,
     color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  potentialSubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   spacer: {
     flex: 1,

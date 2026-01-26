@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createUserNamespacedStorage } from '@/lib/userNamespacedStorage';
 
 export interface WorkoutImage {
   type: 'template' | 'camera' | 'gallery';
@@ -21,6 +21,8 @@ export interface ActiveExercise {
   id: string;
   name: string;
   muscle: string;
+  gifUrl?: string;
+  thumbnailUrl?: string;
 }
 
 export interface PreviousSetData {
@@ -52,10 +54,13 @@ export interface PendingExercise {
   id: string;
   name: string;
   muscle: string;
+  gifUrl?: string;
+  thumbnailUrl?: string;
 }
 
 export interface ScheduledWorkout {
   id: string;
+  userId: string; // Owner of this workout - used for per-user data isolation
   name: string;
   description?: string;
   image?: WorkoutImage;
@@ -78,7 +83,19 @@ export interface ScheduledWorkout {
   };
   createdAt: string;
   completedDates: string[]; // Array of YYYY-MM-DD dates when workout was completed
+  excludedDates?: string[]; // Array of YYYY-MM-DD dates to skip for recurring workouts
   templateId?: string; // Optional link to a workout template
+}
+
+// Cached completed workout from Supabase (for instant loading)
+export interface CachedCompletedWorkout {
+  id: string;
+  userId: string; // Owner of this workout
+  name: string | null;
+  completedAt: string;
+  durationSeconds: number;
+  exerciseCount: number;
+  totalSets: number;
 }
 
 interface WorkoutStore {
@@ -86,16 +103,34 @@ interface WorkoutStore {
   scheduledWorkouts: ScheduledWorkout[];
   addWorkout: (workout: Omit<ScheduledWorkout, 'id' | 'createdAt' | 'completedDates'>) => void;
   removeWorkout: (id: string) => void;
+  removeWorkoutOccurrence: (id: string, dateKey: string) => void; // Remove single occurrence from recurring
+  getScheduledWorkoutById: (id: string) => ScheduledWorkout | undefined;
+  clearAllScheduledWorkouts: () => void;
   toggleWorkoutCompletion: (workoutId: string, dateKey: string) => void;
   isWorkoutCompleted: (workoutId: string, dateKey: string) => boolean;
-  getWorkoutsForDate: (date: string) => ScheduledWorkout[];
-  getWorkoutsForMonth: (year: number, month: number) => Map<number, ScheduledWorkout[]>;
+  getWorkoutsForDate: (date: string, userId: string | null) => ScheduledWorkout[];
+  getWorkoutsForMonth: (
+    year: number,
+    month: number,
+    userId: string | null
+  ) => Map<number, ScheduledWorkout[]>;
   // Auto-mark scheduled workouts as complete when a workout is saved
   markScheduledWorkoutComplete: (
     dateKey: string,
+    userId: string | null,
     templateId?: string,
     workoutName?: string
   ) => void;
+
+  // Cached completed workouts from Supabase (for instant loading)
+  cachedCompletedWorkouts: CachedCompletedWorkout[];
+  cachedCompletedWorkoutsLastFetch: string | null; // ISO timestamp
+  setCachedCompletedWorkouts: (workouts: CachedCompletedWorkout[]) => void;
+  addCachedCompletedWorkout: (workout: CachedCompletedWorkout) => void;
+  getCachedCompletedWorkoutsForDate: (
+    dateKey: string,
+    userId: string | null
+  ) => CachedCompletedWorkout[];
 
   // Active workout session
   activeWorkout: ActiveWorkoutSession | null;
@@ -138,6 +173,9 @@ const workoutOccursOnDate = (workout: ScheduledWorkout, checkDate: Date): boolea
   const workoutDate = new Date(workout.date);
   const checkDateKey = formatDateKey(checkDate);
   const workoutDateKey = workout.date;
+
+  // Check if this date is excluded
+  if (workout.excludedDates?.includes(checkDateKey)) return false;
 
   // If it's the original date, always show
   if (checkDateKey === workoutDateKey) return true;
@@ -182,6 +220,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
       scheduledWorkouts: [],
       activeWorkout: null,
       pendingExercises: [],
+      cachedCompletedWorkouts: [],
+      cachedCompletedWorkoutsLastFetch: null,
 
       // Pending exercises methods
       setPendingExercises: (exercises) => {
@@ -298,6 +338,41 @@ export const useWorkoutStore = create<WorkoutStore>()(
         }));
       },
 
+      // Remove a single occurrence from a recurring workout by adding to excludedDates
+      // For non-recurring workouts, this just removes the whole workout
+      removeWorkoutOccurrence: (id, dateKey) => {
+        const workout = get().scheduledWorkouts.find((w) => w.id === id);
+        if (!workout) return;
+
+        // If it's a non-recurring workout or it's the original date, just delete the whole workout
+        if (workout.repeat.type === 'never' || workout.date === dateKey) {
+          set((state) => ({
+            scheduledWorkouts: state.scheduledWorkouts.filter((w) => w.id !== id),
+          }));
+        } else {
+          // For recurring workouts, add this date to excludedDates
+          set((state) => ({
+            scheduledWorkouts: state.scheduledWorkouts.map((w) => {
+              if (w.id !== id) return w;
+              const excludedDates = w.excludedDates || [];
+              if (excludedDates.includes(dateKey)) return w;
+              return {
+                ...w,
+                excludedDates: [...excludedDates, dateKey],
+              };
+            }),
+          }));
+        }
+      },
+
+      getScheduledWorkoutById: (id) => {
+        return get().scheduledWorkouts.find((w) => w.id === id);
+      },
+
+      clearAllScheduledWorkouts: () => {
+        set({ scheduledWorkouts: [] });
+      },
+
       toggleWorkoutCompletion: (workoutId, dateKey) => {
         set((state) => ({
           scheduledWorkouts: state.scheduledWorkouts.map((workout) => {
@@ -320,15 +395,21 @@ export const useWorkoutStore = create<WorkoutStore>()(
         return workout?.completedDates.includes(dateKey) ?? false;
       },
 
-      getWorkoutsForDate: (dateKey) => {
+      getWorkoutsForDate: (dateKey, userId) => {
         const { scheduledWorkouts } = get();
         const checkDate = new Date(dateKey);
-        return scheduledWorkouts.filter((workout) => workoutOccursOnDate(workout, checkDate));
+        // Filter by userId first, then check if workout occurs on date
+        return scheduledWorkouts.filter(
+          (workout) => workout.userId === userId && workoutOccursOnDate(workout, checkDate)
+        );
       },
 
-      getWorkoutsForMonth: (year, month) => {
+      getWorkoutsForMonth: (year, month, userId) => {
         const { scheduledWorkouts } = get();
         const workoutsByDay = new Map<number, ScheduledWorkout[]>();
+
+        // Filter workouts by userId first
+        const userWorkouts = scheduledWorkouts.filter((w) => w.userId === userId);
 
         // Get number of days in the month
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -336,7 +417,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
         // Check each day of the month
         for (let day = 1; day <= daysInMonth; day++) {
           const checkDate = new Date(year, month, day);
-          const workoutsForDay = scheduledWorkouts.filter((workout) =>
+          const workoutsForDay = userWorkouts.filter((workout) =>
             workoutOccursOnDate(workout, checkDate)
           );
           if (workoutsForDay.length > 0) {
@@ -349,12 +430,14 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
       // Mark scheduled workouts as complete when a workout is saved
       // Matches by templateId first, then by name if no templateId match
-      markScheduledWorkoutComplete: (dateKey, templateId, workoutName) => {
+      markScheduledWorkoutComplete: (dateKey, userId, templateId, workoutName) => {
         const { scheduledWorkouts } = get();
         const checkDate = new Date(dateKey);
 
-        // Find workouts scheduled for this date
-        const workoutsForDate = scheduledWorkouts.filter((w) => workoutOccursOnDate(w, checkDate));
+        // Find workouts scheduled for this date AND belonging to this user
+        const workoutsForDate = scheduledWorkouts.filter(
+          (w) => w.userId === userId && workoutOccursOnDate(w, checkDate)
+        );
 
         if (workoutsForDate.length === 0) return;
 
@@ -388,14 +471,39 @@ export const useWorkoutStore = create<WorkoutStore>()(
           }));
         }
       },
+
+      // Cached completed workouts methods
+      setCachedCompletedWorkouts: (workouts) => {
+        set({
+          cachedCompletedWorkouts: workouts,
+          cachedCompletedWorkoutsLastFetch: new Date().toISOString(),
+        });
+      },
+
+      addCachedCompletedWorkout: (workout) => {
+        set((state) => ({
+          cachedCompletedWorkouts: [...state.cachedCompletedWorkouts, workout],
+        }));
+      },
+
+      getCachedCompletedWorkoutsForDate: (dateKey, userId) => {
+        const { cachedCompletedWorkouts } = get();
+        return cachedCompletedWorkouts.filter((w) => {
+          if (w.userId !== userId) return false;
+          const completedDate = new Date(w.completedAt);
+          const localDateKey = `${completedDate.getFullYear()}-${String(completedDate.getMonth() + 1).padStart(2, '0')}-${String(completedDate.getDate()).padStart(2, '0')}`;
+          return localDateKey === dateKey;
+        });
+      },
     }),
     {
       name: 'workout-store',
-      storage: createJSONStorage(() => AsyncStorage),
-      // Only persist scheduled workouts and active workout, not transient pendingExercises
+      storage: createJSONStorage(() => createUserNamespacedStorage('workout-store')),
       partialize: (state) => ({
         scheduledWorkouts: state.scheduledWorkouts,
         activeWorkout: state.activeWorkout,
+        cachedCompletedWorkouts: state.cachedCompletedWorkouts,
+        cachedCompletedWorkoutsLastFetch: state.cachedCompletedWorkoutsLastFetch,
       }),
     }
   )

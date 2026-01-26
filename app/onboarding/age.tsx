@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
@@ -21,6 +22,7 @@ const ages = Array.from({ length: 83 }, (_, i) => i + 13); // 13-95
 export default function AgeScreen() {
   const flatListRef = useRef<FlatList>(null);
   const [selectedIndex, setSelectedIndex] = useState(ages.indexOf(18));
+  const lastIndexRef = useRef(ages.indexOf(18));
 
   useEffect(() => {
     // Scroll to age 18 on mount
@@ -43,6 +45,13 @@ export default function AgeScreen() {
     const y = event.nativeEvent.contentOffset.y;
     const index = Math.round(y / ITEM_HEIGHT);
     const clampedIndex = Math.min(Math.max(index, 0), ages.length - 1);
+
+    // Trigger haptic when selection changes
+    if (clampedIndex !== lastIndexRef.current) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      lastIndexRef.current = clampedIndex;
+    }
+
     setSelectedIndex(clampedIndex);
   }, []);
 
@@ -80,17 +89,24 @@ export default function AgeScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '60%' }]} />
+          <View style={[styles.progressBarFill, { width: '24%' }]} />
         </View>
 
         <Pressable
           onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             useOnboardingStore.getState().skipField('age');
             router.push('/onboarding/height');
           }}
@@ -137,6 +153,7 @@ export default function AgeScreen() {
         <Pressable
           style={styles.continueButton}
           onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             useOnboardingStore.getState().setAndSave('age', ages[selectedIndex]);
             router.push('/onboarding/height');
           }}
@@ -151,7 +168,7 @@ export default function AgeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundOnboarding,
   },
   header: {
     flexDirection: 'row',
