@@ -6,6 +6,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
+// Safe import of useSuperwall - returns no-op hook if module not available
+let useSuperwall: any = null;
+try {
+  useSuperwall = require('expo-superwall').useSuperwall;
+} catch (e) {
+  console.warn('[GeneratingPlan] Failed to load useSuperwall:', e);
+}
+
+// Fallback hook that returns no-op values (maintains hook call order)
+function useSuperwallFallback() {
+  return { registerPlacement: async () => {}, subscriptionStatus: null };
+}
+
 const programDetails = [
   { id: 'fitness', label: 'Fitness level' },
   { id: 'muscle', label: 'Muscle balance' },
@@ -82,7 +95,22 @@ function AnimatedCheck({ visible, onAppear }: { visible: boolean; onAppear?: () 
   );
 }
 
+// Use real hook if available, otherwise use fallback (must be decided at module level, not conditionally)
+const useSuperwallSafe = useSuperwall
+  ? (selector: any) => useSuperwall(selector)
+  : useSuperwallFallback;
+
 export default function GeneratingPlanScreen() {
+  const superwallState = useSuperwallSafe((state: any) => ({
+    registerPlacement: state.registerPlacement,
+    subscriptionStatus: state.subscriptionStatus,
+  }));
+
+  const registerPlacementRef = useRef(superwallState.registerPlacement);
+  registerPlacementRef.current = superwallState.registerPlacement;
+  const subscriptionStatusRef = useRef(superwallState.subscriptionStatus);
+  subscriptionStatusRef.current = superwallState.subscriptionStatus;
+
   const [currentStage, setCurrentStage] = useState(0);
   const [displayPercent, setDisplayPercent] = useState(0);
   const [checksVisible, setChecksVisible] = useState<boolean[]>([
@@ -121,11 +149,20 @@ export default function GeneratingPlanScreen() {
       })
     );
 
-    Animated.sequence(animations).start(() => {
+    Animated.sequence(animations).start(async () => {
       setIsLoading(false);
-      setTimeout(() => {
+
+      // Present Superwall paywall when loading reaches 100%
+      await registerPlacementRef.current('campaign_trigger');
+
+      // Check if user subscribed after paywall interaction
+      const status = subscriptionStatusRef.current;
+      if (status?.status === 'ACTIVE') {
+        router.push('/onboarding/signup');
+      } else {
+        // If dismissed, go to plan-ready as fallback
         router.push('/onboarding/plan-ready');
-      }, 500);
+      }
     });
 
     const percentListener = progressAnim.addListener(({ value }) => {

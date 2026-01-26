@@ -9,6 +9,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -120,6 +121,7 @@ export default function TemplateDetailScreen() {
   const userId = useUserProfileStore((state) => state.userId);
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
   const addTemplate = useTemplateStore((state) => state.addTemplate);
+  const removeTemplate = useTemplateStore((state) => state.removeTemplate);
   const isTemplateSaved = useTemplateStore((state) => state.isTemplateSaved);
 
   const template = templateId ? getTemplateById(templateId) : null;
@@ -165,11 +167,28 @@ export default function TemplateDetailScreen() {
   };
 
   const handleStartWorkout = () => {
-    // Navigate to active workout with template data
     router.push({
       pathname: '/active-workout',
       params: { templateId: template.id },
     });
+  };
+
+  const handleDeleteTemplate = () => {
+    Alert.alert(
+      'Delete Template',
+      `Are you sure you want to delete "${template.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            removeTemplate(template.id);
+            router.back();
+          },
+        },
+      ]
+    );
   };
 
   const totalSets = getTemplateTotalSets(template);
@@ -199,7 +218,13 @@ export default function TemplateDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Workout</Text>
-        <View style={styles.backButton} />
+        {!template.isPreset ? (
+          <Pressable onPress={handleDeleteTemplate} style={styles.backButton}>
+            <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+          </Pressable>
+        ) : (
+          <View style={styles.backButton} />
+        )}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

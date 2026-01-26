@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Keyboard, Animated } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, TextInput, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -38,19 +38,6 @@ export default function ExerciseTutorialScreen() {
   const weightInputRef = useRef<TextInput>(null);
   const repsInputRef = useRef<TextInput>(null);
 
-  // Celebration animation values
-  const [showCelebration, setShowCelebration] = useState(false);
-  const celebrationScale = useRef(new Animated.Value(0)).current;
-  const celebrationOpacity = useRef(new Animated.Value(0)).current;
-  const confettiAnimations = useRef(
-    Array.from({ length: 12 }, () => ({
-      translateY: new Animated.Value(0),
-      translateX: new Animated.Value(0),
-      opacity: new Animated.Value(1),
-      rotate: new Animated.Value(0),
-    }))
-  ).current;
-
   // Auto-focus weight input on mount to open keyboard
   useEffect(() => {
     setTimeout(() => {
@@ -83,76 +70,10 @@ export default function ExerciseTutorialScreen() {
     }
   };
 
-  const playCelebration = () => {
-    setShowCelebration(true);
-
-    // Reset animations
-    celebrationScale.setValue(0);
-    celebrationOpacity.setValue(1);
-    confettiAnimations.forEach((anim) => {
-      anim.translateY.setValue(0);
-      anim.translateX.setValue(0);
-      anim.opacity.setValue(1);
-      anim.rotate.setValue(0);
-    });
-
-    // Main celebration pulse
-    Animated.sequence([
-      Animated.spring(celebrationScale, {
-        toValue: 1.2,
-        friction: 3,
-        tension: 100,
-        useNativeDriver: true,
-      }),
-      Animated.spring(celebrationScale, {
-        toValue: 1,
-        friction: 4,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Confetti burst animation
-    const confettiPromises = confettiAnimations.map((anim, index) => {
-      const angle = (index / confettiAnimations.length) * Math.PI * 2;
-      const distance = 80 + Math.random() * 60;
-      const targetX = Math.cos(angle) * distance;
-      const targetY = Math.sin(angle) * distance - 40;
-
-      return Animated.parallel([
-        Animated.timing(anim.translateX, {
-          toValue: targetX,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim.translateY, {
-          toValue: targetY,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim.rotate, {
-          toValue: Math.random() * 4 - 2,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim.opacity, {
-          toValue: 0,
-          duration: 600,
-          delay: 300,
-          useNativeDriver: true,
-        }),
-      ]);
-    });
-
-    Animated.parallel(confettiPromises).start(() => {
-      setTimeout(() => setShowCelebration(false), 100);
-    });
-  };
-
   const handleCheck = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setIsChecked(true);
     setStep('complete');
-    playCelebration();
   };
 
   const canContinue = step === 'complete';
@@ -179,7 +100,7 @@ export default function ExerciseTutorialScreen() {
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push('/onboarding/complete');
+            router.push('/onboarding/thank-you');
           }}
         >
           <Text style={styles.skipText}>Skip</Text>
@@ -193,7 +114,7 @@ export default function ExerciseTutorialScreen() {
 
       {/* Exercise Info */}
       <View style={styles.exerciseInfo}>
-        <ExerciseImage gifUrl={gifUrl} size={40} borderRadius={8} />
+        <ExerciseImage thumbnailUrl={gifUrl} size={40} borderRadius={8} />
         <Text style={styles.exerciseType}>{exerciseName || 'Exercise'}</Text>
       </View>
 
@@ -308,7 +229,7 @@ export default function ExerciseTutorialScreen() {
           onPress={() => {
             if (canContinue) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              router.push('/onboarding/complete');
+              router.push('/onboarding/thank-you');
             }
           }}
           disabled={!canContinue}
@@ -316,54 +237,6 @@ export default function ExerciseTutorialScreen() {
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
       </View>
-
-      {/* Celebration Overlay */}
-      {showCelebration && (
-        <View style={styles.celebrationOverlay} pointerEvents="none">
-          <Animated.View
-            style={[styles.celebrationCenter, { transform: [{ scale: celebrationScale }] }]}
-          >
-            <Text style={styles.celebrationEmoji}>🎉</Text>
-          </Animated.View>
-          {confettiAnimations.map((anim, index) => {
-            const confettiColors = [
-              colors.primary,
-              '#FFD700',
-              '#FF6B6B',
-              '#4ECDC4',
-              '#FF9F43',
-              '#A29BFE',
-            ];
-            const confettiEmojis = ['✨', '⭐', '💪', '🔥', '💜', '🏋️'];
-            return (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.confettiPiece,
-                  {
-                    backgroundColor: confettiColors[index % confettiColors.length],
-                    transform: [
-                      { translateX: anim.translateX },
-                      { translateY: anim.translateY },
-                      {
-                        rotate: anim.rotate.interpolate({
-                          inputRange: [-2, 2],
-                          outputRange: ['-180deg', '180deg'],
-                        }),
-                      },
-                    ],
-                    opacity: anim.opacity,
-                  },
-                ]}
-              >
-                <Text style={styles.confettiEmoji}>
-                  {confettiEmojis[index % confettiEmojis.length]}
-                </Text>
-              </Animated.View>
-            );
-          })}
-        </View>
-      )}
     </SafeAreaView>
   );
 }
@@ -603,30 +476,5 @@ const styles = StyleSheet.create({
   },
   continueTextDisabled: {
     color: colors.textSecondary,
-  },
-  celebrationOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-  },
-  celebrationCenter: {
-    position: 'absolute',
-    top: '35%',
-  },
-  celebrationEmoji: {
-    fontSize: 80,
-  },
-  confettiPiece: {
-    position: 'absolute',
-    top: '35%',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  confettiEmoji: {
-    fontSize: 20,
   },
 });

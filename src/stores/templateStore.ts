@@ -5,12 +5,6 @@ import { createUserNamespacedStorage } from '@/lib/userNamespacedStorage';
 import { WorkoutImage } from './workoutStore';
 import { colors } from '@/constants/theme';
 
-// Local images for preset templates (require returns a number in React Native)
-const PRESET_IMAGES = {
-  glutes: require('../../assets/Templates/glutes.jpg'),
-  back: require('../../assets/Templates/back.jpg'),
-  abs: require('../../assets/Templates/abs.jpg'),
-} as const;
 import {
   saveUserTemplate,
   updateUserTemplate,
@@ -50,7 +44,7 @@ export interface WorkoutTemplate {
   estimatedDuration: number; // in minutes
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   equipment: string; // 'Gym', 'Home', 'No Equipment'
-  category?: 'at-home' | 'travel' | 'cardio' | 'rehab'; // For explore filter categories
+  category?: 'core' | 'glutes' | 'lower-body' | 'pull' | 'push' | 'upper-body'; // For explore filter categories
   exercises: TemplateExercise[];
   isPreset: boolean; // true for explore library, false for user-created
   createdAt: string;
@@ -115,70 +109,93 @@ const generateId = () => `template_${Date.now()}_${Math.random().toString(36).su
 export const DEFAULT_FOLDER_ID = 'my-templates';
 export const DEFAULT_FOLDER_NAME = 'My Templates';
 
-// Sample preset templates for the explore library
+// Category images for preset templates
+const CATEGORY_IMAGES = {
+  core: require('../../assets/Images/ABS-CORE/IMG_4464.JPG'),
+  glutes: require('../../assets/Images/GLUTES/IMG_4472.JPG'),
+  lowerBody: require('../../assets/Images/LOWER BODY/IMG_4484.JPG'),
+  pull: require('../../assets/Images/BACK-PULL/IMG_4451.JPG'),
+  push: require('../../assets/Images/UPPER BODY/IMG_4492.JPG'),
+  upperBody: require('../../assets/Images/UPPER BODY/IMG_4493.JPG'),
+} as const;
+
+// Preset templates for the explore library - organized by 6 categories
 const PRESET_TEMPLATES: WorkoutTemplate[] = [
-  // Main workout templates (shown first)
+  // ===== CORE (8 workouts) =====
   {
-    id: 'preset-glutes',
-    name: 'Glutes Workout',
-    description: 'A high intensity glutes workout to give you a good pump',
-    tagIds: ['legs', 'glutes'],
-    tagColor: colors.workout.legs,
-    estimatedDuration: 83,
-    difficulty: 'Beginner',
+    id: 'preset-core-1',
+    name: 'Machines',
+    description: 'Machine-based core workout targeting all abdominal muscles',
+    tagIds: ['core'],
+    tagColor: colors.workout.core,
+    estimatedDuration: 35,
+    difficulty: 'Intermediate',
     equipment: 'Gym',
-    localImage: PRESET_IMAGES.glutes,
+    category: 'core',
+    localImage: CATEGORY_IMAGES.core,
     exercises: [
       {
         id: '1',
-        exerciseId: 'hip-thrust-machine',
-        exerciseName: 'Hip Thrust (Machine)',
-        muscle: 'Glutes',
+        exerciseId: 'cable-crunches-kneeling',
+        exerciseName: 'Cable Crunches (Kneeling)',
+        muscle: 'Core',
         sets: [
-          { setNumber: 1, targetWeight: 40, targetReps: 15 },
-          { setNumber: 2, targetWeight: 50, targetReps: 12 },
-          { setNumber: 3, targetWeight: 50, targetReps: 12 },
+          { setNumber: 1, targetWeight: 20, targetReps: 15 },
+          { setNumber: 2, targetWeight: 25, targetReps: 12 },
+          { setNumber: 3, targetWeight: 25, targetReps: 12 },
         ],
-        restTimerSeconds: 120,
+        restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'cable-kickback',
-        exerciseName: 'Cable Kickback',
-        muscle: 'Glutes',
+        exerciseId: 'pallof-press',
+        exerciseName: 'Pallof Press',
+        muscle: 'Core',
         sets: [
-          { setNumber: 1, targetWeight: 10, targetReps: 15 },
-          { setNumber: 2, targetWeight: 12, targetReps: 12 },
-          { setNumber: 3, targetWeight: 12, targetReps: 12 },
+          { setNumber: 1, targetWeight: 10, targetReps: 12 },
+          { setNumber: 2, targetWeight: 12, targetReps: 10 },
+          { setNumber: 3, targetWeight: 12, targetReps: 10 },
         ],
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'sumo-squat',
-        exerciseName: 'Sumo Squat',
-        muscle: 'Glutes',
+        exerciseId: 'cable-rotations',
+        exerciseName: 'Cable Rotations',
+        muscle: 'Core',
         sets: [
-          { setNumber: 1, targetWeight: 20, targetReps: 12 },
-          { setNumber: 2, targetWeight: 25, targetReps: 10 },
-          { setNumber: 3, targetWeight: 25, targetReps: 10 },
+          { setNumber: 1, targetWeight: 10, targetReps: 12 },
+          { setNumber: 2, targetWeight: 12, targetReps: 10 },
+          { setNumber: 3, targetWeight: 12, targetReps: 10 },
         ],
-        restTimerSeconds: 90,
+        restTimerSeconds: 60,
+      },
+      {
+        id: '4',
+        exerciseId: 'decline-sit-ups',
+        exerciseName: 'Decline Sit Ups',
+        muscle: 'Core',
+        sets: [
+          { setNumber: 1, targetReps: 15 },
+          { setNumber: 2, targetReps: 12 },
+          { setNumber: 3, targetReps: 12 },
+        ],
+        restTimerSeconds: 60,
       },
     ],
     isPreset: true,
     createdAt: new Date().toISOString(),
   },
   {
-    id: 'preset-back-bicep',
-    name: 'Back & Bicep',
+    id: 'preset-core-2',
+    name: 'Dumbbells',
     description: 'Build a strong back and defined biceps',
     tagIds: ['back', 'arms'],
     tagColor: colors.workout.back,
     estimatedDuration: 75,
     difficulty: 'Intermediate',
     equipment: 'Gym',
-    localImage: PRESET_IMAGES.back,
+    localImage: CATEGORY_IMAGES.pull,
     exercises: [
       {
         id: '1',
@@ -229,7 +246,7 @@ const PRESET_TEMPLATES: WorkoutTemplate[] = [
     estimatedDuration: 30,
     difficulty: 'Beginner',
     equipment: 'No Equipment',
-    localImage: PRESET_IMAGES.abs,
+    localImage: CATEGORY_IMAGES.core,
     exercises: [
       {
         id: '1',

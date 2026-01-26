@@ -63,7 +63,7 @@ export default function FirstExercisesScreen() {
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push('/onboarding/complete');
+            router.push('/onboarding/thank-you');
           }}
         >
           <Text style={styles.skipText}>Skip</Text>

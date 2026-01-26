@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -6,6 +5,11 @@ import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 export default function PlanReadyScreen() {
+  const handleContinue = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    router.push('/onboarding/signup');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -28,13 +32,7 @@ export default function PlanReadyScreen() {
 
       {/* Continue Button */}
       <View style={styles.bottomSection}>
-        <Pressable
-          style={styles.continueButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push('/onboarding/signup');
-          }}
-        >
+        <Pressable style={styles.continueButton} onPress={handleContinue}>
           <Text style={styles.continueText}>Continue</Text>
         </Pressable>
       </View>

@@ -12,6 +12,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authStateManager } from '@/services/authState';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
+import { supabase } from '@/services/supabase';
+
+// Lazy-load SuperwallExpoModule to avoid crashes if native module isn't ready
+let _superwallModule: any = null;
+function getSuperwallModule() {
+  if (!_superwallModule) {
+    try {
+      _superwallModule = require('expo-superwall').SuperwallExpoModule;
+    } catch (e) {
+      console.warn('[StoreManager] Failed to load SuperwallExpoModule:', e);
+    }
+  }
+  return _superwallModule;
+}
 
 // Initial default states (must match store definitions)
 const WORKOUT_STORE_INITIAL = {
@@ -56,11 +70,18 @@ export function initializeStoreManager() {
     // User logged out or switched accounts
     if (previousUserId !== null) {
       resetStores();
+      // Reset Superwall identity so the next user gets fresh assignments
+      const sw = getSuperwallModule();
+      if (sw) {
+        sw.reset().catch((e: any) => console.warn('[StoreManager] Superwall reset error:', e));
+      }
     }
 
     // New user logged in
     if (newUserId !== null) {
       await rehydrateStores();
+      // Identify user in Superwall for paywall targeting
+      identifySuperwallUser(newUserId);
     }
 
     previousUserId = newUserId;
@@ -108,6 +129,39 @@ async function rehydrateStores() {
     console.log('[StoreManager] Stores rehydrated successfully');
   } catch (error) {
     console.error('[StoreManager] Rehydration error:', error);
+  }
+}
+
+/**
+ * Identifies the user in Superwall and sets basic attributes (name, email).
+ */
+async function identifySuperwallUser(userId: string) {
+  try {
+    const sw = getSuperwallModule();
+    if (!sw) return;
+
+    await sw.identify(userId);
+
+    // Fetch profile to set basic user attributes
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name, email')
+      .eq('id', userId)
+      .single();
+
+    if (profile) {
+      const attrs: Record<string, string> = {};
+      if (profile.name) attrs.name = profile.name;
+      if (profile.email) attrs.email = profile.email;
+
+      if (Object.keys(attrs).length > 0) {
+        await sw.setUserAttributes(attrs);
+      }
+    }
+
+    console.log(`[StoreManager] Superwall identified user ${userId.slice(0, 8)}...`);
+  } catch (error) {
+    console.warn('[StoreManager] Superwall identify error:', error);
   }
 }
 

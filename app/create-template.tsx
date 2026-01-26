@@ -23,32 +23,8 @@ import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templa
 import { useWorkoutStore, PendingExercise } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
 import { getWeightUnit, UnitSystem, filterNumericInput } from '@/utils/units';
-import { getCurrentUser } from '@/services/api/user';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Workout tags with their colors from theme
-const WORKOUT_TAGS = [
-  { id: 'legs', label: 'Legs', color: colors.workout.legs },
-  { id: 'glutes', label: 'Glutes', color: colors.workout.legs },
-  { id: 'arms', label: 'Arms', color: colors.workout.arms },
-  { id: 'back', label: 'Back', color: colors.workout.back },
-  { id: 'chest', label: 'Chest', color: colors.workout.chest },
-  { id: 'fullBody', label: 'Full Body', color: colors.workout.fullBody },
-  { id: 'cardio', label: 'Cardio', color: colors.workout.cardio },
-  { id: 'shoulders', label: 'Shoulders', color: colors.workout.shoulders },
-  { id: 'core', label: 'Core', color: colors.workout.core },
-];
-
-// Difficulty options
-const DIFFICULTY_OPTIONS: Array<'Beginner' | 'Intermediate' | 'Advanced'> = [
-  'Beginner',
-  'Intermediate',
-  'Advanced',
-];
-
-// Equipment options
-const EQUIPMENT_OPTIONS = ['Gym', 'Home', 'No Equipment'];
 
 // Rest timer options in seconds
 const REST_TIMER_OPTIONS = [
@@ -345,22 +321,12 @@ export default function CreateTemplateScreen() {
   const isEditMode = !!templateId;
 
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
-  const createTemplate = useTemplateStore((state) => state.createTemplate);
-  const updateTemplate = useTemplateStore((state) => state.updateTemplate);
 
   const pendingExercises = useWorkoutStore((state) => state.pendingExercises);
   const clearPendingExercises = useWorkoutStore((state) => state.clearPendingExercises);
 
-  // Form state
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [difficulty, setDifficulty] = useState<'Beginner' | 'Intermediate' | 'Advanced'>(
-    'Beginner'
-  );
-  const [equipment, setEquipment] = useState('Gym');
+  // Exercise state
   const [exercises, setExercises] = useState<TemplateExercise[]>([]);
-  const [estimatedDuration, setEstimatedDuration] = useState('60');
   const [units] = useState<UnitSystem>('metric');
 
   // Modal states
@@ -379,22 +345,12 @@ export default function CreateTemplateScreen() {
   );
   const restTimerModalSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
-  // Settings modal (for template info)
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const settingsModalSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-
   // Load existing template if in edit mode
   useEffect(() => {
     if (templateId) {
       const existing = getTemplateById(templateId);
       if (existing) {
-        setName(existing.name);
-        setDescription(existing.description || '');
-        setSelectedTagIds(existing.tagIds);
-        setDifficulty(existing.difficulty);
-        setEquipment(existing.equipment);
         setExercises(existing.exercises);
-        setEstimatedDuration(existing.estimatedDuration.toString());
       }
     }
   }, [templateId]);
@@ -507,27 +463,6 @@ export default function CreateTemplateScreen() {
     });
   };
 
-  // Settings modal functions
-  const openSettingsModal = () => {
-    setShowSettingsModal(true);
-    Animated.spring(settingsModalSlideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 11,
-    }).start();
-  };
-
-  const closeSettingsModal = () => {
-    Animated.timing(settingsModalSlideAnim, {
-      toValue: SCREEN_HEIGHT,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowSettingsModal(false);
-    });
-  };
-
   // Reorder functions
   const removeExerciseFromReorder = (index: number) => {
     setReorderExercises((prev) => prev.filter((_, i) => i !== index));
@@ -601,52 +536,21 @@ export default function CreateTemplateScreen() {
     });
   };
 
-  const toggleTag = (tagId: string) => {
-    if (selectedTagIds.includes(tagId)) {
-      setSelectedTagIds(selectedTagIds.filter((id) => id !== tagId));
-    } else {
-      setSelectedTagIds([...selectedTagIds, tagId]);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!name.trim()) {
-      Alert.alert('Missing Name', 'Please enter a template name');
-      return;
-    }
-
+  const handleSave = () => {
     if (exercises.length === 0) {
       Alert.alert('No Exercises', 'Please add at least one exercise');
       return;
     }
 
-    // Get current user for backend sync
-    const user = await getCurrentUser();
-
-    // Get primary tag color
-    const primaryTag = WORKOUT_TAGS.find((t) => t.id === selectedTagIds[0]);
-    const tagColor = primaryTag?.color || colors.primary;
-
-    const templateData = {
-      name: name.trim(),
-      description: description.trim() || undefined,
-      tagIds: selectedTagIds,
-      tagColor,
-      estimatedDuration: parseInt(estimatedDuration) || 60,
-      difficulty,
-      equipment,
-      exercises,
-      userId: user?.id, // Include userId for backend sync
-      folderId: folderId || undefined, // Assign to specified folder
-    };
-
-    if (isEditMode && templateId) {
-      updateTemplate(templateId, templateData);
-    } else {
-      createTemplate(templateData);
-    }
-
-    router.back();
+    // Navigate to save-template page with exercise data
+    router.push({
+      pathname: '/save-template',
+      params: {
+        exercises: JSON.stringify(exercises),
+        ...(templateId ? { templateId } : {}),
+        ...(folderId ? { folderId } : {}),
+      },
+    });
   };
 
   const handleDiscard = () => {
@@ -680,13 +584,11 @@ export default function CreateTemplateScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header - Matching active-workout style */}
+      {/* Header - Clean tracker style (no title) */}
       <View style={styles.header}>
         <Pressable onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-
-        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Template' : 'New Template'}</Text>
 
         <View style={styles.headerRight}>
           <Pressable onPress={handleSave}>
@@ -697,17 +599,6 @@ export default function CreateTemplateScreen() {
 
       {/* Divider */}
       <View style={styles.divider} />
-
-      {/* Template Name Input - Always visible at top */}
-      <View style={styles.nameInputContainer}>
-        <TextInput
-          style={styles.nameInput}
-          value={name}
-          onChangeText={setName}
-          placeholder="Template Name"
-          placeholderTextColor={colors.textSecondary}
-        />
-      </View>
 
       {exercises.length === 0 ? (
         // Empty State - Similar to active-workout
@@ -721,14 +612,9 @@ export default function CreateTemplateScreen() {
             <Ionicons name="add" size={24} color="#FFFFFF" />
             <Text style={styles.addExerciseText}>Add Exercise</Text>
           </Pressable>
-          <View style={styles.bottomButtons}>
-            <Pressable style={styles.secondaryButton} onPress={openSettingsModal}>
-              <Text style={styles.secondaryButtonText}>Settings</Text>
-            </Pressable>
-            <Pressable style={styles.discardButton} onPress={handleDiscard}>
-              <Text style={styles.discardButtonText}>Discard</Text>
-            </Pressable>
-          </View>
+          <Pressable style={styles.discardButtonFull} onPress={handleDiscard}>
+            <Text style={styles.discardButtonText}>Discard</Text>
+          </Pressable>
         </View>
       ) : (
         // Filled State with Exercises - Matching active-workout UI
@@ -807,14 +693,9 @@ export default function CreateTemplateScreen() {
             <Text style={styles.addExerciseText}>Add Exercise</Text>
           </Pressable>
 
-          <View style={styles.bottomButtonsFilled}>
-            <Pressable style={styles.secondaryButton} onPress={openSettingsModal}>
-              <Text style={styles.secondaryButtonText}>Settings</Text>
-            </Pressable>
-            <Pressable style={styles.discardButton} onPress={handleDiscard}>
-              <Text style={styles.discardButtonText}>Discard</Text>
-            </Pressable>
-          </View>
+          <Pressable style={styles.discardButtonFilled} onPress={handleDiscard}>
+            <Text style={styles.discardButtonText}>Discard</Text>
+          </Pressable>
 
           <View style={styles.bottomSpacer} />
         </ScrollView>
@@ -957,126 +838,6 @@ export default function CreateTemplateScreen() {
           </Animated.View>
         </Pressable>
       </Modal>
-
-      {/* Settings Modal - Template Info */}
-      <Modal
-        visible={showSettingsModal}
-        transparent
-        animationType="none"
-        onRequestClose={closeSettingsModal}
-      >
-        <Pressable style={styles.modalOverlay} onPress={closeSettingsModal}>
-          <Animated.View
-            style={[
-              styles.settingsModalContent,
-              { transform: [{ translateY: settingsModalSlideAnim }] },
-            ]}
-          >
-            <Pressable onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalHandle} />
-
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={styles.settingsModalTitle}>Template Settings</Text>
-
-                {/* Description */}
-                <Text style={styles.settingsLabel}>Description</Text>
-                <TextInput
-                  style={styles.settingsTextArea}
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder="Describe your workout..."
-                  placeholderTextColor={colors.textSecondary}
-                  multiline
-                  numberOfLines={3}
-                />
-
-                {/* Tags */}
-                <Text style={styles.settingsLabel}>Tags</Text>
-                <View style={styles.tagsGrid}>
-                  {WORKOUT_TAGS.map((tag) => (
-                    <Pressable
-                      key={tag.id}
-                      style={[
-                        styles.tagChip,
-                        selectedTagIds.includes(tag.id) && {
-                          backgroundColor: tag.color + '30',
-                          borderColor: tag.color,
-                        },
-                      ]}
-                      onPress={() => toggleTag(tag.id)}
-                    >
-                      <View style={[styles.tagDot, { backgroundColor: tag.color }]} />
-                      <Text style={styles.tagLabel}>{tag.label}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                {/* Difficulty */}
-                <Text style={styles.settingsLabel}>Difficulty</Text>
-                <View style={styles.optionsRow}>
-                  {DIFFICULTY_OPTIONS.map((option) => (
-                    <Pressable
-                      key={option}
-                      style={[
-                        styles.optionChip,
-                        difficulty === option && styles.optionChipSelected,
-                      ]}
-                      onPress={() => setDifficulty(option)}
-                    >
-                      <Text
-                        style={[
-                          styles.optionChipText,
-                          difficulty === option && styles.optionChipTextSelected,
-                        ]}
-                      >
-                        {option}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                {/* Equipment */}
-                <Text style={styles.settingsLabel}>Equipment</Text>
-                <View style={styles.optionsRow}>
-                  {EQUIPMENT_OPTIONS.map((option) => (
-                    <Pressable
-                      key={option}
-                      style={[styles.optionChip, equipment === option && styles.optionChipSelected]}
-                      onPress={() => setEquipment(option)}
-                    >
-                      <Text
-                        style={[
-                          styles.optionChipText,
-                          equipment === option && styles.optionChipTextSelected,
-                        ]}
-                      >
-                        {option}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                {/* Duration */}
-                <Text style={styles.settingsLabel}>Estimated Duration (minutes)</Text>
-                <TextInput
-                  style={styles.settingsInput}
-                  value={estimatedDuration}
-                  onChangeText={(value) => setEstimatedDuration(filterNumericInput(value, false))}
-                  keyboardType="numeric"
-                  placeholder="60"
-                  placeholderTextColor={colors.textSecondary}
-                />
-              </ScrollView>
-
-              <View style={styles.settingsModalBottom}>
-                <Pressable style={styles.doneButton} onPress={closeSettingsModal}>
-                  <Text style={styles.doneButtonText}>Done</Text>
-                </Pressable>
-              </View>
-            </Pressable>
-          </Animated.View>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -1098,13 +859,6 @@ const styles = StyleSheet.create({
     left: spacing.lg,
     zIndex: 1,
   },
-  headerTitle: {
-    flex: 1,
-    fontFamily: fonts.semiBold,
-    fontSize: 20,
-    color: colors.text,
-    textAlign: 'center',
-  },
   headerRight: {
     position: 'absolute',
     right: spacing.lg,
@@ -1118,18 +872,6 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: colors.border,
-  },
-  nameInputContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  nameInput: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
-    color: colors.text,
-    padding: 0,
   },
   content: {
     flex: 1,
@@ -1175,36 +917,16 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     color: '#FFFFFF',
   },
-  bottomButtons: {
-    flexDirection: 'row',
+  discardButtonFull: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#F5F4FA',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    borderRadius: 16,
     marginTop: spacing.md,
-    gap: spacing.md,
     width: '100%',
-  },
-  secondaryButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    backgroundColor: '#F5F4FA',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    borderRadius: 16,
-  },
-  secondaryButtonText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  discardButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    backgroundColor: '#F5F4FA',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    borderRadius: 16,
   },
   discardButtonText: {
     fontFamily: fonts.medium,
@@ -1333,11 +1055,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     gap: spacing.sm,
   },
-  bottomButtonsFilled: {
-    flexDirection: 'row',
+  discardButtonFilled: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#F5F4FA',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    borderRadius: 16,
     marginTop: spacing.md,
     marginHorizontal: spacing.lg,
-    gap: spacing.md,
   },
   bottomSpacer: {
     height: 40,
@@ -1497,104 +1224,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
-  },
-
-  // Settings Modal Styles
-  settingsModalContent: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: SCREEN_HEIGHT * 0.85,
-    paddingBottom: 40,
-  },
-  settingsModalTitle: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.xl,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  settingsLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  settingsTextArea: {
-    ...cardStyle,
-    marginHorizontal: spacing.lg,
-    padding: spacing.md,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  settingsInput: {
-    ...cardStyle,
-    marginHorizontal: spacing.lg,
-    padding: spacing.md,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  tagsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  tagChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
-  },
-  tagDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  tagLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  optionChip: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  optionChipSelected: {
-    backgroundColor: 'rgba(148, 122, 255, 0.15)',
-    borderColor: colors.primary,
-  },
-  optionChipText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
-  },
-  optionChipTextSelected: {
-    color: colors.primary,
-  },
-  settingsModalBottom: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
   },
 });

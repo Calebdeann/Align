@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Stack } from 'expo-router';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,6 +9,14 @@ import { colors } from '@/constants/theme';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { initializeStoreManager } from '@/lib/storeManager';
+
+// Lazy import SuperwallProvider to prevent crash if native module isn't ready
+let SuperwallProvider: React.ComponentType<any> | null = null;
+try {
+  SuperwallProvider = require('expo-superwall').SuperwallProvider;
+} catch (e) {
+  console.warn('[RootLayout] Failed to load SuperwallProvider:', e);
+}
 
 // Keep splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -64,24 +72,35 @@ export default function RootLayout() {
     return null;
   }
 
+  const appContent = (
+    <View style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
+      <StatusBar style="dark" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="active-workout" />
+        <Stack.Screen name="add-exercise" />
+        <Stack.Screen name="save-workout" />
+        <Stack.Screen name="explore-templates" />
+        <Stack.Screen name="template-detail" />
+        <Stack.Screen name="create-template" />
+        <Stack.Screen name="save-template" />
+        <Stack.Screen name="workout-details" />
+      </Stack>
+    </View>
+  );
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1, backgroundColor: colors.background }} onLayout={onLayoutRootView}>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="onboarding" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="profile" />
-          <Stack.Screen name="active-workout" />
-          <Stack.Screen name="add-exercise" />
-          <Stack.Screen name="save-workout" />
-          <Stack.Screen name="explore-templates" />
-          <Stack.Screen name="template-detail" />
-          <Stack.Screen name="create-template" />
-          <Stack.Screen name="workout-details" />
-        </Stack>
-      </View>
+      {SuperwallProvider ? (
+        <SuperwallProvider apiKeys={{ ios: 'pk_vhA9Ry9TLgVUTyK_ugU0P' }}>
+          {appContent}
+        </SuperwallProvider>
+      ) : (
+        appContent
+      )}
     </GestureHandlerRootView>
   );
 }

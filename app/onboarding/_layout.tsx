@@ -20,8 +20,6 @@ export default function OnboardingLayout() {
       <Stack.Screen name="signin" />
       <Stack.Screen name="reminder" />
       <Stack.Screen name="exercise-tutorial" />
-      <Stack.Screen name="track-tutorial" />
-      <Stack.Screen name="track-exercise-select" />
       <Stack.Screen name="first-exercises" />
       <Stack.Screen name="reviews" />
       <Stack.Screen name="potential" />
@@ -31,8 +29,8 @@ export default function OnboardingLayout() {
       <Stack.Screen name="goal-reality" />
       <Stack.Screen name="prediction" />
       <Stack.Screen name="plan-ready" />
+      <Stack.Screen name="enter-referral-code" />
       <Stack.Screen name="thank-you" />
-      <Stack.Screen name="complete" />
     </Stack>
   );
 }

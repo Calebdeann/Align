@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,11 @@ import {
   Modal,
   Animated,
   Dimensions,
-  PanResponder,
-  GestureResponderEvent,
-  PanResponderGestureState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Swipeable } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import Svg, { Path, Line } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
@@ -362,8 +360,7 @@ function createDefaultSets(
   ];
 }
 
-const DELETE_BUTTON_WIDTH = 80;
-const SET_ROW_HEIGHT = 48; // Approximate height of set row
+const DELETE_BUTTON_WIDTH = 72;
 
 interface SwipeableSetRowProps {
   set: ExerciseSet;
@@ -393,7 +390,8 @@ function SwipeableSetRow({
   onDelete,
   onSetTypePress,
 }: SwipeableSetRowProps) {
-  // Get the appropriate style for the set type label
+  const swipeableRef = useRef<Swipeable>(null);
+
   const getSetTypeLabelStyle = () => {
     switch (setType) {
       case 'warmup':
@@ -407,125 +405,30 @@ function SwipeableSetRow({
         return null;
     }
   };
-  const translateX = useRef(new Animated.Value(0)).current;
-  const rowHeight = useRef(new Animated.Value(SET_ROW_HEIGHT)).current;
-  const rowOpacity = useRef(new Animated.Value(1)).current;
-  const isSwipedOpen = useRef(false);
-  const isDeleting = useRef(false);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !isDeleting.current,
-      onMoveShouldSetPanResponder: (
-        _: GestureResponderEvent,
-        gestureState: PanResponderGestureState
-      ) => {
-        if (isDeleting.current) return false;
-        // Capture horizontal swipes with lower threshold
-        return (
-          Math.abs(gestureState.dx) > 5 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy)
-        );
-      },
-      onPanResponderGrant: () => {
-        // Stop any ongoing animations and get current value
-        translateX.stopAnimation();
-      },
-      onPanResponderMove: (_, gestureState) => {
-        // Swipe left (negative dx) to reveal delete on right
-        if (gestureState.dx < 0 && !isSwipedOpen.current) {
-          const newValue = Math.max(gestureState.dx, -DELETE_BUTTON_WIDTH);
-          translateX.setValue(newValue);
-        } else if (isSwipedOpen.current) {
-          // Already open, allow closing by swiping right
-          const newValue = Math.min(
-            Math.max(-DELETE_BUTTON_WIDTH + gestureState.dx, -DELETE_BUTTON_WIDTH),
-            0
-          );
-          translateX.setValue(newValue);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        // Opening: swipe left past threshold
-        if (gestureState.dx < -DELETE_BUTTON_WIDTH / 3 && !isSwipedOpen.current) {
-          Animated.spring(translateX, {
-            toValue: -DELETE_BUTTON_WIDTH,
-            useNativeDriver: false,
-            tension: 200,
-            friction: 20,
-          }).start();
-          isSwipedOpen.current = true;
-        } else if (gestureState.dx > 20 && isSwipedOpen.current) {
-          // Closing: swipe right when open
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: false,
-            tension: 200,
-            friction: 20,
-          }).start();
-          isSwipedOpen.current = false;
-        } else {
-          // Snap back to current state
-          Animated.spring(translateX, {
-            toValue: isSwipedOpen.current ? -DELETE_BUTTON_WIDTH : 0,
-            useNativeDriver: false,
-            tension: 200,
-            friction: 20,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  const handleDelete = useCallback(() => {
+    swipeableRef.current?.close();
+    onDelete(exerciseIndex, setIndex);
+  }, [exerciseIndex, setIndex, onDelete]);
 
-  const handleDelete = () => {
-    if (isDeleting.current) return;
-    isDeleting.current = true;
-
-    // Slide the row off screen to the left, fade out, and collapse height simultaneously
-    Animated.parallel([
-      Animated.timing(translateX, {
-        toValue: -400, // Slide off screen
-        duration: 200,
-        useNativeDriver: false,
-      }),
-      Animated.timing(rowOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-      Animated.timing(rowHeight, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }),
-    ]).start(() => {
-      onDelete(exerciseIndex, setIndex);
-    });
-  };
-
-  // Calculate the delete button opacity based on swipe position
-  const deleteButtonOpacity = translateX.interpolate({
-    inputRange: [-DELETE_BUTTON_WIDTH, -10, 0],
-    outputRange: [1, 0.5, 0],
-    extrapolate: 'clamp',
-  });
+  const renderRightActions = useCallback(() => {
+    return (
+      <Pressable style={swipeStyles.deleteButton} onPress={handleDelete}>
+        <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
+      </Pressable>
+    );
+  }, [handleDelete]);
 
   return (
-    <Animated.View style={[swipeStyles.container, { height: rowHeight, opacity: rowOpacity }]}>
-      {/* Delete button - only visible when swiping */}
-      <Animated.View style={[swipeStyles.deleteButtonContainer, { opacity: deleteButtonOpacity }]}>
-        <Pressable style={swipeStyles.deleteButton} onPress={handleDelete}>
-          <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
-        </Pressable>
-      </Animated.View>
-
-      {/* Swipeable row content */}
-      <Animated.View
-        style={[
-          styles.setRow,
-          set.completed && styles.setRowCompleted,
-          { transform: [{ translateX }] },
-        ]}
-        {...panResponder.panHandlers}
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      rightThreshold={40}
+      overshootRight={false}
+      containerStyle={swipeStyles.container}
+    >
+      <View
+        style={[styles.setRow, set.completed && styles.setRowCompleted, { marginHorizontal: 0 }]}
       >
         {/* Set number / type */}
         <Pressable
@@ -569,30 +472,19 @@ function SwipeableSetRow({
             {set.completed && <Ionicons name="checkmark-sharp" size={14} color="#FFFFFF" />}
           </View>
         </Pressable>
-      </Animated.View>
-    </Animated.View>
+      </View>
+    </Swipeable>
   );
 }
 
 const swipeStyles = StyleSheet.create({
   container: {
-    position: 'relative',
-    backgroundColor: colors.background,
-  },
-  deleteButtonContainer: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: DELETE_BUTTON_WIDTH,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#E53935',
+    overflow: 'hidden',
     borderRadius: 8,
   },
   deleteButton: {
     width: DELETE_BUTTON_WIDTH,
-    height: '100%',
+    backgroundColor: '#FF6B6B',
     justifyContent: 'center',
     alignItems: 'center',
   },

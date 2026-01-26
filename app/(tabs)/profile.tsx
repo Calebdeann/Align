@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -308,11 +309,6 @@ export default function ProfileScreen() {
             onPress={() => router.push('/profile/personal-details')}
           />
           <MenuItem
-            icon={<Ionicons name="globe-outline" size={20} color={colors.text} />}
-            label="Manage Subscription"
-            onPress={() => {}}
-          />
-          <MenuItem
             icon={<Ionicons name="language-outline" size={20} color={colors.text} />}
             label="Language"
             onPress={() => router.push('/profile/select-language')}
@@ -338,6 +334,7 @@ export default function ProfileScreen() {
             label="Notifications"
             onPress={() => handleNotificationToggle(!notificationsEnabled)}
             showArrow={false}
+            showDivider={false}
             rightElement={
               <Switch
                 value={notificationsEnabled}
@@ -347,12 +344,6 @@ export default function ProfileScreen() {
               />
             }
           />
-          <MenuItem
-            icon={<Ionicons name="heart-outline" size={20} color={colors.text} />}
-            label="Apple Health"
-            onPress={() => router.push('/profile/apple-health')}
-            showDivider={false}
-          />
         </MenuCard>
 
         {/* Support */}
@@ -361,17 +352,17 @@ export default function ProfileScreen() {
           <MenuItem
             icon={<Ionicons name="paper-plane-outline" size={20} color={colors.text} />}
             label="Contact Us"
-            onPress={() => {}}
+            onPress={() => Linking.openURL('mailto:aligntracker@gmail.com')}
           />
           <MenuItem
             icon={<Ionicons name="document-text-outline" size={20} color={colors.text} />}
             label="Terms & Conditions"
-            onPress={() => {}}
+            onPress={() => WebBrowser.openBrowserAsync('https://aligntermsandconditions.carrd.co/')}
           />
           <MenuItem
             icon={<Ionicons name="shield-checkmark-outline" size={20} color={colors.text} />}
             label="Privacy Policy"
-            onPress={() => {}}
+            onPress={() => WebBrowser.openBrowserAsync('https://alignprivacypolicy.carrd.co/')}
             showDivider={false}
           />
         </MenuCard>
@@ -382,17 +373,12 @@ export default function ProfileScreen() {
           <MenuItem
             icon={<Ionicons name="logo-instagram" size={20} color={colors.text} />}
             label="Instagram"
-            onPress={() => {}}
+            onPress={() => Linking.openURL('https://www.instagram.com/align.tracker/')}
           />
           <MenuItem
             icon={<Ionicons name="logo-tiktok" size={20} color={colors.text} />}
             label="TikTok"
-            onPress={() => {}}
-          />
-          <MenuItem
-            icon={<Ionicons name="logo-twitter" size={20} color={colors.text} />}
-            label="X"
-            onPress={() => {}}
+            onPress={() => Linking.openURL('https://www.tiktok.com/@align.tracker')}
             showDivider={false}
           />
         </MenuCard>

@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { View, StyleSheet, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
 import { CalendarIcon, WorkoutIcon, ProfileIcon } from '@/components/icons';
 import { colors } from '@/constants/theme';
 import ActiveWorkoutWidget from '@/components/workout/ActiveWorkoutWidget';
@@ -65,14 +64,6 @@ export default function TabsLayout() {
           options={{
             title: 'Workout',
             tabBarIcon: ({ color }) => <WorkoutIcon color={color} />,
-            tabBarButton: (props) => <HapticTabButton {...props} />,
-          }}
-        />
-        <Tabs.Screen
-          name="exercises"
-          options={{
-            title: 'Exercises',
-            tabBarIcon: ({ color }) => <Ionicons name="barbell-outline" size={24} color={color} />,
             tabBarButton: (props) => <HapticTabButton {...props} />,
           }}
         />
