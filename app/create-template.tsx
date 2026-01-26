@@ -22,7 +22,15 @@ import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { useWorkoutStore, PendingExercise } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { getWeightUnit, UnitSystem, filterNumericInput } from '@/utils/units';
+import { getWeightUnit, UnitSystem, filterNumericInput, fromKgForDisplay } from '@/utils/units';
+import { toTitleCase } from '@/utils/textFormatters';
+import {
+  getBatchExercisePreviousSets,
+  getUserExercisePreferences,
+  PreviousSetData,
+} from '@/services/api/workouts';
+import { getCurrentUser } from '@/services/api/user';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -154,6 +162,8 @@ interface SwipeableSetRowProps {
     value: string
   ) => void;
   onDelete: (exerciseIndex: number, setIndex: number) => void;
+  previousWeight?: string;
+  previousReps?: string;
 }
 
 function SwipeableSetRow({
@@ -163,6 +173,8 @@ function SwipeableSetRow({
   weightUnit,
   onUpdateValue,
   onDelete,
+  previousWeight,
+  previousReps,
 }: SwipeableSetRowProps) {
   const translateX = useRef(new Animated.Value(0)).current;
   const isSwipedOpen = useRef(false);
@@ -257,8 +269,10 @@ function SwipeableSetRow({
           <Text style={[styles.setText, styles.setNumber]}>{set.setNumber}</Text>
         </View>
 
-        {/* Previous column (placeholder) */}
-        <Text style={[styles.setText, styles.previousColumn, styles.previousText]}>-</Text>
+        {/* Previous column */}
+        <Text style={[styles.setText, styles.previousColumn, styles.previousText]}>
+          {previousWeight && previousReps ? `${previousWeight} x ${previousReps}` : '-'}
+        </Text>
 
         {/* Weight Input */}
         <TextInput
@@ -268,7 +282,7 @@ function SwipeableSetRow({
             onUpdateValue(exerciseIndex, setIndex, 'targetWeight', filterNumericInput(value))
           }
           keyboardType="numeric"
-          placeholder="0"
+          placeholder={previousWeight || '0'}
           placeholderTextColor={colors.textTertiary}
         />
 
@@ -280,7 +294,7 @@ function SwipeableSetRow({
             onUpdateValue(exerciseIndex, setIndex, 'targetReps', filterNumericInput(value, false))
           }
           keyboardType="numeric"
-          placeholder="0"
+          placeholder={previousReps || '0'}
           placeholderTextColor={colors.textTertiary}
         />
       </Animated.View>
@@ -327,7 +341,11 @@ export default function CreateTemplateScreen() {
 
   // Exercise state
   const [exercises, setExercises] = useState<TemplateExercise[]>([]);
-  const [units] = useState<UnitSystem>('metric');
+  const units = useUserPreferencesStore((s) => s.getUnitSystem());
+
+  // Previous sets data for history suggestions
+  const [userId, setUserId] = useState<string | null>(null);
+  const [previousSetsMap, setPreviousSetsMap] = useState<Map<string, PreviousSetData[]>>(new Map());
 
   // Modal states
   const [showExerciseMenu, setShowExerciseMenu] = useState(false);
@@ -345,54 +363,115 @@ export default function CreateTemplateScreen() {
   );
   const restTimerModalSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
+  // Load current user for fetching exercise history
+  useEffect(() => {
+    async function loadUser() {
+      const user = await getCurrentUser();
+      if (user) setUserId(user.id);
+    }
+    loadUser();
+  }, []);
+
+  // Fetch previous sets for a list of exercise IDs and merge into state
+  const fetchPreviousSets = async (exerciseIds: string[]) => {
+    if (!userId || exerciseIds.length === 0) return new Map<string, PreviousSetData[]>();
+    const prevSetsMap = await getBatchExercisePreviousSets(userId, exerciseIds);
+    setPreviousSetsMap((prev) => {
+      const updated = new Map(prev);
+      prevSetsMap.forEach((sets, id) => updated.set(id, sets));
+      return updated;
+    });
+    return prevSetsMap;
+  };
+
   // Load existing template if in edit mode
   useEffect(() => {
     if (templateId) {
       const existing = getTemplateById(templateId);
       if (existing) {
         setExercises(existing.exercises);
+        // Fetch previous sets for existing template exercises
+        const exerciseIds = existing.exercises.map((e) => e.exerciseId);
+        if (userId && exerciseIds.length > 0) {
+          fetchPreviousSets(exerciseIds);
+        }
       }
     }
-  }, [templateId]);
+  }, [templateId, userId]);
 
   // Handle pending exercises from add-exercise screen
-  // Use a ref to track if we've already processed the current pending exercises
   const processedPendingRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (pendingExercises.length > 0) {
-      // Create a unique key for this batch of pending exercises
       const pendingKey = pendingExercises.map((pe) => pe.id).join(',');
-
-      // Skip if we've already processed this exact batch
-      if (processedPendingRef.current === pendingKey) {
-        return;
-      }
-
-      // Mark as processed before doing anything else
+      if (processedPendingRef.current === pendingKey) return;
       processedPendingRef.current = pendingKey;
 
-      // Copy the exercises before clearing
       const exercisesToAdd = [...pendingExercises];
-
-      // Clear pending exercises from store
       clearPendingExercises();
+      handlePendingExercisesAsync(exercisesToAdd);
+    }
+  }, [pendingExercises, clearPendingExercises]);
 
-      // Map to template exercises
-      const newExercises: TemplateExercise[] = exercisesToAdd.map((pe) => ({
+  // Async handler that fetches history and preferences for new exercises
+  const handlePendingExercisesAsync = async (exercisesToAdd: PendingExercise[]) => {
+    const exerciseIds = exercisesToAdd.map((e) => e.id);
+
+    // If userId isn't loaded yet, fetch it now
+    let currentUserId = userId;
+    if (!currentUserId) {
+      const user = await getCurrentUser();
+      if (user) {
+        currentUserId = user.id;
+        setUserId(user.id);
+      }
+    }
+
+    // Fetch previous sets and rest timer preferences in parallel
+    const [prevSetsMap, preferencesMap] = await Promise.all([
+      currentUserId
+        ? getBatchExercisePreviousSets(currentUserId, exerciseIds)
+        : Promise.resolve(new Map<string, PreviousSetData[]>()),
+      currentUserId
+        ? getUserExercisePreferences(currentUserId, exerciseIds)
+        : Promise.resolve(new Map()),
+    ]);
+
+    // Merge previous sets into state
+    setPreviousSetsMap((prev) => {
+      const updated = new Map(prev);
+      prevSetsMap.forEach((sets, id) => updated.set(id, sets));
+      return updated;
+    });
+
+    const newExercises: TemplateExercise[] = exercisesToAdd.map((pe) => {
+      const previousSets = prevSetsMap.get(pe.id);
+      const preference = preferencesMap.get(pe.id);
+      const restTimerSeconds = preference?.restTimerSeconds || 0;
+
+      // Create sets matching previous workout count, or default to 1
+      const setCount = previousSets && previousSets.length > 0 ? previousSets.length : 1;
+      const sets: TemplateSet[] = Array.from({ length: setCount }, (_, i) => ({
+        setNumber: i + 1,
+        targetWeight: undefined,
+        targetReps: undefined,
+      }));
+
+      return {
         id: generateExerciseId(),
         exerciseId: pe.id,
         exerciseName: pe.name,
         muscle: pe.muscle,
         gifUrl: pe.gifUrl,
         thumbnailUrl: pe.thumbnailUrl,
-        sets: [{ setNumber: 1, targetWeight: undefined, targetReps: undefined }],
-        restTimerSeconds: 90,
-      }));
+        sets,
+        restTimerSeconds,
+      };
+    });
 
-      setExercises((prev) => [...prev, ...newExercises]);
-    }
-  }, [pendingExercises, clearPendingExercises]);
+    setExercises((prev) => [...prev, ...newExercises]);
+  };
 
   // Exercise menu functions
   const openExerciseMenu = (index: number) => {
@@ -554,27 +633,35 @@ export default function CreateTemplateScreen() {
   };
 
   const handleDiscard = () => {
-    Alert.alert('Discard Template?', 'Your template will not be saved.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Discard',
-        style: 'destructive',
-        onPress: () => router.back(),
-      },
-    ]);
-  };
-
-  const handleBack = () => {
-    // Only show confirmation if user has added exercises
-    if (exercises.length > 0) {
-      Alert.alert('Discard Template?', 'Your template will not be saved.', [
+    Alert.alert(
+      isEditMode ? 'Discard Changes?' : 'Discard Template?',
+      isEditMode ? 'Your changes will not be saved.' : 'Your template will not be saved.',
+      [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Discard',
           style: 'destructive',
           onPress: () => router.back(),
         },
-      ]);
+      ]
+    );
+  };
+
+  const handleBack = () => {
+    // Only show confirmation if user has added exercises
+    if (exercises.length > 0) {
+      Alert.alert(
+        isEditMode ? 'Discard Changes?' : 'Discard Template?',
+        isEditMode ? 'Your changes will not be saved.' : 'Your template will not be saved.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => router.back(),
+          },
+        ]
+      );
     } else {
       router.back();
     }
@@ -629,7 +716,7 @@ export default function CreateTemplateScreen() {
                   size={40}
                   borderRadius={8}
                 />
-                <Text style={styles.exerciseTitle}>{exercise.exerciseName}</Text>
+                <Text style={styles.exerciseTitle}>{toTitleCase(exercise.exerciseName)}</Text>
                 <Pressable
                   style={styles.moreButton}
                   onPress={() => openExerciseMenu(exerciseIndex)}
@@ -668,17 +755,27 @@ export default function CreateTemplateScreen() {
               </View>
 
               {/* Sets Rows */}
-              {exercise.sets.map((set, setIndex) => (
-                <SwipeableSetRow
-                  key={`${exercise.id}-set-${setIndex}`}
-                  set={set}
-                  setIndex={setIndex}
-                  exerciseIndex={exerciseIndex}
-                  weightUnit={weightLabel}
-                  onUpdateValue={updateSetValue}
-                  onDelete={deleteSet}
-                />
-              ))}
+              {exercise.sets.map((set, setIndex) => {
+                const prevSet = previousSetsMap.get(exercise.exerciseId)?.[setIndex];
+                const prevWeight =
+                  prevSet?.weightKg != null
+                    ? fromKgForDisplay(prevSet.weightKg, units).toString()
+                    : undefined;
+                const prevReps = prevSet?.reps != null ? prevSet.reps.toString() : undefined;
+                return (
+                  <SwipeableSetRow
+                    key={`${exercise.id}-set-${setIndex}`}
+                    set={set}
+                    setIndex={setIndex}
+                    exerciseIndex={exerciseIndex}
+                    weightUnit={weightLabel}
+                    onUpdateValue={updateSetValue}
+                    onDelete={deleteSet}
+                    previousWeight={prevWeight}
+                    previousReps={prevReps}
+                  />
+                );
+              })}
 
               {/* Add Set Button */}
               <Pressable style={styles.addSetButton} onPress={() => addSet(exerciseIndex)}>
@@ -758,7 +855,7 @@ export default function CreateTemplateScreen() {
                   size={48}
                   borderRadius={8}
                 />
-                <Text style={styles.reorderExerciseName}>{exercise.exerciseName}</Text>
+                <Text style={styles.reorderExerciseName}>{toTitleCase(exercise.exerciseName)}</Text>
                 <View style={styles.dragHandle}>
                   <DragHandleIcon />
                 </View>
@@ -795,7 +892,7 @@ export default function CreateTemplateScreen() {
                 <Text style={styles.restTimerModalTitle}>Rest Timer</Text>
                 {restTimerModalExerciseIndex !== null && (
                   <Text style={styles.restTimerModalSubtitle}>
-                    {exercises[restTimerModalExerciseIndex]?.exerciseName}
+                    {toTitleCase(exercises[restTimerModalExerciseIndex]?.exerciseName || '')}
                   </Text>
                 )}
               </View>

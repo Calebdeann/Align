@@ -47,7 +47,7 @@ export default function SignUpScreen() {
           await linkOnboardingToUser(data.user.id);
           await clearAnonymousSession();
 
-          // Navigate to main app
+          // Navigate to main app (referral code entry disabled for now)
           router.replace('/(tabs)');
         }
       }
@@ -105,7 +105,7 @@ export default function SignUpScreen() {
               await linkOnboardingToUser(sessionData.user.id);
               await clearAnonymousSession();
 
-              // Navigate to main app
+              // Navigate to main app (referral code entry disabled for now)
               router.replace('/(tabs)');
             }
           }

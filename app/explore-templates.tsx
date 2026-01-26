@@ -10,12 +10,14 @@ import { useUserProfileStore } from '@/stores/userProfileStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Filter categories with icons
+// Workout categories
 const FILTER_CATEGORIES = [
-  { id: 'at-home', label: 'At Home', icon: 'home-outline' },
-  { id: 'travel', label: 'Travel', icon: 'airplane-outline' },
-  { id: 'cardio', label: 'Cardio', icon: 'heart-outline' },
-  { id: 'rehab', label: 'Rehab', icon: 'fitness-outline' },
+  { id: 'core', label: 'Core', icon: 'flame-outline' },
+  { id: 'glutes', label: 'Glutes', icon: 'fitness-outline' },
+  { id: 'lower-body', label: 'Lower Body', icon: 'body-outline' },
+  { id: 'pull', label: 'Pull', icon: 'arrow-down-outline' },
+  { id: 'push', label: 'Push', icon: 'arrow-up-outline' },
+  { id: 'upper-body', label: 'Upper Body', icon: 'barbell-outline' },
 ] as const;
 
 type CategoryId = (typeof FILTER_CATEGORIES)[number]['id'];
@@ -145,27 +147,16 @@ export default function ExploreTemplatesScreen() {
   // Wrapper to pass userId to isTemplateSaved
   const isTemplateSaved = (id: string) => isTemplateSavedFn(id, userId);
 
-  const [showAll, setShowAll] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);
-
-  // Filter templates: main templates have no category
-  const mainTemplates = presetTemplates.filter((t) => !t.category);
-
-  // Number of templates to show
-  const INITIAL_SHOW_COUNT = 3;
-  const EXPANDED_SHOW_COUNT = 13; // 3 initial + 10 more
-
-  // Templates to display (first 3, then expand to show 10 more = 13 total)
-  const displayedTemplates = showAll
-    ? mainTemplates.slice(0, EXPANDED_SHOW_COUNT)
-    : mainTemplates.slice(0, INITIAL_SHOW_COUNT);
-
-  const remainingCount = Math.min(10, mainTemplates.length - INITIAL_SHOW_COUNT);
 
   // Get templates for selected category
   const categoryTemplates = selectedCategory
     ? presetTemplates.filter((t) => t.category === selectedCategory)
     : [];
+
+  // Get workout count for a category
+  const getCategoryCount = (categoryId: CategoryId): number =>
+    presetTemplates.filter((t) => t.category === categoryId).length;
 
   const getCategoryLabel = (categoryId: CategoryId | null): string => {
     if (!categoryId) return '';
@@ -200,36 +191,6 @@ export default function ExploreTemplatesScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Workouts Section */}
-        <Text style={styles.sectionTitle}>Workouts</Text>
-
-        <View style={styles.templateList}>
-          {displayedTemplates.map((template) => (
-            <TemplateRow
-              key={template.id}
-              template={template}
-              onPress={() => handleTemplatePress(template)}
-              onAdd={() => handleAddTemplate(template)}
-              isAdded={isTemplateSaved(template.id)}
-            />
-          ))}
-        </View>
-
-        {/* Show More Button - Only show if there are more templates and not expanded yet */}
-        {!showAll && remainingCount > 0 && (
-          <Pressable style={styles.showMoreButton} onPress={() => setShowAll(true)}>
-            <Text style={styles.showMoreText}>Show {remainingCount} Workouts</Text>
-          </Pressable>
-        )}
-
-        {/* Show Less Button - Only show if expanded */}
-        {showAll && (
-          <Pressable style={styles.showAllButton} onPress={() => setShowAll(false)}>
-            <Text style={styles.showAllText}>Show less</Text>
-          </Pressable>
-        )}
-
-        {/* Filter Categories Section */}
         <Text style={styles.sectionTitle}>Categories</Text>
 
         <View style={styles.filterGrid}>
@@ -242,7 +203,10 @@ export default function ExploreTemplatesScreen() {
               <View style={styles.filterIconCircle}>
                 <Ionicons name={category.icon as any} size={20} color={colors.primary} />
               </View>
-              <Text style={styles.filterLabel}>{category.label}</Text>
+              <View style={styles.filterLabelContainer}>
+                <Text style={styles.filterLabel}>{category.label}</Text>
+                <Text style={styles.filterCount}>{getCategoryCount(category.id)} workouts</Text>
+              </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </Pressable>
           ))}
@@ -371,26 +335,6 @@ const styles = StyleSheet.create({
   addButtonTextAdded: {
     color: colors.primary,
   },
-  showMoreButton: {
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    marginTop: spacing.sm,
-  },
-  showMoreText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.sm,
-    color: colors.primary,
-  },
-  showAllButton: {
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-  },
-  showAllText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    textDecorationLine: 'underline',
-  },
   filterGrid: {
     gap: spacing.sm,
   },
@@ -415,11 +359,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  filterLabel: {
+  filterLabelContainer: {
     flex: 1,
+  },
+  filterLabel: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.text,
+  },
+  filterCount: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   bottomSpacer: {
     height: 40,

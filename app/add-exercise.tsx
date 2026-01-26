@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { toTitleCase } from '@/utils/textFormatters';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
@@ -117,7 +118,11 @@ function ExerciseItem({
   const showSelected = isSelected || isAlreadyAdded;
 
   return (
-    <View style={[styles.exerciseItem, isAlreadyAdded && styles.exerciseItemDisabled]}>
+    <Pressable
+      style={[styles.exerciseItem, isAlreadyAdded && styles.exerciseItemDisabled]}
+      onPress={isAlreadyAdded ? undefined : onToggle}
+      disabled={isAlreadyAdded}
+    >
       <View style={[styles.exerciseIndicator, showSelected && styles.exerciseIndicatorSelected]} />
       <ExerciseImage
         gifUrl={exercise.image_url}
@@ -125,26 +130,26 @@ function ExerciseItem({
         size={44}
         borderRadius={8}
       />
-      <Pressable style={styles.exerciseInfo} onPress={onPressName} disabled={isAlreadyAdded}>
-        <Text style={[styles.exerciseName, isAlreadyAdded && styles.exerciseNameDisabled]}>
-          {exercise.name}
-        </Text>
+      <View style={styles.exerciseInfo}>
+        <Pressable onPress={onPressName} disabled={isAlreadyAdded}>
+          <Text style={[styles.exerciseName, isAlreadyAdded && styles.exerciseNameDisabled]}>
+            {toTitleCase(exercise.name)}
+          </Text>
+        </Pressable>
         <Text style={styles.exerciseMuscle}>
           {isAlreadyAdded ? 'Already in workout' : exercise.muscle_group}
         </Text>
-      </Pressable>
-      <Pressable
+      </View>
+      <View
         style={[
           styles.checkbox,
           showSelected && styles.checkboxSelected,
           isAlreadyAdded && styles.checkboxDisabled,
         ]}
-        onPress={isAlreadyAdded ? undefined : onToggle}
-        disabled={isAlreadyAdded}
       >
         {showSelected && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-      </Pressable>
-    </View>
+      </View>
+    </Pressable>
   );
 }
 
@@ -698,7 +703,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.text,
-    textTransform: 'capitalize',
   },
   exerciseMuscle: {
     fontFamily: fonts.regular,

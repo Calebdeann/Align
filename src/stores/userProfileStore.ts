@@ -47,6 +47,8 @@ export interface UserProfile {
   accomplish?: string;
   notifications_enabled?: boolean;
   reminder_time?: string;
+  referral_code?: string;
+  referred_by?: string;
   created_at?: string;
   updated_at?: string;
 }

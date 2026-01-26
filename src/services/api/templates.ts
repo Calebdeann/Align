@@ -3,6 +3,10 @@ import { WorkoutTemplate, TemplateExercise, TemplateSet } from '@/stores/templat
 import { WorkoutImage } from '@/stores/workoutStore';
 import { CreateTemplateInputSchema, UpdateTemplateInputSchema } from '@/schemas/template.schema';
 
+// UUID v4 format check — local template IDs like "template_123_abc" are not valid UUIDs
+const isValidUuid = (id: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 // =============================================
 // TYPES - Database Schema for Templates
 // =============================================
@@ -168,6 +172,12 @@ export async function updateUserTemplate(
   updates: Partial<Omit<WorkoutTemplate, 'id' | 'createdAt' | 'isPreset'>>,
   exercises?: TemplateExercise[]
 ): Promise<boolean> {
+  // Skip if templateId is a local-only ID (not yet synced to backend)
+  if (!isValidUuid(templateId)) {
+    console.warn('Skipping backend update for local template:', templateId);
+    return false;
+  }
+
   // Validate updates
   const parseResult = UpdateTemplateInputSchema.safeParse({
     name: updates.name,
@@ -193,7 +203,7 @@ export async function updateUserTemplate(
   });
 
   if (!parseResult.success) {
-    console.error('Invalid template update input:', parseResult.error.flatten());
+    console.warn('Invalid template update input:', parseResult.error.flatten());
     return false;
   }
 
@@ -223,7 +233,7 @@ export async function updateUserTemplate(
       .eq('id', templateId);
 
     if (updateError) {
-      console.error('Error updating template:', updateError);
+      console.warn('Error updating template:', updateError);
       return false;
     }
 
@@ -236,7 +246,7 @@ export async function updateUserTemplate(
         .eq('template_id', templateId);
 
       if (deleteError) {
-        console.error('Error deleting old exercises:', deleteError);
+        console.warn('Error deleting old exercises:', deleteError);
         return false;
       }
 
@@ -259,7 +269,7 @@ export async function updateUserTemplate(
           .single();
 
         if (exerciseError || !templateExercise) {
-          console.error('Error saving template exercise:', exerciseError);
+          console.warn('Error saving template exercise:', exerciseError);
           continue;
         }
 
@@ -275,7 +285,7 @@ export async function updateUserTemplate(
           const { error: setsError } = await supabase.from('template_sets').insert(setsToInsert);
 
           if (setsError) {
-            console.error('Error saving template sets:', setsError);
+            console.warn('Error saving template sets:', setsError);
           }
         }
       }
@@ -283,7 +293,7 @@ export async function updateUserTemplate(
 
     return true;
   } catch (error) {
-    console.error('Error in updateUserTemplate:', error);
+    console.warn('Error in updateUserTemplate:', error);
     return false;
   }
 }
@@ -293,6 +303,12 @@ export async function updateUserTemplate(
 // =============================================
 
 export async function deleteUserTemplate(templateId: string): Promise<boolean> {
+  // Skip if templateId is a local-only ID (not yet synced to backend)
+  if (!isValidUuid(templateId)) {
+    console.warn('Skipping backend delete for local template:', templateId);
+    return true;
+  }
+
   try {
     const { error } = await supabase.from('workout_templates').delete().eq('id', templateId);
 

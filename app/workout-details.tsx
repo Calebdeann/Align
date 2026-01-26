@@ -1,5 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,13 +16,17 @@ import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/con
 import {
   getWorkoutById,
   getWorkoutMuscles,
+  deleteWorkout,
   type DbWorkout,
   type DbWorkoutExercise,
   type DbWorkoutSet,
   type WorkoutMuscleData,
 } from '@/services/api/workouts';
-import { UnitSystem, kgToLbs } from '@/utils/units';
+import { UnitSystem, kgToLbs, getWeightUnit } from '@/utils/units';
+import { toTitleCase } from '@/utils/textFormatters';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { useWorkoutStore } from '@/stores/workoutStore';
+import { ExerciseImage } from '@/components/ExerciseImage';
 
 // Icons
 function BackIcon() {
@@ -29,10 +41,6 @@ function BackIcon() {
       />
     </Svg>
   );
-}
-
-function DumbbellIcon() {
-  return <Ionicons name="barbell-outline" size={20} color={colors.primary} />;
 }
 
 // Format duration from seconds to "X hour, Y minutes"
@@ -89,11 +97,28 @@ export default function WorkoutDetailsScreen() {
 
   const { getUnitSystem } = useUserPreferencesStore();
   const units = getUnitSystem();
+  const setCachedCompletedWorkouts = useWorkoutStore((s) => s.setCachedCompletedWorkouts);
+  const cachedCompletedWorkouts = useWorkoutStore((s) => s.cachedCompletedWorkouts);
 
   const [isLoading, setIsLoading] = useState(true);
   const [workout, setWorkout] = useState<DbWorkout | null>(null);
   const [exercises, setExercises] = useState<(DbWorkoutExercise & { sets: DbWorkoutSet[] })[]>([]);
   const [detailedMuscles, setDetailedMuscles] = useState<WorkoutMuscleData[]>([]);
+  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+
+  const toggleExercise = (exerciseId: string) => {
+    setExpandedExercises((prev) => {
+      const next = new Set(prev);
+      if (next.has(exerciseId)) {
+        next.delete(exerciseId);
+      } else {
+        next.add(exerciseId);
+      }
+      return next;
+    });
+  };
+
+  const weightLabel = getWeightUnit(units);
 
   useEffect(() => {
     async function fetchWorkout() {
@@ -133,8 +158,8 @@ export default function WorkoutDetailsScreen() {
       totalSets += completedSets.length;
 
       completedSets.forEach((set) => {
-        if (set.weight_kg && set.reps) {
-          totalVolume += set.weight_kg * set.reps;
+        if (set.weight && set.reps) {
+          totalVolume += set.weight * set.reps;
         }
       });
 
@@ -196,6 +221,30 @@ export default function WorkoutDetailsScreen() {
     };
   }, [detailedMuscles]);
 
+  const handleDeleteWorkout = () => {
+    Alert.alert(
+      'Delete Workout',
+      'Are you sure you want to delete this workout? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await deleteWorkout(workoutId);
+            if (success) {
+              // Remove from cached completed workouts
+              setCachedCompletedWorkouts(cachedCompletedWorkouts.filter((w) => w.id !== workoutId));
+              router.back();
+            } else {
+              Alert.alert('Error', 'Failed to delete workout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -238,7 +287,9 @@ export default function WorkoutDetailsScreen() {
           <BackIcon />
         </Pressable>
         <Text style={styles.headerTitle}>Workout Details</Text>
-        <View style={styles.backButton} />
+        <Pressable onPress={handleDeleteWorkout} style={styles.backButton}>
+          <Ionicons name="trash-outline" size={22} color={colors.error} />
+        </Pressable>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -375,56 +426,59 @@ export default function WorkoutDetailsScreen() {
         {/* Exercises Section */}
         <Text style={styles.sectionTitle}>Exercises</Text>
         <View style={styles.card}>
-          <View style={styles.exerciseList}>
-            {exercises.map((ex, index) => {
-              const completedSets = ex.sets.filter((s) => s.completed);
+          {exercises.map((ex, index) => {
+            const completedSets = ex.sets.filter((s) => s.completed);
+            const isExpanded = expandedExercises.has(ex.id);
 
-              return (
-                <View key={ex.id}>
-                  <View style={styles.exerciseRow}>
-                    <View style={styles.exerciseIconContainer}>
-                      <DumbbellIcon />
+            return (
+              <View key={ex.id}>
+                <Pressable style={styles.exerciseRow} onPress={() => toggleExercise(ex.id)}>
+                  <ExerciseImage
+                    gifUrl={ex.image_url || undefined}
+                    thumbnailUrl={ex.thumbnail_url || undefined}
+                    size={40}
+                    borderRadius={8}
+                  />
+                  <Text style={styles.exerciseName}>{toTitleCase(ex.exercise_name)}</Text>
+                  <Ionicons
+                    name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </Pressable>
+
+                {/* Expanded Sets */}
+                {isExpanded && completedSets.length > 0 && (
+                  <View style={styles.setsContainer}>
+                    <View style={styles.setsHeader}>
+                      <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
+                      <Text style={[styles.setHeaderText, styles.weightRepsColumn]}>
+                        WEIGHT & REPS
+                      </Text>
                     </View>
-                    <View style={styles.exerciseInfo}>
-                      <Text style={styles.exerciseName}>{ex.exercise_name}</Text>
-                      <Text style={styles.exerciseMuscle}>{ex.exercise_muscle || 'General'}</Text>
-                    </View>
-                    <Text style={styles.exerciseSets}>
-                      {completedSets.length} {completedSets.length === 1 ? 'set' : 'sets'}
-                    </Text>
+                    {completedSets.map((set, setIndex) => (
+                      <View key={set.id} style={styles.setRow}>
+                        <Text style={[styles.setText, styles.setColumn]}>{setIndex + 1}</Text>
+                        <Text style={[styles.setText, styles.weightRepsColumn]}>
+                          {set.weight && set.reps
+                            ? `${units === 'imperial' ? Math.round(kgToLbs(set.weight)) : set.weight} ${weightLabel} × ${set.reps} reps`
+                            : set.weight
+                              ? `${units === 'imperial' ? Math.round(kgToLbs(set.weight)) : set.weight} ${weightLabel} × - reps`
+                              : set.reps
+                                ? `- × ${set.reps} reps`
+                                : '- × -'}
+                        </Text>
+                      </View>
+                    ))}
                   </View>
+                )}
 
-                  {/* Show sets */}
-                  {completedSets.length > 0 && (
-                    <View style={styles.setsContainer}>
-                      {completedSets.map((set, setIndex) => (
-                        <View key={set.id} style={styles.setRow}>
-                          <Text style={styles.setNumber}>{setIndex + 1}</Text>
-                          <Text style={styles.setDetails}>
-                            {set.weight_kg
-                              ? units === 'imperial'
-                                ? `${Math.round(kgToLbs(set.weight_kg))} lbs`
-                                : `${set.weight_kg} kg`
-                              : '-'}{' '}
-                            × {set.reps || '-'} reps
-                          </Text>
-                          {set.set_type !== 'normal' && (
-                            <View style={styles.setTypeBadge}>
-                              <Text style={styles.setTypeText}>{set.set_type}</Text>
-                            </View>
-                          )}
-                        </View>
-                      ))}
-                    </View>
-                  )}
+                {index < exercises.length - 1 && <View style={styles.exerciseDivider} />}
+              </View>
+            );
+          })}
 
-                  {index < exercises.length - 1 && <View style={styles.cardDivider} />}
-                </View>
-              );
-            })}
-
-            {exercises.length === 0 && <Text style={styles.emptyText}>No exercises recorded</Text>}
-          </View>
+          {exercises.length === 0 && <Text style={styles.emptyText}>No exercises recorded</Text>}
         </View>
 
         <View style={styles.bottomSpacer} />
@@ -603,74 +657,61 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
   },
-  exerciseList: {
-    gap: spacing.sm,
-  },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     gap: spacing.md,
   },
-  exerciseIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: 'rgba(148, 122, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
   exerciseName: {
+    flex: 1,
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.text,
   },
-  exerciseMuscle: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  exerciseSets: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
+  exerciseDivider: {
+    height: 1,
+    backgroundColor: 'rgba(217, 217, 217, 0.25)',
+    marginHorizontal: spacing.md,
   },
   setsContainer: {
-    marginLeft: 52,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.surfaceSecondary,
+    marginHorizontal: spacing.sm,
     marginBottom: spacing.sm,
-    gap: spacing.xs,
+    borderRadius: 8,
+  },
+  setsHeader: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(217, 217, 217, 0.25)',
+  },
+  setHeaderText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  setColumn: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  weightRepsColumn: {
+    flex: 3,
+    textAlign: 'center',
   },
   setRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  setNumber: {
-    width: 20,
+  setText: {
     fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textTertiary,
-  },
-  setDetails: {
-    flex: 1,
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.md,
     color: colors.text,
-  },
-  setTypeBadge: {
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  setTypeText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.xs,
-    color: colors.primary,
-    textTransform: 'capitalize',
+    textAlign: 'center',
   },
   emptyText: {
     fontFamily: fonts.regular,

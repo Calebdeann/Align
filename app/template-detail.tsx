@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,61 +6,111 @@ import {
   Pressable,
   ScrollView,
   Image,
+  TextInput,
   LayoutAnimation,
   Platform,
   UIManager,
   Alert,
+  Modal,
+  Animated,
+  Dimensions,
+  ImageSourcePropType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import Svg, { Path, Rect } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
-import {
-  useTemplateStore,
-  formatTemplateDuration,
-  getTemplateTotalSets,
-  TemplateExercise,
-} from '@/stores/templateStore';
+import { useTemplateStore, TemplateExercise } from '@/stores/templateStore';
+import { getWeightUnit, fromKgForDisplay } from '@/utils/units';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
+import { WorkoutImage } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { toTitleCase } from '@/utils/textFormatters';
+import { getCurrentUser } from '@/services/api/user';
+import { getTemplateImageById } from '@/constants/templateImages';
+import { consumePendingTemplateImage } from '@/lib/imagePickerState';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// Tag component
-function TagPill({ label }: { label: string }) {
+// Colour options (matching save-template)
+const WORKOUT_COLOURS = [
+  { id: 'purple', color: colors.primary },
+  { id: 'green', color: colors.workout.back },
+  { id: 'blue', color: colors.workout.chest },
+  { id: 'orange', color: colors.workout.arms },
+  { id: 'pink', color: colors.workout.legs },
+  { id: 'teal', color: colors.workout.cardio },
+  { id: 'yellow', color: colors.workout.shoulders },
+  { id: 'red', color: colors.workout.core },
+];
+
+// Icons
+function ImagePlaceholderIcon() {
   return (
-    <View style={styles.tagPill}>
-      <Text style={styles.tagText}>{label}</Text>
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Rect
+          x={3}
+          y={3}
+          width={18}
+          height={18}
+          rx={2}
+          stroke={colors.textTertiary}
+          strokeWidth={1.5}
+        />
+        <Path
+          d="M8.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"
+          stroke={colors.textTertiary}
+          strokeWidth={1.5}
+        />
+        <Path
+          d="M21 15l-5-5L5 21"
+          stroke={colors.textTertiary}
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+      <View
+        style={{
+          position: 'absolute',
+          bottom: -4,
+          right: -4,
+          width: 16,
+          height: 16,
+          borderRadius: 8,
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Svg width={10} height={10} viewBox="0 0 24 24" fill="none">
+          <Path d="M12 5v14M5 12h14" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" />
+        </Svg>
+      </View>
     </View>
   );
 }
 
-// Information row component
-function InfoRow({
-  icon,
-  label,
-  value,
-  showChevron = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  showChevron?: boolean;
-}) {
+function CloseIcon() {
   return (
-    <View style={styles.infoRow}>
-      <View style={styles.infoLeft}>
-        {icon}
-        <Text style={styles.infoLabel}>{label}</Text>
-      </View>
-      <View style={styles.infoRight}>
-        <Text style={styles.infoValue}>{value}</Text>
-        {showChevron && <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />}
-      </View>
-    </View>
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M18 6L6 18M6 6l12 12"
+        stroke={colors.text}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 
@@ -69,11 +119,21 @@ function ExerciseRow({
   exercise,
   isExpanded,
   onToggle,
+  weightLabel,
+  units,
 }: {
   exercise: TemplateExercise;
   isExpanded: boolean;
   onToggle: () => void;
+  weightLabel: string;
+  units: string;
 }) {
+  const formatWeight = (weightKg?: number) => {
+    if (weightKg == null) return '-';
+    const display = units === 'imperial' ? fromKgForDisplay(weightKg, 'imperial') : weightKg;
+    return `${Math.round(display)}`;
+  };
+
   return (
     <View>
       <Pressable style={styles.exerciseRow} onPress={onToggle}>
@@ -83,7 +143,7 @@ function ExerciseRow({
           size={40}
           borderRadius={8}
         />
-        <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+        <Text style={styles.exerciseName}>{toTitleCase(exercise.exerciseName)}</Text>
         <Ionicons
           name={isExpanded ? 'chevron-down' : 'chevron-forward'}
           size={20}
@@ -97,16 +157,22 @@ function ExerciseRow({
           {/* Sets Header */}
           <View style={styles.setsHeader}>
             <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-            <Text style={[styles.setHeaderText, styles.weightColumn]}>KG</Text>
-            <Text style={[styles.setHeaderText, styles.repsColumn]}>REPS</Text>
+            <Text style={[styles.setHeaderText, styles.weightRepsColumn]}>WEIGHT & REPS</Text>
           </View>
 
           {/* Sets Rows */}
           {exercise.sets.map((set) => (
             <View key={set.setNumber} style={styles.setRow}>
               <Text style={[styles.setText, styles.setColumn]}>{set.setNumber}</Text>
-              <Text style={[styles.setText, styles.weightColumn]}>{set.targetWeight ?? '-'}</Text>
-              <Text style={[styles.setText, styles.repsColumn]}>{set.targetReps ?? '-'}</Text>
+              <Text style={[styles.setText, styles.weightRepsColumn]}>
+                {set.targetWeight && set.targetReps
+                  ? `${formatWeight(set.targetWeight)} ${weightLabel} × ${set.targetReps} reps`
+                  : set.targetWeight
+                    ? `${formatWeight(set.targetWeight)} ${weightLabel} × - reps`
+                    : set.targetReps
+                      ? `- × ${set.targetReps} reps`
+                      : '- × -'}
+              </Text>
             </View>
           ))}
         </View>
@@ -122,13 +188,37 @@ export default function TemplateDetailScreen() {
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
   const addTemplate = useTemplateStore((state) => state.addTemplate);
   const removeTemplate = useTemplateStore((state) => state.removeTemplate);
+  const updateTemplate = useTemplateStore((state) => state.updateTemplate);
   const isTemplateSaved = useTemplateStore((state) => state.isTemplateSaved);
+
+  const units = useUserPreferencesStore((s) => s.getUnitSystem());
+  const weightLabel = getWeightUnit(units).toLowerCase();
 
   const template = templateId ? getTemplateById(templateId) : null;
   const isSaved = templateId ? isTemplateSaved(templateId, userId) : false;
 
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editColourId, setEditColourId] = useState('purple');
+  const [editImage, setEditImage] = useState<{
+    type: 'template' | 'camera' | 'gallery';
+    uri: string;
+    localSource?: ImageSourcePropType;
+    templateImageId?: string;
+  } | null>(null);
+
   // Track which exercises are expanded
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+
+  // Colour modal state
+  const [showColourModal, setShowColourModal] = useState(false);
+  const colourSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
+  // Image picker modal state
+  const [showImagePickerModal, setShowImagePickerModal] = useState(false);
+  const imageSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   const toggleExercise = (exerciseId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -142,6 +232,21 @@ export default function TemplateDetailScreen() {
       return next;
     });
   };
+
+  // Pick up template image selection when returning from template-images screen
+  useFocusEffect(
+    useCallback(() => {
+      const pending = consumePendingTemplateImage();
+      if (pending) {
+        setEditImage({
+          type: 'template',
+          uri: '',
+          localSource: pending.source,
+          templateImageId: pending.id,
+        });
+      }
+    }, [])
+  );
 
   if (!template) {
     return (
@@ -173,6 +278,86 @@ export default function TemplateDetailScreen() {
     });
   };
 
+  const enterEditMode = () => {
+    setEditName(template.name);
+    setEditDescription(template.description || '');
+
+    // Find matching colour
+    const matchingColour = WORKOUT_COLOURS.find((c) => c.color === template.tagColor);
+    setEditColourId(matchingColour?.id || 'purple');
+
+    // Load existing image
+    if (template.image) {
+      const localSource =
+        template.image.type === 'template' && template.image.templateId
+          ? (getTemplateImageById(template.image.templateId) ?? undefined)
+          : undefined;
+      setEditImage({
+        type: template.image.type,
+        uri: template.image.uri,
+        localSource,
+        templateImageId: template.image.templateId,
+      });
+    } else if (template.localImage) {
+      setEditImage({
+        type: 'template',
+        uri: '',
+        localSource: template.localImage,
+      });
+    } else {
+      setEditImage(null);
+    }
+
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editName.trim()) {
+      Alert.alert('Missing Name', 'Please enter a template name');
+      return;
+    }
+
+    const tagColor = getSelectedColour();
+
+    // Build image data
+    const imageData: { image?: WorkoutImage; localImage?: ImageSourcePropType } = {};
+    if (editImage) {
+      if (editImage.type === 'template' && editImage.localSource) {
+        imageData.localImage = editImage.localSource;
+        imageData.image = {
+          type: 'template',
+          uri: '',
+          templateId: editImage.templateImageId,
+        };
+      } else {
+        imageData.image = {
+          type: editImage.type,
+          uri: editImage.uri,
+        };
+      }
+    }
+
+    updateTemplate(template.id, {
+      name: editName.trim(),
+      description: editDescription.trim() || undefined,
+      tagColor,
+      ...imageData,
+    });
+
+    setIsEditing(false);
+  };
+
+  const handleEditExercises = () => {
+    router.push({
+      pathname: '/create-template',
+      params: { templateId: template.id },
+    });
+  };
+
   const handleDeleteTemplate = () => {
     Alert.alert(
       'Delete Template',
@@ -191,81 +376,220 @@ export default function TemplateDetailScreen() {
     );
   };
 
-  const totalSets = getTemplateTotalSets(template);
-  const formattedDuration = formatTemplateDuration(template.estimatedDuration);
+  // Colour helpers
+  const getSelectedColour = () => {
+    const colour = WORKOUT_COLOURS.find((c) => c.id === editColourId);
+    return colour?.color || colors.primary;
+  };
 
-  // Map tag IDs to display names
-  const getTagDisplayName = (tagId: string): string => {
-    const tagMap: Record<string, string> = {
-      legs: 'Legs',
-      arms: 'Arms',
-      back: 'Back',
-      chest: 'Chest',
-      shoulders: 'Shoulders',
-      core: 'Core',
-      cardio: 'Cardio',
-      fullBody: 'Full Body',
-      glutes: 'Glutes',
-    };
-    return tagMap[tagId] || tagId.charAt(0).toUpperCase() + tagId.slice(1);
+  const openColourModal = () => {
+    setShowColourModal(true);
+    Animated.spring(colourSlideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeColourModal = () => {
+    Animated.timing(colourSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => setShowColourModal(false));
+  };
+
+  const selectColour = (colourId: string) => {
+    setEditColourId(colourId);
+    closeColourModal();
+  };
+
+  // Image picker helpers
+  const openImagePickerModal = () => {
+    setShowImagePickerModal(true);
+    Animated.spring(imageSlideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeImagePickerModal = () => {
+    Animated.timing(imageSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => setShowImagePickerModal(false));
+  };
+
+  const handleTakePhoto = async () => {
+    closeImagePickerModal();
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Needed', 'Please allow camera access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setEditImage({
+        type: 'camera',
+        uri: result.assets[0].uri,
+      });
+    }
+  };
+
+  const handleChooseFromLibrary = async () => {
+    closeImagePickerModal();
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Needed', 'Please allow photo library access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setEditImage({
+        type: 'gallery',
+        uri: result.assets[0].uri,
+      });
+    }
+  };
+
+  const handleOpenTemplates = () => {
+    closeImagePickerModal();
+    router.push('/template-images');
+  };
+
+  // Rendering helpers
+  const renderTemplateImage = () => {
+    if (isEditing) {
+      // Edit mode — show editable image with picker
+      return (
+        <Pressable
+          style={[styles.imagePlaceholder, editImage && styles.imagePlaceholderFilled]}
+          onPress={openImagePickerModal}
+        >
+          {editImage ? (
+            editImage.localSource ? (
+              <Image source={editImage.localSource} style={styles.selectedImage} />
+            ) : (
+              <Image source={{ uri: editImage.uri }} style={styles.selectedImage} />
+            )
+          ) : (
+            <ImagePlaceholderIcon />
+          )}
+        </Pressable>
+      );
+    }
+
+    // View mode
+    if (template.localImage) {
+      return <Image source={template.localImage} style={styles.templateImage} />;
+    }
+    if (template.image?.uri) {
+      return <Image source={{ uri: template.image.uri }} style={styles.templateImage} />;
+    }
+    return (
+      <View style={[styles.templateImage, styles.templateImagePlaceholder]}>
+        <Ionicons name="barbell-outline" size={32} color={colors.textSecondary} />
+      </View>
+    );
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Workout</Text>
-        {!template.isPreset ? (
-          <Pressable onPress={handleDeleteTemplate} style={styles.backButton}>
-            <Ionicons name="trash-outline" size={22} color="#FF3B30" />
-          </Pressable>
+        {isEditing ? (
+          <>
+            <Pressable onPress={handleCancelEdit} style={styles.backButton}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+            <Text style={styles.headerTitle}>Edit Template</Text>
+            <Pressable onPress={handleSaveEdit} style={styles.backButton}>
+              <Text style={styles.saveText}>Save</Text>
+            </Pressable>
+          </>
         ) : (
-          <View style={styles.backButton} />
+          <>
+            <Pressable onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </Pressable>
+            <Text style={styles.headerTitle}>Workout</Text>
+            {!template.isPreset ? (
+              <Pressable onPress={enterEditMode} style={styles.backButton}>
+                <Ionicons name="pencil-outline" size={22} color={colors.text} />
+              </Pressable>
+            ) : (
+              <View style={styles.backButton} />
+            )}
+          </>
         )}
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Template Card */}
-        <View style={styles.templateCard}>
-          <View style={styles.templateImageContainer}>
-            {template.localImage ? (
-              <Image source={template.localImage} style={styles.templateImage} />
-            ) : template.image?.uri ? (
-              <Image source={{ uri: template.image.uri }} style={styles.templateImage} />
-            ) : (
-              <View style={[styles.templateImage, styles.templateImagePlaceholder]}>
-                <Ionicons name="barbell-outline" size={32} color={colors.textSecondary} />
+        {isEditing ? (
+          <View style={styles.editCard}>
+            {/* Photo + Name + Description row */}
+            <View style={styles.editInfoRow}>
+              <View style={styles.templateImageContainer}>{renderTemplateImage()}</View>
+              <View style={styles.editTextInputs}>
+                <TextInput
+                  style={styles.nameInput}
+                  placeholder="Template Name"
+                  placeholderTextColor={colors.textTertiary}
+                  value={editName}
+                  onChangeText={setEditName}
+                />
+                <TextInput
+                  style={styles.descriptionInput}
+                  placeholder="Description (Optional)"
+                  placeholderTextColor={colors.textTertiary}
+                  value={editDescription}
+                  onChangeText={setEditDescription}
+                />
               </View>
-            )}
-          </View>
-          <View style={styles.templateInfo}>
-            <Text style={styles.templateName}>{template.name}</Text>
-            {template.description && (
-              <Text style={styles.templateDescription}>{template.description}</Text>
-            )}
-          </View>
-        </View>
+            </View>
 
-        {/* Tags Row */}
-        <View style={styles.tagsSection}>
-          <Text style={styles.tagsLabel}>Tags</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tagsScroll}
-            contentContainerStyle={styles.tagsContainer}
-          >
-            {template.tagIds.map((tagId) => (
-              <TagPill key={tagId} label={getTagDisplayName(tagId)} />
-            ))}
-            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-          </ScrollView>
-        </View>
+            <View style={styles.editDivider} />
 
-        {/* Add to Library Button */}
+            {/* Colour */}
+            <Pressable style={styles.colourRow} onPress={openColourModal}>
+              <Text style={styles.colourLabel}>Colour</Text>
+              <View style={styles.colourRight}>
+                <View style={[styles.colourCircle, { backgroundColor: getSelectedColour() }]} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+              </View>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.templateCard}>
+            <View style={styles.templateImageContainer}>{renderTemplateImage()}</View>
+            <View style={styles.templateInfo}>
+              <Text style={styles.templateName}>{template.name}</Text>
+              {template.description && (
+                <Text style={styles.templateDescription}>{template.description}</Text>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Add to Library Button (presets only) */}
         {template.isPreset && (
           <Pressable
             style={[styles.addToLibraryButton, isSaved && styles.addToLibraryButtonSaved]}
@@ -278,41 +602,20 @@ export default function TemplateDetailScreen() {
           </Pressable>
         )}
 
-        {/* Start Workout Button (for user templates) */}
-        {!template.isPreset && (
+        {/* Start Workout Button (user templates, view mode only) */}
+        {!template.isPreset && !isEditing && (
           <Pressable style={styles.startWorkoutButton} onPress={handleStartWorkout}>
             <Text style={styles.startWorkoutText}>Start Workout</Text>
           </Pressable>
         )}
 
-        {/* Information Section */}
-        <Text style={styles.sectionTitle}>Information</Text>
-        <View style={styles.infoCard}>
-          <InfoRow
-            icon={<Ionicons name="time-outline" size={20} color={colors.text} />}
-            label="Estimate Duration"
-            value={formattedDuration}
-            showChevron
-          />
-          <View style={styles.infoDivider} />
-          <InfoRow
-            icon={<Ionicons name="fitness-outline" size={20} color={colors.text} />}
-            label="Difficulty"
-            value={template.difficulty}
-          />
-          <View style={styles.infoDivider} />
-          <InfoRow
-            icon={<Ionicons name="barbell-outline" size={20} color={colors.text} />}
-            label="Equipment"
-            value={template.equipment}
-          />
-          <View style={styles.infoDivider} />
-          <InfoRow
-            icon={<Ionicons name="grid-outline" size={20} color={colors.text} />}
-            label="Exercises"
-            value={template.exercises.length.toString()}
-          />
-        </View>
+        {/* Edit Exercises Button (edit mode only) */}
+        {isEditing && (
+          <Pressable style={styles.editExercisesButton} onPress={handleEditExercises}>
+            <Ionicons name="barbell-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.editExercisesText}>Edit Exercises</Text>
+          </Pressable>
+        )}
 
         {/* Exercises Section */}
         <Text style={styles.sectionTitle}>Exercises</Text>
@@ -323,14 +626,120 @@ export default function TemplateDetailScreen() {
                 exercise={exercise}
                 isExpanded={expandedExercises.has(exercise.id)}
                 onToggle={() => toggleExercise(exercise.id)}
+                weightLabel={weightLabel}
+                units={units}
               />
               {index < template.exercises.length - 1 && <View style={styles.exerciseDivider} />}
             </View>
           ))}
         </View>
 
+        {/* Delete Template (user templates only) */}
+        {!template.isPreset && (
+          <Pressable onPress={handleDeleteTemplate} style={styles.deleteTextButton}>
+            <Text style={styles.deleteText}>Delete Template</Text>
+          </Pressable>
+        )}
+
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Colour Bottom Sheet Modal */}
+      <Modal
+        visible={showColourModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeColourModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={closeColourModal}>
+          <Animated.View
+            style={[styles.modalContent, { transform: [{ translateY: colourSlideAnim }] }]}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalHandle} />
+
+              <View style={styles.modalHeader}>
+                <Pressable style={styles.modalCloseButton} onPress={closeColourModal}>
+                  <CloseIcon />
+                </Pressable>
+                <Text style={styles.modalTitle}>Colour</Text>
+                <View style={styles.modalCloseButton} />
+              </View>
+
+              <View style={styles.colourContainer}>
+                <View style={styles.colourGrid}>
+                  {WORKOUT_COLOURS.map((colour) => (
+                    <Pressable
+                      key={colour.id}
+                      style={[
+                        styles.colourOption,
+                        editColourId === colour.id && styles.colourOptionSelected,
+                      ]}
+                      onPress={() => selectColour(colour.id)}
+                    >
+                      <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
+                        {editColourId === colour.id && (
+                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                        )}
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      {/* Image Picker Bottom Sheet Modal */}
+      <Modal
+        visible={showImagePickerModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeImagePickerModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={closeImagePickerModal}>
+          <Animated.View
+            style={[styles.modalContent, { transform: [{ translateY: imageSlideAnim }] }]}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalHandle} />
+
+              <View style={styles.modalHeader}>
+                <Pressable style={styles.modalCloseButton} onPress={closeImagePickerModal}>
+                  <CloseIcon />
+                </Pressable>
+                <Text style={styles.modalTitle}>Add Photo</Text>
+                <View style={styles.modalCloseButton} />
+              </View>
+
+              <View style={styles.imagePickerOptions}>
+                <Pressable style={styles.imagePickerRow} onPress={handleChooseFromLibrary}>
+                  <Ionicons name="image-outline" size={22} color={colors.text} />
+                  <Text style={styles.imagePickerLabel}>Choose from Library</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                </Pressable>
+
+                <View style={styles.editDivider} />
+
+                <Pressable style={styles.imagePickerRow} onPress={handleTakePhoto}>
+                  <Ionicons name="camera-outline" size={22} color={colors.text} />
+                  <Text style={styles.imagePickerLabel}>Take Photo</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                </Pressable>
+
+                <View style={styles.editDivider} />
+
+                <Pressable style={styles.imagePickerRow} onPress={handleOpenTemplates}>
+                  <Ionicons name="grid-outline" size={22} color={colors.text} />
+                  <Text style={styles.imagePickerLabel}>Templates</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                </Pressable>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -348,7 +757,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   backButton: {
-    width: 40,
+    width: 60,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
@@ -357,6 +766,16 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
     color: colors.text,
+  },
+  cancelText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+  },
+  saveText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.primary,
   },
   content: {
     flex: 1,
@@ -372,6 +791,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
   },
+  // View mode template card
   templateCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -407,38 +827,82 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 18,
   },
-  tagsSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // Edit mode card
+  editCard: {
+    ...cardStyle,
     marginBottom: spacing.md,
   },
-  tagsLabel: {
+  editInfoRow: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  editTextInputs: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  nameInput: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.text,
+    paddingVertical: spacing.xs,
+  },
+  descriptionInput: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    paddingVertical: spacing.xs,
+  },
+  imagePlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    overflow: 'hidden',
+  },
+  imagePlaceholderFilled: {
+    borderStyle: 'solid',
+    borderColor: 'transparent',
+    borderWidth: 0,
+  },
+  selectedImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+  },
+  editDivider: {
+    height: 1,
+    backgroundColor: 'rgba(217, 217, 217, 0.25)',
+    marginHorizontal: spacing.sm,
+  },
+  colourRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
+  },
+  colourLabel: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.text,
-    marginRight: spacing.md,
   },
-  tagsScroll: {
-    flex: 1,
-  },
-  tagsContainer: {
+  colourRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
-  tagPill: {
-    backgroundColor: colors.card,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+  colourCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
-  tagText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
-  },
+  // Buttons
   addToLibraryButton: {
     backgroundColor: colors.primary,
     paddingVertical: 16,
@@ -469,48 +933,27 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: '#FFFFFF',
   },
+  editExercisesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  editExercisesText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: '#FFFFFF',
+  },
   sectionTitle: {
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
     marginTop: spacing.sm,
-  },
-  infoCard: {
-    ...cardStyle,
-    marginBottom: spacing.md,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  infoLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  infoLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  infoRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  infoValue: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-  },
-  infoDivider: {
-    height: 1,
-    backgroundColor: 'rgba(217, 217, 217, 0.25)',
-    marginHorizontal: spacing.md,
   },
   exercisesCard: {
     ...cardStyle,
@@ -521,15 +964,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-  },
-  exerciseImagePlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
+    gap: spacing.md,
   },
   exerciseName: {
     flex: 1,
@@ -567,12 +1002,8 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  weightColumn: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  repsColumn: {
-    flex: 1,
+  weightRepsColumn: {
+    flex: 3,
     textAlign: 'center',
   },
   setRow: {
@@ -585,7 +1016,99 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
   },
+  deleteTextButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    marginTop: spacing.md,
+  },
+  deleteText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.error,
+  },
   bottomSpacer: {
     height: 40,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surfaceSecondary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  modalCloseButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.lg,
+    color: colors.text,
+  },
+  colourContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  colourGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.lg,
+  },
+  colourOption: {
+    padding: spacing.sm,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colourOptionSelected: {
+    borderColor: colors.text,
+  },
+  colourCircleLarge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePickerOptions: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
+  },
+  imagePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.md,
+  },
+  imagePickerLabel: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
   },
 });

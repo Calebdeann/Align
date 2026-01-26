@@ -16,29 +16,10 @@ const SAMPLE_AVATARS = [
   require('../../assets/images/Girl1.png'),
 ];
 
-// Generate a deterministic referral code from user ID (always same for same user)
-function generateReferralCodeFromUserId(userId: string): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-
-  // Use the user ID to seed the code generation
-  // Take characters from different parts of the UUID to create variety
-  const cleanId = userId.replace(/-/g, '').toUpperCase();
-
-  for (let i = 0; i < 6; i++) {
-    // Use different positions in the UUID for each character
-    const charIndex = parseInt(cleanId.charAt(i * 4) || cleanId.charAt(i), 16) % chars.length;
-    code += chars.charAt(charIndex);
-  }
-
-  return code;
-}
-
 export default function ReferFriendScreen() {
-  const { userId } = useUserProfileStore();
+  const { profile } = useUserProfileStore();
 
-  // Generate code deterministically from userId - always the same for same user
-  const promoCode = userId ? generateReferralCodeFromUserId(userId) : null;
+  const promoCode = profile?.referral_code ?? null;
 
   const handleShare = async () => {
     if (!promoCode) return;

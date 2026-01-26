@@ -142,6 +142,8 @@ interface WorkoutStore {
       exerciseId: string;
       exerciseName: string;
       muscle: string;
+      gifUrl?: string;
+      thumbnailUrl?: string;
       sets: { targetWeight?: number; targetReps?: number }[];
       restTimerSeconds: number;
     }[],
@@ -252,6 +254,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
             id: te.exerciseId,
             name: te.exerciseName,
             muscle: te.muscle,
+            gifUrl: te.gifUrl,
+            thumbnailUrl: te.thumbnailUrl,
           },
           notes: '',
           restTimerSeconds: te.restTimerSeconds,

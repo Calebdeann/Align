@@ -29,7 +29,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="goal-reality" />
       <Stack.Screen name="prediction" />
       <Stack.Screen name="plan-ready" />
-      <Stack.Screen name="enter-referral-code" />
+      {/* <Stack.Screen name="enter-referral-code" /> */}
       <Stack.Screen name="thank-you" />
     </Stack>
   );

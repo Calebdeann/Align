@@ -9,6 +9,9 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -16,10 +19,16 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/constants/theme';
 import { saveCompletedWorkout, getExerciseMuscles, ExerciseMuscle } from '@/services/api/workouts';
-import { UnitSystem, kgToLbs } from '@/utils/units';
+import { UnitSystem, kgToLbs, toKgForStorage, getWeightUnit } from '@/utils/units';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { ExerciseImage } from '@/components/ExerciseImage';
+import { toTitleCase } from '@/utils/textFormatters';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // Set types matching the active workout
 type SetType = 'normal' | 'warmup' | 'failure' | 'dropset';
@@ -38,6 +47,7 @@ interface Exercise {
   id: string;
   name: string;
   muscle: string;
+  gifUrl?: string;
 }
 
 interface WorkoutExercise {
@@ -118,10 +128,6 @@ function ImagePlaceholderIcon() {
       </View>
     </View>
   );
-}
-
-function DumbbellIcon() {
-  return <Ionicons name="barbell-outline" size={20} color={colors.primary} />;
 }
 
 // Calculate muscle distribution from exercises (basic fallback using exercise.muscle)
@@ -274,6 +280,20 @@ export default function SaveWorkoutScreen() {
     new Map()
   );
   const [isLoadingMuscles, setIsLoadingMuscles] = useState(true);
+  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+
+  const toggleExercise = (exerciseId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedExercises((prev) => {
+      const next = new Set(prev);
+      if (next.has(exerciseId)) {
+        next.delete(exerciseId);
+      } else {
+        next.add(exerciseId);
+      }
+      return next;
+    });
+  };
 
   // Fetch detailed muscle mappings on mount
   useEffect(() => {
@@ -468,7 +488,8 @@ export default function SaveWorkoutScreen() {
             .filter((set) => set.completed)
             .map((set, index) => ({
               setNumber: index + 1,
-              weightKg: set.kg ? parseFloat(set.kg) : null,
+              // User enters weight in display units (kg or lbs); convert to kg for storage
+              weightKg: set.kg ? toKgForStorage(parseFloat(set.kg), units) : null,
               reps: set.reps ? parseInt(set.reps, 10) : null,
               setType: set.setType || 'normal',
               completed: true,
@@ -492,8 +513,8 @@ export default function SaveWorkoutScreen() {
             text: 'OK',
             onPress: () => {
               router.dismissAll();
-              // Navigate to Planner tab so user can see their saved workout
-              router.replace('/(tabs)');
+              // Navigate to Workout tab after saving
+              router.replace('/(tabs)/workout');
             },
           },
         ]);
@@ -607,29 +628,6 @@ export default function SaveWorkoutScreen() {
               />
             </View>
           </View>
-
-          <View style={styles.cardDivider} />
-
-          {/* Routine Row */}
-          <Pressable style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Routine</Text>
-            <View style={styles.infoValueRow}>
-              <Text style={styles.infoValue}>Default Routine</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-            </View>
-          </Pressable>
-
-          <View style={styles.cardDivider} />
-
-          {/* Tags Row */}
-          <Pressable style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Tags</Text>
-            <View style={styles.tagsContainer}>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>No Tag</Text>
-              </View>
-            </View>
-          </Pressable>
         </View>
 
         {/* Date & Time Section */}
@@ -727,20 +725,57 @@ export default function SaveWorkoutScreen() {
         {/* Exercises Section */}
         <Text style={styles.sectionTitle}>Exercises</Text>
         <View style={styles.card}>
-          <View style={styles.exerciseList}>
-            {completedExercises.map((we, index) => (
-              <View key={`${we.exercise.id}-${index}`} style={styles.exerciseRow}>
-                <View style={styles.exerciseIconContainer}>
-                  <DumbbellIcon />
-                </View>
-                <Text style={styles.exerciseName}>{we.exercise.name}</Text>
-              </View>
-            ))}
+          {completedExercises.map((we, index) => {
+            const isExpanded = expandedExercises.has(`${we.exercise.id}-${index}`);
+            const completedSets = we.sets.filter((s) => s.completed);
+            return (
+              <View key={`${we.exercise.id}-${index}`}>
+                <Pressable
+                  style={styles.exerciseRow}
+                  onPress={() => toggleExercise(`${we.exercise.id}-${index}`)}
+                >
+                  <ExerciseImage gifUrl={we.exercise.gifUrl} size={40} borderRadius={8} />
+                  <Text style={styles.exerciseName}>{toTitleCase(we.exercise.name)}</Text>
+                  <Ionicons
+                    name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </Pressable>
 
-            {completedExercises.length === 0 && (
-              <Text style={styles.emptyText}>No completed exercises</Text>
-            )}
-          </View>
+                {isExpanded && completedSets.length > 0 && (
+                  <View style={styles.setsContainer}>
+                    <View style={styles.setsHeader}>
+                      <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
+                      <Text style={[styles.setHeaderText, styles.weightRepsColumn]}>
+                        WEIGHT & REPS
+                      </Text>
+                    </View>
+                    {completedSets.map((set, setIndex) => (
+                      <View key={set.id} style={styles.setRow}>
+                        <Text style={[styles.setText, styles.setColumn]}>{setIndex + 1}</Text>
+                        <Text style={[styles.setText, styles.weightRepsColumn]}>
+                          {set.kg && set.reps
+                            ? `${set.kg} ${getWeightUnit(units)} × ${set.reps} reps`
+                            : set.kg
+                              ? `${set.kg} ${getWeightUnit(units)} × - reps`
+                              : set.reps
+                                ? `- × ${set.reps} reps`
+                                : '- × -'}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {index < completedExercises.length - 1 && <View style={styles.exerciseDivider} />}
+              </View>
+            );
+          })}
+
+          {completedExercises.length === 0 && (
+            <Text style={styles.emptyText}>No completed exercises</Text>
+          )}
         </View>
 
         <View style={styles.bottomSpacer} />
@@ -848,42 +883,6 @@ const styles = StyleSheet.create({
     marginLeft: 0,
     marginRight: 0,
   },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-  },
-  infoLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  infoValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  infoValue: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  tag: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceSecondary,
-  },
-  tagText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
   sectionTitle: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
@@ -983,28 +982,61 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
-  exerciseList: {
-    gap: spacing.sm,
-  },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     gap: spacing.md,
-  },
-  exerciseIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: 'rgba(148, 122, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   exerciseName: {
     flex: 1,
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.text,
+  },
+  exerciseDivider: {
+    height: 1,
+    backgroundColor: 'rgba(217, 217, 217, 0.25)',
+    marginHorizontal: spacing.md,
+  },
+  setsContainer: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.surfaceSecondary,
+    marginHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
+    borderRadius: 8,
+  },
+  setsHeader: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(217, 217, 217, 0.25)',
+  },
+  setHeaderText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  setColumn: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  weightRepsColumn: {
+    flex: 3,
+    textAlign: 'center',
+  },
+  setRow: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+  },
+  setText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
+    textAlign: 'center',
   },
   emptyText: {
     fontFamily: fonts.regular,

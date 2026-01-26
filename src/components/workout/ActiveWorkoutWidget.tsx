@@ -14,26 +14,38 @@ function formatTime(seconds: number): string {
 
 export default function ActiveWorkoutWidget() {
   const activeWorkout = useWorkoutStore((state) => state.activeWorkout);
-  const updateActiveWorkoutTime = useWorkoutStore((state) => state.updateActiveWorkoutTime);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keep the timer running while minimized
-  // Only depend on isMinimized to avoid recreating interval every second
+  // Use a ref-guarded single interval to prevent stacking
+  const isMinimized = activeWorkout?.isMinimized ?? false;
+
   useEffect(() => {
-    if (activeWorkout?.isMinimized) {
+    if (isMinimized) {
+      // Guard: only start if no interval is already running
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
       intervalRef.current = setInterval(() => {
-        // Use store getter to get latest elapsedSeconds instead of closure
-        const current = useWorkoutStore.getState().activeWorkout?.elapsedSeconds ?? 0;
-        updateActiveWorkoutTime(current + 1);
+        const store = useWorkoutStore.getState();
+        const current = store.activeWorkout?.elapsedSeconds ?? 0;
+        store.updateActiveWorkoutTime(current + 1);
       }, 1000);
+    } else {
+      // Not minimized — clear any running interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [activeWorkout?.isMinimized, updateActiveWorkoutTime]);
+  }, [isMinimized]);
 
   if (!activeWorkout || !activeWorkout.isMinimized) {
     return null;

@@ -12,9 +12,10 @@ import {
 export const ImageTypeSchema = z.enum(['template', 'camera', 'gallery']);
 
 // Template image
+// uri can be empty for 'template' type (bundled images use require() not a URI)
 export const WorkoutImageSchema = z.object({
   type: ImageTypeSchema,
-  uri: z.string().min(1),
+  uri: z.string(),
   templateId: z.string().optional(),
 });
 

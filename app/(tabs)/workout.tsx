@@ -1014,14 +1014,9 @@ export default function WorkoutScreen() {
           </View>
         ) : (
           <View style={styles.templatesList}>
-            {/* Render folders with their templates - only show folders that have templates */}
+            {/* Render folders with their templates */}
             {folders.map((folder) => {
               const folderTemplates = getTemplatesInFolder(folder.id);
-
-              // Only render folder if it has at least 1 template
-              if (folderTemplates.length === 0) {
-                return null;
-              }
 
               return (
                 <View key={folder.id} style={styles.folderContainer}>
@@ -1045,14 +1040,18 @@ export default function WorkoutScreen() {
                   {/* Folder templates - hidden when collapsed */}
                   {!folder.isCollapsed && (
                     <View style={styles.folderTemplates}>
-                      {folderTemplates.map((template) => (
-                        <TemplateCard
-                          key={template.id}
-                          template={template}
-                          onStart={() => handleStartFromTemplate(template.id)}
-                          onPress={() => handleTemplatePress(template)}
-                        />
-                      ))}
+                      {folderTemplates.length === 0 ? (
+                        <Text style={styles.emptyFolderText}>No templates yet</Text>
+                      ) : (
+                        folderTemplates.map((template) => (
+                          <TemplateCard
+                            key={template.id}
+                            template={template}
+                            onStart={() => handleStartFromTemplate(template.id)}
+                            onPress={() => handleTemplatePress(template)}
+                          />
+                        ))
+                      )}
                     </View>
                   )}
                 </View>
@@ -1457,7 +1456,7 @@ const styles = StyleSheet.create({
   templateImage: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 10,
   },
   templateImagePlaceholder: {
     backgroundColor: colors.card,
@@ -1740,6 +1739,13 @@ const styles = StyleSheet.create({
   folderTemplates: {
     gap: spacing.sm,
     paddingLeft: spacing.xs,
+  },
+  emptyFolderText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textTertiary,
+    paddingVertical: spacing.md,
+    paddingLeft: spacing.sm,
   },
   addTemplateBox: {
     flexDirection: 'row',

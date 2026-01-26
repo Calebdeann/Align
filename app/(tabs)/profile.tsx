@@ -282,7 +282,7 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </Pressable>
 
-        {/* Invite Friends */}
+        {/* Invite Friends - temporarily disabled, will re-enable later
         <SectionHeader title="Invite Friends" />
         <MenuCard>
           <Pressable
@@ -299,6 +299,7 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </Pressable>
         </MenuCard>
+        */}
 
         {/* Account */}
         <SectionHeader title="Account" />

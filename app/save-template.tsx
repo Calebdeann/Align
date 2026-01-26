@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,40 +10,29 @@ import {
   Modal,
   Animated,
   Dimensions,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  Image,
+  ImageSourcePropType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise } from '@/stores/templateStore';
+import { WorkoutImage } from '@/stores/workoutStore';
 import { getCurrentUser } from '@/services/api/user';
-import { filterNumericInput } from '@/utils/units';
+import { ExerciseImage } from '@/components/ExerciseImage';
+import { toTitleCase } from '@/utils/textFormatters';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { getWeightUnit, fromKgForDisplay } from '@/utils/units';
+import { getTemplateImageById } from '@/constants/templateImages';
+import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Workout tags with their colors
-const WORKOUT_TAGS = [
-  { id: 'legs', label: 'Legs', color: colors.workout.legs },
-  { id: 'glutes', label: 'Glutes', color: colors.workout.legs },
-  { id: 'arms', label: 'Arms', color: colors.workout.arms },
-  { id: 'back', label: 'Back', color: colors.workout.back },
-  { id: 'chest', label: 'Chest', color: colors.workout.chest },
-  { id: 'fullBody', label: 'Full Body', color: colors.workout.fullBody },
-  { id: 'cardio', label: 'Cardio', color: colors.workout.cardio },
-  { id: 'shoulders', label: 'Shoulders', color: colors.workout.shoulders },
-  { id: 'core', label: 'Core', color: colors.workout.core },
-];
-
-// Difficulty options
-const DIFFICULTY_OPTIONS: Array<'Beginner' | 'Intermediate' | 'Advanced'> = [
-  'Beginner',
-  'Intermediate',
-  'Advanced',
-];
-
-// Equipment options
-const EQUIPMENT_OPTIONS = ['Gym', 'Home', 'No Equipment'];
 
 // Colour options (matching schedule-workout)
 const WORKOUT_COLOURS = [
@@ -137,6 +126,10 @@ function Divider() {
   return <View style={styles.divider} />;
 }
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 export default function SaveTemplateScreen() {
   const params = useLocalSearchParams<{
     exercises?: string;
@@ -145,6 +138,9 @@ export default function SaveTemplateScreen() {
   }>();
 
   const isEditMode = !!params.templateId;
+
+  const units = useUserPreferencesStore((s) => s.getUnitSystem());
+  const weightLabel = getWeightUnit(units).toLowerCase();
 
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
   const createTemplate = useTemplateStore((state) => state.createTemplate);
@@ -157,12 +153,32 @@ export default function SaveTemplateScreen() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedColourId, setSelectedColourId] = useState('purple');
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [difficulty, setDifficulty] = useState<'Beginner' | 'Intermediate' | 'Advanced'>(
-    'Beginner'
-  );
-  const [equipment, setEquipment] = useState('Gym');
-  const [estimatedDuration, setEstimatedDuration] = useState('60');
+  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+
+  const toggleExercise = (exerciseId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedExercises((prev) => {
+      const next = new Set(prev);
+      if (next.has(exerciseId)) {
+        next.delete(exerciseId);
+      } else {
+        next.add(exerciseId);
+      }
+      return next;
+    });
+  };
+
+  // Image state
+  const [selectedImage, setSelectedImage] = useState<{
+    type: 'template' | 'camera' | 'gallery';
+    uri: string;
+    localSource?: ImageSourcePropType;
+    templateImageId?: string;
+  } | null>(null);
+
+  // Image picker modal state
+  const [showImagePickerModal, setShowImagePickerModal] = useState(false);
+  const imageSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   // Colour modal state
   const [showColourModal, setShowColourModal] = useState(false);
@@ -186,10 +202,6 @@ export default function SaveTemplateScreen() {
       if (existing) {
         setName(existing.name);
         setDescription(existing.description || '');
-        setSelectedTagIds(existing.tagIds);
-        setDifficulty(existing.difficulty);
-        setEquipment(existing.equipment);
-        setEstimatedDuration(existing.estimatedDuration.toString());
 
         // Find matching colour from tagColor
         const matchingColour = WORKOUT_COLOURS.find((c) => c.color === existing.tagColor);
@@ -201,9 +213,44 @@ export default function SaveTemplateScreen() {
         if (!params.exercises) {
           setExercises(existing.exercises);
         }
+
+        // Load existing image
+        if (existing.image) {
+          const localSource =
+            existing.image.type === 'template' && existing.image.templateId
+              ? (getTemplateImageById(existing.image.templateId) ?? undefined)
+              : undefined;
+          setSelectedImage({
+            type: existing.image.type,
+            uri: existing.image.uri,
+            localSource,
+            templateImageId: existing.image.templateId,
+          });
+        } else if (existing.localImage) {
+          setSelectedImage({
+            type: 'template',
+            uri: '',
+            localSource: existing.localImage,
+          });
+        }
       }
     }
   }, [params.templateId, params.exercises]);
+
+  // Pick up template image selection when returning from template-images screen
+  useFocusEffect(
+    useCallback(() => {
+      const pending = consumePendingTemplateImage();
+      if (pending) {
+        setSelectedImage({
+          type: 'template',
+          uri: '',
+          localSource: pending.source,
+          templateImageId: pending.id,
+        });
+      }
+    }, [])
+  );
 
   // Colour modal functions
   const openColourModal = () => {
@@ -229,17 +276,74 @@ export default function SaveTemplateScreen() {
     closeColourModal();
   };
 
+  // Image picker modal functions
+  const openImagePickerModal = () => {
+    setShowImagePickerModal(true);
+    Animated.spring(imageSlideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeImagePickerModal = () => {
+    Animated.timing(imageSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => setShowImagePickerModal(false));
+  };
+
+  const handleTakePhoto = async () => {
+    closeImagePickerModal();
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Needed', 'Please allow camera access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage({
+        type: 'camera',
+        uri: result.assets[0].uri,
+      });
+    }
+  };
+
+  const handleChooseFromLibrary = async () => {
+    closeImagePickerModal();
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Needed', 'Please allow photo library access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage({
+        type: 'gallery',
+        uri: result.assets[0].uri,
+      });
+    }
+  };
+
+  const handleOpenTemplates = () => {
+    closeImagePickerModal();
+    router.push('/template-images');
+  };
+
   const getSelectedColour = () => {
     const colour = WORKOUT_COLOURS.find((c) => c.id === selectedColourId);
     return colour?.color || colors.primary;
-  };
-
-  const toggleTag = (tagId: string) => {
-    if (selectedTagIds.includes(tagId)) {
-      setSelectedTagIds(selectedTagIds.filter((id) => id !== tagId));
-    } else {
-      setSelectedTagIds([...selectedTagIds, tagId]);
-    }
   };
 
   const handleSave = async () => {
@@ -257,17 +361,36 @@ export default function SaveTemplateScreen() {
 
     const tagColor = getSelectedColour();
 
+    // Build image data for save
+    const imageData: { image?: WorkoutImage; localImage?: ImageSourcePropType } = {};
+    if (selectedImage) {
+      if (selectedImage.type === 'template' && selectedImage.localSource) {
+        imageData.localImage = selectedImage.localSource;
+        imageData.image = {
+          type: 'template',
+          uri: '',
+          templateId: selectedImage.templateImageId,
+        };
+      } else {
+        imageData.image = {
+          type: selectedImage.type,
+          uri: selectedImage.uri,
+        };
+      }
+    }
+
     const templateData = {
       name: name.trim(),
       description: description.trim() || undefined,
-      tagIds: selectedTagIds,
+      tagIds: [] as string[],
       tagColor,
-      estimatedDuration: parseInt(estimatedDuration) || 60,
-      difficulty,
-      equipment,
+      estimatedDuration: 60,
+      difficulty: 'Beginner' as const,
+      equipment: 'Gym',
       exercises,
       userId: user?.id,
       folderId: params.folderId || undefined,
+      ...imageData,
     };
 
     if (isEditMode && params.templateId) {
@@ -308,12 +431,18 @@ export default function SaveTemplateScreen() {
           {/* Photo + Name + Description row */}
           <View style={styles.infoRow}>
             <Pressable
-              style={styles.imagePlaceholder}
-              onPress={() => {
-                Alert.alert('Coming Soon', 'Image upload will be available soon.');
-              }}
+              style={[styles.imagePlaceholder, selectedImage && styles.imagePlaceholderFilled]}
+              onPress={openImagePickerModal}
             >
-              <ImagePlaceholderIcon />
+              {selectedImage ? (
+                selectedImage.localSource ? (
+                  <Image source={selectedImage.localSource} style={styles.selectedImage} />
+                ) : (
+                  <Image source={{ uri: selectedImage.uri }} style={styles.selectedImage} />
+                )
+              ) : (
+                <ImagePlaceholderIcon />
+              )}
             </Pressable>
             <View style={styles.textInputs}>
               <TextInput
@@ -345,100 +474,117 @@ export default function SaveTemplateScreen() {
           </Pressable>
         </View>
 
-        {/* Settings Card */}
-        <Text style={styles.sectionHeader}>Settings</Text>
+        {/* Exercises */}
+        <Text style={styles.sectionHeader}>Exercises</Text>
         <View style={styles.card}>
-          {/* Tags */}
-          <View style={styles.settingsSection}>
-            <Text style={styles.settingsLabel}>Tags</Text>
-            <View style={styles.tagsGrid}>
-              {WORKOUT_TAGS.map((tag) => (
-                <Pressable
-                  key={tag.id}
-                  style={[
-                    styles.tagChip,
-                    selectedTagIds.includes(tag.id) && {
-                      backgroundColor: tag.color + '30',
-                      borderColor: tag.color,
-                    },
-                  ]}
-                  onPress={() => toggleTag(tag.id)}
-                >
-                  <View style={[styles.tagDot, { backgroundColor: tag.color }]} />
-                  <Text style={styles.tagLabel}>{tag.label}</Text>
+          {exercises.map((exercise, index) => {
+            const isExpanded = expandedExercises.has(exercise.id);
+            return (
+              <View key={exercise.id}>
+                <Pressable style={styles.exerciseRow} onPress={() => toggleExercise(exercise.id)}>
+                  <ExerciseImage
+                    gifUrl={exercise.gifUrl}
+                    thumbnailUrl={exercise.thumbnailUrl}
+                    size={40}
+                    borderRadius={8}
+                  />
+                  <Text style={styles.exerciseName}>{toTitleCase(exercise.exerciseName)}</Text>
+                  <Ionicons
+                    name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                    size={20}
+                    color={colors.textSecondary}
+                  />
                 </Pressable>
-              ))}
+
+                {isExpanded && (
+                  <View style={styles.setsContainer}>
+                    <View style={styles.setsHeader}>
+                      <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
+                      <Text style={[styles.setHeaderText, styles.weightRepsColumn]}>
+                        WEIGHT & REPS
+                      </Text>
+                    </View>
+                    {exercise.sets.map((set) => (
+                      <View key={set.setNumber} style={styles.setRow}>
+                        <Text style={[styles.setText, styles.setColumn]}>{set.setNumber}</Text>
+                        <Text style={[styles.setText, styles.weightRepsColumn]}>
+                          {set.targetWeight && set.targetReps
+                            ? `${fromKgForDisplay(set.targetWeight, units)} ${weightLabel} × ${set.targetReps} reps`
+                            : set.targetWeight
+                              ? `${fromKgForDisplay(set.targetWeight, units)} ${weightLabel} × - reps`
+                              : set.targetReps
+                                ? `- × ${set.targetReps} reps`
+                                : '- × -'}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {index < exercises.length - 1 && <Divider />}
+              </View>
+            );
+          })}
+
+          {exercises.length === 0 && (
+            <View style={styles.emptyExercises}>
+              <Text style={styles.emptyText}>No exercises added</Text>
             </View>
-          </View>
-
-          <Divider />
-
-          {/* Difficulty */}
-          <View style={styles.settingsSection}>
-            <Text style={styles.settingsLabel}>Difficulty</Text>
-            <View style={styles.optionsRow}>
-              {DIFFICULTY_OPTIONS.map((option) => (
-                <Pressable
-                  key={option}
-                  style={[styles.optionChip, difficulty === option && styles.optionChipSelected]}
-                  onPress={() => setDifficulty(option)}
-                >
-                  <Text
-                    style={[
-                      styles.optionChipText,
-                      difficulty === option && styles.optionChipTextSelected,
-                    ]}
-                  >
-                    {option}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          <Divider />
-
-          {/* Equipment */}
-          <View style={styles.settingsSection}>
-            <Text style={styles.settingsLabel}>Equipment</Text>
-            <View style={styles.optionsRow}>
-              {EQUIPMENT_OPTIONS.map((option) => (
-                <Pressable
-                  key={option}
-                  style={[styles.optionChip, equipment === option && styles.optionChipSelected]}
-                  onPress={() => setEquipment(option)}
-                >
-                  <Text
-                    style={[
-                      styles.optionChipText,
-                      equipment === option && styles.optionChipTextSelected,
-                    ]}
-                  >
-                    {option}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          <Divider />
-
-          {/* Duration */}
-          <View style={styles.settingsSection}>
-            <Text style={styles.settingsLabel}>Estimated Duration (minutes)</Text>
-            <TextInput
-              style={styles.durationInput}
-              value={estimatedDuration}
-              onChangeText={(value) => setEstimatedDuration(filterNumericInput(value, false))}
-              keyboardType="numeric"
-              placeholder="60"
-              placeholderTextColor={colors.textTertiary}
-            />
-          </View>
+          )}
         </View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Image Picker Bottom Sheet Modal */}
+      <Modal
+        visible={showImagePickerModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeImagePickerModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={closeImagePickerModal}>
+          <Animated.View
+            style={[styles.modalContent, { transform: [{ translateY: imageSlideAnim }] }]}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalHandle} />
+
+              <View style={styles.modalHeader}>
+                <Pressable style={styles.modalCloseButton} onPress={closeImagePickerModal}>
+                  <CloseIcon />
+                </Pressable>
+                <Text style={styles.modalTitle}>Add Photo</Text>
+                <View style={styles.modalCloseButton} />
+              </View>
+
+              <View style={styles.imagePickerOptions}>
+                <Pressable style={styles.imagePickerRow} onPress={handleChooseFromLibrary}>
+                  <Ionicons name="image-outline" size={22} color={colors.text} />
+                  <Text style={styles.imagePickerLabel}>Choose from Library</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                </Pressable>
+
+                <View style={styles.divider} />
+
+                <Pressable style={styles.imagePickerRow} onPress={handleTakePhoto}>
+                  <Ionicons name="camera-outline" size={22} color={colors.text} />
+                  <Text style={styles.imagePickerLabel}>Take Photo</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                </Pressable>
+
+                <View style={styles.divider} />
+
+                <Pressable style={styles.imagePickerRow} onPress={handleOpenTemplates}>
+                  <Ionicons name="grid-outline" size={22} color={colors.text} />
+                  <Text style={styles.imagePickerLabel}>Templates</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                </Pressable>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
 
       {/* Colour Bottom Sheet Modal */}
       <Modal
@@ -544,6 +690,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderStyle: 'dashed',
+    overflow: 'hidden',
+  },
+  imagePlaceholderFilled: {
+    borderStyle: 'solid',
+    borderColor: 'transparent',
+    borderWidth: 0,
+  },
+  selectedImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
   },
   textInputs: {
     flex: 1,
@@ -595,73 +752,65 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.sm,
   },
-  settingsSection: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  settingsLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-  },
-  tagsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  tagChip: {
+  exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
+    gap: spacing.md,
   },
-  tagDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  tagLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  optionChip: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  optionChipSelected: {
-    backgroundColor: 'rgba(148, 122, 255, 0.15)',
-    borderColor: colors.primary,
-  },
-  optionChipText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
-  },
-  optionChipTextSelected: {
-    color: colors.primary,
-  },
-  durationInput: {
-    ...cardStyle,
-    padding: spacing.md,
+  exerciseName: {
+    flex: 1,
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.text,
+  },
+  setsContainer: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.surfaceSecondary,
+    marginHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
+    borderRadius: 8,
+  },
+  setsHeader: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(217, 217, 217, 0.25)',
+  },
+  setHeaderText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  setColumn: {
+    flex: 1,
+    textAlign: 'center',
+  },
+  weightRepsColumn: {
+    flex: 3,
+    textAlign: 'center',
+  },
+  setRow: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+  },
+  setText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  emptyExercises: {
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
   },
   bottomSpacer: {
     height: 40,
@@ -731,5 +880,24 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // Image picker modal styles
+  imagePickerOptions: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
+  },
+  imagePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.md,
+  },
+  imagePickerLabel: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
   },
 });

@@ -55,6 +55,14 @@ export const OnboardingDataSchema = z.object({
   reminder_time: z.string().max(10).optional(),
 });
 
+// Referral code: 6 uppercase alphanumeric characters
+export const ReferralCodeSchema = z
+  .string()
+  .min(6)
+  .max(6)
+  .regex(/^[A-Za-z0-9]{6}$/, 'Referral code must be 6 alphanumeric characters')
+  .transform((val) => val.toUpperCase());
+
 // Type exports
 export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;

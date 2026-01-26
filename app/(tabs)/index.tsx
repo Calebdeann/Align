@@ -577,7 +577,7 @@ export default function CalendarScreen() {
               };
 
               return (
-                <View key={workout.id} style={styles.workoutRow}>
+                <Pressable key={workout.id} style={styles.workoutRow} onPress={handleWorkoutPress}>
                   <Pressable
                     onPress={() => {
                       // Toggle completion for scheduled workouts
@@ -604,7 +604,7 @@ export default function CalendarScreen() {
                       <CheckboxUnchecked color={workout.tagColor} />
                     )}
                   </Pressable>
-                  <Pressable style={styles.workoutInfoPressable} onPress={handleWorkoutPress}>
+                  <View style={styles.workoutInfoPressable}>
                     <View style={styles.workoutInfo}>
                       {workout.templateName && (
                         <Text style={[styles.workoutTemplateLabel, { color: workout.tagColor }]}>
@@ -619,8 +619,8 @@ export default function CalendarScreen() {
                       </Text>
                     )}
                     <ChevronRight />
-                  </Pressable>
-                </View>
+                  </View>
+                </Pressable>
               );
             })
           )}

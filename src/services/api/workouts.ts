@@ -36,13 +36,15 @@ export interface DbWorkoutExercise {
   superset_id: number | null;
   rest_timer_seconds: number;
   created_at: string;
+  image_url?: string | null;
+  thumbnail_url?: string | null;
 }
 
 export interface DbWorkoutSet {
   id: string;
   workout_exercise_id: string;
   set_number: number;
-  weight_kg: number | null;
+  weight: number | null;
   reps: number | null;
   set_type: SetType;
   completed: boolean;
@@ -185,7 +187,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
       const setsToInsert = exercise.sets.map((set) => ({
         workout_exercise_id: workoutExercise.id,
         set_number: set.setNumber,
-        weight_kg: set.weightKg,
+        weight: set.weightKg,
         reps: set.reps,
         set_type: set.setType || 'normal',
         completed: set.completed,
@@ -285,31 +287,47 @@ export async function getBatchExercisePreviousSets(
   if (exerciseIds.length === 0) return result;
 
   try {
-    // Single query to get the most recent workout exercise for each exercise_id
-    // Uses a subquery approach to get the latest workout for each exercise
-    const { data: workoutExercises, error } = await supabase
-      .from('workout_exercises')
-      .select(
-        `
-        id,
-        exercise_id,
-        workout:workouts!inner(
-          user_id,
-          completed_at
-        )
-      `
-      )
-      .in('exercise_id', exerciseIds)
-      .eq('workout.user_id', userId)
-      .order('workout(completed_at)', { ascending: false });
+    // Step 1: Get user's most recent workouts
+    // Use a generous limit so history works even if the exercise wasn't done recently
+    const { data: userWorkouts, error: workoutsError } = await supabase
+      .from('workouts')
+      .select('id, completed_at')
+      .eq('user_id', userId)
+      .order('completed_at', { ascending: false })
+      .limit(200);
 
-    if (error || !workoutExercises || workoutExercises.length === 0) {
+    if (workoutsError || !userWorkouts || userWorkouts.length === 0) {
       return result;
     }
 
+    const userWorkoutIds = userWorkouts.map((w) => w.id);
+
+    // Step 2: Get workout_exercises for these workouts that match our exercise IDs
+    const { data: workoutExercises, error: weError } = await supabase
+      .from('workout_exercises')
+      .select('id, exercise_id, workout_id')
+      .in('exercise_id', exerciseIds)
+      .in('workout_id', userWorkoutIds);
+
+    if (weError || !workoutExercises || workoutExercises.length === 0) {
+      return result;
+    }
+
+    // Step 3: For each exercise_id, find the most recent workout_exercise
+    // Build a map of workout_id -> completed_at for fast lookup
+    const workoutDateMap = new Map<string, string>();
+    userWorkouts.forEach((w) => workoutDateMap.set(w.id, w.completed_at));
+
+    // Sort workout_exercises by their workout's completed_at (most recent first)
+    const sortedWEs = [...workoutExercises].sort((a, b) => {
+      const dateA = workoutDateMap.get(a.workout_id) || '';
+      const dateB = workoutDateMap.get(b.workout_id) || '';
+      return dateB.localeCompare(dateA);
+    });
+
     // Group by exercise_id and take only the most recent one for each
     const latestByExercise = new Map<string, string>();
-    for (const we of workoutExercises) {
+    for (const we of sortedWEs) {
       if (!latestByExercise.has(we.exercise_id)) {
         latestByExercise.set(we.exercise_id, we.id);
       }
@@ -319,10 +337,10 @@ export async function getBatchExercisePreviousSets(
 
     if (workoutExerciseIds.length === 0) return result;
 
-    // Single query to get all sets for all relevant workout exercises
+    // Step 4: Get all sets for the most recent workout exercises
     const { data: sets, error: setsError } = await supabase
       .from('workout_sets')
-      .select('workout_exercise_id, set_number, weight_kg, reps')
+      .select('workout_exercise_id, set_number, weight, reps')
       .in('workout_exercise_id', workoutExerciseIds)
       .order('set_number');
 
@@ -346,7 +364,7 @@ export async function getBatchExercisePreviousSets(
       }
       result.get(exerciseId)!.push({
         setNumber: set.set_number,
-        weightKg: set.weight_kg,
+        weightKg: set.weight,
         reps: set.reps,
       });
     }
@@ -431,7 +449,8 @@ export async function getWorkoutById(workoutId: string): Promise<{
       .select(
         `
         *,
-        workout_sets(*)
+        workout_sets(*),
+        exercises(image_url, thumbnail_url)
       `
       )
       .eq('workout_id', workoutId)
@@ -444,9 +463,11 @@ export async function getWorkoutById(workoutId: string): Promise<{
 
     return {
       workout,
-      exercises: exercises.map((ex) => ({
+      exercises: exercises.map((ex: any) => ({
         ...ex,
         sets: ex.workout_sets || [],
+        image_url: ex.exercises?.image_url || null,
+        thumbnail_url: ex.exercises?.thumbnail_url || null,
       })),
     };
   } catch (error) {

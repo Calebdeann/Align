@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,8 @@ import {
   getTemplateTotalSets,
 } from '@/stores/templateStore';
 import { getCurrentUser } from '@/services/api/user';
+import { toTitleCase } from '@/utils/textFormatters';
+import { ExerciseImage } from '@/components/ExerciseImage';
 import { useState, useEffect } from 'react';
 
 // Icons
@@ -114,6 +116,7 @@ export default function WorkoutPreviewScreen() {
   const dateKey = params.dateKey as string;
 
   const [userId, setUserId] = useState<string | null>(null);
+  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
 
   // Get workout from store
   const scheduledWorkouts = useWorkoutStore((state) => state.scheduledWorkouts);
@@ -148,6 +151,18 @@ export default function WorkoutPreviewScreen() {
     if (!workout?.templateId) return null;
     return getTemplateById(workout.templateId);
   }, [workout, getTemplateById]);
+
+  const toggleExercise = (exerciseId: string) => {
+    setExpandedExercises((prev) => {
+      const next = new Set(prev);
+      if (next.has(exerciseId)) {
+        next.delete(exerciseId);
+      } else {
+        next.add(exerciseId);
+      }
+      return next;
+    });
+  };
 
   // Handle delete workout
   const handleDeleteWorkout = () => {
@@ -319,9 +334,15 @@ export default function WorkoutPreviewScreen() {
           <View style={styles.card}>
             {/* Template Header */}
             <View style={styles.templateHeader}>
-              <View style={[styles.templateIcon, { backgroundColor: template.tagColor + '20' }]}>
-                <DumbbellIcon />
-              </View>
+              {template.localImage ? (
+                <Image source={template.localImage} style={styles.templateImage} />
+              ) : template.image?.uri ? (
+                <Image source={{ uri: template.image.uri }} style={styles.templateImage} />
+              ) : (
+                <View style={[styles.templateIcon, { backgroundColor: template.tagColor + '20' }]}>
+                  <DumbbellIcon />
+                </View>
+              )}
               <View style={styles.templateInfo}>
                 <Text style={styles.templateName}>{template.name}</Text>
                 <Text style={styles.templateMeta}>
@@ -342,22 +363,52 @@ export default function WorkoutPreviewScreen() {
 
             {/* Exercise List */}
             <View style={styles.exerciseList}>
-              {template.exercises.map((ex, index) => (
-                <View key={ex.id}>
-                  <View style={styles.exerciseRow}>
-                    <View style={styles.exerciseIconContainer}>
-                      <DumbbellIcon />
-                    </View>
-                    <View style={styles.exerciseInfo}>
-                      <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
-                      <Text style={styles.exerciseMeta}>
-                        {ex.muscle} • {ex.sets.length} {ex.sets.length === 1 ? 'set' : 'sets'}
-                      </Text>
-                    </View>
+              {template.exercises.map((ex, index) => {
+                const isExpanded = expandedExercises.has(ex.id);
+                return (
+                  <View key={ex.id}>
+                    <Pressable style={styles.exerciseRow} onPress={() => toggleExercise(ex.id)}>
+                      <ExerciseImage
+                        gifUrl={ex.gifUrl}
+                        thumbnailUrl={ex.thumbnailUrl}
+                        size={40}
+                        borderRadius={8}
+                      />
+                      <Text style={styles.exerciseName}>{toTitleCase(ex.exerciseName)}</Text>
+                      <Ionicons
+                        name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                        size={20}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+
+                    {isExpanded && (
+                      <View style={styles.setsContainer}>
+                        <View style={styles.setsHeader}>
+                          <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
+                          <Text style={[styles.setHeaderText, styles.weightColumn]}>KG</Text>
+                          <Text style={[styles.setHeaderText, styles.repsColumn]}>REPS</Text>
+                        </View>
+                        {ex.sets.map((set) => (
+                          <View key={set.setNumber} style={styles.setRow}>
+                            <Text style={[styles.setText, styles.setColumn]}>{set.setNumber}</Text>
+                            <Text style={[styles.setText, styles.weightColumn]}>
+                              {set.targetWeight ?? '-'}
+                            </Text>
+                            <Text style={[styles.setText, styles.repsColumn]}>
+                              {set.targetReps ?? '-'}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {index < template.exercises.length - 1 && (
+                      <View style={styles.exerciseDivider} />
+                    )}
                   </View>
-                  {index < template.exercises.length - 1 && <View style={styles.exerciseDivider} />}
-                </View>
-              ))}
+                );
+              })}
             </View>
           </View>
         ) : (
@@ -536,37 +587,61 @@ const styles = StyleSheet.create({
   exerciseList: {
     gap: spacing.xs,
   },
+  templateImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+  },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm,
     gap: spacing.md,
   },
-  exerciseIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: 'rgba(148, 122, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
   exerciseName: {
+    flex: 1,
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
     color: colors.text,
   },
-  exerciseMeta: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-  },
   exerciseDivider: {
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.15)',
-    marginLeft: 52,
+    marginLeft: 56,
+  },
+  setsContainer: {
+    marginLeft: 56,
+    marginBottom: spacing.sm,
+  },
+  setsHeader: {
+    flexDirection: 'row',
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(217, 217, 217, 0.15)',
+  },
+  setHeaderText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.xs,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+  },
+  setRow: {
+    flexDirection: 'row',
+    paddingVertical: 6,
+  },
+  setText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.text,
+  },
+  setColumn: {
+    width: 50,
+  },
+  weightColumn: {
+    width: 60,
+  },
+  repsColumn: {
+    width: 60,
   },
   noTemplateContainer: {
     alignItems: 'center',

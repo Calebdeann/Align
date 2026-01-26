@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS workout_sets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workout_exercise_id UUID NOT NULL REFERENCES workout_exercises(id) ON DELETE CASCADE,
   set_number INT NOT NULL,        -- 1, 2, 3...
-  weight_kg DECIMAL(5,2),         -- Always stored in kg
+  weight DECIMAL(5,2),            -- Always stored in kg
   reps INT,
   set_type TEXT DEFAULT 'normal', -- 'normal', 'warmup', 'failure', 'dropset'
   completed BOOLEAN DEFAULT FALSE,

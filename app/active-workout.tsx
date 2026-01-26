@@ -25,9 +25,17 @@ import {
   saveUserExercisePreference,
 } from '@/services/api/workouts';
 import { getCurrentUser } from '@/services/api/user';
-import { formatPreviousSet, getWeightUnit, UnitSystem, filterNumericInput } from '@/utils/units';
+import {
+  formatPreviousSet,
+  getWeightUnit,
+  UnitSystem,
+  filterNumericInput,
+  fromKgForDisplay,
+} from '@/utils/units';
+import { toTitleCase } from '@/utils/textFormatters';
 import ClockModal from '@/components/workout/ClockModal';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
 
@@ -38,6 +46,7 @@ interface Exercise {
   name: string;
   muscle: string;
   gifUrl?: string;
+  thumbnailUrl?: string;
 }
 
 // Set types: 'normal' shows the set number, others show their first letter
@@ -297,7 +306,7 @@ function DraggableExerciseRow({
         size={48}
         borderRadius={8}
       />
-      <Text style={styles.reorderExerciseName}>{workoutExercise.exercise.name}</Text>
+      <Text style={styles.reorderExerciseName}>{toTitleCase(workoutExercise.exercise.name)}</Text>
       <View style={styles.dragHandle} {...panResponder.panHandlers}>
         <DragHandleIcon />
       </View>
@@ -377,6 +386,8 @@ interface SwipeableSetRowProps {
   onToggleCompletion: (exerciseIndex: number, setIndex: number) => void;
   onDelete: (exerciseIndex: number, setIndex: number) => void;
   onSetTypePress: (exerciseIndex: number, setIndex: number) => void;
+  previousWeight?: string;
+  previousReps?: string;
 }
 
 function SwipeableSetRow({
@@ -389,6 +400,8 @@ function SwipeableSetRow({
   onToggleCompletion,
   onDelete,
   onSetTypePress,
+  previousWeight,
+  previousReps,
 }: SwipeableSetRowProps) {
   const swipeableRef = useRef<Swipeable>(null);
 
@@ -451,7 +464,7 @@ function SwipeableSetRow({
             onUpdateValue(exerciseIndex, setIndex, 'kg', filterNumericInput(value))
           }
           keyboardType="numeric"
-          placeholder="0"
+          placeholder={previousWeight || '0'}
           placeholderTextColor={colors.textTertiary}
         />
         <TextInput
@@ -461,7 +474,7 @@ function SwipeableSetRow({
             onUpdateValue(exerciseIndex, setIndex, 'reps', filterNumericInput(value, false))
           }
           keyboardType="numeric"
-          placeholder="0"
+          placeholder={previousReps || '0'}
           placeholderTextColor={colors.textTertiary}
         />
         <Pressable
@@ -496,7 +509,7 @@ export default function ActiveWorkoutScreen() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
-  const [units] = useState<UnitSystem>('metric');
+  const units = useUserPreferencesStore((s) => s.getUnitSystem());
   const [clockModalVisible, setClockModalVisible] = useState(false);
 
   // Global store for persistence
@@ -564,48 +577,76 @@ export default function ActiveWorkoutScreen() {
     }
     loadUser();
 
-    // Check if we're restoring from a minimized workout
-    if (activeWorkout && activeWorkout.isMinimized) {
+    // Determine if we're starting a different template than what's in the store
+    const isDifferentTemplate = templateId && activeWorkout?.sourceTemplateId !== templateId;
+
+    if (activeWorkout && activeWorkout.isMinimized && !isDifferentTemplate) {
+      // Restore minimized workout (same template or no template specified)
       isRestoringRef.current = true;
-      // Restore state from store
       setElapsedSeconds(activeWorkout.elapsedSeconds);
       setWorkoutExercises(activeWorkout.exercises as WorkoutExercise[]);
       startedAtRef.current = new Date(activeWorkout.startedAt);
       restoreActiveWorkout();
-    } else if (!activeWorkout) {
-      // Check if we're starting from a template
+    } else if (!activeWorkout || isDifferentTemplate) {
+      // No active workout, OR starting a different template — create fresh
       if (templateId) {
         const template = getTemplateById(templateId);
         if (template) {
-          // Start workout from template
-          startWorkoutFromTemplate(
-            template.id,
-            template.name,
-            template.exercises.map((e) => ({
-              exerciseId: e.exerciseId,
-              exerciseName: e.exerciseName,
-              muscle: e.muscle,
-              sets: e.sets.map((s) => ({
-                targetWeight: s.targetWeight,
-                targetReps: s.targetReps,
-              })),
-              restTimerSeconds: e.restTimerSeconds,
+          const templateExercises = template.exercises.map((e) => ({
+            exerciseId: e.exerciseId,
+            exerciseName: e.exerciseName,
+            muscle: e.muscle,
+            gifUrl: e.gifUrl,
+            thumbnailUrl: e.thumbnailUrl,
+            sets: e.sets.map((s) => ({
+              targetWeight: s.targetWeight,
+              targetReps: s.targetReps,
             })),
-            null
-          );
+            restTimerSeconds: e.restTimerSeconds,
+          }));
+
+          // Update the store
+          startWorkoutFromTemplate(template.id, template.name, templateExercises, null);
+
+          // Also set component state directly to avoid race condition
+          // where the sync effect picks up stale store data before this update
+          const localExercises: WorkoutExercise[] = templateExercises.map((te) => ({
+            exercise: {
+              id: te.exerciseId,
+              name: te.exerciseName,
+              muscle: te.muscle,
+              gifUrl: te.gifUrl,
+              thumbnailUrl: te.thumbnailUrl,
+            },
+            notes: '',
+            restTimerSeconds: te.restTimerSeconds,
+            sets: te.sets.map((s, index) => ({
+              id: `set_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
+              previous:
+                s.targetWeight && s.targetReps ? `${s.targetWeight} x ${s.targetReps}` : '-',
+              kg: s.targetWeight?.toString() || '',
+              reps: s.targetReps?.toString() || '',
+              completed: false,
+              setType: 'normal' as SetType,
+            })),
+            previousSets: te.sets.map((s, idx) => ({
+              setNumber: idx + 1,
+              weightKg: s.targetWeight || null,
+              reps: s.targetReps || null,
+            })),
+            supersetId: null,
+          }));
+          setWorkoutExercises(localExercises);
         } else {
-          // Template not found, start empty workout
           startActiveWorkout(null);
         }
       } else {
-        // Start a new empty workout session
         startActiveWorkout(null);
       }
     }
-    // If activeWorkout exists but is NOT minimized, we're returning from
+    // If activeWorkout exists, not minimized, same template — returning from
     // add-exercise navigation. The component state should already be intact
     // since React Native keeps components mounted during push navigation.
-    // Don't modify state here to avoid overwriting current workout data.
   }, []);
 
   // Start timer automatically when screen mounts
@@ -643,14 +684,58 @@ export default function ActiveWorkoutScreen() {
     }
   }, [pendingExercises]);
 
-  // Sync exercises from store when starting from template
-  // This runs when activeWorkout changes (e.g., after startWorkoutFromTemplate)
+  // Sync exercises from store when restoring a persisted workout (e.g. app relaunch).
+  // Guard: only sync if the store's template matches what we're currently viewing,
+  // to prevent stale data from a previous template leaking in.
   useEffect(() => {
     if (activeWorkout && activeWorkout.exercises.length > 0 && workoutExercises.length === 0) {
-      // Workout was just started from template, sync the exercises
-      setWorkoutExercises(activeWorkout.exercises as WorkoutExercise[]);
+      const storeMatchesCurrent = !templateId || activeWorkout.sourceTemplateId === templateId;
+      if (storeMatchesCurrent) {
+        setWorkoutExercises(activeWorkout.exercises as WorkoutExercise[]);
+      }
     }
   }, [activeWorkout]);
+
+  // Override template targets with latest actual history when starting from a template
+  const historyFetchedRef = useRef(false);
+  useEffect(() => {
+    if (!userId || !templateId || historyFetchedRef.current) return;
+    if (workoutExercises.length === 0) return;
+    historyFetchedRef.current = true;
+
+    async function fetchLatestHistory() {
+      const exerciseIds = workoutExercises.map((we) => we.exercise.id);
+      const previousSetsMap = await getBatchExercisePreviousSets(userId!, exerciseIds);
+
+      setWorkoutExercises((prev) =>
+        prev.map((we) => {
+          const histSets = previousSetsMap.get(we.exercise.id);
+          if (!histSets || histSets.length === 0) return we;
+
+          const updatedPreviousSets = histSets.map((hs) => ({
+            setNumber: hs.setNumber,
+            weightKg: hs.weightKg,
+            reps: hs.reps,
+          }));
+
+          const updatedSets = we.sets.map((set, idx) => {
+            const prev = histSets[idx];
+            return {
+              ...set,
+              previous:
+                prev && prev.weightKg !== null && prev.reps !== null
+                  ? formatPreviousSet(prev.weightKg, prev.reps, units)
+                  : set.previous,
+            };
+          });
+
+          return { ...we, sets: updatedSets, previousSets: updatedPreviousSets };
+        })
+      );
+    }
+
+    fetchLatestHistory();
+  }, [userId, templateId, workoutExercises.length]);
 
   // Sync exercises to global store whenever they change
   useEffect(() => {
@@ -663,10 +748,24 @@ export default function ActiveWorkoutScreen() {
     try {
       const exerciseIds = exercises.map((e) => e.id);
 
+      // If userId isn't loaded yet, fetch it now
+      let currentUserId = userId;
+      if (!currentUserId) {
+        const user = await getCurrentUser();
+        if (user) {
+          currentUserId = user.id;
+          setUserId(user.id);
+        }
+      }
+
       // Fetch all data in parallel using batch functions
       const [preferencesMap, previousSetsMap] = await Promise.all([
-        userId ? getUserExercisePreferences(userId, exerciseIds) : Promise.resolve(new Map()),
-        userId ? getBatchExercisePreviousSets(userId, exerciseIds) : Promise.resolve(new Map()),
+        currentUserId
+          ? getUserExercisePreferences(currentUserId, exerciseIds)
+          : Promise.resolve(new Map()),
+        currentUserId
+          ? getBatchExercisePreviousSets(currentUserId, exerciseIds)
+          : Promise.resolve(new Map()),
       ]);
 
       // Build workout exercises synchronously using the pre-fetched data
@@ -1015,7 +1114,25 @@ export default function ActiveWorkoutScreen() {
 
     setWorkoutExercises((prev) => {
       const updated = [...prev];
-      updated[exerciseIndex].sets[setIndex].completed = !wasCompleted;
+      const updatedSet = updated[exerciseIndex].sets[setIndex];
+      updatedSet.completed = !wasCompleted;
+
+      // When completing a set, auto-fill empty fields with previous workout data
+      // so placeholder values get saved (not lost as null)
+      if (!wasCompleted) {
+        const prevSet = updated[exerciseIndex].previousSets?.[setIndex];
+        if (prevSet) {
+          if (!updatedSet.kg && prevSet.weightKg != null) {
+            // DB stores kg; convert to display unit (lbs if imperial)
+            const displayWeight = fromKgForDisplay(prevSet.weightKg, units);
+            updatedSet.kg = displayWeight.toString();
+          }
+          if (!updatedSet.reps && prevSet.reps != null) {
+            updatedSet.reps = prevSet.reps.toString();
+          }
+        }
+      }
+
       return updated;
     });
 
@@ -1312,7 +1429,9 @@ export default function ActiveWorkoutScreen() {
                   style={styles.exerciseTitlePressable}
                   onPress={() => router.push(`/exercise/${workoutExercise.exercise.id}`)}
                 >
-                  <Text style={styles.exerciseTitle}>{workoutExercise.exercise.name}</Text>
+                  <Text style={styles.exerciseTitle}>
+                    {toTitleCase(workoutExercise.exercise.name)}
+                  </Text>
                 </Pressable>
                 <Pressable
                   style={styles.moreButton}
@@ -1367,20 +1486,30 @@ export default function ActiveWorkoutScreen() {
               </View>
 
               {/* Sets Rows */}
-              {workoutExercise.sets.map((set, setIndex) => (
-                <SwipeableSetRow
-                  key={set.id}
-                  set={set}
-                  setIndex={setIndex}
-                  exerciseIndex={exerciseIndex}
-                  setTypeLabel={getSetTypeLabel(set, setIndex)}
-                  setType={set.setType}
-                  onUpdateValue={updateSetValue}
-                  onToggleCompletion={toggleSetCompletion}
-                  onDelete={deleteSet}
-                  onSetTypePress={openSetTypeModal}
-                />
-              ))}
+              {workoutExercise.sets.map((set, setIndex) => {
+                const prevSet = workoutExercise.previousSets?.[setIndex];
+                const prevWeight =
+                  prevSet?.weightKg != null
+                    ? fromKgForDisplay(prevSet.weightKg, units).toString()
+                    : undefined;
+                const prevReps = prevSet?.reps != null ? prevSet.reps.toString() : undefined;
+                return (
+                  <SwipeableSetRow
+                    key={set.id}
+                    set={set}
+                    setIndex={setIndex}
+                    exerciseIndex={exerciseIndex}
+                    setTypeLabel={getSetTypeLabel(set, setIndex)}
+                    setType={set.setType}
+                    onUpdateValue={updateSetValue}
+                    onToggleCompletion={toggleSetCompletion}
+                    onDelete={deleteSet}
+                    onSetTypePress={openSetTypeModal}
+                    previousWeight={prevWeight}
+                    previousReps={prevReps}
+                  />
+                );
+              })}
 
               {/* Add Set Button */}
               <Pressable style={styles.addSetButton} onPress={() => addSet(exerciseIndex)}>
@@ -1522,7 +1651,9 @@ export default function ActiveWorkoutScreen() {
                 <Text style={styles.restTimerModalTitle}>Rest Timer</Text>
                 {restTimerModalExerciseIndex !== null && (
                   <Text style={styles.restTimerModalSubtitle}>
-                    {workoutExercises[restTimerModalExerciseIndex]?.exercise.name}
+                    {toTitleCase(
+                      workoutExercises[restTimerModalExerciseIndex]?.exercise.name || ''
+                    )}
                   </Text>
                 )}
               </View>
@@ -1622,7 +1753,7 @@ export default function ActiveWorkoutScreen() {
 
                       <View style={styles.supersetExerciseInfo}>
                         <Text style={styles.supersetExerciseName}>
-                          {workoutExercise.exercise.name}
+                          {toTitleCase(workoutExercise.exercise.name)}
                         </Text>
                         <Text style={styles.supersetExerciseMuscle}>
                           {workoutExercise.exercise.muscle}

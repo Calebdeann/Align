@@ -43,3 +43,6 @@ yarn-error.*
 
 # Supabase
 supabase/.temp/
+
+# Exercise DB data (loaded from API, not bundled)
+data/

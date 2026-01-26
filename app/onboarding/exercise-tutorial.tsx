@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { filterNumericInput } from '@/utils/units';
+import { toTitleCase } from '@/utils/textFormatters';
 import { ExerciseImage } from '@/components/ExerciseImage';
 
 type TutorialStep = 'weight' | 'reps' | 'checkmark' | 'complete';
@@ -109,13 +110,17 @@ export default function ExerciseTutorialScreen() {
 
       {/* Exercise Title */}
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>{exerciseName || 'Leg Extension'}</Text>
+        <Text style={styles.title}>
+          {exerciseName ? toTitleCase(exerciseName) : 'Leg Extension'}
+        </Text>
       </View>
 
       {/* Exercise Info */}
       <View style={styles.exerciseInfo}>
         <ExerciseImage thumbnailUrl={gifUrl} size={40} borderRadius={8} />
-        <Text style={styles.exerciseType}>{exerciseName || 'Exercise'}</Text>
+        <Text style={styles.exerciseType}>
+          {exerciseName ? toTitleCase(exerciseName) : 'Exercise'}
+        </Text>
       </View>
 
       {/* Rest Timer */}

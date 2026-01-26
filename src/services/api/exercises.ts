@@ -344,7 +344,7 @@ export async function getExerciseHistory(
   // Get all sets for these workout exercises
   const { data: sets, error: sError } = await supabase
     .from('workout_sets')
-    .select('workout_exercise_id, set_number, weight_kg, reps')
+    .select('workout_exercise_id, set_number, weight, reps')
     .in('workout_exercise_id', workoutExerciseIds);
 
   if (sError) {
@@ -359,7 +359,7 @@ export async function getExerciseHistory(
       .sort((a, b) => a.set_number - b.set_number)
       .map((s) => ({
         setNumber: s.set_number,
-        weightKg: s.weight_kg,
+        weightKg: s.weight,
         reps: s.reps,
       }));
 
@@ -429,7 +429,7 @@ export async function getExercisePersonalRecords(
   // Get all sets for these workout exercises
   const { data: sets, error: sError } = await supabase
     .from('workout_sets')
-    .select('workout_exercise_id, weight_kg, reps')
+    .select('workout_exercise_id, weight, reps')
     .in('workout_exercise_id', workoutExerciseIds);
 
   if (sError || !sets || sets.length === 0) {
@@ -456,7 +456,7 @@ export async function getExercisePersonalRecords(
   // Process each set
   sets.forEach((set) => {
     const completedAt = workoutDateMap.get(set.workout_exercise_id) || '';
-    const weightKg = set.weight_kg;
+    const weightKg = set.weight;
     const reps = set.reps;
 
     if (weightKg !== null && weightKg !== undefined) {
