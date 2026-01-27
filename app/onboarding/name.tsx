@@ -62,7 +62,7 @@ export default function NameScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={styles.backButton}
@@ -75,8 +75,14 @@ export default function NameScreen() {
           <View style={[styles.progressBarFill, { width: '100%' }]} />
         </View>
 
-        {/* Empty view for spacing */}
-        <View style={styles.skipPlaceholder} />
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.replace('/(tabs)');
+          }}
+        >
+          <Text style={styles.skipText}>Skip</Text>
+        </Pressable>
       </View>
 
       {/* Question */}
@@ -164,8 +170,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: 2,
   },
-  skipPlaceholder: {
-    width: 40,
+  skipText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
   },
   questionContainer: {
     paddingHorizontal: spacing.lg,

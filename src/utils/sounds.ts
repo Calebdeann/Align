@@ -1,11 +1,17 @@
 import { Audio } from 'expo-av';
 import { TimerSoundId } from '@/stores/userPreferencesStore';
 
-const SOUND_FILES: Record<TimerSoundId, any> = {
-  chime: require('../../assets/sounds/chime.wav'),
-  bell: require('../../assets/sounds/bell.wav'),
-  ding: require('../../assets/sounds/ding.wav'),
-};
+// Load sound files defensively — if any are missing from the bundle, the app won't crash
+let SOUND_FILES: Partial<Record<TimerSoundId, any>> = {};
+try {
+  SOUND_FILES = {
+    chime: require('../../assets/sounds/chime.wav'),
+    bell: require('../../assets/sounds/bell.wav'),
+    ding: require('../../assets/sounds/ding.wav'),
+  };
+} catch (e) {
+  console.warn('[Sounds] Failed to load sound files:', e);
+}
 
 // Human-readable labels for the settings UI
 export const TIMER_SOUND_OPTIONS: { id: TimerSoundId; label: string }[] = [
@@ -18,12 +24,18 @@ let currentSound: Audio.Sound | null = null;
 
 export async function playTimerSound(soundId: TimerSoundId): Promise<void> {
   try {
+    const soundFile = SOUND_FILES[soundId];
+    if (!soundFile) {
+      console.warn(`[Sounds] Sound file not available: ${soundId}`);
+      return;
+    }
+
     if (currentSound) {
       await currentSound.unloadAsync();
       currentSound = null;
     }
 
-    const { sound } = await Audio.Sound.createAsync(SOUND_FILES[soundId]);
+    const { sound } = await Audio.Sound.createAsync(soundFile);
     currentSound = sound;
     await sound.playAsync();
 
@@ -37,6 +49,6 @@ export async function playTimerSound(soundId: TimerSoundId): Promise<void> {
       }
     });
   } catch (error) {
-    console.warn('Failed to play timer sound:', error);
+    console.warn('[Sounds] Failed to play timer sound:', error);
   }
 }

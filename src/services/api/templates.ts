@@ -7,6 +7,13 @@ import { CreateTemplateInputSchema, UpdateTemplateInputSchema } from '@/schemas/
 const isValidUuid = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
+// Detect schema errors (column not found, etc.) for backward-compatible fallback
+function isSchemaError(error: any): boolean {
+  if (!error?.code) return false;
+  const code = String(error.code);
+  return code === 'PGRST204' || code === 'PGRST301' || code.startsWith('42');
+}
+
 // =============================================
 // TYPES - Database Schema for Templates
 // =============================================
@@ -38,6 +45,8 @@ export interface DbTemplateExercise {
   notes: string | null;
   rest_timer_seconds: number;
   order_index: number;
+  gif_url?: string | null;
+  thumbnail_url?: string | null;
   created_at: string;
 }
 
@@ -84,7 +93,7 @@ export async function saveUserTemplate(
   });
 
   if (!parseResult.success) {
-    console.error('Invalid template input:', parseResult.error.flatten());
+    console.warn('Invalid template input:', parseResult.error.flatten());
     return null;
   }
 
@@ -110,7 +119,7 @@ export async function saveUserTemplate(
       .single();
 
     if (templateError || !savedTemplate) {
-      console.error('Error saving template:', templateError);
+      console.warn('Error saving template:', templateError);
       return null;
     }
 
@@ -120,28 +129,55 @@ export async function saveUserTemplate(
     for (let i = 0; i < template.exercises.length; i++) {
       const exercise = template.exercises[i];
 
-      const { data: templateExercise, error: exerciseError } = await supabase
+      const baseExerciseInsert = {
+        template_id: templateId,
+        exercise_id: exercise.exerciseId,
+        exercise_name: exercise.exerciseName,
+        muscle: exercise.muscle,
+        notes: exercise.notes || null,
+        rest_timer_seconds: exercise.restTimerSeconds,
+        order_index: i + 1,
+      };
+      const hasImageFields = !!(exercise.gifUrl || exercise.thumbnailUrl);
+      const fullExerciseInsert = hasImageFields
+        ? {
+            ...baseExerciseInsert,
+            gif_url: exercise.gifUrl || null,
+            thumbnail_url: exercise.thumbnailUrl || null,
+          }
+        : baseExerciseInsert;
+
+      let templateExercise: { id: string } | null = null;
+      const { data: exData, error: exerciseError } = await supabase
         .from('template_exercises')
-        .insert({
-          template_id: templateId,
-          exercise_id: exercise.exerciseId,
-          exercise_name: exercise.exerciseName,
-          muscle: exercise.muscle,
-          notes: exercise.notes || null,
-          rest_timer_seconds: exercise.restTimerSeconds,
-          order_index: i + 1,
-        })
+        .insert(fullExerciseInsert)
         .select('id')
         .single();
 
-      if (exerciseError || !templateExercise) {
-        console.error('Error saving template exercise:', exerciseError);
+      if (exerciseError && hasImageFields && isSchemaError(exerciseError)) {
+        console.warn(
+          'Image columns not found in template_exercises. Retrying without image fields.'
+        );
+        const { data: retryData, error: retryError } = await supabase
+          .from('template_exercises')
+          .insert(baseExerciseInsert)
+          .select('id')
+          .single();
+        if (retryError || !retryData) {
+          console.warn('Error saving template exercise (retry):', retryError);
+          continue;
+        }
+        templateExercise = retryData;
+      } else if (exerciseError || !exData) {
+        console.warn('Error saving template exercise:', exerciseError);
         continue;
+      } else {
+        templateExercise = exData;
       }
 
       // 3. Insert template_sets for this exercise
       const setsToInsert = exercise.sets.map((set) => ({
-        template_exercise_id: templateExercise.id,
+        template_exercise_id: templateExercise!.id,
         set_number: set.setNumber,
         target_weight: set.targetWeight ?? null,
         target_reps: set.targetReps ?? null,
@@ -151,14 +187,14 @@ export async function saveUserTemplate(
         const { error: setsError } = await supabase.from('template_sets').insert(setsToInsert);
 
         if (setsError) {
-          console.error('Error saving template sets:', setsError);
+          console.warn('Error saving template sets:', setsError);
         }
       }
     }
 
     return templateId;
   } catch (error) {
-    console.error('Error in saveUserTemplate:', error);
+    console.warn('Error in saveUserTemplate:', error);
     return null;
   }
 }
@@ -254,28 +290,55 @@ export async function updateUserTemplate(
       for (let i = 0; i < exercises.length; i++) {
         const exercise = exercises[i];
 
-        const { data: templateExercise, error: exerciseError } = await supabase
+        const baseExerciseInsert = {
+          template_id: templateId,
+          exercise_id: exercise.exerciseId,
+          exercise_name: exercise.exerciseName,
+          muscle: exercise.muscle,
+          notes: exercise.notes || null,
+          rest_timer_seconds: exercise.restTimerSeconds,
+          order_index: i + 1,
+        };
+        const hasImageFields = !!(exercise.gifUrl || exercise.thumbnailUrl);
+        const fullExerciseInsert = hasImageFields
+          ? {
+              ...baseExerciseInsert,
+              gif_url: exercise.gifUrl || null,
+              thumbnail_url: exercise.thumbnailUrl || null,
+            }
+          : baseExerciseInsert;
+
+        let templateExercise: { id: string } | null = null;
+        const { data: exData, error: exerciseError } = await supabase
           .from('template_exercises')
-          .insert({
-            template_id: templateId,
-            exercise_id: exercise.exerciseId,
-            exercise_name: exercise.exerciseName,
-            muscle: exercise.muscle,
-            notes: exercise.notes || null,
-            rest_timer_seconds: exercise.restTimerSeconds,
-            order_index: i + 1,
-          })
+          .insert(fullExerciseInsert)
           .select('id')
           .single();
 
-        if (exerciseError || !templateExercise) {
+        if (exerciseError && hasImageFields && isSchemaError(exerciseError)) {
+          console.warn(
+            'Image columns not found in template_exercises. Retrying without image fields.'
+          );
+          const { data: retryData, error: retryError } = await supabase
+            .from('template_exercises')
+            .insert(baseExerciseInsert)
+            .select('id')
+            .single();
+          if (retryError || !retryData) {
+            console.warn('Error saving template exercise (retry):', retryError);
+            continue;
+          }
+          templateExercise = retryData;
+        } else if (exerciseError || !exData) {
           console.warn('Error saving template exercise:', exerciseError);
           continue;
+        } else {
+          templateExercise = exData;
         }
 
         // Insert sets for this exercise
         const setsToInsert = exercise.sets.map((set) => ({
-          template_exercise_id: templateExercise.id,
+          template_exercise_id: templateExercise!.id,
           set_number: set.setNumber,
           target_weight: set.targetWeight ?? null,
           target_reps: set.targetReps ?? null,
@@ -313,13 +376,13 @@ export async function deleteUserTemplate(templateId: string): Promise<boolean> {
     const { error } = await supabase.from('workout_templates').delete().eq('id', templateId);
 
     if (error) {
-      console.error('Error deleting template:', error);
+      console.warn('Error deleting template:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error in deleteUserTemplate:', error);
+    console.warn('Error in deleteUserTemplate:', error);
     return false;
   }
 }
@@ -338,7 +401,7 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
       .order('created_at', { ascending: false });
 
     if (templatesError || !templates) {
-      console.error('Error fetching templates:', templatesError);
+      console.warn('Error fetching templates:', templatesError);
       return [];
     }
 
@@ -353,7 +416,7 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
         .order('order_index', { ascending: true });
 
       if (exercisesError) {
-        console.error('Error fetching template exercises:', exercisesError);
+        console.warn('Error fetching template exercises:', exercisesError);
         continue;
       }
 
@@ -367,7 +430,7 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
           .order('set_number', { ascending: true });
 
         if (setsError) {
-          console.error('Error fetching template sets:', setsError);
+          console.warn('Error fetching template sets:', setsError);
         }
 
         const templateSets: TemplateSet[] = (sets || []).map((set) => ({
@@ -381,6 +444,8 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
           exerciseId: exercise.exercise_id,
           exerciseName: exercise.exercise_name,
           muscle: exercise.muscle,
+          gifUrl: exercise.gif_url ?? undefined,
+          thumbnailUrl: exercise.thumbnail_url ?? undefined,
           notes: exercise.notes ?? undefined,
           restTimerSeconds: exercise.rest_timer_seconds,
           sets: templateSets,
@@ -416,7 +481,7 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
 
     return fullTemplates;
   } catch (error) {
-    console.error('Error in getUserTemplates:', error);
+    console.warn('Error in getUserTemplates:', error);
     return [];
   }
 }
@@ -435,7 +500,7 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
       .single();
 
     if (templateError || !template) {
-      console.error('Error fetching template:', templateError);
+      console.warn('Error fetching template:', templateError);
       return null;
     }
 
@@ -447,7 +512,7 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
       .order('order_index', { ascending: true });
 
     if (exercisesError) {
-      console.error('Error fetching template exercises:', exercisesError);
+      console.warn('Error fetching template exercises:', exercisesError);
       return null;
     }
 
@@ -461,7 +526,7 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
         .order('set_number', { ascending: true });
 
       if (setsError) {
-        console.error('Error fetching template sets:', setsError);
+        console.warn('Error fetching template sets:', setsError);
       }
 
       const templateSets: TemplateSet[] = (sets || []).map((set) => ({
@@ -475,6 +540,8 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
         exerciseId: exercise.exercise_id,
         exerciseName: exercise.exercise_name,
         muscle: exercise.muscle,
+        gifUrl: exercise.gif_url ?? undefined,
+        thumbnailUrl: exercise.thumbnail_url ?? undefined,
         notes: exercise.notes ?? undefined,
         restTimerSeconds: exercise.rest_timer_seconds,
         sets: templateSets,
@@ -507,7 +574,43 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
       userId: template.user_id,
     };
   } catch (error) {
-    console.error('Error in getTemplateById:', error);
+    console.warn('Error in getTemplateById:', error);
     return null;
   }
+}
+
+// =============================================
+// BATCH LOOKUP EXERCISE IMAGE URLS
+// =============================================
+
+// Look up image URLs from the exercises table for exercises missing them.
+// Returns a map of exerciseName -> { gifUrl, thumbnailUrl }
+export async function lookupExerciseImageUrls(
+  exerciseNames: string[]
+): Promise<Map<string, { gifUrl?: string; thumbnailUrl?: string }>> {
+  const result = new Map<string, { gifUrl?: string; thumbnailUrl?: string }>();
+  if (exerciseNames.length === 0) return result;
+
+  try {
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('name, image_url, thumbnail_url')
+      .in('name', exerciseNames);
+
+    if (error || !data) {
+      console.warn('Error looking up exercise image URLs:', error);
+      return result;
+    }
+
+    for (const row of data) {
+      result.set(row.name, {
+        gifUrl: row.image_url ?? undefined,
+        thumbnailUrl: row.thumbnail_url ?? undefined,
+      });
+    }
+  } catch (error) {
+    console.warn('Error in lookupExerciseImageUrls:', error);
+  }
+
+  return result;
 }

@@ -47,7 +47,7 @@ export function createUserNamespacedStorage(baseKey: string): StateStorage {
     },
 
     setItem: async (name: string, value: string): Promise<void> => {
-      const userId = authStateManager.getUserId();
+      const userId = await authStateManager.getUserIdAsync();
 
       // Don't persist if no user is logged in
       if (!userId) {
@@ -60,7 +60,7 @@ export function createUserNamespacedStorage(baseKey: string): StateStorage {
     },
 
     removeItem: async (name: string): Promise<void> => {
-      const userId = authStateManager.getUserId();
+      const userId = await authStateManager.getUserIdAsync();
 
       if (!userId) {
         return;

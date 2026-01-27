@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useUserProfileStore, UserProfile } from '@/stores/userProfileStore';
 import { filterNumericInput } from '@/utils/units';
@@ -136,7 +137,13 @@ export default function PersonalDetailsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Personal Details</Text>
@@ -190,7 +197,13 @@ export default function PersonalDetailsScreen() {
               <Pressable style={styles.modalButtonCancel} onPress={() => setShowEditModal(false)}>
                 <Text style={styles.modalButtonCancelText}>Cancel</Text>
               </Pressable>
-              <Pressable style={styles.modalButtonSave} onPress={handleEditSave}>
+              <Pressable
+                style={styles.modalButtonSave}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  handleEditSave();
+                }}
+              >
                 <Text style={styles.modalButtonSaveText}>Save</Text>
               </Pressable>
             </View>

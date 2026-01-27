@@ -12,8 +12,11 @@ import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useUserProfileStore, getHighResAvatarUrl } from '@/stores/userProfileStore';
+import { uploadAvatar } from '@/services/api/user';
 
 export default function EditProfileScreen() {
   const { profile, userId, updateProfile, checkNameAvailable } = useUserProfileStore();
@@ -23,6 +26,7 @@ export default function EditProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Sync state when profile loads/changes (but only if user hasn't made changes)
   useEffect(() => {
@@ -75,6 +79,65 @@ export default function EditProfileScreen() {
     }
   }
 
+  async function handlePickedImage(uri: string) {
+    if (!userId) return;
+    setIsUploadingPhoto(true);
+    try {
+      const publicUrl = await uploadAvatar(userId, uri);
+      if (publicUrl) {
+        await updateProfile({ avatar_url: publicUrl });
+      } else {
+        Alert.alert('Upload Failed', 'Could not upload photo. Please try again.');
+      }
+    } catch (error) {
+      console.warn('Error uploading avatar:', error);
+      Alert.alert('Upload Failed', 'Could not upload photo. Please try again.');
+    }
+    setIsUploadingPhoto(false);
+  }
+
+  async function handleChooseFromLibrary() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Needed', 'Please allow photo library access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      handlePickedImage(result.assets[0].uri);
+    }
+  }
+
+  async function handleTakePhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Needed', 'Please allow camera access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      handlePickedImage(result.assets[0].uri);
+    }
+  }
+
+  function handleChangePhoto() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert('Profile Photo', '', [
+      { text: 'Choose from Library', onPress: handleChooseFromLibrary },
+      { text: 'Take Photo', onPress: handleTakePhoto },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
   function handleNameChange(value: string) {
     setName(value);
     setHasChanges(true);
@@ -85,12 +148,21 @@ export default function EditProfileScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <Pressable
-          onPress={handleSave}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            handleSave();
+          }}
           style={styles.saveButton}
           disabled={isSaving}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -105,19 +177,30 @@ export default function EditProfileScreen() {
 
       {/* Avatar Section */}
       <View style={styles.avatarSection}>
-        {profile?.avatar_url ? (
-          <Image
-            source={{ uri: getHighResAvatarUrl(profile.avatar_url, 400) || profile.avatar_url }}
-            style={styles.avatar}
-          />
-        ) : (
-          <View style={styles.avatarContainer}>
-            <Ionicons name="person" size={48} color={colors.textSecondary} />
-          </View>
-        )}
-        <Pressable>
+        <View>
+          {profile?.avatar_url ? (
+            <Image
+              source={{ uri: getHighResAvatarUrl(profile.avatar_url, 400) || profile.avatar_url }}
+              style={styles.avatar}
+            />
+          ) : (
+            <View style={styles.avatarContainer}>
+              <Ionicons name="person" size={48} color={colors.textSecondary} />
+            </View>
+          )}
+          {isUploadingPhoto && (
+            <View style={styles.avatarOverlay}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            </View>
+          )}
+        </View>
+        <Pressable onPress={handleChangePhoto} disabled={isUploadingPhoto}>
           <Text style={styles.addPhotoText}>
-            {profile?.avatar_url ? 'Change Profile Photo' : 'Add Profile Photo'}
+            {isUploadingPhoto
+              ? 'Uploading...'
+              : profile?.avatar_url
+                ? 'Change Profile Photo'
+                : 'Add Profile Photo'}
           </Text>
         </Pressable>
       </View>
@@ -199,6 +282,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addPhotoText: {
     fontFamily: fonts.medium,

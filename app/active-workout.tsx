@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -304,7 +304,13 @@ function DraggableExerciseRow({
         },
       ]}
     >
-      <Pressable style={styles.removeButton} onPress={onRemove}>
+      <Pressable
+        style={styles.removeButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onRemove();
+        }}
+      >
         <MinusCircleIcon />
       </Pressable>
       <ExerciseImage
@@ -452,7 +458,13 @@ function SwipeableSetRow({
 
   const renderRightActions = useCallback(() => {
     return (
-      <Pressable style={swipeStyles.deleteButton} onPress={handleDelete}>
+      <Pressable
+        style={swipeStyles.deleteButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          handleDelete();
+        }}
+      >
         <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
       </Pressable>
     );
@@ -472,7 +484,10 @@ function SwipeableSetRow({
         {/* Set number / type */}
         <Pressable
           style={[styles.setColumn, styles.setNumberButton]}
-          onPress={() => onSetTypePress(exerciseIndex, setIndex)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onSetTypePress(exerciseIndex, setIndex);
+          }}
         >
           <Text style={[styles.setText, styles.setNumber, getSetTypeLabelStyle()]}>
             {setTypeLabel}
@@ -506,7 +521,13 @@ function SwipeableSetRow({
 
         {/* RPE column (conditional) */}
         {rpeEnabled && (
-          <Pressable style={styles.rpeColumn} onPress={() => onRpePress(exerciseIndex, setIndex)}>
+          <Pressable
+            style={styles.rpeColumn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onRpePress(exerciseIndex, setIndex);
+            }}
+          >
             <Text style={[styles.setText, set.rpe == null && { color: colors.textTertiary }]}>
               {set.rpe != null ? set.rpe : '-'}
             </Text>
@@ -515,7 +536,10 @@ function SwipeableSetRow({
 
         <Pressable
           style={styles.checkColumn}
-          onPress={() => onToggleCompletion(exerciseIndex, setIndex)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            onToggleCompletion(exerciseIndex, setIndex);
+          }}
         >
           <View style={[styles.setCheckbox, set.completed && styles.setCheckboxCompleted]}>
             {set.completed && <Ionicons name="checkmark-sharp" size={14} color="#FFFFFF" />}
@@ -540,7 +564,11 @@ const swipeStyles = StyleSheet.create({
 });
 
 export default function ActiveWorkoutScreen() {
-  const { templateId } = useLocalSearchParams<{ templateId?: string }>();
+  const { templateId, editData: editDataParam } = useLocalSearchParams<{
+    templateId?: string;
+    editData?: string;
+  }>();
+  const isEditMode = !!editDataParam;
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
@@ -610,6 +638,16 @@ export default function ActiveWorkoutScreen() {
   const startedAtRef = useRef<Date>(new Date());
   const isRestoringRef = useRef(false);
 
+  // Parse edit data for edit mode
+  const editDataParsed = useMemo(() => {
+    if (!editDataParam) return null;
+    try {
+      return JSON.parse(editDataParam);
+    } catch {
+      return null;
+    }
+  }, [editDataParam]);
+
   // Get current user on mount and initialize/restore workout
   useEffect(() => {
     async function loadUser() {
@@ -619,6 +657,41 @@ export default function ActiveWorkoutScreen() {
       }
     }
     loadUser();
+
+    // Edit mode: pre-populate exercises from saved workout data
+    if (editDataParsed) {
+      isRestoringRef.current = true;
+      const editExercises: WorkoutExercise[] = editDataParsed.exercises.map((we: any) => ({
+        exercise: {
+          id: we.exercise.id,
+          name: we.exercise.name,
+          muscle: we.exercise.muscle,
+          gifUrl: we.exercise.gifUrl,
+          thumbnailUrl: we.exercise.thumbnailUrl,
+        },
+        notes: we.notes || '',
+        restTimerSeconds: we.restTimerSeconds ?? 90,
+        sets: we.sets.map((s: any, index: number) => ({
+          id: `edit_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
+          previous: s.previous || '-',
+          kg: s.kg || '',
+          reps: s.reps || '',
+          completed: s.completed || false,
+          setType: (s.setType || 'normal') as SetType,
+          rpe: s.rpe ?? null,
+        })),
+        previousSets: null,
+        supersetId: we.supersetId ?? null,
+      }));
+      setWorkoutExercises(editExercises);
+      setElapsedSeconds(editDataParsed.durationSeconds || 0);
+      startedAtRef.current = new Date(editDataParsed.startedAt || new Date().toISOString());
+      if (editDataParsed.userId) {
+        setUserId(editDataParsed.userId);
+      }
+      // Don't start a live activity or store workout for edit mode
+      return;
+    }
 
     // Determine if we're starting a different template than what's in the store
     const isDifferentTemplate = templateId && activeWorkout?.sourceTemplateId !== templateId;
@@ -762,19 +835,28 @@ export default function ActiveWorkoutScreen() {
   );
 
   // Handle pending exercises from the store (set by add-exercise screen)
+  const processingPendingRef = useRef(false);
   useEffect(() => {
-    if (pendingExercises.length > 0) {
-      // Clear first to prevent re-triggering if the effect runs again
+    if (pendingExercises.length > 0 && !processingPendingRef.current) {
+      processingPendingRef.current = true;
       const exercisesToAdd = [...pendingExercises];
       clearPendingExercises();
-      handlePendingExercises(exercisesToAdd);
+      handlePendingExercises(exercisesToAdd)
+        .catch(() => {
+          Alert.alert('Error', 'Failed to add exercises. Please try again.');
+        })
+        .finally(() => {
+          processingPendingRef.current = false;
+        });
     }
   }, [pendingExercises]);
 
   // Sync exercises from store when restoring a persisted workout (e.g. app relaunch).
   // Guard: only sync if the store's template matches what we're currently viewing,
   // to prevent stale data from a previous template leaking in.
+  // Skip in edit mode - exercises come from editData, not store.
   useEffect(() => {
+    if (isEditMode) return;
     if (activeWorkout && activeWorkout.exercises.length > 0 && workoutExercises.length === 0) {
       const storeMatchesCurrent = !templateId || activeWorkout.sourceTemplateId === templateId;
       if (storeMatchesCurrent) {
@@ -786,13 +868,15 @@ export default function ActiveWorkoutScreen() {
   // Override template targets with latest actual history when starting from a template
   const historyFetchedRef = useRef(false);
   useEffect(() => {
+    if (isEditMode) return;
     if (!userId || !templateId || historyFetchedRef.current) return;
     if (workoutExercises.length === 0) return;
     historyFetchedRef.current = true;
 
     async function fetchLatestHistory() {
       const exerciseIds = workoutExercises.map((we) => we.exercise.id);
-      const previousSetsMap = await getBatchExercisePreviousSets(userId!, exerciseIds);
+      if (!userId) return;
+      const previousSetsMap = await getBatchExercisePreviousSets(userId, exerciseIds);
 
       setWorkoutExercises((prev) =>
         prev.map((we) => {
@@ -824,8 +908,9 @@ export default function ActiveWorkoutScreen() {
     fetchLatestHistory();
   }, [userId, templateId, workoutExercises.length]);
 
-  // Sync exercises to global store whenever they change
+  // Sync exercises to global store whenever they change (skip in edit mode)
   useEffect(() => {
+    if (isEditMode) return;
     if (workoutExercises.length > 0) {
       setActiveWorkoutExercises(workoutExercises);
 
@@ -892,8 +977,27 @@ export default function ActiveWorkoutScreen() {
     }
   }
 
+  // Close all modals to prevent overlap when opening a new one
+  const closeAllModals = () => {
+    setClockModalVisible(false);
+    setShowExerciseMenu(false);
+    setSelectedExerciseIndex(null);
+    setShowReorderModal(false);
+    setShowRestTimerModal(false);
+    setRestTimerModalExerciseIndex(null);
+    setShowSupersetModal(false);
+    setSupersetSelectedIndices([]);
+    setShowSetTypeModal(false);
+    setSetTypeModalExerciseIndex(null);
+    setSetTypeModalSetIndex(null);
+    setShowRpeModal(false);
+    setRpeModalExerciseIndex(null);
+    setRpeModalSetIndex(null);
+  };
+
   // Menu functions
   const openExerciseMenu = (index: number) => {
+    closeAllModals();
     setSelectedExerciseIndex(index);
     setShowExerciseMenu(true);
     Animated.spring(menuSlideAnim, {
@@ -918,6 +1022,7 @@ export default function ActiveWorkoutScreen() {
   const handleReorderExercises = () => {
     closeExerciseMenu();
     setTimeout(() => {
+      closeAllModals();
       setReorderExercises([...workoutExercises]);
       setShowReorderModal(true);
     }, 300);
@@ -939,6 +1044,7 @@ export default function ActiveWorkoutScreen() {
 
   // Open superset modal
   const openSupersetModal = () => {
+    closeAllModals();
     // Pre-select the current exercise if it exists
     const initialSelected = selectedExerciseIndex !== null ? [selectedExerciseIndex] : [];
     setSupersetSelectedIndices(initialSelected);
@@ -1042,6 +1148,15 @@ export default function ActiveWorkoutScreen() {
     if (selectedExerciseIndex !== null) {
       setWorkoutExercises((prev) => prev.filter((_, index) => index !== selectedExerciseIndex));
     }
+    // Reset modal index states to prevent stale references after removal
+    setRestTimerModalExerciseIndex(null);
+    setShowRestTimerModal(false);
+    setSetTypeModalExerciseIndex(null);
+    setSetTypeModalSetIndex(null);
+    setShowSetTypeModal(false);
+    setRpeModalExerciseIndex(null);
+    setRpeModalSetIndex(null);
+    setShowRpeModal(false);
     closeExerciseMenu();
   };
 
@@ -1117,11 +1232,30 @@ export default function ActiveWorkoutScreen() {
   };
 
   const handleBack = () => {
+    if (isEditMode) {
+      // In edit mode, just go back (discard changes to exercises)
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (restTimerRef.current) {
+        clearInterval(restTimerRef.current);
+        restTimerRef.current = null;
+      }
+      setRestTimerActive(false);
+      router.back();
+      return;
+    }
     // Stop local timer - the widget will take over timing
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    if (restTimerRef.current) {
+      clearInterval(restTimerRef.current);
+      restTimerRef.current = null;
+    }
+    setRestTimerActive(false);
     // Minimize the workout - widget will handle timer from store
     minimizeActiveWorkout();
     // Always navigate to workout tab when exiting (not discarding)
@@ -1146,11 +1280,16 @@ export default function ActiveWorkoutScreen() {
       return;
     }
 
-    // Stop the timer
+    // Stop the elapsed timer and rest timer
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    if (restTimerRef.current) {
+      clearInterval(restTimerRef.current);
+      restTimerRef.current = null;
+    }
+    setRestTimerActive(false);
 
     // Prepare workout data for save screen
     const workoutData = {
@@ -1166,13 +1305,21 @@ export default function ActiveWorkoutScreen() {
       userId,
       sourceTemplateId: activeWorkout?.sourceTemplateId,
       templateName: activeWorkout?.templateName,
+      scheduledWorkoutId: activeWorkout?.scheduledWorkoutId,
     };
 
     // Navigate to save workout screen — workout stays in store until save completes
     // so the user can go back without losing progress
+    const saveParams: Record<string, string> = { workoutData: JSON.stringify(workoutData) };
+    if (editDataParsed?.editWorkoutId) {
+      saveParams.editWorkoutId = editDataParsed.editWorkoutId;
+      // Pass through existing title/notes if available
+      if (editDataParsed.editTitle) saveParams.editTitle = editDataParsed.editTitle;
+      if (editDataParsed.editNotes) saveParams.editNotes = editDataParsed.editNotes;
+    }
     router.push({
       pathname: '/save-workout',
-      params: { workoutData: JSON.stringify(workoutData) },
+      params: saveParams,
     });
   };
 
@@ -1295,6 +1442,7 @@ export default function ActiveWorkoutScreen() {
   const RPE_VALUES = [6, 7, 7.5, 8, 8.5, 9, 9.5, 10];
 
   const openRpeModal = (exerciseIndex: number, setIndex: number) => {
+    closeAllModals();
     setRpeModalExerciseIndex(exerciseIndex);
     setRpeModalSetIndex(setIndex);
     setShowRpeModal(true);
@@ -1319,7 +1467,11 @@ export default function ActiveWorkoutScreen() {
   };
 
   const handleDiscard = () => {
-    Alert.alert('Discard Workout?', 'Your workout progress will be lost.', [
+    const title = isEditMode ? 'Discard Changes?' : 'Discard Workout?';
+    const message = isEditMode
+      ? 'Your changes will not be saved.'
+      : 'Your workout progress will be lost.';
+    Alert.alert(title, message, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Discard',
@@ -1330,8 +1482,10 @@ export default function ActiveWorkoutScreen() {
             intervalRef.current = null;
           }
           if (restTimerRef.current) clearInterval(restTimerRef.current);
-          endWorkoutLiveActivity();
-          discardActiveWorkout();
+          if (!isEditMode) {
+            endWorkoutLiveActivity();
+            discardActiveWorkout();
+          }
           router.back();
         },
       },
@@ -1340,6 +1494,7 @@ export default function ActiveWorkoutScreen() {
 
   // Rest Timer Modal Functions
   const openRestTimerModal = (exerciseIndex: number) => {
+    closeAllModals();
     setRestTimerModalExerciseIndex(exerciseIndex);
     setShowRestTimerModal(true);
     Animated.spring(restTimerModalSlideAnim, {
@@ -1441,6 +1596,7 @@ export default function ActiveWorkoutScreen() {
 
   // Set Type Modal Functions
   const openSetTypeModal = (exerciseIndex: number, setIndex: number) => {
+    closeAllModals();
     setSetTypeModalExerciseIndex(exerciseIndex);
     setSetTypeModalSetIndex(setIndex);
     setShowSetTypeModal(true);
@@ -1519,17 +1675,35 @@ export default function ActiveWorkoutScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={handleBack} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            handleBack();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
 
         <Text style={styles.timer}>{formatTime(elapsedSeconds)}</Text>
 
         <View style={styles.headerRight}>
-          <Pressable style={styles.iconButton} onPress={() => setClockModalVisible(true)}>
+          <Pressable
+            style={styles.iconButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              closeAllModals();
+              setClockModalVisible(true);
+            }}
+          >
             <Ionicons name="time-outline" size={24} color={colors.text} />
           </Pressable>
-          <Pressable onPress={handleSave}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleSave();
+            }}
+          >
             <Text style={styles.saveText}>SAVE</Text>
           </Pressable>
         </View>
@@ -1546,18 +1720,33 @@ export default function ActiveWorkoutScreen() {
           </View>
           <Text style={styles.title}>Get Started</Text>
           <Text style={styles.subtitle}>Add an exercise to start your workout</Text>
-          <Pressable style={styles.addExerciseButton} onPress={handleAddExercise}>
+          <Pressable
+            style={styles.addExerciseButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleAddExercise();
+            }}
+          >
             <Ionicons name="add" size={24} color="#FFFFFF" />
             <Text style={styles.addExerciseText}>Add Exercise</Text>
           </Pressable>
           <View style={styles.bottomButtons}>
             <Pressable
               style={styles.secondaryButton}
-              onPress={() => router.push('/profile/workout-settings')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/profile/workout-settings');
+              }}
             >
               <Text style={styles.secondaryButtonText}>Settings</Text>
             </Pressable>
-            <Pressable style={styles.discardButton} onPress={handleDiscard}>
+            <Pressable
+              style={styles.discardButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                handleDiscard();
+              }}
+            >
               <Text style={styles.discardButtonText}>Discard</Text>
             </Pressable>
           </View>
@@ -1572,15 +1761,25 @@ export default function ActiveWorkoutScreen() {
             >
               {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
-                <ExerciseImage
-                  gifUrl={workoutExercise.exercise.gifUrl}
-                  thumbnailUrl={workoutExercise.exercise.thumbnailUrl}
-                  size={40}
-                  borderRadius={8}
-                />
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(`/exercise/${workoutExercise.exercise.id}`);
+                  }}
+                >
+                  <ExerciseImage
+                    gifUrl={workoutExercise.exercise.gifUrl}
+                    thumbnailUrl={workoutExercise.exercise.thumbnailUrl}
+                    size={40}
+                    borderRadius={8}
+                  />
+                </Pressable>
                 <Pressable
                   style={styles.exerciseTitlePressable}
-                  onPress={() => router.push(`/exercise/${workoutExercise.exercise.id}`)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(`/exercise/${workoutExercise.exercise.id}`);
+                  }}
                 >
                   <Text style={styles.exerciseTitle}>
                     {formatExerciseNameString(workoutExercise.exercise.name)}
@@ -1588,7 +1787,10 @@ export default function ActiveWorkoutScreen() {
                 </Pressable>
                 <Pressable
                   style={styles.moreButton}
-                  onPress={() => openExerciseMenu(exerciseIndex)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    openExerciseMenu(exerciseIndex);
+                  }}
                 >
                   <Ionicons name="ellipsis-vertical" size={20} color={colors.text} />
                 </Pressable>
@@ -1618,7 +1820,10 @@ export default function ActiveWorkoutScreen() {
               {/* Rest Timer */}
               <Pressable
                 style={styles.restTimerRow}
-                onPress={() => openRestTimerModal(exerciseIndex)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  openRestTimerModal(exerciseIndex);
+                }}
               >
                 <Ionicons name="stopwatch-outline" size={18} color={colors.primary} />
                 <Text style={styles.restTimerText}>
@@ -1682,14 +1887,26 @@ export default function ActiveWorkoutScreen() {
               })}
 
               {/* Add Set Button */}
-              <Pressable style={styles.addSetButton} onPress={() => addSet(exerciseIndex)}>
+              <Pressable
+                style={styles.addSetButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  addSet(exerciseIndex);
+                }}
+              >
                 <Text style={styles.addSetText}>+ Add Set</Text>
               </Pressable>
             </View>
           ))}
 
           {/* Bottom Buttons */}
-          <Pressable style={styles.addExerciseButtonFilled} onPress={handleAddExercise}>
+          <Pressable
+            style={styles.addExerciseButtonFilled}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleAddExercise();
+            }}
+          >
             <Ionicons name="add" size={24} color="#FFFFFF" />
             <Text style={styles.addExerciseText}>Add Exercise</Text>
           </Pressable>
@@ -1697,11 +1914,20 @@ export default function ActiveWorkoutScreen() {
           <View style={styles.bottomButtonsFilled}>
             <Pressable
               style={styles.secondaryButton}
-              onPress={() => router.push('/profile/workout-settings')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/profile/workout-settings');
+              }}
             >
               <Text style={styles.secondaryButtonText}>Settings</Text>
             </Pressable>
-            <Pressable style={styles.discardButton} onPress={handleDiscard}>
+            <Pressable
+              style={styles.discardButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                handleDiscard();
+              }}
+            >
               <Text style={styles.discardButtonText}>Discard Workout</Text>
             </Pressable>
           </View>
@@ -1720,7 +1946,13 @@ export default function ActiveWorkoutScreen() {
         animationType="none"
         onRequestClose={closeExerciseMenu}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeExerciseMenu}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeExerciseMenu();
+          }}
+        >
           <Animated.View
             style={[styles.menuModalContent, { transform: [{ translateY: menuSlideAnim }] }]}
           >
@@ -1729,25 +1961,49 @@ export default function ActiveWorkoutScreen() {
 
               {/* Menu Items */}
               <View style={styles.menuContainer}>
-                <Pressable style={styles.menuItem} onPress={handleReorderExercises}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    handleReorderExercises();
+                  }}
+                >
                   <ReorderIcon />
                   <Text style={styles.menuItemText}>Reorder Exercises</Text>
                 </Pressable>
 
                 {selectedExerciseIndex !== null &&
                 workoutExercises[selectedExerciseIndex]?.supersetId !== null ? (
-                  <Pressable style={styles.menuItem} onPress={handleRemoveFromSuperset}>
+                  <Pressable
+                    style={styles.menuItem}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      handleRemoveFromSuperset();
+                    }}
+                  >
                     <CloseIcon />
                     <Text style={styles.menuItemText}>Remove from Superset</Text>
                   </Pressable>
                 ) : (
-                  <Pressable style={styles.menuItem} onPress={handleAddToSuperset}>
+                  <Pressable
+                    style={styles.menuItem}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      handleAddToSuperset();
+                    }}
+                  >
                     <PlusIcon />
                     <Text style={styles.menuItemText}>Add to Superset</Text>
                   </Pressable>
                 )}
 
-                <Pressable style={styles.menuItem} onPress={handleRemoveExercise}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    handleRemoveExercise();
+                  }}
+                >
                   <RemoveIcon />
                   <Text style={styles.menuItemTextRemove}>Remove Exercise</Text>
                 </Pressable>
@@ -1795,7 +2051,13 @@ export default function ActiveWorkoutScreen() {
 
           {/* Done Button */}
           <View style={styles.reorderBottom}>
-            <Pressable style={styles.doneButton} onPress={saveReorder}>
+            <Pressable
+              style={styles.doneButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                saveReorder();
+              }}
+            >
               <Text style={styles.doneButtonText}>Done</Text>
             </Pressable>
           </View>
@@ -1809,7 +2071,13 @@ export default function ActiveWorkoutScreen() {
         animationType="none"
         onRequestClose={closeRestTimerModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeRestTimerModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeRestTimerModal();
+          }}
+        >
           <Animated.View
             style={[
               styles.restTimerModalContent,
@@ -1843,6 +2111,7 @@ export default function ActiveWorkoutScreen() {
                       key={option.value}
                       style={[styles.restTimerOption, isSelected && styles.restTimerOptionSelected]}
                       onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         if (restTimerModalExerciseIndex !== null) {
                           updateRestTimer(restTimerModalExerciseIndex, option.value);
                         }
@@ -1864,7 +2133,13 @@ export default function ActiveWorkoutScreen() {
 
               {/* Done Button */}
               <View style={styles.restTimerModalBottom}>
-                <Pressable style={styles.doneButton} onPress={closeRestTimerModal}>
+                <Pressable
+                  style={styles.doneButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    closeRestTimerModal();
+                  }}
+                >
                   <Text style={styles.doneButtonText}>Done</Text>
                 </Pressable>
               </View>
@@ -1880,7 +2155,13 @@ export default function ActiveWorkoutScreen() {
         animationType="none"
         onRequestClose={closeSupersetModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeSupersetModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeSupersetModal();
+          }}
+        >
           <Animated.View
             style={[
               styles.supersetModalContent,
@@ -1905,7 +2186,10 @@ export default function ActiveWorkoutScreen() {
                     <Pressable
                       key={`${workoutExercise.exercise.id}-${index}`}
                       style={styles.supersetExerciseRow}
-                      onPress={() => toggleSupersetExercise(index)}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        toggleSupersetExercise(index);
+                      }}
                     >
                       {/* Color indicator bar - inline, not absolute */}
                       <View
@@ -1954,7 +2238,10 @@ export default function ActiveWorkoutScreen() {
                     styles.supersetConfirmButton,
                     supersetSelectedIndices.length < 2 && styles.supersetConfirmButtonDisabled,
                   ]}
-                  onPress={confirmSuperset}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    confirmSuperset();
+                  }}
                 >
                   <Text style={styles.supersetConfirmButtonText}>
                     Add to Superset {getNextSupersetId()}
@@ -1973,7 +2260,13 @@ export default function ActiveWorkoutScreen() {
         animationType="none"
         onRequestClose={closeSetTypeModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeSetTypeModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeSetTypeModal();
+          }}
+        >
           <Animated.View
             style={[
               styles.menuModalContent,
@@ -1985,14 +2278,26 @@ export default function ActiveWorkoutScreen() {
 
               {/* Menu Items */}
               <View style={styles.menuContainer}>
-                <Pressable style={styles.menuItem} onPress={() => updateSetType('warmup')}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    updateSetType('warmup');
+                  }}
+                >
                   <View style={styles.setTypeLetterContainer}>
                     <Text style={styles.setTypeTextWarmup}>W</Text>
                   </View>
                   <Text style={styles.setTypeTextWarmup}>Warm-up Set</Text>
                 </Pressable>
 
-                <Pressable style={styles.menuItem} onPress={() => updateSetType('normal')}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    updateSetType('normal');
+                  }}
+                >
                   <View style={styles.setTypeLetterContainer}>
                     <Text style={styles.menuItemText}>
                       {setTypeModalSetIndex !== null ? setTypeModalSetIndex + 1 : '1'}
@@ -2001,21 +2306,39 @@ export default function ActiveWorkoutScreen() {
                   <Text style={styles.menuItemText}>Normal Set</Text>
                 </Pressable>
 
-                <Pressable style={styles.menuItem} onPress={() => updateSetType('failure')}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    updateSetType('failure');
+                  }}
+                >
                   <View style={styles.setTypeLetterContainer}>
                     <Text style={styles.setTypeTextFailure}>F</Text>
                   </View>
                   <Text style={styles.setTypeTextFailure}>Failure Set</Text>
                 </Pressable>
 
-                <Pressable style={styles.menuItem} onPress={() => updateSetType('dropset')}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    updateSetType('dropset');
+                  }}
+                >
                   <View style={styles.setTypeLetterContainer}>
                     <Text style={styles.setTypeTextDropset}>D</Text>
                   </View>
                   <Text style={styles.setTypeTextDropset}>Drop Set</Text>
                 </Pressable>
 
-                <Pressable style={styles.menuItem} onPress={removeSet}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    removeSet();
+                  }}
+                >
                   <View style={styles.setTypeLetterContainer}>
                     <Ionicons name="trash-outline" size={18} color="#E53935" />
                   </View>
@@ -2029,7 +2352,13 @@ export default function ActiveWorkoutScreen() {
 
       {/* RPE Picker Modal */}
       <Modal visible={showRpeModal} transparent animationType="none" onRequestClose={closeRpeModal}>
-        <Pressable style={styles.modalOverlay} onPress={closeRpeModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeRpeModal();
+          }}
+        >
           <Animated.View
             style={[styles.menuModalContent, { transform: [{ translateY: rpeModalSlideAnim }] }]}
           >
@@ -2050,6 +2379,7 @@ export default function ActiveWorkoutScreen() {
                       key={rpeValue}
                       style={styles.menuItem}
                       onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         if (rpeModalExerciseIndex !== null && rpeModalSetIndex !== null) {
                           updateRpe(rpeModalExerciseIndex, rpeModalSetIndex, rpeValue);
                         }
@@ -2071,6 +2401,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     if (rpeModalExerciseIndex !== null && rpeModalSetIndex !== null) {
                       updateRpe(rpeModalExerciseIndex, rpeModalSetIndex, null);
                     }
@@ -2093,13 +2424,31 @@ export default function ActiveWorkoutScreen() {
           <SafeAreaView edges={['bottom']} style={styles.restTimerPopupContent}>
             <Text style={styles.restTimerCountdown}>{formatRestTime(restTimerRemaining)}</Text>
             <View style={styles.restTimerPopupButtons}>
-              <Pressable style={styles.restTimerAdjustButton} onPress={() => adjustRestTimer(-15)}>
+              <Pressable
+                style={styles.restTimerAdjustButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  adjustRestTimer(-15);
+                }}
+              >
                 <Text style={styles.restTimerAdjustText}>-15</Text>
               </Pressable>
-              <Pressable style={styles.restTimerAdjustButton} onPress={() => adjustRestTimer(15)}>
+              <Pressable
+                style={styles.restTimerAdjustButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  adjustRestTimer(15);
+                }}
+              >
                 <Text style={styles.restTimerAdjustText}>+15</Text>
               </Pressable>
-              <Pressable style={styles.restTimerSkipButton} onPress={skipRestTimer}>
+              <Pressable
+                style={styles.restTimerSkipButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  skipRestTimer();
+                }}
+              >
                 <Text style={styles.restTimerSkipText}>Skip</Text>
               </Pressable>
             </View>
@@ -2257,6 +2606,7 @@ const styles = StyleSheet.create({
   },
   exerciseTitlePressable: {
     flex: 1,
+    justifyContent: 'center',
   },
   exerciseTitle: {
     fontFamily: fonts.semiBold,
@@ -2287,6 +2637,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
   },
   setHeaderText: {
     fontFamily: fonts.medium,

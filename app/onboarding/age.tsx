@@ -91,7 +91,7 @@ export default function AgeScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={styles.backButton}
@@ -106,7 +106,7 @@ export default function AgeScreen() {
 
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             useOnboardingStore.getState().skipField('age');
             router.push('/onboarding/height');
           }}

@@ -185,7 +185,7 @@ export default function ReminderScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={styles.backButton}
@@ -198,7 +198,14 @@ export default function ReminderScreen() {
           <View style={[styles.progressBarFill, { width: '68%' }]} />
         </View>
 
-        <View style={{ width: 32 }} />
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/onboarding/first-exercises');
+          }}
+        >
+          <Text style={styles.skipText}>Skip</Text>
+        </Pressable>
       </View>
 
       {/* Question */}
@@ -302,7 +309,7 @@ export default function ReminderScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             useOnboardingStore.getState().setAndSave('notificationsEnabled', false);
             router.push('/onboarding/first-exercises');
           }}

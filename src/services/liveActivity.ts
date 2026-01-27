@@ -1,10 +1,47 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Persisted key for surviving app restarts
+const ACTIVITY_ID_KEY = 'live-activity-id';
 
 // Module-level activity ID — only one workout Live Activity at a time
 let currentActivityId: string | null = null;
+let isStarting = false;
 
 function isSupported(): boolean {
   return Platform.OS === 'ios';
+}
+
+/**
+ * Safely import expo-live-activity. Returns null if the module is unavailable.
+ */
+async function getLiveActivityModule() {
+  try {
+    return await import('expo-live-activity');
+  } catch (e) {
+    console.warn('[LiveActivity] Module unavailable:', e);
+    return null;
+  }
+}
+
+async function persistActivityId(id: string | null): Promise<void> {
+  try {
+    if (id) {
+      await AsyncStorage.setItem(ACTIVITY_ID_KEY, id);
+    } else {
+      await AsyncStorage.removeItem(ACTIVITY_ID_KEY);
+    }
+  } catch {
+    // Storage failure is non-critical
+  }
+}
+
+async function getPersistedActivityId(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(ACTIVITY_ID_KEY);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -17,6 +54,27 @@ function buildSubtitle(exerciseCount: number, completedSets: number): string {
 }
 
 /**
+ * Clean up any stale Live Activity from a previous app session.
+ * Call this on app mount (e.g. in root _layout.tsx).
+ */
+export async function cleanupStaleLiveActivities(): Promise<void> {
+  if (!isSupported()) return;
+
+  const LiveActivity = await getLiveActivityModule();
+  if (!LiveActivity) return;
+
+  const persistedId = await getPersistedActivityId();
+  if (persistedId && persistedId !== currentActivityId) {
+    try {
+      LiveActivity.stopActivity(persistedId, { title: 'Workout Complete' });
+    } catch {
+      // Activity may already be expired - that's fine
+    }
+    await persistActivityId(null);
+  }
+}
+
+/**
  * Start a Live Activity for an active workout.
  * The elapsed timer counts up natively from startedAt via ActivityKit.
  */
@@ -26,28 +84,31 @@ export async function startWorkoutLiveActivity(
   completedSets: number,
   startedAt: string
 ): Promise<void> {
-  if (!isSupported()) return;
-
-  // Dynamically import to avoid crashes on Android
-  const LiveActivity = await import('expo-live-activity');
-
-  // End any existing activity first
-  if (currentActivityId) {
-    try {
-      LiveActivity.stopActivity(currentActivityId, { title: 'Workout Complete' });
-    } catch (e) {
-      console.warn('[LiveActivity] Failed to stop previous:', e);
-    }
-    currentActivityId = null;
-  }
+  if (!isSupported() || isStarting) return;
+  isStarting = true;
 
   try {
+    const LiveActivity = await getLiveActivityModule();
+    if (!LiveActivity) return;
+
+    // End any existing activity first (in-memory or persisted)
+    const idToStop = currentActivityId || (await getPersistedActivityId());
+    if (idToStop) {
+      try {
+        LiveActivity.stopActivity(idToStop, { title: 'Workout Complete' });
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      } catch {
+        // Previous activity may already be expired
+      }
+      currentActivityId = null;
+      await persistActivityId(null);
+    }
+
     const id = LiveActivity.startActivity(
       {
         title: workoutName || 'Workout',
         subtitle: buildSubtitle(exerciseCount, completedSets),
         progressBar: {
-          // Pass the workout start time as epoch ms — ActivityKit renders an elapsed timer
           date: new Date(startedAt).getTime(),
         },
       },
@@ -63,9 +124,13 @@ export async function startWorkoutLiveActivity(
 
     if (id) {
       currentActivityId = id;
+      await persistActivityId(id);
     }
   } catch (e) {
-    console.error('[LiveActivity] Failed to start:', e);
+    // Live Activity is non-critical - warn instead of error to avoid red screen
+    console.warn('[LiveActivity] Failed to start:', e);
+  } finally {
+    isStarting = false;
   }
 }
 
@@ -81,7 +146,8 @@ export async function updateWorkoutLiveActivity(
 ): Promise<void> {
   if (!isSupported() || !currentActivityId) return;
 
-  const LiveActivity = await import('expo-live-activity');
+  const LiveActivity = await getLiveActivityModule();
+  if (!LiveActivity) return;
 
   try {
     LiveActivity.updateActivity(currentActivityId, {
@@ -92,7 +158,7 @@ export async function updateWorkoutLiveActivity(
       },
     });
   } catch (e) {
-    console.error('[LiveActivity] Failed to update:', e);
+    console.warn('[LiveActivity] Failed to update:', e);
   }
 }
 
@@ -102,16 +168,18 @@ export async function updateWorkoutLiveActivity(
 export async function endWorkoutLiveActivity(): Promise<void> {
   if (!isSupported() || !currentActivityId) return;
 
-  const LiveActivity = await import('expo-live-activity');
+  const LiveActivity = await getLiveActivityModule();
+  if (!LiveActivity) return;
 
   try {
     LiveActivity.stopActivity(currentActivityId, {
       title: 'Workout Complete',
     });
   } catch (e) {
-    console.error('[LiveActivity] Failed to stop:', e);
+    console.warn('[LiveActivity] Failed to stop:', e);
   }
   currentActivityId = null;
+  await persistActivityId(null);
 }
 
 /**

@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { supabase } from '../supabase';
 import { searchAndRankExercises } from '@/utils/exerciseSearch';
 import { searchAscendExercises, AscendExercise } from './ascendExercises';
@@ -57,6 +58,10 @@ export async function fetchExercises(): Promise<Exercise[]> {
 
   if (error) {
     console.error('Error fetching exercises:', error);
+    Alert.alert(
+      'Connection Error',
+      'Unable to load exercises. Please check your connection and try again.'
+    );
     return [];
   }
 
@@ -86,16 +91,34 @@ export async function searchExercises(query: string): Promise<Exercise[]> {
   }));
 }
 
-// Get a single exercise by ID
+// Get a single exercise by ID (supports both UUID and slug-style IDs like "plank")
 export async function getExerciseById(id: string): Promise<Exercise | null> {
-  const { data, error } = await supabase.from('exercises').select('*').eq('id', id).single();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  if (isUuid) {
+    const { data, error } = await supabase.from('exercises').select('*').eq('id', id).single();
+    if (error) {
+      console.error('Error fetching exercise:', error);
+      return null;
+    }
+    return data ? { ...data, muscle: data.muscle_group } : null;
+  }
+
+  // Slug-based lookup: "plank" → "%plank%", "cable-crunches-kneeling" → "%cable%crunches%kneeling%"
+  const namePattern = `%${id.replace(/-/g, '%')}%`;
+  const { data: results, error } = await supabase
+    .from('exercises')
+    .select('*')
+    .ilike('name', namePattern)
+    .limit(1);
 
   if (error) {
-    console.error('Error fetching exercise:', error);
+    console.error('Error fetching exercise by slug:', error);
     return null;
   }
 
-  return data ? { ...data, muscle: data.muscle_group } : null;
+  const match = results?.[0] || null;
+  return match ? { ...match, muscle: match.muscle_group } : null;
 }
 
 // Filter exercises by muscle group
@@ -315,7 +338,10 @@ export async function getExerciseHistory(
     .eq('exercise_id', exerciseId);
 
   if (weError || !workoutExercises || workoutExercises.length === 0) {
-    if (weError) console.error('Error fetching workout exercises:', weError);
+    if (weError) {
+      console.error('Error fetching workout exercises:', weError);
+      Alert.alert('Connection Error', 'Unable to load exercise history. Please try again.');
+    }
     return [];
   }
 
@@ -331,7 +357,10 @@ export async function getExerciseHistory(
     .limit(limit);
 
   if (wError || !workouts) {
-    if (wError) console.error('Error fetching workouts:', wError);
+    if (wError) {
+      console.error('Error fetching workouts:', wError);
+      Alert.alert('Connection Error', 'Unable to load exercise history. Please try again.');
+    }
     return [];
   }
 

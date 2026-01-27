@@ -59,7 +59,7 @@ export default function WorkoutFrequencyScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={styles.backButton}
@@ -74,7 +74,7 @@ export default function WorkoutFrequencyScreen() {
 
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             useOnboardingStore.getState().skipField('workoutFrequency');
             router.push('/onboarding/reminder');
           }}

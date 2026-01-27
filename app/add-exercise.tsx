@@ -17,6 +17,7 @@ import { formatExerciseDisplayName } from '@/utils/textFormatters';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { filterExercisesClient, Exercise } from '@/services/api/exercises';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -120,18 +121,40 @@ function ExerciseItem({
   return (
     <Pressable
       style={[styles.exerciseItem, isAlreadyAdded && styles.exerciseItemDisabled]}
-      onPress={isAlreadyAdded ? undefined : onToggle}
+      onPress={
+        isAlreadyAdded
+          ? undefined
+          : () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onToggle();
+            }
+      }
       disabled={isAlreadyAdded}
     >
       <View style={[styles.exerciseIndicator, showSelected && styles.exerciseIndicatorSelected]} />
-      <ExerciseImage
-        gifUrl={exercise.image_url}
-        thumbnailUrl={exercise.thumbnail_url}
-        size={44}
-        borderRadius={8}
-      />
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPressName();
+        }}
+        disabled={isAlreadyAdded}
+      >
+        <ExerciseImage
+          gifUrl={exercise.image_url}
+          thumbnailUrl={exercise.thumbnail_url}
+          size={44}
+          borderRadius={8}
+          backgroundColor={colors.background}
+        />
+      </Pressable>
       <View style={styles.exerciseInfo}>
-        <Pressable onPress={onPressName} disabled={isAlreadyAdded}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onPressName();
+          }}
+          disabled={isAlreadyAdded}
+        >
           <Text style={[styles.exerciseName, isAlreadyAdded && styles.exerciseNameDisabled]}>
             {formatExerciseDisplayName(exercise.name, exercise.equipment)}
           </Text>
@@ -189,13 +212,25 @@ function FilterModal({ visible, title, options, selectedId, onSelect, onClose }:
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
+      <Pressable
+        style={styles.modalOverlay}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onClose();
+        }}
+      >
         <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
           <Pressable onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHandle} />
 
             <View style={styles.modalHeader}>
-              <Pressable style={styles.modalCloseButton} onPress={onClose}>
+              <Pressable
+                style={styles.modalCloseButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onClose();
+                }}
+              >
                 <CloseIcon />
               </Pressable>
               <Text style={styles.modalTitle}>{title}</Text>
@@ -208,6 +243,7 @@ function FilterModal({ visible, title, options, selectedId, onSelect, onClose }:
                   key={option.id}
                   style={styles.filterOptionItem}
                   onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     onSelect(option.id);
                     onClose();
                   }}
@@ -404,7 +440,13 @@ export default function AddExerciseScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Add Exercise</Text>
@@ -422,7 +464,12 @@ export default function AddExerciseScreen() {
           onChangeText={setSearchQuery}
         />
         {searchQuery.length > 0 && (
-          <Pressable onPress={() => setSearchQuery('')}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setSearchQuery('');
+            }}
+          >
             <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
           </Pressable>
         )}
@@ -432,7 +479,10 @@ export default function AddExerciseScreen() {
       <View style={styles.filterRow}>
         <Pressable
           style={[styles.filterButton, selectedMuscle !== 'all' && styles.filterButtonActive]}
-          onPress={() => setShowMuscleModal(true)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowMuscleModal(true);
+          }}
         >
           <Text
             style={[
@@ -448,7 +498,10 @@ export default function AddExerciseScreen() {
 
         <Pressable
           style={[styles.filterButton, selectedEquipment !== 'all' && styles.filterButtonActive]}
-          onPress={() => setShowEquipmentModal(true)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowEquipmentModal(true);
+          }}
         >
           <Text
             style={[
@@ -475,7 +528,13 @@ export default function AddExerciseScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.textSecondary} />
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={styles.retryButton} onPress={loadExercises}>
+          <Pressable
+            style={styles.retryButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              loadExercises();
+            }}
+          >
             <Text style={styles.retryText}>Retry</Text>
           </Pressable>
         </View>
@@ -505,7 +564,13 @@ export default function AddExerciseScreen() {
                     : 'No exercises found'}
               </Text>
               {(hasActiveFilters || debouncedQuery) && (
-                <Pressable style={styles.clearFiltersButton} onPress={clearFilters}>
+                <Pressable
+                  style={styles.clearFiltersButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    clearFilters();
+                  }}
+                >
                   <Text style={styles.clearFiltersText}>Clear Filters</Text>
                 </Pressable>
               )}
@@ -517,7 +582,13 @@ export default function AddExerciseScreen() {
       {/* Add Button */}
       {selectedExercises.length > 0 && (
         <View style={styles.addButtonContainer}>
-          <Pressable style={styles.addButton} onPress={handleAddExercises}>
+          <Pressable
+            style={styles.addButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleAddExercises();
+            }}
+          >
             <Text style={styles.addButtonText}>
               Add {selectedExercises.length} Exercise{selectedExercises.length > 1 ? 's' : ''}
             </Text>

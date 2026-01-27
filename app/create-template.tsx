@@ -14,6 +14,7 @@ import {
   GestureResponderEvent,
   PanResponderGestureState,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -254,7 +255,13 @@ function SwipeableSetRow({
     <View style={swipeStyles.container}>
       {/* Delete button revealed on right side when swiping left */}
       <View style={swipeStyles.deleteButtonContainer}>
-        <Pressable style={swipeStyles.deleteButton} onPress={handleDelete}>
+        <Pressable
+          style={swipeStyles.deleteButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            handleDelete();
+          }}
+        >
           <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
         </Pressable>
       </View>
@@ -673,12 +680,23 @@ export default function CreateTemplateScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header - Clean tracker style (no title) */}
       <View style={styles.header}>
-        <Pressable onPress={handleBack} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            handleBack();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
 
         <View style={styles.headerRight}>
-          <Pressable onPress={handleSave}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleSave();
+            }}
+          >
             <Text style={styles.saveText}>SAVE</Text>
           </Pressable>
         </View>
@@ -695,11 +713,23 @@ export default function CreateTemplateScreen() {
           </View>
           <Text style={styles.title}>Get Started</Text>
           <Text style={styles.subtitle}>Add an exercise to build your template</Text>
-          <Pressable style={styles.addExerciseButton} onPress={handleAddExercise}>
+          <Pressable
+            style={styles.addExerciseButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleAddExercise();
+            }}
+          >
             <Ionicons name="add" size={24} color="#FFFFFF" />
             <Text style={styles.addExerciseText}>Add Exercise</Text>
           </Pressable>
-          <Pressable style={styles.discardButtonFull} onPress={handleDiscard}>
+          <Pressable
+            style={styles.discardButtonFull}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleDiscard();
+            }}
+          >
             <Text style={styles.discardButtonText}>Discard</Text>
           </Pressable>
         </View>
@@ -710,18 +740,36 @@ export default function CreateTemplateScreen() {
             <View key={exercise.id} style={styles.exerciseCard}>
               {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
-                <ExerciseImage
-                  gifUrl={exercise.gifUrl}
-                  thumbnailUrl={exercise.thumbnailUrl}
-                  size={40}
-                  borderRadius={8}
-                />
-                <Text style={styles.exerciseTitle}>
-                  {formatExerciseNameString(exercise.exerciseName)}
-                </Text>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(`/exercise/${exercise.exerciseId}`);
+                  }}
+                >
+                  <ExerciseImage
+                    gifUrl={exercise.gifUrl}
+                    thumbnailUrl={exercise.thumbnailUrl}
+                    size={40}
+                    borderRadius={8}
+                  />
+                </Pressable>
+                <Pressable
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(`/exercise/${exercise.exerciseId}`);
+                  }}
+                >
+                  <Text style={styles.exerciseTitle}>
+                    {formatExerciseNameString(exercise.exerciseName)}
+                  </Text>
+                </Pressable>
                 <Pressable
                   style={styles.moreButton}
-                  onPress={() => openExerciseMenu(exerciseIndex)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    openExerciseMenu(exerciseIndex);
+                  }}
                 >
                   <Ionicons name="ellipsis-vertical" size={20} color={colors.text} />
                 </Pressable>
@@ -739,7 +787,10 @@ export default function CreateTemplateScreen() {
               {/* Rest Timer */}
               <Pressable
                 style={styles.restTimerRow}
-                onPress={() => openRestTimerModal(exerciseIndex)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  openRestTimerModal(exerciseIndex);
+                }}
               >
                 <Ionicons name="stopwatch-outline" size={18} color={colors.primary} />
                 <Text style={styles.restTimerText}>
@@ -780,19 +831,37 @@ export default function CreateTemplateScreen() {
               })}
 
               {/* Add Set Button */}
-              <Pressable style={styles.addSetButton} onPress={() => addSet(exerciseIndex)}>
+              <Pressable
+                style={styles.addSetButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  addSet(exerciseIndex);
+                }}
+              >
                 <Text style={styles.addSetText}>+ Add Set</Text>
               </Pressable>
             </View>
           ))}
 
           {/* Bottom Buttons */}
-          <Pressable style={styles.addExerciseButtonFilled} onPress={handleAddExercise}>
+          <Pressable
+            style={styles.addExerciseButtonFilled}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleAddExercise();
+            }}
+          >
             <Ionicons name="add" size={24} color="#FFFFFF" />
             <Text style={styles.addExerciseText}>Add Exercise</Text>
           </Pressable>
 
-          <Pressable style={styles.discardButtonFilled} onPress={handleDiscard}>
+          <Pressable
+            style={styles.discardButtonFilled}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleDiscard();
+            }}
+          >
             <Text style={styles.discardButtonText}>Discard</Text>
           </Pressable>
 
@@ -807,7 +876,13 @@ export default function CreateTemplateScreen() {
         animationType="none"
         onRequestClose={closeExerciseMenu}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeExerciseMenu}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeExerciseMenu();
+          }}
+        >
           <Animated.View
             style={[styles.menuModalContent, { transform: [{ translateY: menuSlideAnim }] }]}
           >
@@ -815,12 +890,24 @@ export default function CreateTemplateScreen() {
               <View style={styles.modalHandle} />
 
               <View style={styles.menuContainer}>
-                <Pressable style={styles.menuItem} onPress={handleReorderExercises}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    handleReorderExercises();
+                  }}
+                >
                   <ReorderIcon />
                   <Text style={styles.menuItemText}>Reorder Exercises</Text>
                 </Pressable>
 
-                <Pressable style={styles.menuItem} onPress={handleRemoveExercise}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    handleRemoveExercise();
+                  }}
+                >
                   <RemoveIcon />
                   <Text style={styles.menuItemTextRemove}>Remove Exercise</Text>
                 </Pressable>
@@ -847,7 +934,10 @@ export default function CreateTemplateScreen() {
               <View key={exercise.id} style={styles.reorderItem}>
                 <Pressable
                   style={styles.removeButton}
-                  onPress={() => removeExerciseFromReorder(index)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    removeExerciseFromReorder(index);
+                  }}
                 >
                   <MinusCircleIcon />
                 </Pressable>
@@ -868,7 +958,13 @@ export default function CreateTemplateScreen() {
           </ScrollView>
 
           <View style={styles.reorderBottom}>
-            <Pressable style={styles.doneButton} onPress={saveReorder}>
+            <Pressable
+              style={styles.doneButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                saveReorder();
+              }}
+            >
               <Text style={styles.doneButtonText}>Done</Text>
             </Pressable>
           </View>
@@ -882,7 +978,13 @@ export default function CreateTemplateScreen() {
         animationType="none"
         onRequestClose={closeRestTimerModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeRestTimerModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeRestTimerModal();
+          }}
+        >
           <Animated.View
             style={[
               styles.restTimerModalContent,
@@ -913,6 +1015,7 @@ export default function CreateTemplateScreen() {
                       key={option.value}
                       style={[styles.restTimerOption, isSelected && styles.restTimerOptionSelected]}
                       onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         if (restTimerModalExerciseIndex !== null) {
                           updateRestTimer(restTimerModalExerciseIndex, option.value);
                         }
@@ -933,7 +1036,13 @@ export default function CreateTemplateScreen() {
               </ScrollView>
 
               <View style={styles.restTimerModalBottom}>
-                <Pressable style={styles.doneButton} onPress={closeRestTimerModal}>
+                <Pressable
+                  style={styles.doneButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    closeRestTimerModal();
+                  }}
+                >
                   <Text style={styles.doneButtonText}>Done</Text>
                 </Pressable>
               </View>
@@ -1058,7 +1167,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   exerciseTitle: {
-    flex: 1,
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
     color: colors.primary,

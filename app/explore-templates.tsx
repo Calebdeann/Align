@@ -9,6 +9,7 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -87,7 +88,13 @@ function TemplateRow({ template, onPress, onAdd, isAdded }: TemplateRowProps) {
   const totalSets = getTemplateTotalSets(template);
 
   return (
-    <Pressable style={styles.templateRow} onPress={onPress}>
+    <Pressable
+      style={styles.templateRow}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
+    >
       <View style={styles.templateImageContainer}>
         {template.localImage ? (
           <Image source={template.localImage} style={styles.templateImage} />
@@ -109,7 +116,14 @@ function TemplateRow({ template, onPress, onAdd, isAdded }: TemplateRowProps) {
 
       <Pressable
         style={[styles.addButton, isAdded && styles.addButtonAdded]}
-        onPress={isAdded ? undefined : onAdd}
+        onPress={
+          isAdded
+            ? undefined
+            : () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onAdd();
+              }
+        }
         disabled={isAdded}
       >
         {!isAdded && <Text style={styles.addButtonPlus}>+</Text>}
@@ -147,7 +161,13 @@ function CategoryModal({
           <View style={styles.modalHandle} />
 
           <View style={styles.modalHeader}>
-            <Pressable style={styles.modalCloseButton} onPress={onClose}>
+            <Pressable
+              style={styles.modalCloseButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onClose();
+              }}
+            >
               <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
             <Text style={styles.modalTitle}>{categoryLabel} Workouts</Text>
@@ -196,14 +216,16 @@ export default function ExploreTemplatesScreen() {
 
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const shouldReopenModalRef = useRef(false);
 
   // Reopen the category modal when returning from template-detail
   useFocusEffect(
     useCallback(() => {
-      if (selectedCategory && !showCategoryModal) {
+      if (shouldReopenModalRef.current) {
+        shouldReopenModalRef.current = false;
         setShowCategoryModal(true);
       }
-    }, [selectedCategory, showCategoryModal])
+    }, [])
   );
 
   // Colour picker state for quick-add
@@ -226,16 +248,19 @@ export default function ExploreTemplatesScreen() {
   };
 
   const handleAddTemplate = (template: WorkoutTemplate) => {
-    // Show colour picker before adding
     setPendingTemplate(template);
     setAddColourId('purple');
-    setShowColourModal(true);
-    Animated.spring(colourSlideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 11,
-    }).start();
+    // Close category modal first to avoid stacked modals on iOS
+    setShowCategoryModal(false);
+    setTimeout(() => {
+      setShowColourModal(true);
+      Animated.spring(colourSlideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    }, 350);
   };
 
   const closeColourModal = () => {
@@ -246,6 +271,10 @@ export default function ExploreTemplatesScreen() {
     }).start(() => {
       setShowColourModal(false);
       setPendingTemplate(null);
+      // Reopen category modal if user cancelled
+      if (selectedCategory) {
+        setShowCategoryModal(true);
+      }
     });
   };
 
@@ -253,29 +282,41 @@ export default function ExploreTemplatesScreen() {
     if (!pendingTemplate) return;
     const colour = WORKOUT_COLOURS.find((c) => c.id === addColourId);
     const tagColor = colour?.color || colors.primary;
-    const added = addTemplate(pendingTemplate, tagColor);
-    closeColourModal();
-    if (!added) return;
-    setShowCategoryModal(false);
-    setSelectedCategory(null);
-    router.navigate('/(tabs)/workout');
+    const added = addTemplate({ ...pendingTemplate, userId: userId || undefined }, tagColor);
+
+    // Navigate only after animation completes to avoid iOS freeze
+    Animated.timing(colourSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowColourModal(false);
+      setPendingTemplate(null);
+      if (!added) return;
+      setSelectedCategory(null);
+      router.navigate('/(tabs)/workout');
+    });
   };
 
   const handleTemplatePress = (template: WorkoutTemplate) => {
+    shouldReopenModalRef.current = true;
     setShowCategoryModal(false);
-    // Delay navigation so the modal slide-down animation finishes first
-    setTimeout(() => {
-      router.push({
-        pathname: '/template-detail',
-        params: { templateId: template.id },
-      });
-    }, 300);
+    router.push({
+      pathname: '/template-detail',
+      params: { templateId: template.id },
+    });
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Explore</Text>
@@ -294,6 +335,7 @@ export default function ExploreTemplatesScreen() {
                 key={category.id}
                 style={styles.categoryCard}
                 onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setSelectedCategory(category.id);
                   setShowCategoryModal(true);
                 }}
@@ -325,6 +367,7 @@ export default function ExploreTemplatesScreen() {
         categoryLabel={getCategoryLabel(selectedCategory)}
         templates={categoryTemplates}
         onClose={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setShowCategoryModal(false);
           setSelectedCategory(null);
         }}
@@ -340,7 +383,13 @@ export default function ExploreTemplatesScreen() {
         animationType="none"
         onRequestClose={closeColourModal}
       >
-        <Pressable style={styles.colourModalOverlay} onPress={closeColourModal}>
+        <Pressable
+          style={styles.colourModalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeColourModal();
+          }}
+        >
           <Animated.View
             style={[styles.colourModalContent, { transform: [{ translateY: colourSlideAnim }] }]}
           >
@@ -348,7 +397,13 @@ export default function ExploreTemplatesScreen() {
               <View style={styles.colourModalHandle} />
 
               <View style={styles.colourModalHeader}>
-                <Pressable style={styles.colourModalCloseButton} onPress={closeColourModal}>
+                <Pressable
+                  style={styles.colourModalCloseButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    closeColourModal();
+                  }}
+                >
                   <CloseIcon />
                 </Pressable>
                 <Text style={styles.colourModalTitle}>Choose Colour</Text>
@@ -364,7 +419,10 @@ export default function ExploreTemplatesScreen() {
                         styles.colourOption,
                         addColourId === colour.id && styles.colourOptionSelected,
                       ]}
-                      onPress={() => setAddColourId(colour.id)}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setAddColourId(colour.id);
+                      }}
                     >
                       <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
                         {addColourId === colour.id && (
@@ -375,7 +433,13 @@ export default function ExploreTemplatesScreen() {
                   ))}
                 </View>
 
-                <Pressable style={styles.addColourConfirmButton} onPress={confirmAddWithColour}>
+                <Pressable
+                  style={styles.addColourConfirmButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    confirmAddWithColour();
+                  }}
+                >
                   <Text style={styles.addColourConfirmText}>Add to Library</Text>
                 </Pressable>
               </View>

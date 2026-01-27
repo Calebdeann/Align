@@ -13,7 +13,7 @@ function HapticTabButton(props: any) {
   const { onPress, children, style, accessibilityState, ...rest } = props;
 
   const handlePress = (e: any) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onPress?.(e);
   };
 
@@ -45,16 +45,17 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarShowLabel: false,
+          tabBarShowLabel: true,
           tabBarStyle: styles.tabBar,
           tabBarActiveTintColor: colors.text,
           tabBarInactiveTintColor: colors.textTertiary,
+          tabBarLabelStyle: styles.tabLabel,
         }}
       >
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Planner',
+            title: 'Schedule',
             tabBarIcon: ({ color }) => <CalendarIcon color={color} />,
             tabBarButton: (props) => <HapticTabButton {...props} />,
           }}
@@ -95,6 +96,11 @@ const styles = StyleSheet.create({
     elevation: 0,
     height: 80,
     paddingTop: 8,
+  },
+  tabLabel: {
+    fontFamily: 'Quicksand-SemiBold',
+    fontSize: 11,
+    marginTop: 2,
   },
   widgetContainer: {
     position: 'absolute',

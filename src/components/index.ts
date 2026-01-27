@@ -4,6 +4,3 @@ export { default as QuestionLayout } from './QuestionLayout';
 
 // Icons
 export * from './icons';
-
-// Dev tools
-export { default as DevNavigator } from './DevNavigator';

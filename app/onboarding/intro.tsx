@@ -150,7 +150,7 @@ export default function IntroScreen() {
   const handleSkip = useCallback(() => {
     if (isNavigating) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/onboarding/experience');
   }, [isNavigating]);
 

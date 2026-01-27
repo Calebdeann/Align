@@ -163,6 +163,37 @@ export async function saveOnboardingData(
   return true;
 }
 
+// Upload avatar image to Supabase Storage and return the public URL
+export async function uploadAvatar(userId: string, imageUri: string): Promise<string | null> {
+  try {
+    // Fetch the image as a blob
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+
+    const filePath = `${userId}/avatar.jpg`;
+
+    // Upload to Supabase Storage (upsert to replace existing)
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, blob, {
+      contentType: 'image/jpeg',
+      upsert: true,
+    });
+
+    if (uploadError) {
+      console.warn('Error uploading avatar:', uploadError);
+      return null;
+    }
+
+    // Get the public URL
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+    // Append cache-buster so the new image loads immediately
+    return `${data.publicUrl}?t=${Date.now()}`;
+  } catch (error) {
+    console.warn('Error in uploadAvatar:', error);
+    return null;
+  }
+}
+
 // Delete user account
 export async function deleteUserAccount(userId: string): Promise<boolean> {
   // This will also trigger cascade deletes for related data if set up in Supabase

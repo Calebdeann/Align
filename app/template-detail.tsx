@@ -16,6 +16,7 @@ import {
   Dimensions,
   ImageSourcePropType,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +29,6 @@ import { useUserProfileStore } from '@/stores/userProfileStore';
 import { WorkoutImage } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
 import { formatExerciseNameString } from '@/utils/textFormatters';
-import { getCurrentUser } from '@/services/api/user';
 import { getTemplateImageById } from '@/constants/templateImages';
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 import {
@@ -92,14 +92,35 @@ function ExerciseRow({
 
   return (
     <View>
-      <Pressable style={styles.exerciseRow} onPress={onToggle}>
-        <ExerciseImage
-          gifUrl={exercise.gifUrl}
-          thumbnailUrl={exercise.thumbnailUrl}
-          size={40}
-          borderRadius={8}
-        />
-        <Text style={styles.exerciseName}>{formatExerciseNameString(exercise.exerciseName)}</Text>
+      <Pressable
+        style={styles.exerciseRow}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onToggle();
+        }}
+      >
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(`/exercise/${exercise.exerciseId}`);
+          }}
+        >
+          <ExerciseImage
+            gifUrl={exercise.gifUrl}
+            thumbnailUrl={exercise.thumbnailUrl}
+            size={40}
+            borderRadius={8}
+          />
+        </Pressable>
+        <Pressable
+          style={{ flex: 1, justifyContent: 'center' }}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push(`/exercise/${exercise.exerciseId}`);
+          }}
+        >
+          <Text style={styles.exerciseName}>{formatExerciseNameString(exercise.exerciseName)}</Text>
+        </Pressable>
         <Ionicons
           name={isExpanded ? 'chevron-down' : 'chevron-forward'}
           size={20}
@@ -207,7 +228,13 @@ export default function TemplateDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle}>Workout</Text>
@@ -245,10 +272,18 @@ export default function TemplateDetailScreen() {
   const confirmAddWithColour = (colourId: string) => {
     const colour = WORKOUT_COLOURS.find((c) => c.id === colourId);
     const tagColor = colour?.color || colors.primary;
-    const added = addTemplate(template, tagColor);
-    closeAddColourModal();
-    if (!added) return;
-    router.navigate('/(tabs)/workout');
+    const added = addTemplate({ ...template, userId: userId || undefined }, tagColor);
+
+    // Navigate only after animation completes to avoid iOS freeze
+    Animated.timing(addColourSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowAddColourModal(false);
+      if (!added) return;
+      router.navigate('/(tabs)/workout');
+    });
   };
 
   const handleStartWorkout = () => {
@@ -392,7 +427,10 @@ export default function TemplateDetailScreen() {
       return (
         <Pressable
           style={[styles.imagePlaceholder, editImage && styles.imagePlaceholderFilled]}
-          onPress={() => setShowImagePicker(true)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowImagePicker(true);
+          }}
         >
           {editImage ? (
             editImage.localSource ? (
@@ -427,22 +465,46 @@ export default function TemplateDetailScreen() {
       <View style={styles.header}>
         {isEditing ? (
           <>
-            <Pressable onPress={handleCancelEdit} style={styles.backButton}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                handleCancelEdit();
+              }}
+              style={styles.backButton}
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
             <Text style={styles.headerTitle}>Edit Template</Text>
-            <Pressable onPress={handleSaveEdit} style={styles.backButton}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                handleSaveEdit();
+              }}
+              style={styles.backButton}
+            >
               <Text style={styles.saveText}>Save</Text>
             </Pressable>
           </>
         ) : (
           <>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.back();
+              }}
+              style={styles.backButton}
+            >
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </Pressable>
             <Text style={styles.headerTitle}>Workout</Text>
             {!template.isPreset ? (
-              <Pressable onPress={enterEditMode} style={styles.backButton}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  enterEditMode();
+                }}
+                style={styles.backButton}
+              >
                 <Ionicons name="pencil-outline" size={22} color={colors.text} />
               </Pressable>
             ) : (
@@ -484,7 +546,13 @@ export default function TemplateDetailScreen() {
             <View style={styles.editDivider} />
 
             {/* Colour */}
-            <Pressable style={styles.colourRow} onPress={openColourModal}>
+            <Pressable
+              style={styles.colourRow}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                openColourModal();
+              }}
+            >
               <Text style={styles.colourLabel}>Colour</Text>
               <View style={styles.colourRight}>
                 <View style={[styles.colourCircle, { backgroundColor: getSelectedColour() }]} />
@@ -508,7 +576,10 @@ export default function TemplateDetailScreen() {
         {template.isPreset && (
           <Pressable
             style={[styles.addToLibraryButton, isSaved && styles.addToLibraryButtonSaved]}
-            onPress={handleAddToLibrary}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleAddToLibrary();
+            }}
             disabled={isSaved}
           >
             <Text style={[styles.addToLibraryText, isSaved && styles.addToLibraryTextSaved]}>
@@ -519,14 +590,26 @@ export default function TemplateDetailScreen() {
 
         {/* Start Workout Button (user templates, view mode only) */}
         {!template.isPreset && !isEditing && (
-          <Pressable style={styles.startWorkoutButton} onPress={handleStartWorkout}>
+          <Pressable
+            style={styles.startWorkoutButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleStartWorkout();
+            }}
+          >
             <Text style={styles.startWorkoutText}>Start Workout</Text>
           </Pressable>
         )}
 
         {/* Edit Exercises Button (edit mode only) */}
         {isEditing && (
-          <Pressable style={styles.editExercisesButton} onPress={handleEditExercises}>
+          <Pressable
+            style={styles.editExercisesButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              handleEditExercises();
+            }}
+          >
             <Ionicons name="barbell-outline" size={20} color="#FFFFFF" />
             <Text style={styles.editExercisesText}>Edit Exercises</Text>
           </Pressable>
@@ -551,7 +634,13 @@ export default function TemplateDetailScreen() {
 
         {/* Delete Template (user templates only) */}
         {!template.isPreset && (
-          <Pressable onPress={handleDeleteTemplate} style={styles.deleteTextButton}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleDeleteTemplate();
+            }}
+            style={styles.deleteTextButton}
+          >
             <Text style={styles.deleteText}>Delete Template</Text>
           </Pressable>
         )}
@@ -566,7 +655,13 @@ export default function TemplateDetailScreen() {
         animationType="none"
         onRequestClose={closeColourModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeColourModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeColourModal();
+          }}
+        >
           <Animated.View
             style={[styles.modalContent, { transform: [{ translateY: colourSlideAnim }] }]}
           >
@@ -574,7 +669,13 @@ export default function TemplateDetailScreen() {
               <View style={styles.modalHandle} />
 
               <View style={styles.modalHeader}>
-                <Pressable style={styles.modalCloseButton} onPress={closeColourModal}>
+                <Pressable
+                  style={styles.modalCloseButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    closeColourModal();
+                  }}
+                >
                   <CloseIcon />
                 </Pressable>
                 <Text style={styles.modalTitle}>Colour</Text>
@@ -590,7 +691,10 @@ export default function TemplateDetailScreen() {
                         styles.colourOption,
                         editColourId === colour.id && styles.colourOptionSelected,
                       ]}
-                      onPress={() => selectColour(colour.id)}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        selectColour(colour.id);
+                      }}
                     >
                       <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
                         {editColourId === colour.id && (
@@ -613,7 +717,13 @@ export default function TemplateDetailScreen() {
         animationType="none"
         onRequestClose={closeAddColourModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeAddColourModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeAddColourModal();
+          }}
+        >
           <Animated.View
             style={[styles.modalContent, { transform: [{ translateY: addColourSlideAnim }] }]}
           >
@@ -621,7 +731,13 @@ export default function TemplateDetailScreen() {
               <View style={styles.modalHandle} />
 
               <View style={styles.modalHeader}>
-                <Pressable style={styles.modalCloseButton} onPress={closeAddColourModal}>
+                <Pressable
+                  style={styles.modalCloseButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    closeAddColourModal();
+                  }}
+                >
                   <CloseIcon />
                 </Pressable>
                 <Text style={styles.modalTitle}>Choose Colour</Text>
@@ -637,7 +753,10 @@ export default function TemplateDetailScreen() {
                         styles.colourOption,
                         addColourId === colour.id && styles.colourOptionSelected,
                       ]}
-                      onPress={() => setAddColourId(colour.id)}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setAddColourId(colour.id);
+                      }}
                     >
                       <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
                         {addColourId === colour.id && (
@@ -650,7 +769,10 @@ export default function TemplateDetailScreen() {
 
                 <Pressable
                   style={styles.addColourConfirmButton}
-                  onPress={() => confirmAddWithColour(addColourId)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    confirmAddWithColour(addColourId);
+                  }}
                 >
                   <Text style={styles.addColourConfirmText}>Add to Library</Text>
                 </Pressable>
@@ -883,16 +1005,16 @@ const styles = StyleSheet.create({
   },
   exercisesCard: {
     ...cardStyle,
+    padding: 12,
     marginBottom: spacing.md,
   },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
+    paddingVertical: 12,
+    gap: spacing.sm,
   },
   exerciseName: {
-    flex: 1,
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.primary,
@@ -903,32 +1025,35 @@ const styles = StyleSheet.create({
   },
   // Sets display styles
   setsContainer: {
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
   setsHeader: {
     flexDirection: 'row',
-    paddingBottom: spacing.xs,
-    marginLeft: 56,
+    paddingBottom: spacing.sm,
   },
   setHeaderText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,
     color: colors.textTertiary,
     textTransform: 'uppercase',
+    textAlign: 'center',
   },
   setColumn: {
     width: 40,
+    marginRight: spacing.md,
+    textAlign: 'center',
   },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
-    marginLeft: 56,
+    paddingVertical: 6,
   },
   setNumber: {
     fontFamily: fonts.bold,
     fontSize: fontSize.sm,
     color: colors.text,
+    textAlign: 'center',
   },
   setText: {
     fontFamily: fonts.medium,

@@ -3,6 +3,7 @@ import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 
@@ -37,7 +38,13 @@ export default function ReferFriendScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Referrals</Text>
@@ -88,7 +95,10 @@ export default function ReferFriendScreen() {
       <View style={styles.shareButtonContainer}>
         <Pressable
           style={[styles.shareButton, !promoCode && styles.shareButtonDisabled]}
-          onPress={handleShare}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            handleShare();
+          }}
           disabled={!promoCode}
         >
           <Text style={styles.shareButtonText}>Share</Text>

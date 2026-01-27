@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { router, useFocusEffect } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import {
   generateMonthData,
@@ -49,6 +50,7 @@ interface CalendarWorkoutItem {
   isFromDatabase: boolean; // true = completed workout from DB, false = scheduled workout
   scheduledWorkoutId?: string; // For toggling completion on scheduled workouts
   dbWorkoutId?: string; // For toggling DB completed workouts
+  imageUri?: string | null; // Workout photo URI
 }
 
 // Icons
@@ -231,6 +233,7 @@ export default function CalendarScreen() {
   }, []);
 
   const dismissFounderBanner = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Animated.timing(bannerOpacity, {
       toValue: 0,
       duration: 300,
@@ -307,6 +310,7 @@ export default function CalendarScreen() {
             isCompleted: !isUnchecked, // Show as unchecked if user toggled it off
             isFromDatabase: true,
             dbWorkoutId: cw.id, // For toggling DB workouts
+            imageUri: cw.imageUri,
           });
         }
       });
@@ -325,6 +329,7 @@ export default function CalendarScreen() {
 
   // Handle view mode switch - reset to current date
   const handleViewModeSwitch = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (viewMode === 'calendar') {
       // Switching to list view - reset list days and scroll to today
       setListDays(
@@ -441,6 +446,7 @@ export default function CalendarScreen() {
     // Create date object for this day
     const handlePress = () => {
       if (year !== undefined && month !== undefined) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         const targetDate = new Date(year, month, day);
         handleDatePress(targetDate);
       }
@@ -581,45 +587,19 @@ export default function CalendarScreen() {
               // Determine if this is a completed workout from DB (viewing details)
               // or a scheduled workout (viewing preview)
               const handleWorkoutPress = () => {
-                if (workout.isFromDatabase && workout.dbWorkoutId) {
-                  // Completed workout from database - show details
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (workout.scheduledWorkoutId) {
+                  // Always show the editable preview for scheduled workouts (completed or not)
+                  router.push({
+                    pathname: '/workout-preview',
+                    params: { workoutId: workout.scheduledWorkoutId, dateKey },
+                  });
+                } else if (workout.isFromDatabase && workout.dbWorkoutId) {
+                  // Standalone completed workout (not from a schedule) - show details
                   router.push({
                     pathname: '/workout-details',
                     params: { workoutId: workout.dbWorkoutId },
                   });
-                } else if (workout.scheduledWorkoutId) {
-                  // Check if this scheduled workout is completed
-                  const isComplete = isWorkoutCompleted(workout.scheduledWorkoutId, dateKey);
-                  if (isComplete) {
-                    // If completed, try to find matching DB workout to show details
-                    const matchingDbWorkout = cachedCompletedWorkouts.find((cw) => {
-                      // Use local date to avoid timezone issues
-                      const completedDate = new Date(cw.completedAt);
-                      const localDateKey = `${completedDate.getFullYear()}-${String(completedDate.getMonth() + 1).padStart(2, '0')}-${String(completedDate.getDate()).padStart(2, '0')}`;
-                      return (
-                        localDateKey === dateKey &&
-                        (cw.name || '').toLowerCase().trim() === workout.name.toLowerCase().trim()
-                      );
-                    });
-                    if (matchingDbWorkout) {
-                      router.push({
-                        pathname: '/workout-details',
-                        params: { workoutId: matchingDbWorkout.id },
-                      });
-                    } else {
-                      // No DB record found, show preview
-                      router.push({
-                        pathname: '/workout-preview',
-                        params: { workoutId: workout.scheduledWorkoutId, dateKey },
-                      });
-                    }
-                  } else {
-                    // Not completed - show preview
-                    router.push({
-                      pathname: '/workout-preview',
-                      params: { workoutId: workout.scheduledWorkoutId, dateKey },
-                    });
-                  }
                 }
               };
 
@@ -627,6 +607,7 @@ export default function CalendarScreen() {
                 <Pressable key={workout.id} style={styles.workoutRow} onPress={handleWorkoutPress}>
                   <Pressable
                     onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                       // Toggle completion for scheduled workouts
                       if (workout.scheduledWorkoutId) {
                         toggleWorkoutCompletion(workout.scheduledWorkoutId, dateKey);
@@ -652,6 +633,9 @@ export default function CalendarScreen() {
                     )}
                   </Pressable>
                   <View style={styles.workoutInfoPressable}>
+                    {workout.imageUri && (
+                      <Image source={{ uri: workout.imageUri }} style={styles.workoutThumbnail} />
+                    )}
                     <View style={styles.workoutInfo}>
                       {workout.templateName && (
                         <Text style={[styles.workoutTemplateLabel, { color: workout.tagColor }]}>
@@ -719,7 +703,13 @@ export default function CalendarScreen() {
               <CalendarIcon color={colors.text} />
             )}
           </Pressable>
-          <Pressable style={styles.iconButton} onPress={() => router.push('/schedule-workout')}>
+          <Pressable
+            style={styles.iconButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/schedule-workout');
+            }}
+          >
             <Text style={styles.iconText}>+</Text>
           </Pressable>
         </View>
@@ -984,6 +974,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+  },
+  workoutThumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.borderLight,
   },
   workoutInfo: {
     flex: 1,

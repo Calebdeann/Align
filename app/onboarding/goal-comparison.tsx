@@ -75,7 +75,7 @@ export default function GoalComparisonScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={styles.backButton}
@@ -88,7 +88,14 @@ export default function GoalComparisonScreen() {
           <View style={[styles.progressBarFill, { width: '44%' }]} />
         </View>
 
-        <View style={{ width: 32 }} />
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/onboarding/health-situations');
+          }}
+        >
+          <Text style={styles.skipText}>Skip</Text>
+        </Pressable>
       </View>
 
       {/* Title */}
@@ -138,7 +145,7 @@ export default function GoalComparisonScreen() {
           style={styles.continueButton}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push('/onboarding/obstacles');
+            router.push('/onboarding/health-situations');
           }}
         >
           <Text style={styles.continueText}>Continue</Text>
@@ -184,6 +191,11 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: colors.primary,
     borderRadius: 2,
+  },
+  skipText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
   },
   titleContainer: {
     paddingHorizontal: spacing.lg,

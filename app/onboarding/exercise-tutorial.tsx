@@ -30,7 +30,11 @@ const hints: Record<TutorialStep, { title: string; subtitle: string }> = {
 };
 
 export default function ExerciseTutorialScreen() {
-  const { exerciseName, gifUrl } = useLocalSearchParams<{ exerciseName: string; gifUrl: string }>();
+  const { exerciseName, gifUrl, thumbnailUrl } = useLocalSearchParams<{
+    exerciseName: string;
+    gifUrl: string;
+    thumbnailUrl: string;
+  }>();
   const [step, setStep] = useState<TutorialStep>('weight');
   const [kg, setKg] = useState('');
   const [reps, setReps] = useState('');
@@ -85,7 +89,7 @@ export default function ExerciseTutorialScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={styles.backButton}
@@ -100,7 +104,7 @@ export default function ExerciseTutorialScreen() {
 
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push('/onboarding/thank-you');
           }}
         >
@@ -117,7 +121,7 @@ export default function ExerciseTutorialScreen() {
 
       {/* Exercise Info */}
       <View style={styles.exerciseInfo}>
-        <ExerciseImage thumbnailUrl={gifUrl} size={40} borderRadius={8} />
+        <ExerciseImage gifUrl={gifUrl} thumbnailUrl={thumbnailUrl} size={40} borderRadius={8} />
         <Text style={styles.exerciseType}>
           {exerciseName ? formatExerciseNameString(exerciseName) : 'Exercise'}
         </Text>

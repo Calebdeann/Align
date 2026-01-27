@@ -36,14 +36,14 @@ export default function QuestionLayout({
   const handleSkip = () => {
     if (isNavigating) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSkip?.();
   };
 
   const handleBack = () => {
     if (isNavigating) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
   };
 

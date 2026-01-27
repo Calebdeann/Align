@@ -21,7 +21,14 @@ export default function PlanReadyScreen() {
           <View style={[styles.progressBarFill, { width: '98%' }]} />
         </View>
 
-        <View style={{ width: 32 }} />
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/onboarding/signup');
+          }}
+        >
+          <Text style={styles.skipText}>Skip</Text>
+        </Pressable>
       </View>
 
       {/* Content */}
@@ -69,6 +76,11 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: colors.primary,
     borderRadius: 2,
+  },
+  skipText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
   },
   content: {
     flex: 1,

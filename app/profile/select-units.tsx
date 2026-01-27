@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import {
@@ -27,7 +28,10 @@ function ToggleButtonGroup({ label, options, selected, onSelect }: ToggleButtonG
           <Pressable
             key={option.value}
             style={[styles.toggleButton, selected === option.value && styles.toggleButtonActive]}
-            onPress={() => onSelect(option.value)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onSelect(option.value);
+            }}
           >
             <Text
               style={[
@@ -92,7 +96,13 @@ export default function SelectUnitsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Select Units</Text>

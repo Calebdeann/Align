@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useUserPreferencesStore, TimerSoundId } from '@/stores/userPreferencesStore';
 import { playTimerSound, TIMER_SOUND_OPTIONS } from '@/utils/sounds';
@@ -73,7 +74,13 @@ function MenuItem({
 }: MenuItemProps) {
   return (
     <>
-      <Pressable style={styles.menuItem} onPress={onPress}>
+      <Pressable
+        style={styles.menuItem}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress?.();
+        }}
+      >
         <View style={styles.menuItemLeft}>
           {icon}
           <Text style={styles.menuItemLabel}>{label}</Text>
@@ -164,7 +171,13 @@ export default function WorkoutSettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Workout Settings</Text>
@@ -196,7 +209,10 @@ export default function WorkoutSettingsScreen() {
             rightElement={
               <Switch
                 value={rpeTrackingEnabled}
-                onValueChange={setRpeTrackingEnabled}
+                onValueChange={(value) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setRpeTrackingEnabled(value);
+                }}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFFFFF"
               />
@@ -222,7 +238,10 @@ export default function WorkoutSettingsScreen() {
             rightElement={
               <Switch
                 value={vibrationEnabled}
-                onValueChange={setVibrationEnabled}
+                onValueChange={(value) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setVibrationEnabled(value);
+                }}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFFFFF"
               />
@@ -260,7 +279,10 @@ export default function WorkoutSettingsScreen() {
                     <Pressable
                       key={option.value}
                       style={[styles.optionRow, isSelected && styles.optionRowSelected]}
-                      onPress={() => handleSelectTimer(option.value)}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        handleSelectTimer(option.value);
+                      }}
                     >
                       <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
                         {option.label}
@@ -272,7 +294,13 @@ export default function WorkoutSettingsScreen() {
               </ScrollView>
 
               <View style={styles.bottomSheetFooter}>
-                <Pressable style={styles.doneButton} onPress={closeTimerModal}>
+                <Pressable
+                  style={styles.doneButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    closeTimerModal();
+                  }}
+                >
                   <Text style={styles.doneButtonText}>Done</Text>
                 </Pressable>
               </View>
@@ -308,7 +336,10 @@ export default function WorkoutSettingsScreen() {
                     <Pressable
                       key={option.id}
                       style={[styles.optionRow, isSelected && styles.optionRowSelected]}
-                      onPress={() => handleSelectSound(option.id)}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        handleSelectSound(option.id);
+                      }}
                     >
                       <View style={styles.soundOptionLeft}>
                         <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
@@ -318,7 +349,10 @@ export default function WorkoutSettingsScreen() {
                       <View style={styles.soundOptionRight}>
                         <Pressable
                           style={styles.previewButton}
-                          onPress={() => playTimerSound(option.id)}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            playTimerSound(option.id);
+                          }}
                           hitSlop={8}
                         >
                           <Ionicons
@@ -337,7 +371,13 @@ export default function WorkoutSettingsScreen() {
               </View>
 
               <View style={styles.bottomSheetFooter}>
-                <Pressable style={styles.doneButton} onPress={closeSoundModal}>
+                <Pressable
+                  style={styles.doneButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    closeSoundModal();
+                  }}
+                >
                   <Text style={styles.doneButtonText}>Done</Text>
                 </Pressable>
               </View>

@@ -7,22 +7,33 @@ import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { ExerciseImage } from '@/components/ExerciseImage';
 
 // Exercise GIF URLs from Ascend API (ExerciseDB)
+const SUPABASE_THUMBS =
+  'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails';
+
 const exercises = [
-  { id: 'qKBpF7I', label: 'Hip Thrust', gifUrl: 'https://static.exercisedb.dev/media/qKBpF7I.gif' },
+  {
+    id: 'qKBpF7I',
+    label: 'Hip Thrust',
+    gifUrl: 'https://static.exercisedb.dev/media/qKBpF7I.gif',
+    thumbnailUrl: `${SUPABASE_THUMBS}/3236.png`,
+  },
   {
     id: 'qXTaZnJ',
     label: 'Barbell Squat',
     gifUrl: 'https://static.exercisedb.dev/media/qXTaZnJ.gif',
+    thumbnailUrl: `${SUPABASE_THUMBS}/0043.png`,
   },
   {
     id: 'my33uHU',
     label: 'Leg Extension',
     gifUrl: 'https://static.exercisedb.dev/media/my33uHU.gif',
+    thumbnailUrl: `${SUPABASE_THUMBS}/0585.png`,
   },
   {
     id: 'znQUdHY',
     label: 'Shoulder Press',
     gifUrl: 'https://static.exercisedb.dev/media/znQUdHY.gif',
+    thumbnailUrl: `${SUPABASE_THUMBS}/0405.png`,
   },
 ];
 
@@ -36,7 +47,11 @@ export default function FirstExercisesScreen() {
     setTimeout(() => {
       router.push({
         pathname: '/onboarding/exercise-tutorial',
-        params: { exerciseName: exercise?.label || 'Exercise', gifUrl: exercise?.gifUrl || '' },
+        params: {
+          exerciseName: exercise?.label || 'Exercise',
+          gifUrl: exercise?.gifUrl || '',
+          thumbnailUrl: exercise?.thumbnailUrl || '',
+        },
       });
     }, 300);
   };
@@ -47,7 +62,7 @@ export default function FirstExercisesScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={styles.backButton}
@@ -62,7 +77,7 @@ export default function FirstExercisesScreen() {
 
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push('/onboarding/thank-you');
           }}
         >
@@ -89,7 +104,14 @@ export default function FirstExercisesScreen() {
                 style={[styles.exerciseCard, isSelected && styles.exerciseCardSelected]}
                 onPress={() => handleSelect(exercise.id)}
               >
-                <ExerciseImage gifUrl={exercise.gifUrl} size={60} borderRadius={8} />
+                <ExerciseImage
+                  gifUrl={exercise.gifUrl}
+                  thumbnailUrl={exercise.thumbnailUrl}
+                  size={60}
+                  borderRadius={8}
+                  animated={true}
+                  backgroundColor={colors.background}
+                />
                 <Text style={[styles.exerciseLabel, isSelected && styles.exerciseLabelSelected]}>
                   {exercise.label}
                 </Text>

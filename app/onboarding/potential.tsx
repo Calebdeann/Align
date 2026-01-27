@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop, G } from 'react-native-svg';
 import QuestionLayout from '@/components/QuestionLayout';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - spacing.lg * 2 - 40; // Account for padding and Y-axis
@@ -15,7 +16,19 @@ const COLOR_3DAYS = '#A855F7'; // Violet purple (~22%)
 const COLOR_7DAYS = '#D946EF'; // Magenta/fuchsia (~42%)
 const COLOR_END = '#F472B6'; // Warm pink/coral (100%)
 
+const goalMotivationalText: Record<string, string> = {
+  lose: 'Women like you see real results within weeks, not months',
+  tone: "You're not starting from scratch, you're building on what's already there",
+  health: 'Strong women move better, feel better, and live longer',
+  love: "This isn't about fixing yourself, it's about finding out what you're capable of",
+};
+
 export default function PotentialScreen() {
+  const { mainGoal } = useOnboardingStore();
+
+  const dynamicText =
+    (mainGoal && goalMotivationalText[mainGoal]) || "Stay focused, and you'll reach your goal!";
+
   // Define the curve points
   const startX = 0;
   const startY = CHART_HEIGHT - 30; // Start near bottom
@@ -46,6 +59,7 @@ export default function PotentialScreen() {
       progress={16}
       showContinue
       onContinue={() => router.push('/onboarding/referral')}
+      onSkip={() => router.push('/onboarding/referral')}
     >
       <View style={styles.content}>
         {/* Chart Container */}
@@ -180,14 +194,7 @@ export default function PotentialScreen() {
 
         {/* Motivational text */}
         <View style={styles.textContainer}>
-          <Text style={styles.motivationalText}>
-            You're on an amazing journey! Stay focused, and{' '}
-            <Text style={styles.boldText}>you'll reach your goal!</Text>
-          </Text>
-          <Text style={styles.subText}>
-            Your dedication will pay off—every step forward brings you closer to your best self!
-            Let's do it!
-          </Text>
+          <Text style={styles.motivationalText}>{dynamicText}</Text>
         </View>
       </View>
     </QuestionLayout>
@@ -251,21 +258,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   motivationalText: {
-    fontFamily: fonts.regular,
+    fontFamily: fonts.medium,
     fontSize: fontSize.md,
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: spacing.sm,
-  },
-  boldText: {
-    fontFamily: fonts.bold,
-  },
-  subText: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 24,
   },
 });

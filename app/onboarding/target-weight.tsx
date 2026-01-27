@@ -202,7 +202,7 @@ export default function TargetWeightScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={styles.backButton}
@@ -219,10 +219,10 @@ export default function TargetWeightScreen() {
           onPress={() => {
             if (isNavigating) return;
             setIsNavigating(true);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             useOnboardingStore.getState().skipField('targetWeight');
             // Skip goal screens since user didn't set a target weight
-            router.push('/onboarding/obstacles');
+            router.push('/onboarding/health-situations');
           }}
           disabled={isNavigating}
         >
@@ -327,7 +327,7 @@ export default function TargetWeightScreen() {
             // If target weight equals current weight (maintaining), skip goal screens
             const isMaintaining = Math.abs(weightLbs - currentWeightLbs) < 1;
             if (isMaintaining) {
-              router.push('/onboarding/obstacles');
+              router.push('/onboarding/health-situations');
             } else {
               router.push('/onboarding/goal-reality');
             }

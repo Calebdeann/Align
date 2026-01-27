@@ -15,6 +15,9 @@ import {
 import { getCurrentUser } from '@/services/api/user';
 import { formatExerciseNameString } from '@/utils/textFormatters';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { getWeightUnit, fromKgForDisplay } from '@/utils/units';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import * as Haptics from 'expo-haptics';
 import { useState, useEffect } from 'react';
 
 // Icons
@@ -105,6 +108,8 @@ function getRepeatLabel(repeat: ScheduledWorkout['repeat']): string {
         return repeat.customDays.map((d) => dayNames[d]).join(', ');
       }
       return 'Custom';
+    case 'interval':
+      return `Every ${repeat.intervalDays || 2} days`;
     default:
       return 'Does not repeat';
   }
@@ -117,6 +122,9 @@ export default function WorkoutPreviewScreen() {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+
+  const units = useUserPreferencesStore((s) => s.getUnitSystem());
+  const weightLabel = getWeightUnit(units).toLowerCase();
 
   // Get workout from store
   const scheduledWorkouts = useWorkoutStore((state) => state.scheduledWorkouts);
@@ -215,7 +223,7 @@ export default function WorkoutPreviewScreen() {
   // Handle starting workout
   const handleStartWorkout = () => {
     if (template) {
-      // Start workout from template
+      // Start workout from template, passing scheduledWorkoutId for auto-tick on save
       startWorkoutFromTemplate(
         template.id,
         template.name,
@@ -229,11 +237,12 @@ export default function WorkoutPreviewScreen() {
           })),
           restTimerSeconds: ex.restTimerSeconds,
         })),
-        userId
+        userId,
+        workout?.id
       );
     } else {
-      // Start empty workout
-      startActiveWorkout(userId);
+      // Start empty workout, passing scheduledWorkoutId for auto-tick on save
+      startActiveWorkout(userId, workout?.id);
     }
     router.push('/active-workout');
   };
@@ -242,7 +251,13 @@ export default function WorkoutPreviewScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
+            style={styles.backButton}
+          >
             <BackIcon />
           </Pressable>
           <Text style={styles.headerTitle}>Workout</Text>
@@ -259,11 +274,28 @@ export default function WorkoutPreviewScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <BackIcon />
         </Pressable>
         <Text style={styles.headerTitle}>Workout</Text>
-        <View style={styles.backButton} />
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push({
+              pathname: '/schedule-workout',
+              params: { editWorkoutId: workout.id, editDateKey: dateKey },
+            });
+          }}
+          style={styles.editButton}
+        >
+          <Text style={styles.editButtonText}>Edit</Text>
+        </Pressable>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -367,16 +399,37 @@ export default function WorkoutPreviewScreen() {
                 const isExpanded = expandedExercises.has(ex.id);
                 return (
                   <View key={ex.id}>
-                    <Pressable style={styles.exerciseRow} onPress={() => toggleExercise(ex.id)}>
-                      <ExerciseImage
-                        gifUrl={ex.gifUrl}
-                        thumbnailUrl={ex.thumbnailUrl}
-                        size={40}
-                        borderRadius={8}
-                      />
-                      <Text style={styles.exerciseName}>
-                        {formatExerciseNameString(ex.exerciseName)}
-                      </Text>
+                    <Pressable
+                      style={styles.exerciseRow}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        toggleExercise(ex.id);
+                      }}
+                    >
+                      <Pressable
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          router.push(`/exercise/${ex.exerciseId}`);
+                        }}
+                      >
+                        <ExerciseImage
+                          gifUrl={ex.gifUrl}
+                          thumbnailUrl={ex.thumbnailUrl}
+                          size={40}
+                          borderRadius={8}
+                        />
+                      </Pressable>
+                      <Pressable
+                        style={{ flex: 1, justifyContent: 'center' }}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          router.push(`/exercise/${ex.exerciseId}`);
+                        }}
+                      >
+                        <Text style={styles.exerciseName}>
+                          {formatExerciseNameString(ex.exerciseName)}
+                        </Text>
+                      </Pressable>
                       <Ionicons
                         name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                         size={20}
@@ -388,19 +441,21 @@ export default function WorkoutPreviewScreen() {
                       <View style={styles.setsContainer}>
                         <View style={styles.setsHeader}>
                           <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-                          <Text style={[styles.setHeaderText, styles.weightColumn]}>KG</Text>
-                          <Text style={[styles.setHeaderText, styles.repsColumn]}>REPS</Text>
+                          <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
                         </View>
                         {ex.sets.map((set) => (
                           <View key={set.setNumber} style={styles.setRow}>
                             <Text style={[styles.setNumber, styles.setColumn]}>
                               {set.setNumber}
                             </Text>
-                            <Text style={[styles.setText, styles.weightColumn]}>
-                              {set.targetWeight ?? '-'}
-                            </Text>
-                            <Text style={[styles.setText, styles.repsColumn]}>
-                              {set.targetReps ?? '-'}
+                            <Text style={styles.setText}>
+                              {set.targetWeight && set.targetReps
+                                ? `${units === 'imperial' ? Math.round(fromKgForDisplay(set.targetWeight, 'imperial')) : set.targetWeight} ${weightLabel} x ${set.targetReps} reps`
+                                : set.targetWeight
+                                  ? `${units === 'imperial' ? Math.round(fromKgForDisplay(set.targetWeight, 'imperial')) : set.targetWeight} ${weightLabel} x - reps`
+                                  : set.targetReps
+                                    ? `- x ${set.targetReps} reps`
+                                    : '- x -'}
                             </Text>
                           </View>
                         ))}
@@ -432,7 +487,13 @@ export default function WorkoutPreviewScreen() {
         )}
 
         {/* Delete Workout Button */}
-        <Pressable style={styles.deleteButton} onPress={handleDeleteWorkout}>
+        <Pressable
+          style={styles.deleteButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            handleDeleteWorkout();
+          }}
+        >
           <Text style={styles.deleteButtonText}>Delete Workout</Text>
         </Pressable>
 
@@ -441,7 +502,13 @@ export default function WorkoutPreviewScreen() {
 
       {/* Start Workout Button */}
       <View style={styles.bottomBar}>
-        <Pressable style={styles.startButton} onPress={handleStartWorkout}>
+        <Pressable
+          style={styles.startButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            handleStartWorkout();
+          }}
+        >
           <Text style={styles.startButtonText}>Start Workout</Text>
         </Pressable>
       </View>
@@ -471,6 +538,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
     color: colors.text,
+  },
+  editButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editButtonText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.primary,
   },
   emptyContainer: {
     flex: 1,
@@ -599,11 +677,10 @@ const styles = StyleSheet.create({
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
+    paddingVertical: 12,
+    gap: spacing.sm,
   },
   exerciseName: {
-    flex: 1,
     fontFamily: fonts.semiBold,
     fontSize: fontSize.sm,
     color: colors.primary,
@@ -613,28 +690,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(217, 217, 217, 0.15)',
   },
   setsContainer: {
-    marginLeft: 56,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
   setsHeader: {
     flexDirection: 'row',
-    paddingBottom: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   setHeaderText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,
     color: colors.textTertiary,
     textTransform: 'uppercase',
+    textAlign: 'center',
   },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   setNumber: {
     fontFamily: fonts.bold,
     fontSize: fontSize.sm,
     color: colors.text,
+    textAlign: 'center',
   },
   setText: {
     fontFamily: fonts.medium,
@@ -643,12 +722,8 @@ const styles = StyleSheet.create({
   },
   setColumn: {
     width: 40,
-  },
-  weightColumn: {
-    width: 60,
-  },
-  repsColumn: {
-    width: 60,
+    marginRight: spacing.md,
+    textAlign: 'center',
   },
   noTemplateContainer: {
     alignItems: 'center',

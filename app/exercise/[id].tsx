@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { Exercise, getExerciseById } from '@/services/api/exercises';
+import * as Haptics from 'expo-haptics';
 import { ExerciseImage } from '@/components/ExerciseImage';
 import { toTitleCase, formatExerciseDisplayName } from '@/utils/textFormatters';
 
@@ -55,6 +56,7 @@ export default function ExerciseDetailScreen() {
   }
 
   const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
   };
 
@@ -117,7 +119,13 @@ export default function ExerciseDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Large GIF Animation */}
         <View style={styles.gifContainer}>
-          <ExerciseImage gifUrl={exercise.image_url} size={280} borderRadius={16} animated={true} />
+          <ExerciseImage
+            gifUrl={exercise.image_url}
+            size={280}
+            borderRadius={16}
+            animated={true}
+            backgroundColor={colors.background}
+          />
         </View>
 
         {/* Primary Muscles */}

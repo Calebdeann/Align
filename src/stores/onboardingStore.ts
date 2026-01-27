@@ -47,6 +47,8 @@ export interface OnboardingData {
   workoutDays: string[];
   mainObstacle: string | null;
   accomplish: string | null;
+  healthSituation: string | null;
+  energyFluctuation: string | null;
   notificationsEnabled: boolean;
   reminderTime: string | null;
 }
@@ -69,6 +71,8 @@ interface OnboardingState extends OnboardingData {
   setWorkoutDays: (days: string[]) => void;
   setMainObstacle: (obstacle: string) => void;
   setAccomplish: (accomplish: string) => void;
+  setHealthSituation: (situation: string) => void;
+  setEnergyFluctuation: (fluctuation: string) => void;
   setNotificationsEnabled: (enabled: boolean) => void;
   setReminderTime: (time: string) => void;
 
@@ -107,6 +111,8 @@ const initialState: OnboardingData = {
   workoutDays: [],
   mainObstacle: null,
   accomplish: null,
+  healthSituation: null,
+  energyFluctuation: null,
   notificationsEnabled: false,
   reminderTime: null,
 };
@@ -131,6 +137,8 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   setWorkoutDays: (days) => set({ workoutDays: days }),
   setMainObstacle: (obstacle) => set({ mainObstacle: obstacle }),
   setAccomplish: (accomplish) => set({ accomplish }),
+  setHealthSituation: (situation) => set({ healthSituation: situation }),
+  setEnergyFluctuation: (fluctuation) => set({ energyFluctuation: fluctuation }),
   setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
   setReminderTime: (time) => set({ reminderTime: time }),
 

@@ -9,8 +9,10 @@ export default function OnboardingLayout() {
       <Stack.Screen name="other-goals" />
       <Stack.Screen name="training-location" />
       <Stack.Screen name="workout-frequency" />
+      <Stack.Screen name="health-situations" />
       <Stack.Screen name="obstacles" />
-      <Stack.Screen name="accomplish" />
+      <Stack.Screen name="energy-fluctuation" />
+      {/* <Stack.Screen name="accomplish" /> */}
       <Stack.Screen name="name" />
       <Stack.Screen name="age" />
       <Stack.Screen name="height" />
@@ -27,7 +29,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="generating-plan" />
       <Stack.Screen name="goal-comparison" />
       <Stack.Screen name="goal-reality" />
-      <Stack.Screen name="prediction" />
+      {/* <Stack.Screen name="prediction" /> */}
       <Stack.Screen name="plan-ready" />
       {/* <Stack.Screen name="enter-referral-code" /> */}
       <Stack.Screen name="thank-you" />

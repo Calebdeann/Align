@@ -187,6 +187,7 @@ Use `QuestionLayout` component with `optionStyles` for all multi-select/single-s
 5. All API write functions must validate input with Zod schemas before DB operations
 6. RLS policies enforce data isolation - users can only access their own data
 7. **NEVER reference "male" in the app.** This is a women's workout tracker. All exercise animations, images, and content must use female variants only. Never add male-gendered content, labels, or references in any user-facing code or new scripts.
+8. **Database columns must be backwards-compatible in code.** When adding new database columns: (a) never unconditionally include them in INSERT or UPDATE statements, (b) always provide a fallback retry path that strips new columns if the insert fails with a schema error (PGRST204), and (c) core save operations (workouts, templates, profiles) must NEVER hard-fail due to optional feature columns. See `.claude/backend-rules.md` for the full pattern and protected operations list.
 
 ## Backend Security
 
@@ -271,6 +272,7 @@ Google Sign-In:
 - Don't add features not requested
 - Don't over-engineer or add unnecessary abstractions
 - Don't add comments unless logic is complex
+- Never use em-dashes in the app. Use commas or periods instead.
 
 ## Monetization (Later)
 

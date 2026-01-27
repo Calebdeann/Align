@@ -16,6 +16,7 @@ import {
   Image,
   ImageSourcePropType,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -109,6 +110,7 @@ export default function SaveTemplateScreen() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedColourId, setSelectedColourId] = useState('purple');
+  const [isSaving, setIsSaving] = useState(false);
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
 
   const toggleExercise = (exerciseId: string) => {
@@ -230,6 +232,8 @@ export default function SaveTemplateScreen() {
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
+
     if (!name.trim()) {
       Alert.alert('Missing Name', 'Please enter a template name');
       return;
@@ -239,6 +243,8 @@ export default function SaveTemplateScreen() {
       Alert.alert('No Exercises', 'Please add at least one exercise');
       return;
     }
+
+    setIsSaving(true);
 
     const user = await getCurrentUser();
 
@@ -294,11 +300,23 @@ export default function SaveTemplateScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <BackIcon />
         </Pressable>
         <Text style={styles.headerTitle}>Save Template</Text>
-        <Pressable onPress={handleSave} style={styles.saveButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            handleSave();
+          }}
+          style={styles.saveButton}
+        >
           <Text style={styles.saveText}>SAVE</Text>
         </Pressable>
       </View>
@@ -315,7 +333,10 @@ export default function SaveTemplateScreen() {
           <View style={styles.infoRow}>
             <Pressable
               style={[styles.imagePlaceholder, selectedImage && styles.imagePlaceholderFilled]}
-              onPress={() => setShowImagePicker(true)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowImagePicker(true);
+              }}
             >
               {selectedImage ? (
                 selectedImage.localSource ? (
@@ -348,7 +369,13 @@ export default function SaveTemplateScreen() {
           <Divider />
 
           {/* Colour */}
-          <Pressable style={styles.menuRow} onPress={openColourModal}>
+          <Pressable
+            style={styles.menuRow}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              openColourModal();
+            }}
+          >
             <Text style={styles.menuLabel}>Colour</Text>
             <View style={styles.menuRight}>
               <View style={[styles.colourCircle, { backgroundColor: getSelectedColour() }]} />
@@ -364,16 +391,37 @@ export default function SaveTemplateScreen() {
             const isExpanded = expandedExercises.has(exercise.id);
             return (
               <View key={exercise.id}>
-                <Pressable style={styles.exerciseRow} onPress={() => toggleExercise(exercise.id)}>
-                  <ExerciseImage
-                    gifUrl={exercise.gifUrl}
-                    thumbnailUrl={exercise.thumbnailUrl}
-                    size={40}
-                    borderRadius={8}
-                  />
-                  <Text style={styles.exerciseName}>
-                    {formatExerciseNameString(exercise.exerciseName)}
-                  </Text>
+                <Pressable
+                  style={styles.exerciseRow}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    toggleExercise(exercise.id);
+                  }}
+                >
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push(`/exercise/${exercise.exerciseId}`);
+                    }}
+                  >
+                    <ExerciseImage
+                      gifUrl={exercise.gifUrl}
+                      thumbnailUrl={exercise.thumbnailUrl}
+                      size={40}
+                      borderRadius={8}
+                    />
+                  </Pressable>
+                  <Pressable
+                    style={{ flex: 1, justifyContent: 'center' }}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push(`/exercise/${exercise.exerciseId}`);
+                    }}
+                  >
+                    <Text style={styles.exerciseName}>
+                      {formatExerciseNameString(exercise.exerciseName)}
+                    </Text>
+                  </Pressable>
                   <Ionicons
                     name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                     size={20}
@@ -385,21 +433,19 @@ export default function SaveTemplateScreen() {
                   <View style={styles.setsContainer}>
                     <View style={styles.setsHeader}>
                       <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-                      <Text style={[styles.setHeaderText, styles.weightRepsColumn]}>
-                        WEIGHT & REPS
-                      </Text>
+                      <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
                     </View>
                     {exercise.sets.map((set) => (
                       <View key={set.setNumber} style={styles.setRow}>
-                        <Text style={[styles.setText, styles.setColumn]}>{set.setNumber}</Text>
-                        <Text style={[styles.setText, styles.weightRepsColumn]}>
+                        <Text style={[styles.setNumber, styles.setColumn]}>{set.setNumber}</Text>
+                        <Text style={styles.setText}>
                           {set.targetWeight && set.targetReps
-                            ? `${fromKgForDisplay(set.targetWeight, units)} ${weightLabel} × ${set.targetReps} reps`
+                            ? `${fromKgForDisplay(set.targetWeight, units)} ${weightLabel} x ${set.targetReps} reps`
                             : set.targetWeight
-                              ? `${fromKgForDisplay(set.targetWeight, units)} ${weightLabel} × - reps`
+                              ? `${fromKgForDisplay(set.targetWeight, units)} ${weightLabel} x - reps`
                               : set.targetReps
-                                ? `- × ${set.targetReps} reps`
-                                : '- × -'}
+                                ? `- x ${set.targetReps} reps`
+                                : '- x -'}
                         </Text>
                       </View>
                     ))}
@@ -435,7 +481,13 @@ export default function SaveTemplateScreen() {
         animationType="none"
         onRequestClose={closeColourModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeColourModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeColourModal();
+          }}
+        >
           <Animated.View
             style={[styles.modalContent, { transform: [{ translateY: colourSlideAnim }] }]}
           >
@@ -443,7 +495,13 @@ export default function SaveTemplateScreen() {
               <View style={styles.modalHandle} />
 
               <View style={styles.modalHeader}>
-                <Pressable style={styles.modalCloseButton} onPress={closeColourModal}>
+                <Pressable
+                  style={styles.modalCloseButton}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    closeColourModal();
+                  }}
+                >
                   <CloseIcon />
                 </Pressable>
                 <Text style={styles.modalTitle}>Colour</Text>
@@ -459,7 +517,10 @@ export default function SaveTemplateScreen() {
                         styles.colourOption,
                         selectedColourId === colour.id && styles.colourOptionSelected,
                       ]}
-                      onPress={() => selectColour(colour.id)}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        selectColour(colour.id);
+                      }}
                     >
                       <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
                         {selectedColourId === colour.id && (
@@ -597,53 +658,51 @@ const styles = StyleSheet.create({
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: 12,
     paddingHorizontal: spacing.md,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   exerciseName: {
-    flex: 1,
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.primary,
   },
   setsContainer: {
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.surfaceSecondary,
-    marginHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
-    borderRadius: 8,
   },
   setsHeader: {
     flexDirection: 'row',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(217, 217, 217, 0.25)',
+    paddingBottom: spacing.sm,
   },
   setHeaderText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,
-    color: colors.textSecondary,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
     textAlign: 'center',
   },
   setColumn: {
-    flex: 1,
+    width: 40,
+    marginRight: spacing.md,
     textAlign: 'center',
   },
-  weightRepsColumn: {
-    flex: 3,
+  setNumber: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.sm,
+    color: colors.text,
     textAlign: 'center',
   },
   setRow: {
     flexDirection: 'row',
-    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    paddingVertical: 6,
   },
   setText: {
     fontFamily: fonts.medium,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.text,
-    textAlign: 'center',
   },
   emptyExercises: {
     padding: spacing.lg,

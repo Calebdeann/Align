@@ -48,6 +48,7 @@ export interface ActiveWorkoutSession {
   isMinimized: boolean;
   sourceTemplateId?: string; // Track which template this workout came from
   templateName?: string; // Store template name for display
+  scheduledWorkoutId?: string; // Track which scheduled workout this came from (for auto-tick)
 }
 
 // Exercises selected in add-exercise screen, pending addition to workout
@@ -74,8 +75,9 @@ export interface ScheduledWorkout {
     minute: number;
   };
   repeat: {
-    type: 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'custom';
-    customDays?: number[]; // 0-6 for Sun-Sat
+    type: 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'interval';
+    customDays?: number[]; // 0-6 for Sun-Sat (used by 'custom')
+    intervalDays?: number; // e.g., 3 for "every 3 days" (used by 'interval')
   };
   reminder?: {
     enabled: boolean;
@@ -85,6 +87,7 @@ export interface ScheduledWorkout {
   createdAt: string;
   completedDates: string[]; // Array of YYYY-MM-DD dates when workout was completed
   excludedDates?: string[]; // Array of YYYY-MM-DD dates to skip for recurring workouts
+  endDate?: string; // YYYY-MM-DD - if set, no occurrences generated after this date
   templateId?: string; // Optional link to a workout template
 }
 
@@ -97,12 +100,26 @@ export interface CachedCompletedWorkout {
   durationSeconds: number;
   exerciseCount: number;
   totalSets: number;
+  imageType: string | null;
+  imageUri: string | null;
+  imageTemplateId: string | null;
 }
 
 interface WorkoutStore {
   // Scheduled workouts
   scheduledWorkouts: ScheduledWorkout[];
   addWorkout: (workout: Omit<ScheduledWorkout, 'id' | 'createdAt' | 'completedDates'>) => void;
+  updateWorkout: (id: string, updates: Partial<Omit<ScheduledWorkout, 'id' | 'createdAt'>>) => void;
+  editSingleOccurrence: (
+    originalId: string,
+    originalDateKey: string,
+    newWorkoutData: Omit<ScheduledWorkout, 'id' | 'createdAt' | 'completedDates'>
+  ) => void;
+  editFromDateForward: (
+    originalId: string,
+    fromDateKey: string,
+    newWorkoutData: Omit<ScheduledWorkout, 'id' | 'createdAt' | 'completedDates'>
+  ) => void;
   removeWorkout: (id: string) => void;
   removeWorkoutOccurrence: (id: string, dateKey: string) => void; // Remove single occurrence from recurring
   getScheduledWorkoutById: (id: string) => ScheduledWorkout | undefined;
@@ -115,6 +132,11 @@ interface WorkoutStore {
     month: number,
     userId: string | null
   ) => Map<number, ScheduledWorkout[]>;
+  // Cascade template edits (name, color, image) to all scheduled workouts referencing that template
+  updateScheduledWorkoutsForTemplate: (
+    templateId: string,
+    updates: { name?: string; tagColor?: string; image?: WorkoutImage }
+  ) => void;
   // Auto-mark scheduled workouts as complete when a workout is saved
   markScheduledWorkoutComplete: (
     dateKey: string,
@@ -135,7 +157,7 @@ interface WorkoutStore {
 
   // Active workout session
   activeWorkout: ActiveWorkoutSession | null;
-  startActiveWorkout: (userId: string | null) => void;
+  startActiveWorkout: (userId: string | null, scheduledWorkoutId?: string) => void;
   startWorkoutFromTemplate: (
     templateId: string,
     templateName: string,
@@ -148,7 +170,8 @@ interface WorkoutStore {
       sets: { targetWeight?: number; targetReps?: number }[];
       restTimerSeconds: number;
     }[],
-    userId: string | null
+    userId: string | null,
+    scheduledWorkoutId?: string
   ) => void;
   setActiveWorkoutExercises: (exercises: ActiveWorkoutExercise[]) => void;
   updateActiveWorkoutTime: (seconds: number) => void;
@@ -179,6 +202,9 @@ const workoutOccursOnDate = (workout: ScheduledWorkout, checkDate: Date): boolea
 
   // Check if this date is excluded
   if (workout.excludedDates?.includes(checkDateKey)) return false;
+
+  // Check if past the end date (for split recurring series)
+  if (workout.endDate && checkDateKey > workout.endDate) return false;
 
   // If it's the original date, always show
   if (checkDateKey === workoutDateKey) return true;
@@ -214,6 +240,13 @@ const workoutOccursOnDate = (workout: ScheduledWorkout, checkDate: Date): boolea
     return customDays.includes(checkDate.getDay());
   }
 
+  if (type === 'interval' && workout.repeat.intervalDays) {
+    const daysDiff = Math.floor(
+      (checkDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysDiff % workout.repeat.intervalDays === 0;
+  }
+
   return false;
 };
 
@@ -236,7 +269,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
       },
 
       // Active workout methods
-      startActiveWorkout: (userId) => {
+      startActiveWorkout: (userId, scheduledWorkoutId) => {
         set({
           activeWorkout: {
             exercises: [],
@@ -244,11 +277,18 @@ export const useWorkoutStore = create<WorkoutStore>()(
             startedAt: new Date().toISOString(),
             userId,
             isMinimized: false,
+            scheduledWorkoutId,
           },
         });
       },
 
-      startWorkoutFromTemplate: (templateId, templateName, templateExercises, userId) => {
+      startWorkoutFromTemplate: (
+        templateId,
+        templateName,
+        templateExercises,
+        userId,
+        scheduledWorkoutId
+      ) => {
         // Convert template exercises to active workout exercises
         const activeExercises: ActiveWorkoutExercise[] = templateExercises.map((te) => ({
           exercise: {
@@ -284,6 +324,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
             isMinimized: false,
             sourceTemplateId: templateId,
             templateName,
+            scheduledWorkoutId,
           },
         });
       },
@@ -334,6 +375,110 @@ export const useWorkoutStore = create<WorkoutStore>()(
         };
         set((state) => ({
           scheduledWorkouts: [...state.scheduledWorkouts, newWorkout],
+        }));
+      },
+
+      updateWorkout: (id, updates) => {
+        set((state) => ({
+          scheduledWorkouts: state.scheduledWorkouts.map((w) => {
+            if (w.id !== id) return w;
+            return { ...w, ...updates };
+          }),
+        }));
+      },
+
+      updateScheduledWorkoutsForTemplate: (templateId, updates) => {
+        set((state) => ({
+          scheduledWorkouts: state.scheduledWorkouts.map((w) => {
+            if (w.templateId !== templateId) return w;
+
+            const result = { ...w };
+
+            if (updates.name) {
+              const oldTemplateName = result.templateName;
+              result.templateName = updates.name;
+              // Only update workout name if user didn't customize it
+              if (result.name === oldTemplateName) {
+                result.name = updates.name;
+              }
+            }
+
+            if (updates.tagColor) {
+              result.tagColor = updates.tagColor;
+            }
+
+            if (updates.image !== undefined) {
+              result.image = updates.image;
+            }
+
+            return result;
+          }),
+        }));
+      },
+
+      editSingleOccurrence: (originalId, originalDateKey, newWorkoutData) => {
+        const original = get().scheduledWorkouts.find((w) => w.id === originalId);
+        if (!original) return;
+
+        // Transfer completion status for this date if it was completed
+        const wasCompleted = original.completedDates.includes(originalDateKey);
+
+        const newWorkout: ScheduledWorkout = {
+          ...newWorkoutData,
+          repeat: { type: 'never' },
+          id: generateId(),
+          createdAt: new Date().toISOString(),
+          completedDates: wasCompleted ? [newWorkoutData.date] : [],
+        };
+
+        set((state) => ({
+          scheduledWorkouts: state.scheduledWorkouts
+            .map((w) => {
+              if (w.id !== originalId) return w;
+              // Add the original date to excludedDates
+              const excludedDates = w.excludedDates || [];
+              if (excludedDates.includes(originalDateKey)) return w;
+              return {
+                ...w,
+                excludedDates: [...excludedDates, originalDateKey],
+              };
+            })
+            .concat(newWorkout),
+        }));
+      },
+
+      editFromDateForward: (originalId, fromDateKey, newWorkoutData) => {
+        const original = get().scheduledWorkouts.find((w) => w.id === originalId);
+        if (!original) return;
+
+        // Calculate the day before fromDateKey as the endDate for the original
+        const fromDate = new Date(fromDateKey);
+        const dayBefore = new Date(fromDate);
+        dayBefore.setDate(dayBefore.getDate() - 1);
+        const endDateKey = formatDateKey(dayBefore);
+
+        // Split completed dates: keep those before fromDateKey on original, rest on new
+        const futureCompletedDates = original.completedDates.filter((d) => d >= fromDateKey);
+
+        const newWorkout: ScheduledWorkout = {
+          ...newWorkoutData,
+          id: generateId(),
+          createdAt: new Date().toISOString(),
+          completedDates: futureCompletedDates,
+        };
+
+        set((state) => ({
+          scheduledWorkouts: state.scheduledWorkouts
+            .map((w) => {
+              if (w.id !== originalId) return w;
+              return {
+                ...w,
+                endDate: endDateKey,
+                // Remove future completed dates from the original
+                completedDates: w.completedDates.filter((d) => d < fromDateKey),
+              };
+            })
+            .concat(newWorkout),
         }));
       },
 

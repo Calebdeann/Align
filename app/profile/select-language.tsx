@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 
@@ -43,7 +44,13 @@ export default function SelectLanguageScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Select Language</Text>
@@ -55,7 +62,10 @@ export default function SelectLanguageScreen() {
           <View key={language.code}>
             <Pressable
               style={styles.languageRow}
-              onPress={() => handleSelectLanguage(language.code, language.available)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                handleSelectLanguage(language.code, language.available);
+              }}
             >
               <View style={styles.languageLeft}>
                 <Text style={styles.flag}>{language.flag}</Text>

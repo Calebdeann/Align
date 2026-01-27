@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { supabase } from '../supabase';
 import { z } from 'zod';
 import {
@@ -5,6 +6,16 @@ import {
   UserExercisePreferenceSchema,
   type SaveWorkoutInput as ValidatedSaveWorkoutInput,
 } from '@/schemas/workout.schema';
+
+// Helper: detect Supabase schema/column errors (e.g. migration not applied yet)
+function isSchemaError(error: any): boolean {
+  if (!error?.code) return false;
+  const code = String(error.code);
+  // PGRST204 = column not found in schema cache
+  // PGRST301 = could not find relation
+  // 42xxx = PostgreSQL schema errors
+  return code === 'PGRST204' || code === 'PGRST301' || code.startsWith('42');
+}
 
 // =============================================
 // TYPES - Normalized Database Schema
@@ -110,6 +121,9 @@ export interface WorkoutHistoryItem {
   durationSeconds: number;
   exerciseCount: number;
   totalSets: number;
+  imageType: string | null;
+  imageUri: string | null;
+  imageTemplateId: string | null;
 }
 
 // Type for previous sets
@@ -128,6 +142,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
   const parseResult = SaveWorkoutInputSchema.safeParse(input);
   if (!parseResult.success) {
     console.error('Invalid workout input:', parseResult.error.flatten());
+    Alert.alert('Save Error', 'Unable to save workout. Please try again.');
     return null;
   }
 
@@ -141,26 +156,58 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
       `Workout - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
     // 1. Insert the workout record
-    const { data: workout, error: workoutError } = await supabase
+    // Base insert uses only established columns (always works)
+    const baseWorkoutInsert: Record<string, any> = {
+      user_id: validatedInput.userId,
+      name: workoutName,
+      started_at: validatedInput.startedAt.toISOString(),
+      completed_at: validatedInput.completedAt.toISOString(),
+      duration_seconds: validatedInput.durationSeconds,
+      notes: validatedInput.notes || null,
+      source_template_id: validatedInput.sourceTemplateId || null,
+    };
+
+    // Add optional image columns when an image was selected
+    // (requires migration 010_workout_image.sql)
+    const workoutInsert = { ...baseWorkoutInsert };
+    const hasImageFields = !!validatedInput.imageType;
+    if (hasImageFields) {
+      workoutInsert.image_type = validatedInput.imageType;
+      workoutInsert.image_uri = validatedInput.imageUri || null;
+      workoutInsert.image_template_id = validatedInput.imageTemplateId || null;
+    }
+
+    // Try insert; if schema error from image columns, retry without them
+    let workout: { id: string } | null = null;
+
+    const { data: firstAttempt, error: firstError } = await supabase
       .from('workouts')
-      .insert({
-        user_id: validatedInput.userId,
-        name: workoutName,
-        started_at: validatedInput.startedAt.toISOString(),
-        completed_at: validatedInput.completedAt.toISOString(),
-        duration_seconds: validatedInput.durationSeconds,
-        notes: validatedInput.notes || null,
-        source_template_id: validatedInput.sourceTemplateId || null,
-        image_type: validatedInput.imageType || null,
-        image_uri: validatedInput.imageUri || null,
-        image_template_id: validatedInput.imageTemplateId || null,
-      })
+      .insert(workoutInsert)
       .select('id')
       .single();
 
-    if (workoutError || !workout) {
-      console.error('Error saving workout:', workoutError);
+    if (firstError && hasImageFields && isSchemaError(firstError)) {
+      console.warn(
+        'Image columns not found in database (migration 010 not applied). Saving workout without image.'
+      );
+      const { data: retryAttempt, error: retryError } = await supabase
+        .from('workouts')
+        .insert(baseWorkoutInsert)
+        .select('id')
+        .single();
+
+      if (retryError || !retryAttempt) {
+        console.error('Error saving workout (retry without image):', retryError);
+        Alert.alert('Save Error', 'Unable to save workout. Please try again.');
+        return null;
+      }
+      workout = retryAttempt;
+    } else if (firstError || !firstAttempt) {
+      console.error('Error saving workout:', firstError);
+      Alert.alert('Save Error', 'Unable to save workout. Please try again.');
       return null;
+    } else {
+      workout = firstAttempt;
     }
 
     const workoutId = workout.id;
@@ -272,7 +319,204 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
     return workoutId;
   } catch (error) {
     console.error('Error in saveCompletedWorkout:', error);
+    Alert.alert('Save Error', 'Unable to save workout. Please try again.');
     return null;
+  }
+}
+
+// =============================================
+// UPDATE COMPLETED WORKOUT
+// =============================================
+
+export async function updateCompletedWorkout(
+  workoutId: string,
+  input: SaveWorkoutInput
+): Promise<boolean> {
+  // Validate input before any database operations
+  const parseResult = SaveWorkoutInputSchema.safeParse(input);
+  if (!parseResult.success) {
+    console.error('Invalid workout input:', parseResult.error.flatten());
+    Alert.alert('Save Error', 'Unable to update workout. Please try again.');
+    return false;
+  }
+
+  const validatedInput = parseResult.data;
+
+  try {
+    const workoutName =
+      validatedInput.name ||
+      `Workout - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+    // 1. Update the workout record
+    const baseWorkoutUpdate: Record<string, any> = {
+      name: workoutName,
+      duration_seconds: validatedInput.durationSeconds,
+      notes: validatedInput.notes || null,
+    };
+
+    const workoutUpdate = { ...baseWorkoutUpdate };
+    const hasImageFields = !!validatedInput.imageType;
+    if (hasImageFields) {
+      workoutUpdate.image_type = validatedInput.imageType;
+      workoutUpdate.image_uri = validatedInput.imageUri || null;
+      workoutUpdate.image_template_id = validatedInput.imageTemplateId || null;
+    }
+
+    let updateSuccess = false;
+
+    const { error: updateError } = await supabase
+      .from('workouts')
+      .update(workoutUpdate)
+      .eq('id', workoutId);
+
+    if (updateError && hasImageFields && isSchemaError(updateError)) {
+      console.warn('Image columns not found. Updating workout without image.');
+      const { error: retryError } = await supabase
+        .from('workouts')
+        .update(baseWorkoutUpdate)
+        .eq('id', workoutId);
+
+      if (retryError) {
+        console.error('Error updating workout (retry):', retryError);
+        Alert.alert('Save Error', 'Unable to update workout. Please try again.');
+        return false;
+      }
+      updateSuccess = true;
+    } else if (updateError) {
+      console.error('Error updating workout:', updateError);
+      Alert.alert('Save Error', 'Unable to update workout. Please try again.');
+      return false;
+    } else {
+      updateSuccess = true;
+    }
+
+    // 2. Delete existing exercises (cascades to workout_sets via FK)
+    const { error: deleteExError } = await supabase
+      .from('workout_exercises')
+      .delete()
+      .eq('workout_id', workoutId);
+
+    if (deleteExError) {
+      console.error('Error deleting existing exercises:', deleteExError);
+      Alert.alert('Save Error', 'Unable to update workout exercises. Please try again.');
+      return false;
+    }
+
+    // 3. Delete existing muscle data
+    const { error: deleteMuscleError } = await supabase
+      .from('workout_muscles')
+      .delete()
+      .eq('workout_id', workoutId);
+
+    if (deleteMuscleError) {
+      console.error('Error deleting existing muscles:', deleteMuscleError);
+      // Non-fatal, continue
+    }
+
+    // 4. Re-insert exercises, sets, and muscles (same logic as saveCompletedWorkout)
+    const muscleSetCounts = new Map<string, { primary: number; secondary: number }>();
+
+    for (let i = 0; i < validatedInput.exercises.length; i++) {
+      const exercise = validatedInput.exercises[i];
+      const completedSetsCount = exercise.sets.filter((s) => s.completed).length;
+
+      const { data: workoutExercise, error: exerciseError } = await supabase
+        .from('workout_exercises')
+        .insert({
+          workout_id: workoutId,
+          exercise_id: exercise.exerciseId,
+          exercise_name: exercise.exerciseName,
+          exercise_muscle: exercise.exerciseMuscle || null,
+          notes: exercise.notes || null,
+          order_index: i + 1,
+          superset_id: exercise.supersetId,
+          rest_timer_seconds: exercise.restTimerSeconds || 90,
+        })
+        .select('id')
+        .single();
+
+      if (exerciseError || !workoutExercise) {
+        console.error('Error saving workout exercise:', exerciseError);
+        continue;
+      }
+
+      const setsToInsert = exercise.sets.map((set) => ({
+        workout_exercise_id: workoutExercise.id,
+        set_number: set.setNumber,
+        weight: set.weightKg,
+        reps: set.reps,
+        set_type: set.setType || 'normal',
+        completed: set.completed,
+        rpe: set.rpe ?? null,
+      }));
+
+      if (setsToInsert.length > 0) {
+        const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert);
+        if (setsError) {
+          console.error('Error saving workout sets:', setsError);
+        }
+      }
+
+      if (completedSetsCount > 0) {
+        const { data: exerciseMuscles } = await supabase
+          .from('exercise_muscles')
+          .select('muscle, activation')
+          .eq('exercise_id', exercise.exerciseId);
+
+        if (exerciseMuscles) {
+          exerciseMuscles.forEach((em) => {
+            const current = muscleSetCounts.get(em.muscle) || { primary: 0, secondary: 0 };
+            if (em.activation === 'primary') {
+              current.primary += completedSetsCount;
+            } else {
+              current.secondary += completedSetsCount;
+            }
+            muscleSetCounts.set(em.muscle, current);
+          });
+        }
+      }
+    }
+
+    // 5. Re-insert aggregate workout_muscles
+    const musclesToInsert: {
+      workout_id: string;
+      muscle: string;
+      total_sets: number;
+      activation: string;
+    }[] = [];
+    muscleSetCounts.forEach((counts, muscle) => {
+      if (counts.primary > 0) {
+        musclesToInsert.push({
+          workout_id: workoutId,
+          muscle,
+          total_sets: counts.primary,
+          activation: 'primary',
+        });
+      }
+      if (counts.secondary > 0) {
+        musclesToInsert.push({
+          workout_id: workoutId,
+          muscle,
+          total_sets: counts.secondary,
+          activation: 'secondary',
+        });
+      }
+    });
+
+    if (musclesToInsert.length > 0) {
+      const { error: musclesError } = await supabase
+        .from('workout_muscles')
+        .insert(musclesToInsert);
+      if (musclesError) {
+        console.error('Error saving workout muscles:', musclesError);
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in updateCompletedWorkout:', error);
+    Alert.alert('Save Error', 'Unable to update workout. Please try again.');
+    return false;
   }
 }
 
@@ -298,86 +542,50 @@ export async function getBatchExercisePreviousSets(
   if (exerciseIds.length === 0) return result;
 
   try {
-    // Step 1: Get user's most recent workouts
-    // Use a generous limit so history works even if the exercise wasn't done recently
-    const { data: userWorkouts, error: workoutsError } = await supabase
-      .from('workouts')
-      .select('id, completed_at')
-      .eq('user_id', userId)
-      .order('completed_at', { ascending: false })
-      .limit(200);
-
-    if (workoutsError || !userWorkouts || userWorkouts.length === 0) {
-      return result;
-    }
-
-    const userWorkoutIds = userWorkouts.map((w) => w.id);
-
-    // Step 2: Get workout_exercises for these workouts that match our exercise IDs
-    const { data: workoutExercises, error: weError } = await supabase
+    // Single query using Supabase relation joins instead of 3 sequential queries.
+    // !inner join on workouts ensures only this user's data is returned.
+    const { data, error } = await supabase
       .from('workout_exercises')
-      .select('id, exercise_id, workout_id')
+      .select(
+        `
+        id,
+        exercise_id,
+        workout_id,
+        workouts!inner(completed_at, user_id),
+        workout_sets(set_number, weight, reps)
+      `
+      )
       .in('exercise_id', exerciseIds)
-      .in('workout_id', userWorkoutIds);
+      .eq('workouts.user_id', userId);
 
-    if (weError || !workoutExercises || workoutExercises.length === 0) {
+    if (error || !data || data.length === 0) {
       return result;
     }
 
-    // Step 3: For each exercise_id, find the most recent workout_exercise
-    // Build a map of workout_id -> completed_at for fast lookup
-    const workoutDateMap = new Map<string, string>();
-    userWorkouts.forEach((w) => workoutDateMap.set(w.id, w.completed_at));
-
-    // Sort workout_exercises by their workout's completed_at (most recent first)
-    const sortedWEs = [...workoutExercises].sort((a, b) => {
-      const dateA = workoutDateMap.get(a.workout_id) || '';
-      const dateB = workoutDateMap.get(b.workout_id) || '';
+    // Sort by workout date (most recent first), then pick latest per exercise
+    const sorted = [...data].sort((a: any, b: any) => {
+      const dateA = a.workouts?.completed_at || '';
+      const dateB = b.workouts?.completed_at || '';
       return dateB.localeCompare(dateA);
     });
 
-    // Group by exercise_id and take only the most recent one for each
-    const latestByExercise = new Map<string, string>();
-    for (const we of sortedWEs) {
-      if (!latestByExercise.has(we.exercise_id)) {
-        latestByExercise.set(we.exercise_id, we.id);
+    const seen = new Set<string>();
+    for (const we of sorted) {
+      if (seen.has(we.exercise_id)) continue;
+      seen.add(we.exercise_id);
+
+      const sets = (we as any).workout_sets || [];
+      if (sets.length > 0) {
+        const sortedSets = [...sets].sort((a: any, b: any) => a.set_number - b.set_number);
+        result.set(
+          we.exercise_id,
+          sortedSets.map((s: any) => ({
+            setNumber: s.set_number,
+            weightKg: s.weight,
+            reps: s.reps,
+          }))
+        );
       }
-    }
-
-    const workoutExerciseIds = Array.from(latestByExercise.values());
-
-    if (workoutExerciseIds.length === 0) return result;
-
-    // Step 4: Get all sets for the most recent workout exercises
-    const { data: sets, error: setsError } = await supabase
-      .from('workout_sets')
-      .select('workout_exercise_id, set_number, weight, reps')
-      .in('workout_exercise_id', workoutExerciseIds)
-      .order('set_number');
-
-    if (setsError || !sets) {
-      return result;
-    }
-
-    // Create reverse lookup: workout_exercise_id -> exercise_id
-    const weIdToExerciseId = new Map<string, string>();
-    for (const [exerciseId, weId] of latestByExercise.entries()) {
-      weIdToExerciseId.set(weId, exerciseId);
-    }
-
-    // Group sets by exercise_id
-    for (const set of sets) {
-      const exerciseId = weIdToExerciseId.get(set.workout_exercise_id);
-      if (!exerciseId) continue;
-
-      if (!result.has(exerciseId)) {
-        result.set(exerciseId, []);
-      }
-      result.get(exerciseId)!.push({
-        setNumber: set.set_number,
-        weightKg: set.weight,
-        reps: set.reps,
-      });
     }
 
     return result;
@@ -401,6 +609,9 @@ export async function getWorkoutHistory(userId: string, limit = 20): Promise<Wor
         name,
         completed_at,
         duration_seconds,
+        image_type,
+        image_uri,
+        image_template_id,
         workout_exercises(
           id,
           workout_sets(id)
@@ -413,6 +624,7 @@ export async function getWorkoutHistory(userId: string, limit = 20): Promise<Wor
 
     if (error || !workouts) {
       console.error('Error fetching workout history:', error);
+      Alert.alert('Connection Error', 'Unable to load workout history. Please try again.');
       return [];
     }
 
@@ -422,16 +634,20 @@ export async function getWorkoutHistory(userId: string, limit = 20): Promise<Wor
 
       return {
         id: workout.id,
-        userId, // Include userId for per-user filtering
+        userId,
         name: workout.name,
         completedAt: workout.completed_at,
         durationSeconds: workout.duration_seconds,
         exerciseCount: exercises.length,
         totalSets,
+        imageType: workout.image_type ?? null,
+        imageUri: workout.image_uri ?? null,
+        imageTemplateId: workout.image_template_id ?? null,
       };
     });
   } catch (error) {
     console.error('Error in getWorkoutHistory:', error);
+    Alert.alert('Connection Error', 'Unable to load workout history. Please try again.');
     return [];
   }
 }
@@ -497,12 +713,14 @@ export async function deleteWorkout(workoutId: string): Promise<boolean> {
 
     if (error) {
       console.error('Error deleting workout:', error);
+      Alert.alert('Error', 'Unable to delete workout. Please try again.');
       return false;
     }
 
     return true;
   } catch (error) {
     console.error('Error in deleteWorkout:', error);
+    Alert.alert('Error', 'Unable to delete workout. Please try again.');
     return false;
   }
 }
@@ -637,6 +855,9 @@ export async function getWorkoutsByDateRange(
         name,
         completed_at,
         duration_seconds,
+        image_type,
+        image_uri,
+        image_template_id,
         workout_exercises(id)
       `
       )
@@ -652,12 +873,15 @@ export async function getWorkoutsByDateRange(
 
     return workouts.map((workout) => ({
       id: workout.id,
-      userId, // Include userId for per-user filtering in store
+      userId,
       name: workout.name,
       completedAt: workout.completed_at,
       durationSeconds: workout.duration_seconds,
       exerciseCount: workout.workout_exercises?.length || 0,
-      totalSets: 0, // Not fetching sets for calendar view
+      totalSets: 0,
+      imageType: workout.image_type ?? null,
+      imageUri: workout.image_uri ?? null,
+      imageTemplateId: workout.image_template_id ?? null,
     }));
   } catch (error) {
     console.error('Error in getWorkoutsByDateRange:', error);

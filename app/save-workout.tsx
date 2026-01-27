@@ -18,8 +18,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/constants/theme';
-import { saveCompletedWorkout, getExerciseMuscles, ExerciseMuscle } from '@/services/api/workouts';
+import {
+  saveCompletedWorkout,
+  updateCompletedWorkout,
+  getExerciseMuscles,
+  ExerciseMuscle,
+} from '@/services/api/workouts';
 import { UnitSystem, kgToLbs, toKgForStorage, getWeightUnit } from '@/utils/units';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
@@ -31,6 +37,7 @@ import {
   SelectedImageData,
 } from '@/components/ImagePickerSheet';
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
+import { getTemplateImageById } from '@/constants/templateImages';
 import { formatExerciseNameString } from '@/utils/textFormatters';
 import { endWorkoutLiveActivity } from '@/services/liveActivity';
 
@@ -57,6 +64,7 @@ interface Exercise {
   name: string;
   muscle: string;
   gifUrl?: string;
+  thumbnailUrl?: string;
 }
 
 interface WorkoutExercise {
@@ -74,6 +82,7 @@ interface WorkoutData {
   userId: string;
   sourceTemplateId?: string;
   templateName?: string;
+  scheduledWorkoutId?: string;
 }
 
 // Icons
@@ -212,6 +221,10 @@ export default function SaveWorkoutScreen() {
   const { getUnitSystem } = useUserPreferencesStore();
   const units = getUnitSystem();
 
+  // Edit mode params
+  const editWorkoutId = params.editWorkoutId as string | undefined;
+  const isEditMode = !!editWorkoutId;
+
   // Template store
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
   const updateTemplateFromWorkout = useTemplateStore((state) => state.updateTemplateFromWorkout);
@@ -220,6 +233,8 @@ export default function SaveWorkoutScreen() {
   const markScheduledWorkoutComplete = useWorkoutStore(
     (state) => state.markScheduledWorkoutComplete
   );
+  const toggleWorkoutCompletion = useWorkoutStore((state) => state.toggleWorkoutCompletion);
+  const isWorkoutCompleted = useWorkoutStore((state) => state.isWorkoutCompleted);
   const discardActiveWorkout = useWorkoutStore((state) => state.discardActiveWorkout);
 
   // Parse workout data from params
@@ -231,20 +246,69 @@ export default function SaveWorkoutScreen() {
     }
   }, [params.workoutData]);
 
-  const [workoutTitle, setWorkoutTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [workoutTitle, setWorkoutTitle] = useState(
+    isEditMode && params.editTitle ? (params.editTitle as string) : ''
+  );
+  const [description, setDescription] = useState(
+    isEditMode && params.editNotes ? (params.editNotes as string) : ''
+  );
+  const [editDuration, setEditDuration] = useState(workoutData.durationSeconds);
+  const [showDurationModal, setShowDurationModal] = useState(false);
+  const [durationHours, setDurationHours] = useState(
+    Math.floor(workoutData.durationSeconds / 3600).toString()
+  );
+  const [durationMinutes, setDurationMinutes] = useState(
+    Math.floor((workoutData.durationSeconds % 3600) / 60).toString()
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [showExerciseChangeModal, setShowExerciseChangeModal] = useState(false);
   const [pendingSaveCallback, setPendingSaveCallback] = useState<(() => void) | null>(null);
-  const [selectedImage, setSelectedImage] = useState<SelectedImageData | null>(null);
   const [showImagePicker, setShowImagePicker] = useState(false);
+
+  // Initialize image from edit params if editing an existing workout
+  const [selectedImage, setSelectedImage] = useState<SelectedImageData | null>(() => {
+    if (!isEditMode) return null;
+    const editImageType = params.editImageType as string | undefined;
+    const editImageUri = params.editImageUri as string | undefined;
+    const editImageTemplateId = params.editImageTemplateId as string | undefined;
+    if (!editImageType) return null;
+
+    if (editImageType === 'template' && editImageTemplateId) {
+      const localSource = getTemplateImageById(editImageTemplateId);
+      return {
+        type: 'template' as const,
+        uri: '',
+        localSource: localSource || undefined,
+        templateImageId: editImageTemplateId,
+      };
+    }
+    if ((editImageType === 'camera' || editImageType === 'gallery') && editImageUri) {
+      return {
+        type: editImageType as 'camera' | 'gallery',
+        uri: editImageUri,
+      };
+    }
+    return null;
+  });
 
   // Detailed muscle data from exercise_muscles table
   const [exerciseMusclesMap, setExerciseMusclesMap] = useState<Map<string, ExerciseMuscle[]>>(
     new Map()
   );
   const [isLoadingMuscles, setIsLoadingMuscles] = useState(true);
-  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+
+  // In edit mode, auto-expand all exercises so user can see current data
+  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(() => {
+    if (!isEditMode) return new Set();
+    // Pre-expand all exercises
+    const expanded = new Set<string>();
+    workoutData.exercises.forEach((we, index) => {
+      if (we.sets.some((s) => s.completed)) {
+        expanded.add(`${we.exercise.id}-${index}`);
+      }
+    });
+    return expanded;
+  });
 
   const toggleExercise = (exerciseId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -429,8 +493,12 @@ export default function SaveWorkoutScreen() {
   };
 
   const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
   };
+
+  // The current effective duration (editable in edit mode)
+  const currentDuration = isEditMode ? editDuration : workoutData.durationSeconds;
 
   // The actual save logic (extracted to be callable after modal confirmation)
   const performSave = async () => {
@@ -445,12 +513,12 @@ export default function SaveWorkoutScreen() {
         we.sets.some((s) => s.completed)
       );
 
-      const workoutId = await saveCompletedWorkout({
+      const saveInput = {
         userId: workoutData.userId,
         name: workoutTitle || undefined,
         startedAt,
         completedAt,
-        durationSeconds: workoutData.durationSeconds,
+        durationSeconds: currentDuration,
         notes: description || undefined,
         sourceTemplateId: workoutData.sourceTemplateId,
         imageType: selectedImage?.type,
@@ -475,38 +543,68 @@ export default function SaveWorkoutScreen() {
               rpe: set.rpe ?? null,
             })),
         })),
-      });
+      };
 
-      if (workoutId) {
-        // Clear active workout now that save is confirmed
-        discardActiveWorkout();
-        endWorkoutLiveActivity();
-
-        // Auto-mark any matching scheduled workout as complete for today
-        // Use local date to match how calendar displays dates
-        const todayKey = `${completedAt.getFullYear()}-${String(completedAt.getMonth() + 1).padStart(2, '0')}-${String(completedAt.getDate()).padStart(2, '0')}`;
-        markScheduledWorkoutComplete(
-          todayKey,
-          workoutData.userId,
-          workoutData.sourceTemplateId,
-          workoutTitle || workoutData.templateName
-        );
-
-        Alert.alert('Workout Saved!', 'Great job on completing your workout.', [
-          {
-            text: 'OK',
-            onPress: () => {
-              router.dismissAll();
-              // Navigate to Workout tab after saving
-              router.replace('/(tabs)/workout');
+      if (isEditMode) {
+        // Update existing workout
+        const success = await updateCompletedWorkout(editWorkoutId, saveInput);
+        if (success) {
+          Alert.alert('Workout Updated!', 'Your workout has been updated.', [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Dismiss all edit screens back to tabs, then re-open workout-details
+                // workout-details will fetch fresh data
+                router.dismissAll();
+                router.push({
+                  pathname: '/workout-details',
+                  params: { workoutId: editWorkoutId },
+                });
+              },
             },
-          },
-        ]);
+          ]);
+        } else {
+          Alert.alert('Update Failed', 'Could not update workout. Please try again.');
+        }
       } else {
-        Alert.alert(
-          'Save Failed',
-          'Could not save workout to database. The workout tables may not be set up yet.'
-        );
+        // Save new workout
+        const workoutId = await saveCompletedWorkout(saveInput);
+
+        if (workoutId) {
+          // Clear active workout now that save is confirmed
+          discardActiveWorkout();
+          endWorkoutLiveActivity();
+
+          // Auto-mark the scheduled workout as complete for today
+          const todayKey = `${completedAt.getFullYear()}-${String(completedAt.getMonth() + 1).padStart(2, '0')}-${String(completedAt.getDate()).padStart(2, '0')}`;
+          if (workoutData.scheduledWorkoutId) {
+            if (!isWorkoutCompleted(workoutData.scheduledWorkoutId, todayKey)) {
+              toggleWorkoutCompletion(workoutData.scheduledWorkoutId, todayKey);
+            }
+          } else {
+            markScheduledWorkoutComplete(
+              todayKey,
+              workoutData.userId,
+              workoutData.sourceTemplateId,
+              workoutTitle || workoutData.templateName
+            );
+          }
+
+          Alert.alert('Workout Saved!', 'Great job on completing your workout.', [
+            {
+              text: 'OK',
+              onPress: () => {
+                router.dismissAll();
+                router.replace('/(tabs)/workout');
+              },
+            },
+          ]);
+        } else {
+          Alert.alert(
+            'Save Failed',
+            'Could not save workout to database. The workout tables may not be set up yet.'
+          );
+        }
       }
     } catch (error: any) {
       console.error('Error saving workout:', error);
@@ -532,17 +630,20 @@ export default function SaveWorkoutScreen() {
       return;
     }
 
-    // Check if this workout came from a template and exercises have changed
-    if (workoutData.sourceTemplateId && exercisesChanged) {
-      // Show modal to ask user if they want to update template
-      setPendingSaveCallback(() => performSave);
-      setShowExerciseChangeModal(true);
-      return;
-    }
+    // Skip template update logic when editing an existing workout
+    if (!isEditMode) {
+      // Check if this workout came from a template and exercises have changed
+      if (workoutData.sourceTemplateId && exercisesChanged) {
+        // Show modal to ask user if they want to update template
+        setPendingSaveCallback(() => performSave);
+        setShowExerciseChangeModal(true);
+        return;
+      }
 
-    // If from template but exercises haven't changed, silently update weights/reps
-    if (workoutData.sourceTemplateId && !exercisesChanged) {
-      updateTemplateWeights();
+      // If from template but exercises haven't changed, silently update weights/reps
+      if (workoutData.sourceTemplateId && !exercisesChanged) {
+        updateTemplateWeights();
+      }
     }
 
     // Proceed with save
@@ -556,12 +657,19 @@ export default function SaveWorkoutScreen() {
         <Pressable onPress={handleBack} style={styles.backButton}>
           <BackIcon />
         </Pressable>
-        <Text style={styles.headerTitle}>Save Workout</Text>
-        <Pressable onPress={handleSave} disabled={isSaving} style={styles.saveButton}>
+        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Workout' : 'Save Workout'}</Text>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            handleSave();
+          }}
+          disabled={isSaving}
+          style={styles.saveButton}
+        >
           {isSaving ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Text style={styles.saveText}>SAVE</Text>
+            <Text style={styles.saveText}>{isEditMode ? 'UPDATE' : 'SAVE'}</Text>
           )}
         </Pressable>
       </View>
@@ -572,7 +680,10 @@ export default function SaveWorkoutScreen() {
           <View style={styles.workoutInfoRow}>
             <Pressable
               style={[styles.imagePlaceholder, selectedImage && styles.imagePlaceholderFilled]}
-              onPress={() => setShowImagePicker(true)}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowImagePicker(true);
+              }}
             >
               {selectedImage ? (
                 selectedImage.localSource ? (
@@ -606,13 +717,34 @@ export default function SaveWorkoutScreen() {
         {/* Date & Time Section */}
         <Text style={styles.sectionTitle}>Date & Time</Text>
         <View style={styles.card}>
-          <View style={styles.statRow}>
+          <Pressable
+            style={styles.statRow}
+            onPress={
+              isEditMode
+                ? () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setDurationHours(Math.floor(currentDuration / 3600).toString());
+                    setDurationMinutes(Math.floor((currentDuration % 3600) / 60).toString());
+                    setShowDurationModal(true);
+                  }
+                : undefined
+            }
+            disabled={!isEditMode}
+          >
             <View style={styles.statIconContainer}>
               <Ionicons name="time-outline" size={18} color={colors.text} />
             </View>
             <Text style={styles.statLabel}>Duration</Text>
-            <Text style={styles.statValue}>{formatDuration(workoutData.durationSeconds)}</Text>
-          </View>
+            <Text style={styles.statValue}>{formatDuration(currentDuration)}</Text>
+            {isEditMode && (
+              <Ionicons
+                name="pencil-outline"
+                size={16}
+                color={colors.textSecondary}
+                style={{ marginLeft: 8 }}
+              />
+            )}
+          </Pressable>
 
           <View style={styles.cardDivider} />
 
@@ -683,12 +815,35 @@ export default function SaveWorkoutScreen() {
               <View key={`${we.exercise.id}-${index}`}>
                 <Pressable
                   style={styles.exerciseRow}
-                  onPress={() => toggleExercise(`${we.exercise.id}-${index}`)}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    toggleExercise(`${we.exercise.id}-${index}`);
+                  }}
                 >
-                  <ExerciseImage gifUrl={we.exercise.gifUrl} size={40} borderRadius={8} />
-                  <Text style={styles.exerciseName}>
-                    {formatExerciseNameString(we.exercise.name)}
-                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push(`/exercise/${we.exercise.id}`);
+                    }}
+                  >
+                    <ExerciseImage
+                      gifUrl={we.exercise.gifUrl}
+                      thumbnailUrl={we.exercise.thumbnailUrl}
+                      size={40}
+                      borderRadius={8}
+                    />
+                  </Pressable>
+                  <Pressable
+                    style={{ flex: 1, justifyContent: 'center' }}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push(`/exercise/${we.exercise.id}`);
+                    }}
+                  >
+                    <Text style={styles.exerciseName}>
+                      {formatExerciseNameString(we.exercise.name)}
+                    </Text>
+                  </Pressable>
                   <Ionicons
                     name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                     size={20}
@@ -729,6 +884,32 @@ export default function SaveWorkoutScreen() {
           )}
         </View>
 
+        {isEditMode && (
+          <Pressable
+            style={styles.editExercisesButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              // Navigate to active-workout with edit data
+              const editData = {
+                exercises: workoutData.exercises,
+                durationSeconds: currentDuration,
+                startedAt: workoutData.startedAt,
+                userId: workoutData.userId,
+                editWorkoutId,
+                editTitle: workoutTitle,
+                editNotes: description,
+              };
+              router.push({
+                pathname: '/active-workout',
+                params: { editData: JSON.stringify(editData) },
+              });
+            }}
+          >
+            <Ionicons name="pencil-outline" size={18} color={colors.primary} />
+            <Text style={styles.editExercisesText}>Edit Exercises</Text>
+          </Pressable>
+        )}
+
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
@@ -749,15 +930,83 @@ export default function SaveWorkoutScreen() {
               template with these changes?
             </Text>
 
-            <Pressable style={styles.updateTemplateButton} onPress={handleUpdateTemplate}>
+            <Pressable
+              style={styles.updateTemplateButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                handleUpdateTemplate();
+              }}
+            >
               <Text style={styles.updateTemplateButtonText}>Update Template</Text>
             </Pressable>
 
-            <Pressable style={styles.keepOriginalButton} onPress={handleKeepOriginal}>
+            <Pressable
+              style={styles.keepOriginalButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                handleKeepOriginal();
+              }}
+            >
               <Text style={styles.keepOriginalButtonText}>Keep Original</Text>
             </Pressable>
           </View>
         </View>
+      </Modal>
+
+      {/* Duration Edit Modal */}
+      <Modal visible={showDurationModal} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setShowDurationModal(false)}>
+          <Pressable style={styles.exerciseChangeModal} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Edit Duration</Text>
+            <View style={styles.durationInputRow}>
+              <View style={styles.durationInputGroup}>
+                <TextInput
+                  style={styles.durationInput}
+                  value={durationHours}
+                  onChangeText={(v) => setDurationHours(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.textTertiary}
+                  maxLength={2}
+                />
+                <Text style={styles.durationLabel}>hours</Text>
+              </View>
+              <View style={styles.durationInputGroup}>
+                <TextInput
+                  style={styles.durationInput}
+                  value={durationMinutes}
+                  onChangeText={(v) => setDurationMinutes(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.textTertiary}
+                  maxLength={2}
+                />
+                <Text style={styles.durationLabel}>minutes</Text>
+              </View>
+            </View>
+            <Pressable
+              style={styles.updateTemplateButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                const h = parseInt(durationHours, 10) || 0;
+                const m = parseInt(durationMinutes, 10) || 0;
+                setEditDuration(h * 3600 + m * 60);
+                setShowDurationModal(false);
+              }}
+            >
+              <Text style={styles.updateTemplateButtonText}>Save</Text>
+            </Pressable>
+            <Pressable
+              style={styles.keepOriginalButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowDurationModal(false);
+              }}
+            >
+              <Text style={styles.keepOriginalButtonText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
@@ -913,11 +1162,10 @@ const styles = StyleSheet.create({
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
+    paddingVertical: 12,
+    gap: spacing.sm,
   },
   exerciseName: {
-    flex: 1,
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.primary,
@@ -927,32 +1175,35 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
   },
   setsContainer: {
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
   setsHeader: {
     flexDirection: 'row',
-    paddingBottom: spacing.xs,
-    marginLeft: 56,
+    paddingBottom: spacing.sm,
   },
   setHeaderText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,
     color: colors.textTertiary,
     textTransform: 'uppercase',
+    textAlign: 'center',
   },
   setColumn: {
     width: 40,
+    marginRight: spacing.md,
+    textAlign: 'center',
   },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
-    marginLeft: 56,
+    paddingVertical: 6,
   },
   setNumber: {
     fontFamily: fonts.bold,
     fontSize: fontSize.sm,
     color: colors.text,
+    textAlign: 'center',
   },
   setText: {
     fontFamily: fonts.medium,
@@ -1023,5 +1274,50 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.text,
+  },
+  editExercisesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: 14,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    backgroundColor: colors.background,
+  },
+  editExercisesText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.primary,
+  },
+  durationInputRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  durationInputGroup: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  durationInput: {
+    width: 80,
+    height: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    fontFamily: fonts.bold,
+    fontSize: 24,
+    color: colors.text,
+    textAlign: 'center',
+    backgroundColor: colors.surfaceSecondary,
+  },
+  durationLabel: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
 });

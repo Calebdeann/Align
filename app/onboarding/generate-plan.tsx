@@ -8,7 +8,7 @@ const PurpleCheckCircle = require('../../assets/images/PurpleCheckCircle.png');
 
 export default function GeneratePlanScreen() {
   const handleSkip = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/onboarding/generating-plan');
   };
 
@@ -18,7 +18,7 @@ export default function GeneratePlanScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
           style={styles.backButton}

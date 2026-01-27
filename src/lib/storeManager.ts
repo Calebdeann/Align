@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authStateManager } from '@/services/authState';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { supabase } from '@/services/supabase';
 
 // Lazy-load SuperwallExpoModule to avoid crashes if native module isn't ready
@@ -61,30 +62,34 @@ export function initializeStoreManager() {
   console.log(`[StoreManager] Initialized with userId: ${previousUserId?.slice(0, 8) ?? 'null'}`);
 
   authStateManager.subscribe(async (newUserId) => {
-    console.log(
-      `[StoreManager] Auth changed: ${previousUserId?.slice(0, 8) ?? 'null'} -> ${newUserId?.slice(0, 8) ?? 'null'}`
-    );
+    try {
+      console.log(
+        `[StoreManager] Auth changed: ${previousUserId?.slice(0, 8) ?? 'null'} -> ${newUserId?.slice(0, 8) ?? 'null'}`
+      );
 
-    if (previousUserId === newUserId) return;
+      if (previousUserId === newUserId) return;
 
-    // User logged out or switched accounts
-    if (previousUserId !== null) {
-      resetStores();
-      // Reset Superwall identity so the next user gets fresh assignments
-      const sw = getSuperwallModule();
-      if (sw) {
-        sw.reset().catch((e: any) => console.warn('[StoreManager] Superwall reset error:', e));
+      // User logged out or switched accounts
+      if (previousUserId !== null) {
+        resetStores();
+        // Reset Superwall identity so the next user gets fresh assignments
+        const sw = getSuperwallModule();
+        if (sw) {
+          sw.reset().catch((e: any) => console.warn('[StoreManager] Superwall reset error:', e));
+        }
       }
-    }
 
-    // New user logged in
-    if (newUserId !== null) {
-      await rehydrateStores();
-      // Identify user in Superwall for paywall targeting
-      identifySuperwallUser(newUserId);
-    }
+      // New user logged in
+      if (newUserId !== null) {
+        await rehydrateStores();
+        // Identify user in Superwall for paywall targeting
+        identifySuperwallUser(newUserId);
+      }
 
-    previousUserId = newUserId;
+      previousUserId = newUserId;
+    } catch (e) {
+      console.error('[StoreManager] Auth change handler error:', e);
+    }
   });
 }
 
@@ -103,6 +108,9 @@ function resetStores() {
     ...TEMPLATE_STORE_INITIAL,
     presetTemplates: useTemplateStore.getState().presetTemplates,
   });
+
+  // Reset user preferences so the next user doesn't inherit the previous user's units/settings
+  useUserPreferencesStore.getState().reset();
 }
 
 /**

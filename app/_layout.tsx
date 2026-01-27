@@ -1,16 +1,16 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Stack } from 'expo-router';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { View, AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colors } from '@/constants/theme';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { initializeStoreManager } from '@/lib/storeManager';
-import { useWorkoutStore } from '@/stores/workoutStore';
-import { startWorkoutLiveActivity } from '@/services/liveActivity';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { cleanupStaleLiveActivities } from '@/services/liveActivity';
 
 // Lazy import SuperwallProvider to prevent crash if native module isn't ready
 let SuperwallProvider: React.ComponentType<any> | null = null;
@@ -35,13 +35,32 @@ export default function RootLayout() {
       try {
         // Initialize store manager to handle auth state changes
         // This enables per-user data isolation in Zustand stores
-        initializeStoreManager();
+        try {
+          initializeStoreManager();
+        } catch (e) {
+          console.warn('[RootLayout] Store manager init error:', e);
+        }
 
         // Initialize unit preferences based on device locale
-        initializeFromLocale();
+        try {
+          initializeFromLocale();
+        } catch (e) {
+          console.warn('[RootLayout] Locale init error:', e);
+        }
 
         // Pre-fetch user profile so it's ready when navigating to Profile tab
-        fetchProfile();
+        try {
+          fetchProfile();
+        } catch (e) {
+          console.warn('[RootLayout] Profile fetch error:', e);
+        }
+
+        // Clean up any stale Live Activities from a previous app session
+        try {
+          cleanupStaleLiveActivities();
+        } catch (e) {
+          console.warn('[RootLayout] Live Activity cleanup error:', e);
+        }
 
         // Load fonts using Font.loadAsync instead of useFonts hook
         await Font.loadAsync({
@@ -52,7 +71,7 @@ export default function RootLayout() {
           'Canela-Medium': require('../assets/fonts/Canela-Medium-Trial.otf'),
         });
       } catch (e) {
-        console.warn('Font loading error:', e);
+        console.warn('[RootLayout] Font loading error:', e);
       } finally {
         setAppIsReady(true);
       }
@@ -61,49 +80,17 @@ export default function RootLayout() {
     prepare();
   }, [initializeFromLocale, fetchProfile]);
 
-  // Restart Live Activity if there's a persisted minimized workout (e.g. after app kill + relaunch)
+  // Refresh profile when app returns to foreground
+  const appStateRef = useRef(AppState.currentState);
   useEffect(() => {
-    if (!appIsReady) return;
-
-    // Check once after rehydration — the store may already have data
-    const checkAndStartLiveActivity = () => {
-      const { activeWorkout } = useWorkoutStore.getState();
-      if (activeWorkout && activeWorkout.isMinimized) {
-        const completedSets = activeWorkout.exercises.reduce(
-          (total: number, ex: any) => total + ex.sets.filter((s: any) => s.completed).length,
-          0
-        );
-        startWorkoutLiveActivity(
-          activeWorkout.templateName || 'Workout',
-          activeWorkout.exercises.length,
-          completedSets,
-          activeWorkout.startedAt
-        );
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
+        useUserProfileStore.getState().refreshProfile();
       }
-    };
-
-    // Subscribe to store changes to catch rehydration completing
-    const unsub = useWorkoutStore.subscribe((state, prev) => {
-      if (!prev.activeWorkout && state.activeWorkout && state.activeWorkout.isMinimized) {
-        const completedSets = state.activeWorkout.exercises.reduce(
-          (total: number, ex: any) => total + ex.sets.filter((s: any) => s.completed).length,
-          0
-        );
-        startWorkoutLiveActivity(
-          state.activeWorkout.templateName || 'Workout',
-          state.activeWorkout.exercises.length,
-          completedSets,
-          state.activeWorkout.startedAt
-        );
-        unsub(); // Only need this once
-      }
+      appStateRef.current = nextAppState;
     });
-
-    // Also check immediately in case store already rehydrated
-    checkAndStartLiveActivity();
-
-    return unsub;
-  }, [appIsReady]);
+    return () => subscription.remove();
+  }, []);
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
@@ -140,13 +127,17 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {SuperwallProvider ? (
-        <SuperwallProvider apiKeys={{ ios: 'pk_vhA9Ry9TLgVUTyK_ugU0P' }}>
-          {appContent}
-        </SuperwallProvider>
-      ) : (
-        appContent
-      )}
+      <ErrorBoundary>
+        {SuperwallProvider ? (
+          <ErrorBoundary fallback={appContent}>
+            <SuperwallProvider apiKeys={{ ios: 'pk_vhA9Ry9TLgVUTyK_ugU0P' }}>
+              {appContent}
+            </SuperwallProvider>
+          </ErrorBoundary>
+        ) : (
+          appContent
+        )}
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

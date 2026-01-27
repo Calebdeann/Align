@@ -136,7 +136,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0175.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0175.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0175.png',
         muscle: 'Core',
         sets: s3(15, 12, 12, 20, 25, 25),
         restTimerSeconds: 60,
@@ -148,7 +148,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0979.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0979.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0979.png',
         muscle: 'Core',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -160,7 +160,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0243.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0243.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0243.png',
         muscle: 'Core',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -172,7 +172,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0282.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0282.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0282.png',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 60,
@@ -201,7 +201,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0407.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0407.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0407.png',
         muscle: 'Core',
         sets: s3(12, 12, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -213,7 +213,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0276.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 60,
@@ -225,7 +225,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0407.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0407.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0407.png',
         muscle: 'Core',
         sets: s3(40, 40, 30, 10, 12, 12),
         restTimerSeconds: 60,
@@ -237,7 +237,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0407.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0407.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0407.png',
         muscle: 'Core',
         sets: s3(40, 40, 30, 10, 12, 12),
         restTimerSeconds: 60,
@@ -266,7 +266,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0276.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
         muscle: 'Core',
         sets: s3(12, 12, 10),
         restTimerSeconds: 30,
@@ -278,7 +278,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0276.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -290,7 +290,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0620.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -302,7 +302,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0620.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -331,7 +331,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0472.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0472.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0472.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 60,
@@ -343,7 +343,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0175.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0175.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0175.png',
         muscle: 'Core',
         sets: s3(15, 12, 12, 20, 25, 25),
         restTimerSeconds: 60,
@@ -355,7 +355,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0276.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 60,
@@ -367,7 +367,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0857.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0857.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0857.png',
         muscle: 'Core',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
@@ -396,7 +396,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0276.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 60,
@@ -408,7 +408,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0687.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0687.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0687.png',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 45,
@@ -420,7 +420,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0979.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0979.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0979.png',
         muscle: 'Core',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -432,7 +432,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0407.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0407.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0407.png',
         muscle: 'Core',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -444,7 +444,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0274.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
         muscle: 'Core',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
@@ -473,7 +473,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0276.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -485,7 +485,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0276.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
         muscle: 'Core',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
@@ -497,7 +497,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0620.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -509,7 +509,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0620.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
         muscle: 'Core',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
@@ -521,7 +521,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0620.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
         muscle: 'Core',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
@@ -533,7 +533,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0464.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
         muscle: 'Core',
         sets: s3(45, 45, 60),
         restTimerSeconds: 30,
@@ -562,7 +562,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0274.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
         muscle: 'Core',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
@@ -574,7 +574,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0972.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0972.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0972.png',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 30,
@@ -586,7 +586,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0274.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 30,
@@ -598,7 +598,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3212.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3212.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3212.png',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -610,7 +610,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3212.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3212.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3212.png',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -622,7 +622,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0464.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
         muscle: 'Core',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
@@ -651,7 +651,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0464.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
         muscle: 'Core',
         sets: s3(45, 45, 60),
         restTimerSeconds: 30,
@@ -663,7 +663,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0464.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 30,
@@ -675,7 +675,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
         muscle: 'Core',
         sets: s3(30, 30, 30),
         restTimerSeconds: 30,
@@ -687,7 +687,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -699,7 +699,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png',
         muscle: 'Core',
         sets: s3(30, 25, 25),
         restTimerSeconds: 30,
@@ -711,7 +711,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2135.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2135.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2135.png',
         muscle: 'Core',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
@@ -726,7 +726,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
   // ===================================================================
   {
     id: 'preset-glutes-1',
-    name: 'Glutes 1',
+    name: 'Thrust & Split',
     description: 'Classic glute workout with hip thrusts, splits and RDLs',
     tagIds: ['glutes'],
     tagColor: colors.workout.legs,
@@ -743,7 +743,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 50),
         restTimerSeconds: 60,
@@ -755,7 +755,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0410.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0410.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0410.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 10, 12, 12),
         restTimerSeconds: 60,
@@ -767,7 +767,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0085.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0085.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0085.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 35),
         restTimerSeconds: 60,
@@ -779,7 +779,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0860.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0860.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png',
         muscle: 'Glutes',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -791,7 +791,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1314.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1314.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1314.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 60,
@@ -803,7 +803,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-glutes-2',
-    name: 'Glutes 2',
+    name: 'Bridge & Hinge',
     description: 'Glute-focused session with bridges, RDLs and abduction work',
     tagIds: ['glutes'],
     tagColor: colors.workout.legs,
@@ -820,7 +820,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 50),
         restTimerSeconds: 60,
@@ -832,7 +832,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3561.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 35),
         restTimerSeconds: 60,
@@ -844,7 +844,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0432.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0432.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0432.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -856,7 +856,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1760.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -868,7 +868,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0597.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0597.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0597.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12, 30, 35, 35),
         restTimerSeconds: 60,
@@ -880,7 +880,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-glutes-3',
-    name: 'Glutes 3',
+    name: 'Smith & Cable',
     description: 'Machine and Smith machine focused glute workout',
     tagIds: ['glutes'],
     tagColor: colors.workout.legs,
@@ -897,7 +897,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 50),
         restTimerSeconds: 60,
@@ -909,7 +909,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0381.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
@@ -921,7 +921,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0044.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0044.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0044.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 15, 20, 20),
         restTimerSeconds: 60,
@@ -933,7 +933,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0597.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0597.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0597.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12, 30, 35, 35),
         restTimerSeconds: 60,
@@ -945,7 +945,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0860.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0860.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png',
         muscle: 'Glutes',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -957,7 +957,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-glutes-4',
-    name: 'Glutes 4',
+    name: 'Step & Sculpt',
     description: 'Glute workout with bridges, splits, step ups and kickbacks',
     tagIds: ['glutes'],
     tagColor: colors.workout.legs,
@@ -974,7 +974,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3561.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 35),
         restTimerSeconds: 60,
@@ -986,7 +986,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0410.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0410.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0410.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 10, 12, 12),
         restTimerSeconds: 60,
@@ -998,7 +998,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0431.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1010,7 +1010,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0860.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0860.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png',
         muscle: 'Glutes',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1022,7 +1022,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1760.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1051,7 +1051,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 45,
@@ -1063,7 +1063,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0410.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0410.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0410.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -1075,7 +1075,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1756.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1756.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1756.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -1087,7 +1087,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1760.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1116,7 +1116,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 60),
         restTimerSeconds: 60,
@@ -1128,7 +1128,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0085.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0085.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0085.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 40),
         restTimerSeconds: 60,
@@ -1140,7 +1140,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0044.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0044.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0044.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 15, 20, 20),
         restTimerSeconds: 60,
@@ -1152,7 +1152,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0431.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1164,7 +1164,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0043.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 40),
         restTimerSeconds: 60,
@@ -1193,7 +1193,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0431.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -1205,7 +1205,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1756.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1756.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1756.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -1217,7 +1217,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1759.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1759.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1759.png',
         muscle: 'Legs',
         sets: s3(8, 8, 6),
         restTimerSeconds: 60,
@@ -1229,7 +1229,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0860.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0860.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png',
         muscle: 'Glutes',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1241,7 +1241,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1425.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1425.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1425.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 35),
         restTimerSeconds: 60,
@@ -1270,7 +1270,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 60),
         restTimerSeconds: 60,
@@ -1282,7 +1282,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0085.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0085.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0085.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 40),
         restTimerSeconds: 60,
@@ -1294,7 +1294,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0597.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0597.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0597.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12, 30, 35, 35),
         restTimerSeconds: 60,
@@ -1306,7 +1306,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1760.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1318,7 +1318,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1314.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1314.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1314.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 60,
@@ -1347,7 +1347,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0739.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0739.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0739.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 60, 70, 80),
         restTimerSeconds: 60,
@@ -1359,7 +1359,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 60),
         restTimerSeconds: 60,
@@ -1371,7 +1371,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0043.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 40),
         restTimerSeconds: 60,
@@ -1383,7 +1383,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0032.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0032.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0032.png',
         muscle: 'Glutes',
         sets: s3(8, 8, 6, 40, 50, 50),
         restTimerSeconds: 60,
@@ -1398,7 +1398,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
   // ===================================================================
   {
     id: 'preset-lower-1',
-    name: 'Lower Body 1',
+    name: 'Squat & Deadlift',
     description: 'Full lower body workout with squats, deadlifts and isolation',
     tagIds: ['legs'],
     tagColor: colors.workout.legs,
@@ -1415,7 +1415,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0043.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 40),
         restTimerSeconds: 60,
@@ -1427,7 +1427,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0032.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0032.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0032.png',
         muscle: 'Legs',
         sets: s3(10, 8, 8, 40, 50, 50),
         restTimerSeconds: 60,
@@ -1439,7 +1439,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0586.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0586.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0586.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1451,7 +1451,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0585.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0585.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0585.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1463,7 +1463,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0605.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
         muscle: 'Legs',
         sets: s3(15, 15, 12, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1475,7 +1475,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-lower-2',
-    name: 'Lower Body 2',
+    name: 'Press & Lunge',
     description: 'Leg press, lunges, step ups and calf work',
     tagIds: ['legs'],
     tagColor: colors.workout.legs,
@@ -1492,7 +1492,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0739.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0739.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0739.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 60, 70, 80),
         restTimerSeconds: 60,
@@ -1504,7 +1504,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0336.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -1516,7 +1516,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1760.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1528,7 +1528,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0431.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -1540,7 +1540,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0605.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
         muscle: 'Legs',
         sets: s3(15, 15, 12, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1552,7 +1552,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0432.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0432.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0432.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1564,7 +1564,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-lower-3',
-    name: 'Lower Body 3',
+    name: 'Hack & Press',
     description: 'Hack squat, single leg press and extensions',
     tagIds: ['legs'],
     tagColor: colors.workout.legs,
@@ -1581,7 +1581,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0046.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0046.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0046.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 30, 40, 40),
         restTimerSeconds: 60,
@@ -1593,7 +1593,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1425.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1425.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1425.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 35),
         restTimerSeconds: 60,
@@ -1605,7 +1605,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0585.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0585.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0585.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1617,7 +1617,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0381.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 15, 20, 20),
         restTimerSeconds: 60,
@@ -1629,7 +1629,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0605.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
         muscle: 'Legs',
         sets: s3(15, 15, 12),
         restTimerSeconds: 60,
@@ -1658,7 +1658,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0042.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0042.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0042.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 30),
         restTimerSeconds: 60,
@@ -1670,7 +1670,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0739.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0739.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0739.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 60, 70, 80),
         restTimerSeconds: 60,
@@ -1682,7 +1682,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0336.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -1694,7 +1694,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0585.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0585.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0585.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1706,7 +1706,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0605.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
         muscle: 'Legs',
         sets: s3(15, 15, 12),
         restTimerSeconds: 60,
@@ -1718,7 +1718,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0605.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
         muscle: 'Legs',
         sets: s3(15, 15, 12, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1733,7 +1733,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
   // ===================================================================
   {
     id: 'preset-pull-1',
-    name: 'Pull 1',
+    name: 'Wide Grip & Rows',
     description: 'Wide grip pulldowns, rows, face pulls and curls',
     tagIds: ['back', 'arms'],
     tagColor: colors.workout.back,
@@ -1750,7 +1750,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0150.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -1762,7 +1762,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0293.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0293.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1774,7 +1774,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0203.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0203.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0203.png',
         muscle: 'Back',
         sets: s3(15, 12, 12, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1786,7 +1786,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/2404.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1798,7 +1798,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0313.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0313.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0313.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
@@ -1810,7 +1810,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-pull-2',
-    name: 'Pull 2',
+    name: 'Pull Ups & Cables',
     description: 'Pull ups, cable rows and bicep work',
     tagIds: ['back', 'arms'],
     tagColor: colors.workout.back,
@@ -1827,7 +1827,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0652.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0652.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0652.png',
         muscle: 'Back',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
@@ -1839,7 +1839,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0861.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0861.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0861.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -1851,7 +1851,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0238.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0238.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0238.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 15, 20, 20),
         restTimerSeconds: 60,
@@ -1863,7 +1863,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0285.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
@@ -1875,7 +1875,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0285.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1887,7 +1887,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-pull-3',
-    name: 'Pull 3',
+    name: 'Close Grip & Rows',
     description: 'Close grip pulldowns, machine row and EZ bar curls',
     tagIds: ['back', 'arms'],
     tagColor: colors.workout.back,
@@ -1904,7 +1904,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0150.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -1916,7 +1916,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0293.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0293.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png',
         muscle: 'Back',
         sets: s3(10, 10, 8, 12, 14, 14),
         restTimerSeconds: 60,
@@ -1928,7 +1928,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0027.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0027.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png',
         muscle: 'Back',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1940,7 +1940,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/2404.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1952,7 +1952,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0285.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1964,7 +1964,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-pull-4',
-    name: 'Pull 4',
+    name: 'Pull Ups & Rear Delts',
     description: 'Band assisted pull ups, pulldowns and rear delt work',
     tagIds: ['back', 'arms'],
     tagColor: colors.workout.back,
@@ -1981,7 +1981,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0652.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0652.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0652.png',
         muscle: 'Back',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
@@ -1993,7 +1993,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0150.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -2005,7 +2005,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0293.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0293.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -2017,7 +2017,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0378.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
         muscle: 'Back',
         sets: s3(15, 12, 12, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2029,7 +2029,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0285.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
@@ -2041,7 +2041,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-pull-5',
-    name: 'Pull 5',
+    name: 'Barbell & Preacher',
     description: 'Barbell rows, reverse flies and preacher curls',
     tagIds: ['back', 'arms'],
     tagColor: colors.workout.back,
@@ -2058,7 +2058,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0027.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0027.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png',
         muscle: 'Back',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
@@ -2070,7 +2070,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0861.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0861.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0861.png',
         muscle: 'Back',
         sets: s3(10, 10, 8, 15, 18, 18),
         restTimerSeconds: 60,
@@ -2082,7 +2082,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0378.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
         muscle: 'Back',
         sets: s3(15, 12, 12, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2094,7 +2094,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/2404.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -2106,7 +2106,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/2404.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2118,7 +2118,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-pull-6',
-    name: 'Pull 6',
+    name: 'Machine & Isolation',
     description: 'Machine rows, lat pulldowns and isolation curls',
     tagIds: ['back', 'arms'],
     tagColor: colors.workout.back,
@@ -2135,7 +2135,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0327.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0327.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0327.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -2147,7 +2147,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0150.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -2159,7 +2159,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0203.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0203.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0203.png',
         muscle: 'Back',
         sets: s3(15, 12, 12, 10, 12, 12),
         restTimerSeconds: 60,
@@ -2171,7 +2171,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/2404.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2183,7 +2183,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0285.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -2195,7 +2195,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0378.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
         muscle: 'Back',
         sets: s3(15, 12, 12, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2210,7 +2210,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
   // ===================================================================
   {
     id: 'preset-push-1',
-    name: 'Push 1',
+    name: 'Shoulders & Flies',
     description: 'Shoulder press, raises, chest flies and triceps',
     tagIds: ['chest', 'shoulders', 'arms'],
     tagColor: colors.workout.chest,
@@ -2227,7 +2227,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0405.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2239,7 +2239,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0334.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2251,7 +2251,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0308.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0308.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0308.png',
         muscle: 'Chest',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2263,7 +2263,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0201.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0201.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 15, 18, 18),
         restTimerSeconds: 60,
@@ -2275,7 +2275,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0333.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0333.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0333.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2287,7 +2287,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-push-2',
-    name: 'Push 2',
+    name: 'Machine Press & Raises',
     description: 'Machine-based shoulder, lateral raise and tricep work',
     tagIds: ['chest', 'shoulders', 'arms'],
     tagColor: colors.workout.chest,
@@ -2304,7 +2304,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0603.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0603.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0603.png',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 18, 18),
         restTimerSeconds: 60,
@@ -2316,7 +2316,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0334.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -2328,7 +2328,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0310.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0310.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0310.png',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2340,7 +2340,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0194.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0194.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -2352,7 +2352,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0201.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0201.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 15, 18, 18),
         restTimerSeconds: 60,
@@ -2364,7 +2364,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-push-3',
-    name: 'Push 3',
+    name: 'Press & Cables',
     description: 'Cable lateral raise, overhead press and chest flies',
     tagIds: ['chest', 'shoulders', 'arms'],
     tagColor: colors.workout.chest,
@@ -2381,7 +2381,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0178.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0178.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0178.png',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 5, 6, 6),
         restTimerSeconds: 60,
@@ -2393,7 +2393,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0091.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0091.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0091.png',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 20, 20),
         restTimerSeconds: 60,
@@ -2405,7 +2405,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0334.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2417,7 +2417,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0308.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0308.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0308.png',
         muscle: 'Chest',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2429,7 +2429,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1755.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1755.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1755.png',
         muscle: 'Arms',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
@@ -2441,7 +2441,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-push-4',
-    name: 'Push 4',
+    name: 'Dumbbell Press',
     description: 'DB chest and shoulder press with tricep isolation',
     tagIds: ['chest', 'shoulders', 'arms'],
     tagColor: colors.workout.chest,
@@ -2458,7 +2458,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0289.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0289.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0289.png',
         muscle: 'Chest',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2470,7 +2470,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0405.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 6, 8, 8),
         restTimerSeconds: 60,
@@ -2482,7 +2482,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0310.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0310.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0310.png',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2494,7 +2494,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0194.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0194.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
@@ -2506,7 +2506,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0201.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0201.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2521,7 +2521,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
   // ===================================================================
   {
     id: 'preset-upper-1',
-    name: 'Upper Body 1',
+    name: 'Pull & Press',
     description: 'Balanced upper body with pulldowns, presses and curls',
     tagIds: ['back', 'shoulders', 'arms'],
     tagColor: colors.workout.fullBody,
@@ -2538,7 +2538,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0150.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -2550,7 +2550,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0405.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2562,7 +2562,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0178.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0178.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0178.png',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 5, 6, 6),
         restTimerSeconds: 60,
@@ -2574,7 +2574,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0861.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0861.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0861.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -2586,7 +2586,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0285.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
@@ -2598,7 +2598,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0201.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0201.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 15, 18, 18),
         restTimerSeconds: 60,
@@ -2610,7 +2610,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-upper-2',
-    name: 'Upper Body 2',
+    name: 'Row & Press',
     description: 'Pull ups, rows, rear delts and shoulder press',
     tagIds: ['back', 'shoulders', 'arms'],
     tagColor: colors.workout.fullBody,
@@ -2627,7 +2627,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0652.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0652.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0652.png',
         muscle: 'Back',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
@@ -2639,7 +2639,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0027.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0027.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png',
         muscle: 'Back',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
@@ -2651,7 +2651,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0378.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
         muscle: 'Shoulders',
         sets: s3(15, 12, 12, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2663,7 +2663,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0603.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0603.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0603.png',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 18, 18),
         restTimerSeconds: 60,
@@ -2675,7 +2675,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0285.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
@@ -2687,7 +2687,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0194.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0194.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -2716,7 +2716,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0603.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0603.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0603.png',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 18, 18),
         restTimerSeconds: 60,
@@ -2728,7 +2728,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0576.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0576.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0576.png',
         muscle: 'Chest',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
@@ -2740,7 +2740,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0327.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0327.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0327.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -2752,7 +2752,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0334.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -2764,7 +2764,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/2404.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2776,7 +2776,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
 
   {
     id: 'preset-upper-4',
-    name: 'Upper Body 4',
+    name: 'Barbell & Bench',
     description: 'Barbell press, pulldowns, bench and arm supersets',
     tagIds: ['back', 'shoulders', 'arms'],
     tagColor: colors.workout.fullBody,
@@ -2793,7 +2793,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0091.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0091.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0091.png',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 20, 20),
         restTimerSeconds: 60,
@@ -2805,7 +2805,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0150.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -2817,7 +2817,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0289.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0289.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0289.png',
         muscle: 'Chest',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2829,7 +2829,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0334.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2841,7 +2841,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0313.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0313.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0313.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
@@ -2853,7 +2853,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0194.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0194.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2884,7 +2884,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1160.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1160.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png',
         muscle: 'Full Body',
         sets: s3(10, 10, 8),
         restTimerSeconds: 30,
@@ -2896,7 +2896,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0514.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0514.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -2908,7 +2908,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png',
         muscle: 'Core',
         sets: s3(30, 25, 25),
         restTimerSeconds: 30,
@@ -2920,7 +2920,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
         muscle: 'Chest',
         sets: s3(15, 12, 10),
         restTimerSeconds: 30,
@@ -2932,7 +2932,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3636.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
         muscle: 'Cardio',
         sets: s3(30, 30, 25),
         restTimerSeconds: 30,
@@ -2960,7 +2960,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3543.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
         muscle: 'Legs',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
@@ -2972,7 +2972,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3561.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -2984,7 +2984,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0381.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -2996,7 +2996,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3013.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3008,7 +3008,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0624.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0624.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0624.png',
         muscle: 'Legs',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
@@ -3036,7 +3036,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -3048,7 +3048,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0283.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0283.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0283.png',
         muscle: 'Arms',
         sets: s3(10, 8, 8),
         restTimerSeconds: 45,
@@ -3060,7 +3060,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3662.png',
         muscle: 'Shoulders',
         sets: s3(10, 8, 8),
         restTimerSeconds: 45,
@@ -3072,7 +3072,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png',
         muscle: 'Back',
         sets: s3(12, 12, 10),
         restTimerSeconds: 30,
@@ -3084,7 +3084,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0129.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0129.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0129.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -3112,7 +3112,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3561.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3124,7 +3124,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 30,
@@ -3136,7 +3136,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3013.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3148,7 +3148,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3013.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3160,7 +3160,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0043.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3188,7 +3188,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0464.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
         muscle: 'Core',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
@@ -3200,7 +3200,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0274.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
         muscle: 'Core',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
@@ -3212,7 +3212,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0972.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0972.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0972.png',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 30,
@@ -3224,7 +3224,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0620.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -3236,7 +3236,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0276.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
         muscle: 'Core',
         sets: s3(12, 12, 10),
         restTimerSeconds: 30,
@@ -3268,7 +3268,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3543.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3280,7 +3280,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -3292,7 +3292,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0464.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
         muscle: 'Core',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
@@ -3304,7 +3304,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3561.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3332,7 +3332,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3636.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 20,
@@ -3344,7 +3344,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3543.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 20,
@@ -3356,7 +3356,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
         muscle: 'Chest',
         sets: s3(10, 8, 8),
         restTimerSeconds: 20,
@@ -3368,7 +3368,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0276.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
         muscle: 'Core',
         sets: s3(10, 10, 8),
         restTimerSeconds: 20,
@@ -3396,7 +3396,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1365.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1365.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1365.png',
         muscle: 'Full Body',
         sets: s3(10, 10, 10),
         restTimerSeconds: 15,
@@ -3416,7 +3416,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1564.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1564.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1564.png',
         muscle: 'Legs',
         sets: s3(30, 30, 30),
         restTimerSeconds: 15,
@@ -3428,7 +3428,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1365.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1365.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1365.png',
         muscle: 'Back',
         sets: s3(10, 10, 8),
         restTimerSeconds: 15,
@@ -3456,7 +3456,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1160.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1160.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png',
         muscle: 'Full Body',
         sets: s3(10, 8, 8),
         restTimerSeconds: 20,
@@ -3468,7 +3468,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0381.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 20,
@@ -3480,7 +3480,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 20,
@@ -3492,7 +3492,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png',
         muscle: 'Core',
         sets: s3(20, 20, 16),
         restTimerSeconds: 20,
@@ -3504,7 +3504,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png',
         muscle: 'Back',
         sets: s3(12, 10, 10),
         restTimerSeconds: 20,
@@ -3532,7 +3532,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0464.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
         muscle: 'Core',
         sets: s3(30, 30, 30),
         restTimerSeconds: 15,
@@ -3544,7 +3544,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0274.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 15,
@@ -3556,7 +3556,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0620.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 15,
@@ -3568,7 +3568,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0687.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0687.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0687.png',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 15,
@@ -3600,7 +3600,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1160.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1160.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png',
         muscle: 'Full Body',
         sets: s3(10, 10, 8),
         restTimerSeconds: 20,
@@ -3612,7 +3612,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3636.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
         muscle: 'Cardio',
         sets: s3(30, 30, 25),
         restTimerSeconds: 20,
@@ -3624,7 +3624,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0514.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0514.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 20,
@@ -3636,7 +3636,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png',
         muscle: 'Core',
         sets: s3(30, 25, 25),
         restTimerSeconds: 20,
@@ -3648,7 +3648,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0514.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0514.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png',
         muscle: 'Legs',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
@@ -3676,7 +3676,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0624.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0624.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0624.png',
         muscle: 'Cardio',
         sets: s3(60, 60, 60),
         restTimerSeconds: 15,
@@ -3688,7 +3688,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0431.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
         muscle: 'Cardio',
         sets: s3(40, 40, 30),
         restTimerSeconds: 15,
@@ -3700,7 +3700,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0336.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 15,
@@ -3712,7 +3712,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3636.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 15,
@@ -3740,7 +3740,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1160.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1160.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png',
         muscle: 'Full Body',
         sets: s3(8, 8, 8),
         restTimerSeconds: 10,
@@ -3752,7 +3752,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3636.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
         muscle: 'Cardio',
         sets: s3(20, 20, 20),
         restTimerSeconds: 10,
@@ -3764,7 +3764,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0514.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0514.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png',
         muscle: 'Legs',
         sets: s3(10, 10, 10),
         restTimerSeconds: 10,
@@ -3776,7 +3776,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
         muscle: 'Chest',
         sets: s3(8, 8, 8),
         restTimerSeconds: 10,
@@ -3804,7 +3804,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3636.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 15,
@@ -3816,7 +3816,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3636.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
         muscle: 'Cardio',
         sets: s3(20, 16, 16),
         restTimerSeconds: 15,
@@ -3828,7 +3828,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3636.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 15,
@@ -3840,7 +3840,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3361.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3361.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3361.png',
         muscle: 'Legs',
         sets: s3(16, 14, 14),
         restTimerSeconds: 15,
@@ -3852,7 +3852,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3636.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
         muscle: 'Cardio',
         sets: s3(20, 16, 16),
         restTimerSeconds: 15,
@@ -3880,7 +3880,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2612.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/2612.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2612.png',
         muscle: 'Cardio',
         sets: s3(60, 60, 45),
         restTimerSeconds: 30,
@@ -3892,7 +3892,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2612.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/2612.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2612.png',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 30,
@@ -3904,7 +3904,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2612.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/2612.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2612.png',
         muscle: 'Cardio',
         sets: s3(15, 12, 10),
         restTimerSeconds: 45,
@@ -3916,7 +3916,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3543.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 20,
@@ -3949,7 +3949,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3543.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3961,7 +3961,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0624.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0624.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0624.png',
         muscle: 'Legs',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
@@ -3973,7 +3973,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0336.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -3985,7 +3985,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -3997,7 +3997,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0129.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0129.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0129.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4009,7 +4009,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0464.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4021,7 +4021,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
         muscle: 'Core',
         sets: s3(30, 30, 30),
         restTimerSeconds: 30,
@@ -4050,7 +4050,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3543.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -4062,7 +4062,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3543.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
         muscle: 'Legs',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
@@ -4074,7 +4074,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0336.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4086,7 +4086,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0605.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
         muscle: 'Legs',
         sets: s3(15, 15, 12),
         restTimerSeconds: 30,
@@ -4098,7 +4098,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 30,
@@ -4110,7 +4110,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
         muscle: 'Core',
         sets: s3(30, 30, 30),
         restTimerSeconds: 30,
@@ -4122,7 +4122,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3013.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -4151,7 +4151,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png',
         muscle: 'Back',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4163,7 +4163,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png',
         muscle: 'Back',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4175,7 +4175,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png',
         muscle: 'Back',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4187,7 +4187,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0129.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0129.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0129.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4199,7 +4199,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4211,7 +4211,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0334.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
         muscle: 'Shoulders',
         sets: s3(20, 20, 15),
         restTimerSeconds: 30,
@@ -4240,7 +4240,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0405.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 45,
@@ -4252,7 +4252,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0333.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0333.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0333.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 3, 4, 4),
         restTimerSeconds: 45,
@@ -4264,7 +4264,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0310.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0310.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0310.png',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 3, 4, 4),
         restTimerSeconds: 45,
@@ -4276,7 +4276,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0334.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 3, 4, 4),
         restTimerSeconds: 45,
@@ -4288,7 +4288,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0293.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0293.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 5, 6, 6),
         restTimerSeconds: 45,
@@ -4300,7 +4300,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0378.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
         muscle: 'Back',
         sets: s3(12, 10, 10, 3, 4, 4),
         restTimerSeconds: 45,
@@ -4312,7 +4312,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0285.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 45,
@@ -4341,7 +4341,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1760.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 45,
@@ -4353,7 +4353,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 45,
@@ -4365,7 +4365,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0431.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 6, 8, 8),
         restTimerSeconds: 45,
@@ -4377,7 +4377,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0605.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
         muscle: 'Legs',
         sets: s3(15, 15, 12),
         restTimerSeconds: 30,
@@ -4389,7 +4389,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0586.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0586.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0586.png',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 45,
@@ -4418,7 +4418,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3543.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -4430,7 +4430,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4442,7 +4442,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3006.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3006.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3006.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -4454,7 +4454,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/3013.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -4466,7 +4466,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4495,7 +4495,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0043.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 45,
@@ -4507,7 +4507,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1756.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/1756.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1756.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 6, 8, 8),
         restTimerSeconds: 45,
@@ -4519,7 +4519,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0336.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 6, 8, 8),
         restTimerSeconds: 45,
@@ -4531,7 +4531,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 30,
@@ -4543,7 +4543,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1759.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1759.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1759.png',
         muscle: 'Legs',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
@@ -4572,7 +4572,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0405.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4584,7 +4584,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0333.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0333.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0333.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4596,7 +4596,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0285.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4608,7 +4608,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/thumbnails/0334.jpg',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4620,7 +4620,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,

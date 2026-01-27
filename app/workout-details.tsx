@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/constants/theme';
@@ -22,7 +23,8 @@ import {
   type DbWorkoutSet,
   type WorkoutMuscleData,
 } from '@/services/api/workouts';
-import { UnitSystem, kgToLbs, getWeightUnit } from '@/utils/units';
+import * as Haptics from 'expo-haptics';
+import { UnitSystem, kgToLbs, getWeightUnit, fromKgForDisplay } from '@/utils/units';
 import { formatExerciseNameString } from '@/utils/textFormatters';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -120,28 +122,31 @@ export default function WorkoutDetailsScreen() {
 
   const weightLabel = getWeightUnit(units);
 
-  useEffect(() => {
-    async function fetchWorkout() {
-      if (!workoutId) return;
+  const fetchWorkout = useCallback(async () => {
+    if (!workoutId) return;
 
-      setIsLoading(true);
+    setIsLoading(true);
 
-      // Fetch workout data and muscle data in parallel
-      const [workoutData, muscleData] = await Promise.all([
-        getWorkoutById(workoutId),
-        getWorkoutMuscles(workoutId),
-      ]);
+    // Fetch workout data and muscle data in parallel
+    const [workoutData, muscleData] = await Promise.all([
+      getWorkoutById(workoutId),
+      getWorkoutMuscles(workoutId),
+    ]);
 
-      if (workoutData) {
-        setWorkout(workoutData.workout);
-        setExercises(workoutData.exercises);
-      }
-      setDetailedMuscles(muscleData);
-      setIsLoading(false);
+    if (workoutData) {
+      setWorkout(workoutData.workout);
+      setExercises(workoutData.exercises);
     }
-
-    fetchWorkout();
+    setDetailedMuscles(muscleData);
+    setIsLoading(false);
   }, [workoutId]);
+
+  // Fetch on mount and re-fetch on focus (e.g. returning from edit)
+  useFocusEffect(
+    useCallback(() => {
+      fetchWorkout();
+    }, [fetchWorkout])
+  );
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -221,6 +226,57 @@ export default function WorkoutDetailsScreen() {
     };
   }, [detailedMuscles]);
 
+  const handleEditWorkout = () => {
+    if (!workout || !exercises.length) return;
+
+    // Convert DB format to WorkoutData format for save-workout screen
+    const workoutExercises = exercises.map((ex) => ({
+      exercise: {
+        id: ex.exercise_id,
+        name: ex.exercise_name,
+        muscle: ex.exercise_muscle || '',
+        gifUrl: ex.image_url || undefined,
+        thumbnailUrl: ex.thumbnail_url || undefined,
+      },
+      notes: ex.notes || '',
+      sets: ex.sets
+        .filter((s) => s.completed)
+        .map((s, index) => ({
+          id: `edit_${s.id}`,
+          previous: '-',
+          // Convert stored kg to display units for the input fields
+          kg: s.weight != null ? fromKgForDisplay(s.weight, units).toString() : '',
+          reps: s.reps != null ? s.reps.toString() : '',
+          completed: true,
+          setType: (s.set_type || 'normal') as 'normal' | 'warmup' | 'failure' | 'dropset',
+          rpe: s.rpe ?? null,
+        })),
+      supersetId: ex.superset_id ?? null,
+      restTimerSeconds: ex.rest_timer_seconds ?? 90,
+    }));
+
+    const workoutData = {
+      exercises: workoutExercises,
+      durationSeconds: workout.duration_seconds,
+      startedAt: workout.started_at,
+      userId: workout.user_id,
+      sourceTemplateId: workout.source_template_id || undefined,
+    };
+
+    router.push({
+      pathname: '/save-workout',
+      params: {
+        workoutData: JSON.stringify(workoutData),
+        editWorkoutId: workoutId,
+        editTitle: workout.name || '',
+        editNotes: workout.notes || '',
+        editImageType: workout.image_type || '',
+        editImageUri: workout.image_uri || '',
+        editImageTemplateId: workout.image_template_id || '',
+      },
+    });
+  };
+
   const handleDeleteWorkout = () => {
     Alert.alert(
       'Delete Workout',
@@ -249,7 +305,13 @@ export default function WorkoutDetailsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
+            style={styles.backButton}
+          >
             <BackIcon />
           </Pressable>
           <Text style={styles.headerTitle}>Workout Details</Text>
@@ -266,7 +328,13 @@ export default function WorkoutDetailsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            }}
+            style={styles.backButton}
+          >
             <BackIcon />
           </Pressable>
           <Text style={styles.headerTitle}>Workout Details</Text>
@@ -283,16 +351,33 @@ export default function WorkoutDetailsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <BackIcon />
         </Pressable>
         <Text style={styles.headerTitle}>Workout Details</Text>
-        <Pressable onPress={handleDeleteWorkout} style={styles.backButton}>
-          <Ionicons name="trash-outline" size={22} color={colors.error} />
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            handleEditWorkout();
+          }}
+          style={styles.backButton}
+        >
+          <Ionicons name="pencil-outline" size={22} color={colors.primary} />
         </Pressable>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Workout Photo */}
+        {workout.image_uri && (
+          <Image source={{ uri: workout.image_uri }} style={styles.workoutPhoto} />
+        )}
+
         {/* Workout Info Card */}
         <View style={[styles.card, styles.workoutInfoCard]}>
           <Text style={styles.workoutTitle}>{workout.name || 'Workout'}</Text>
@@ -432,16 +517,37 @@ export default function WorkoutDetailsScreen() {
 
             return (
               <View key={ex.id}>
-                <Pressable style={styles.exerciseRow} onPress={() => toggleExercise(ex.id)}>
-                  <ExerciseImage
-                    gifUrl={ex.image_url || undefined}
-                    thumbnailUrl={ex.thumbnail_url || undefined}
-                    size={40}
-                    borderRadius={8}
-                  />
-                  <Text style={styles.exerciseName}>
-                    {formatExerciseNameString(ex.exercise_name)}
-                  </Text>
+                <Pressable
+                  style={styles.exerciseRow}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    toggleExercise(ex.id);
+                  }}
+                >
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push(`/exercise/${ex.exercise_id}`);
+                    }}
+                  >
+                    <ExerciseImage
+                      gifUrl={ex.image_url || undefined}
+                      thumbnailUrl={ex.thumbnail_url || undefined}
+                      size={40}
+                      borderRadius={8}
+                    />
+                  </Pressable>
+                  <Pressable
+                    style={{ flex: 1, justifyContent: 'center' }}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push(`/exercise/${ex.exercise_id}`);
+                    }}
+                  >
+                    <Text style={styles.exerciseName}>
+                      {formatExerciseNameString(ex.exercise_name)}
+                    </Text>
+                  </Pressable>
                   <Ionicons
                     name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                     size={20}
@@ -480,6 +586,17 @@ export default function WorkoutDetailsScreen() {
 
           {exercises.length === 0 && <Text style={styles.emptyText}>No exercises recorded</Text>}
         </View>
+
+        {/* Delete Workout (text button at bottom) */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            handleDeleteWorkout();
+          }}
+          style={styles.deleteTextButton}
+        >
+          <Text style={styles.deleteText}>Delete Workout</Text>
+        </Pressable>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -523,6 +640,13 @@ const styles = StyleSheet.create({
     ...cardStyle,
     padding: spacing.md,
     marginBottom: spacing.md,
+  },
+  workoutPhoto: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginTop: spacing.md,
+    backgroundColor: colors.borderLight,
   },
   workoutInfoCard: {
     marginTop: spacing.md,
@@ -660,11 +784,10 @@ const styles = StyleSheet.create({
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
+    paddingVertical: 12,
+    gap: spacing.sm,
   },
   exerciseName: {
-    flex: 1,
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.primary,
@@ -674,32 +797,35 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
   },
   setsContainer: {
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
   setsHeader: {
     flexDirection: 'row',
-    paddingBottom: spacing.xs,
-    marginLeft: 56,
+    paddingBottom: spacing.sm,
   },
   setHeaderText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,
     color: colors.textTertiary,
     textTransform: 'uppercase',
+    textAlign: 'center',
   },
   setColumn: {
     width: 40,
+    marginRight: spacing.md,
+    textAlign: 'center',
   },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
-    marginLeft: 56,
+    paddingVertical: 6,
   },
   setNumber: {
     fontFamily: fonts.bold,
     fontSize: fontSize.sm,
     color: colors.text,
+    textAlign: 'center',
   },
   setText: {
     fontFamily: fonts.medium,
@@ -712,6 +838,16 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     textAlign: 'center',
     paddingVertical: spacing.lg,
+  },
+  deleteTextButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    marginTop: spacing.md,
+  },
+  deleteText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.error,
   },
   bottomSpacer: {
     height: 40,

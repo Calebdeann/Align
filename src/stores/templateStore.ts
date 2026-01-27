@@ -10,6 +10,7 @@ import {
   updateUserTemplate,
   deleteUserTemplate,
   getUserTemplates,
+  lookupExerciseImageUrls,
 } from '@/services/api/templates';
 
 // Template set structure
@@ -157,7 +158,7 @@ export const useTemplateStore = create<TemplateStore>()(
         // If template has a userId, it was synced to backend - delete from there too
         if (template?.userId) {
           deleteUserTemplate(id).catch((err) => {
-            console.error('Failed to delete template from backend:', err);
+            console.warn('Failed to delete template from backend:', err);
           });
         }
       },
@@ -199,16 +200,16 @@ export const useTemplateStore = create<TemplateStore>()(
           saveUserTemplate(input.userId, input)
             .then((backendId) => {
               if (backendId) {
-                // Update local template with backend ID
+                // Update local template with backend ID, keep original local ID for lookups
                 set((state) => ({
                   templates: state.templates.map((t) =>
-                    t.id === newTemplate.id ? { ...t, id: backendId } : t
+                    t.id === newTemplate.id ? { ...t, id: backendId, _localId: newTemplate.id } : t
                   ),
                 }));
               }
             })
             .catch((err) => {
-              console.error('Failed to save template to backend:', err);
+              console.warn('Failed to save template to backend:', err);
             });
         }
 
@@ -222,6 +223,18 @@ export const useTemplateStore = create<TemplateStore>()(
           templates: state.templates.map((t) => (t.id === id ? { ...t, ...updates } : t)),
         }));
 
+        // Cascade name/color/image changes to scheduled workouts that reference this template
+        const cascadeUpdates: { name?: string; tagColor?: string; image?: WorkoutImage } = {};
+        if (updates.name) cascadeUpdates.name = updates.name;
+        if (updates.tagColor) cascadeUpdates.tagColor = updates.tagColor;
+        if ('image' in updates) cascadeUpdates.image = updates.image;
+
+        if (Object.keys(cascadeUpdates).length > 0) {
+          // Use require() to avoid circular dependency between stores
+          const { useWorkoutStore } = require('./workoutStore');
+          useWorkoutStore.getState().updateScheduledWorkoutsForTemplate(id, cascadeUpdates);
+        }
+
         // Update on backend if template was synced
         if (template?.userId) {
           // Strip client-only fields (localImage is not serializable for the backend)
@@ -233,9 +246,13 @@ export const useTemplateStore = create<TemplateStore>()(
       },
 
       // Get template by ID (checks both user and preset templates)
+      // Also checks _localId to handle race condition when backend ID swap is in progress
       getTemplateById: (id) => {
         const { templates, presetTemplates } = get();
-        return templates.find((t) => t.id === id) || presetTemplates.find((t) => t.id === id);
+        return (
+          templates.find((t) => t.id === id || (t as any)._localId === id) ||
+          presetTemplates.find((t) => t.id === id)
+        );
       },
 
       // Get all templates belonging to a specific user
@@ -273,7 +290,7 @@ export const useTemplateStore = create<TemplateStore>()(
         // Update on backend if template was synced
         if (template?.userId) {
           updateUserTemplate(templateId, {}, exercises).catch((err) => {
-            console.error('Failed to update template exercises on backend:', err);
+            console.warn('Failed to update template exercises on backend:', err);
           });
         }
       },
@@ -349,6 +366,31 @@ export const useTemplateStore = create<TemplateStore>()(
         try {
           const backendTemplates = await getUserTemplates(userId);
           if (backendTemplates.length > 0) {
+            // Backfill missing image URLs from exercises table
+            const namesNeedingImages = new Set<string>();
+            for (const tmpl of backendTemplates) {
+              for (const ex of tmpl.exercises) {
+                if (!ex.gifUrl && !ex.thumbnailUrl) {
+                  namesNeedingImages.add(ex.exerciseName);
+                }
+              }
+            }
+
+            if (namesNeedingImages.size > 0) {
+              const imageMap = await lookupExerciseImageUrls([...namesNeedingImages]);
+              for (const tmpl of backendTemplates) {
+                for (const ex of tmpl.exercises) {
+                  if (!ex.gifUrl && !ex.thumbnailUrl) {
+                    const urls = imageMap.get(ex.exerciseName);
+                    if (urls) {
+                      ex.gifUrl = urls.gifUrl;
+                      ex.thumbnailUrl = urls.thumbnailUrl;
+                    }
+                  }
+                }
+              }
+            }
+
             // Merge backend templates with local (backend takes precedence)
             set((state) => {
               const localOnlyTemplates = state.templates.filter(
@@ -363,7 +405,7 @@ export const useTemplateStore = create<TemplateStore>()(
             set({ isSyncing: false });
           }
         } catch (error: any) {
-          console.error('Failed to sync templates from backend:', error);
+          console.warn('Failed to sync templates from backend:', error);
           set({ isSyncing: false, lastSyncError: error?.message || 'Sync failed' });
         }
       },
@@ -373,17 +415,17 @@ export const useTemplateStore = create<TemplateStore>()(
         try {
           const backendId = await saveUserTemplate(userId, template);
           if (backendId) {
-            // Update local template with backend ID and userId
+            // Update local template with backend ID and userId, keep local ID for lookups
             set((state) => ({
               templates: state.templates.map((t) =>
-                t.id === template.id ? { ...t, id: backendId, userId } : t
+                t.id === template.id ? { ...t, id: backendId, userId, _localId: template.id } : t
               ),
             }));
             return true;
           }
           return false;
         } catch (error) {
-          console.error('Failed to save template to backend:', error);
+          console.warn('Failed to save template to backend:', error);
           return false;
         }
       },
@@ -399,7 +441,7 @@ export const useTemplateStore = create<TemplateStore>()(
           }
           return success;
         } catch (error) {
-          console.error('Failed to delete template from backend:', error);
+          console.warn('Failed to delete template from backend:', error);
           return false;
         }
       },

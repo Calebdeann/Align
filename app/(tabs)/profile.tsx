@@ -16,6 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
+import * as Haptics from 'expo-haptics';
+import * as StoreReview from 'expo-store-review';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { signOut, deleteUserAccount } from '@/services/api/user';
 import { useUserProfileStore, getHighResAvatarUrl } from '@/stores/userProfileStore';
@@ -25,8 +27,8 @@ import { clearUserDataFromStorage } from '@/lib/storeManager';
 // Required for web browser auth to close properly
 WebBrowser.maybeCompleteAuthSession();
 
-// DEV ONLY flag - set to false for production
-const __DEV_MODE__ = true;
+// DEV ONLY flag - automatically false in production builds
+const __DEV_MODE__ = __DEV__;
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -47,7 +49,13 @@ function MenuItem({
 }: MenuItemProps) {
   return (
     <>
-      <Pressable style={styles.menuItem} onPress={onPress}>
+      <Pressable
+        style={styles.menuItem}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress();
+        }}
+      >
         <View style={styles.menuItemLeft}>
           {icon}
           <Text style={styles.menuItemLabel}>{label}</Text>
@@ -89,9 +97,21 @@ function ConfirmationModal({
 }: ConfirmationModalProps) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={styles.modalOverlay} onPress={onCancel}>
+      <Pressable
+        style={styles.modalOverlay}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onCancel();
+        }}
+      >
         <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-          <Pressable style={styles.modalCloseButton} onPress={onCancel}>
+          <Pressable
+            style={styles.modalCloseButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onCancel();
+            }}
+          >
             <Ionicons name="close" size={20} color={colors.textSecondary} />
           </Pressable>
 
@@ -99,12 +119,22 @@ function ConfirmationModal({
           <Text style={styles.modalMessage}>{message}</Text>
 
           <View style={styles.modalButtons}>
-            <Pressable style={styles.modalCancelButton} onPress={onCancel} disabled={isLoading}>
+            <Pressable
+              style={styles.modalCancelButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onCancel();
+              }}
+              disabled={isLoading}
+            >
               <Text style={styles.modalCancelText}>Cancel</Text>
             </Pressable>
             <Pressable
               style={[styles.modalConfirmButton, isLoading && styles.modalButtonDisabled]}
-              onPress={onConfirm}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                onConfirm();
+              }}
               disabled={isLoading}
             >
               <Text style={styles.modalConfirmText}>
@@ -141,6 +171,7 @@ export default function ProfileScreen() {
   );
 
   async function handleNotificationToggle(value: boolean) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setNotificationsEnabled(value);
     if (userId) {
       await updateProfile({ notifications_enabled: value });
@@ -265,7 +296,13 @@ export default function ProfileScreen() {
         <Text style={styles.headerTitle}>Profile</Text>
 
         {/* Profile Card */}
-        <Pressable style={styles.profileCard} onPress={() => router.push('/profile/edit-profile')}>
+        <Pressable
+          style={styles.profileCard}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/profile/edit-profile');
+          }}
+        >
           {profile?.avatar_url ? (
             <Image
               source={{ uri: getHighResAvatarUrl(profile.avatar_url, 200) || profile.avatar_url }}
@@ -317,7 +354,17 @@ export default function ProfileScreen() {
           <MenuItem
             icon={<Ionicons name="star-outline" size={20} color={colors.text} />}
             label="Rate Us"
-            onPress={() => {}}
+            onPress={async () => {
+              const available = await StoreReview.isAvailableAsync();
+              if (available) {
+                await StoreReview.requestReview();
+              } else {
+                Alert.alert(
+                  'Coming Soon',
+                  'Rating will be available once the app is on the App Store.'
+                );
+              }
+            }}
             showDivider={false}
           />
         </MenuCard>
