@@ -23,7 +23,7 @@ import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templa
 import { useWorkoutStore, PendingExercise } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
 import { getWeightUnit, UnitSystem, filterNumericInput, fromKgForDisplay } from '@/utils/units';
-import { toTitleCase } from '@/utils/textFormatters';
+import { formatExerciseNameString } from '@/utils/textFormatters';
 import {
   getBatchExercisePreviousSets,
   getUserExercisePreferences,
@@ -716,7 +716,9 @@ export default function CreateTemplateScreen() {
                   size={40}
                   borderRadius={8}
                 />
-                <Text style={styles.exerciseTitle}>{toTitleCase(exercise.exerciseName)}</Text>
+                <Text style={styles.exerciseTitle}>
+                  {formatExerciseNameString(exercise.exerciseName)}
+                </Text>
                 <Pressable
                   style={styles.moreButton}
                   onPress={() => openExerciseMenu(exerciseIndex)}
@@ -739,7 +741,7 @@ export default function CreateTemplateScreen() {
                 style={styles.restTimerRow}
                 onPress={() => openRestTimerModal(exerciseIndex)}
               >
-                <Ionicons name="stopwatch-outline" size={18} color={colors.text} />
+                <Ionicons name="stopwatch-outline" size={18} color={colors.primary} />
                 <Text style={styles.restTimerText}>
                   Rest Timer: {formatRestTimerDisplay(exercise.restTimerSeconds)}
                 </Text>
@@ -855,7 +857,9 @@ export default function CreateTemplateScreen() {
                   size={48}
                   borderRadius={8}
                 />
-                <Text style={styles.reorderExerciseName}>{toTitleCase(exercise.exerciseName)}</Text>
+                <Text style={styles.reorderExerciseName}>
+                  {formatExerciseNameString(exercise.exerciseName)}
+                </Text>
                 <View style={styles.dragHandle}>
                   <DragHandleIcon />
                 </View>
@@ -892,7 +896,9 @@ export default function CreateTemplateScreen() {
                 <Text style={styles.restTimerModalTitle}>Rest Timer</Text>
                 {restTimerModalExerciseIndex !== null && (
                   <Text style={styles.restTimerModalSubtitle}>
-                    {toTitleCase(exercises[restTimerModalExerciseIndex]?.exerciseName || '')}
+                    {formatExerciseNameString(
+                      exercises[restTimerModalExerciseIndex]?.exerciseName || ''
+                    )}
                   </Text>
                 )}
               </View>
@@ -1053,9 +1059,9 @@ const styles = StyleSheet.create({
   },
   exerciseTitle: {
     flex: 1,
-    fontFamily: fonts.bold,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
-    color: colors.text,
+    color: colors.primary,
   },
   moreButton: {
     padding: spacing.xs,
@@ -1075,7 +1081,7 @@ const styles = StyleSheet.create({
   restTimerText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
-    color: colors.text,
+    color: colors.primary,
     flex: 1,
   },
   setsHeader: {
@@ -1246,9 +1252,9 @@ const styles = StyleSheet.create({
   },
   reorderExerciseName: {
     flex: 1,
-    fontFamily: fonts.bold,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: colors.text,
+    color: colors.primary,
   },
   dragHandle: {
     padding: spacing.xs,

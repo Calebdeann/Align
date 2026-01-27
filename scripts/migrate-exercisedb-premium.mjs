@@ -3,8 +3,8 @@
  *
  * This script will:
  * 1. Read the downloaded JSON dataset
- * 2. Upload female GIFs to Supabase Storage (optional - can use their CDN)
- * 3. Seed the exercises table with new data
+ * 2. Upload GIFs to Supabase Storage (optional - can use their CDN)
+ * 3. Seed the exercises table with new data (female animations only)
  *
  * Usage:
  *   node scripts/migrate-exercisedb-premium.mjs <path-to-json-file>
@@ -33,7 +33,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Configuration
-const USE_FEMALE_ONLY = true; // Set to true to only import female exercises
+const USE_FEMALE_ONLY = true; // Only import female exercise animations
 const BATCH_SIZE = 100;
 
 async function main() {
@@ -105,7 +105,7 @@ async function main() {
   console.log(JSON.stringify(exercises[0], null, 2).substring(0, 1000));
   console.log('');
 
-  // Filter for female exercises if enabled
+  // Filter to female exercise animations only (this is a women's workout tracker)
   let filteredExercises = exercises;
   if (USE_FEMALE_ONLY) {
     filteredExercises = exercises.filter(e =>
@@ -171,8 +171,8 @@ async function main() {
       exercise_db_id: e.exerciseId || e.id,
       gender: e.gender || 'female',
       video_url: e.videoUrl || e.video_url,
-      gif_url_male: e.gender === 'male' ? (e.gifUrl || e.imageUrl) : null,
-      gif_url_female: e.gender === 'female' ? (e.gifUrl || e.imageUrl) : (e.gifUrl || e.imageUrl),
+      gif_url_male: null, // Unused - women's tracker only
+      gif_url_female: e.gifUrl || e.imageUrl,
       target_muscles: e.targetMuscles || (e.target ? [e.target] : []),
       secondary_muscles: e.secondaryMuscles || [],
       body_parts: e.bodyParts || (e.bodyPart ? [e.bodyPart] : []),

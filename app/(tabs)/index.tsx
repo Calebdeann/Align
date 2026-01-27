@@ -1,5 +1,15 @@
 import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Dimensions,
+  Pressable,
+  Animated,
+  LayoutAnimation,
+  Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { router, useFocusEffect } from 'expo-router';
@@ -18,9 +28,13 @@ import {
 } from '@/stores/workoutStore';
 import { getWorkoutsByDateRange } from '@/services/api/workouts';
 import { getCurrentUser } from '@/services/api/user';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUserProfileStore } from '@/stores/userProfileStore';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DAY_WIDTH = (SCREEN_WIDTH - spacing.lg * 2) / 7;
+
+const FOUNDER_BANNER_KEY = 'founder-banner-dismissed';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -148,6 +162,12 @@ export default function CalendarScreen() {
   // Track manually unchecked DB workouts (key: workout id, value: true if unchecked)
   const [uncheckedDbWorkouts, setUncheckedDbWorkouts] = useState<Set<string>>(new Set());
 
+  // Founder welcome banner
+  const [showFounderBanner, setShowFounderBanner] = useState(false);
+  const bannerOpacity = useRef(new Animated.Value(1)).current;
+  const profile = useUserProfileStore((state) => state.profile);
+  const userName = profile?.name?.split(' ')[0] || 'there';
+
   // Get workouts from store (both scheduled and cached completed)
   const scheduledWorkouts = useWorkoutStore((state) => state.scheduledWorkouts);
   const getWorkoutsForMonth = useWorkoutStore((state) => state.getWorkoutsForMonth);
@@ -194,6 +214,33 @@ export default function CalendarScreen() {
     }
     loadUser();
   }, [fetchCompletedWorkouts]);
+
+  // Check if founder banner was previously dismissed
+  useEffect(() => {
+    async function checkBanner() {
+      try {
+        const dismissed = await AsyncStorage.getItem(FOUNDER_BANNER_KEY);
+        if (dismissed !== 'true') {
+          setShowFounderBanner(true);
+        }
+      } catch {
+        setShowFounderBanner(true);
+      }
+    }
+    checkBanner();
+  }, []);
+
+  const dismissFounderBanner = useCallback(async () => {
+    Animated.timing(bannerOpacity, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setShowFounderBanner(false);
+      AsyncStorage.setItem(FOUNDER_BANNER_KEY, 'true').catch(() => {});
+    });
+  }, [bannerOpacity]);
 
   // Refresh completed workouts when screen is focused ONLY if coming back from a workout save
   // We track this with a ref to avoid refetching on every tab switch
@@ -678,6 +725,42 @@ export default function CalendarScreen() {
         </View>
       </View>
 
+      {/* Founder Welcome Banner */}
+      {showFounderBanner && (
+        <Animated.View style={[styles.founderBanner, { opacity: bannerOpacity }]}>
+          <Pressable style={styles.founderDismiss} onPress={dismissFounderBanner}>
+            <Text style={styles.founderDismissX}>✕</Text>
+          </Pressable>
+
+          <View style={styles.founderPhotos}>
+            <Image
+              source={require('../../assets/images/Caleb.png')}
+              style={[styles.founderAvatar, styles.founderAvatarCaleb]}
+            />
+            <Image
+              source={require('../../assets/images/Cass.png')}
+              style={[styles.founderAvatar, styles.founderAvatarOverlap]}
+            />
+          </View>
+
+          <Text style={styles.founderGreeting}>Hey {userName}!</Text>
+
+          <Text style={[styles.founderBody, styles.founderBodyFirst]}>
+            We're Caleb & Cass, and we built Align. Thank you so much for trying our app!
+          </Text>
+
+          <Text style={styles.founderBody}>
+            Our mission is to build the{' '}
+            <Text style={styles.founderBodyBold}>best women's workout tracker</Text> in the world,
+            so any feedback you have would be greatly appreciated!
+          </Text>
+
+          <Text style={[styles.founderBody, { marginBottom: 0 }]}>
+            You can email us at <Text style={styles.founderEmail}>aligntracker@gmail.com</Text>
+          </Text>
+        </Animated.View>
+      )}
+
       {viewMode === 'calendar' ? renderCalendarView() : renderListView()}
     </SafeAreaView>
   );
@@ -715,6 +798,80 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: colors.text,
     lineHeight: 28,
+  },
+  // Founder welcome banner
+  founderBanner: {
+    backgroundColor: '#F5F4FA',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    borderRadius: 16,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  founderDismiss: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  founderDismissX: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontFamily: fonts.medium,
+  },
+  founderPhotos: {
+    position: 'absolute',
+    top: 20,
+    right: 16,
+    flexDirection: 'row',
+    zIndex: 1,
+  },
+  founderAvatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+  founderAvatarCaleb: {
+    transform: [{ rotate: '-5deg' }],
+  },
+  founderAvatarOverlap: {
+    marginLeft: -16,
+    transform: [{ rotate: '3deg' }],
+  },
+  founderGreeting: {
+    fontFamily: fonts.bold,
+    fontSize: 28,
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  founderBody: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: 22,
+    marginBottom: 10,
+  },
+  founderBodyFirst: {
+    paddingRight: 120,
+  },
+  founderBodyBold: {
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+  founderEmail: {
+    fontFamily: fonts.medium,
+    color: colors.primary,
   },
   dayHeaders: {
     flexDirection: 'row',

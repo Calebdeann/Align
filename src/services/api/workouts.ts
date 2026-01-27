@@ -22,6 +22,9 @@ export interface DbWorkout {
   duration_seconds: number;
   notes: string | null;
   source_template_id: string | null;
+  image_type: string | null;
+  image_uri: string | null;
+  image_template_id: string | null;
   created_at: string;
 }
 
@@ -48,6 +51,7 @@ export interface DbWorkoutSet {
   reps: number | null;
   set_type: SetType;
   completed: boolean;
+  rpe: number | null;
   created_at: string;
 }
 
@@ -77,6 +81,9 @@ export interface SaveWorkoutInput {
   durationSeconds: number;
   notes?: string;
   sourceTemplateId?: string;
+  imageType?: 'template' | 'camera' | 'gallery';
+  imageUri?: string;
+  imageTemplateId?: string;
   exercises: {
     exerciseId: string;
     exerciseName: string;
@@ -144,6 +151,9 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
         duration_seconds: validatedInput.durationSeconds,
         notes: validatedInput.notes || null,
         source_template_id: validatedInput.sourceTemplateId || null,
+        image_type: validatedInput.imageType || null,
+        image_uri: validatedInput.imageUri || null,
+        image_template_id: validatedInput.imageTemplateId || null,
       })
       .select('id')
       .single();
@@ -191,6 +201,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
         reps: set.reps,
         set_type: set.setType || 'normal',
         completed: set.completed,
+        rpe: set.rpe ?? null,
       }));
 
       if (setsToInsert.length > 0) {

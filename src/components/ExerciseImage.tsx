@@ -33,7 +33,7 @@ export function ExerciseImage({
             width: size,
             height: size,
             borderRadius,
-            backgroundColor: backgroundColor ?? '#FFFFFF',
+            backgroundColor: backgroundColor ?? 'transparent',
           },
         ]}
         contentFit="cover"

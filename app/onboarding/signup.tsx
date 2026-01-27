@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
@@ -18,6 +18,20 @@ WebBrowser.maybeCompleteAuthSession();
 export default function SignUpScreen() {
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsNavigating(false);
+    }, [])
+  );
+
+  const handleBack = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    router.back();
+  };
 
   const handleAppleSignUp = async () => {
     try {
@@ -120,29 +134,29 @@ export default function SignUpScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Back button */}
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.back();
-          }}
-          style={styles.backButton}
-        >
+    <SafeAreaView style={styles.container}>
+      {/* Header with back button + progress bar */}
+      <View style={styles.header}>
+        <Pressable onPress={handleBack} style={styles.backButton} disabled={isNavigating}>
           <Text style={styles.backArrow}>←</Text>
         </Pressable>
 
-        {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.title}>Create your{'\n'}account</Text>
-          <Text style={styles.subtitle}>
-            Sign up to save your progress and access your personalized plan
-          </Text>
+        <View style={styles.progressBarContainer}>
+          <View style={styles.progressBarBackground} />
+          <View style={[styles.progressBarFill, { width: '95%' }]} />
         </View>
 
-        {/* Sign up buttons */}
-        <View style={styles.bottomSection}>
+        <View style={{ width: 32 }} />
+      </View>
+
+      {/* Title */}
+      <View style={styles.questionContainer}>
+        <Text style={styles.questionText}>Save your progress</Text>
+      </View>
+
+      {/* Sign up buttons centered in middle */}
+      <View style={styles.content}>
+        <View style={styles.buttonsContainer}>
           {/* Apple Sign-Up Button */}
           <Pressable
             style={styles.appleButton}
@@ -175,14 +189,18 @@ export default function SignUpScreen() {
               <ActivityIndicator color="#000000" />
             ) : (
               <View style={styles.buttonContent}>
-                <Text style={styles.googleIcon}>G</Text>
+                <Image
+                  source={require('../../assets/images/google logo.png')}
+                  style={styles.googleLogo}
+                  resizeMode="contain"
+                />
                 <Text style={styles.googleButtonText}>Sign up with Google</Text>
               </View>
             )}
           </Pressable>
         </View>
-      </SafeAreaView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -191,39 +209,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundOnboarding,
   },
-  safeArea: {
-    flex: 1,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    gap: spacing.md,
   },
   backButton: {
-    padding: spacing.lg,
+    padding: spacing.xs,
   },
   backArrow: {
     fontSize: 24,
     color: colors.text,
   },
+  progressBarContainer: {
+    flex: 1,
+    height: 4,
+    position: 'relative',
+  },
+  progressBarBackground: {
+    position: 'absolute',
+    width: '100%',
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+  },
+  progressBarFill: {
+    position: 'absolute',
+    height: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  questionContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+  },
+  questionText: {
+    fontFamily: fonts.bold,
+    fontSize: 28,
+    color: colors.text,
+    lineHeight: 36,
+    textAlign: 'center',
+  },
   content: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  title: {
-    fontFamily: fonts.bold,
-    fontSize: 36,
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: 44,
-    marginBottom: spacing.md,
-  },
-  subtitle: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  bottomSection: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+  },
+  buttonsContainer: {
     gap: spacing.md,
   },
   appleButton: {
@@ -255,10 +289,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  googleIcon: {
-    fontFamily: fonts.bold,
-    fontSize: 20,
-    color: '#4285F4',
+  googleLogo: {
+    width: 20,
+    height: 20,
   },
   googleButtonText: {
     fontFamily: fonts.semiBold,

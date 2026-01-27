@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 5.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -10,16 +11,24 @@
         "simulator": true
       }
     },
+    "development-device": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
     "preview": {
       "distribution": "internal"
     },
-    "production": {}
+    "production": {
+      "ios": {
+        "autoIncrement": true
+      }
+    }
   },
   "submit": {
     "production": {
       "ios": {
-        "appleId": "",
-        "ascAppId": ""
+        "appleId": "Calebdeanbusiness@gmail.com",
+        "ascAppId": "6758319853"
       }
     }
   }

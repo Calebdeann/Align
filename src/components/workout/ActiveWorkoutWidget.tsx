@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,23 +16,29 @@ export default function ActiveWorkoutWidget() {
   const activeWorkout = useWorkoutStore((state) => state.activeWorkout);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Keep the timer running while minimized
-  // Use a ref-guarded single interval to prevent stacking
   const isMinimized = activeWorkout?.isMinimized ?? false;
+
+  // Use local display time to avoid reading from store each tick.
+  // This prevents compounding if any other timer also writes to the store.
+  const [displaySeconds, setDisplaySeconds] = useState(activeWorkout?.elapsedSeconds ?? 0);
 
   useEffect(() => {
     if (isMinimized) {
-      // Guard: only start if no interval is already running
+      // Sync local display time with store value when we start
+      const storeSeconds = useWorkoutStore.getState().activeWorkout?.elapsedSeconds ?? 0;
+      setDisplaySeconds(storeSeconds);
+      let localTime = storeSeconds;
+
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
       intervalRef.current = setInterval(() => {
-        const store = useWorkoutStore.getState();
-        const current = store.activeWorkout?.elapsedSeconds ?? 0;
-        store.updateActiveWorkoutTime(current + 1);
+        localTime += 1;
+        setDisplaySeconds(localTime);
+        // Sync to store so it persists if the app closes
+        useWorkoutStore.getState().updateActiveWorkoutTime(localTime);
       }, 1000);
     } else {
-      // Not minimized — clear any running interval
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -58,9 +64,9 @@ export default function ActiveWorkoutWidget() {
   );
 
   const handlePress = () => {
-    // Clear the interval before navigating
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
     router.push('/active-workout');
   };
@@ -77,7 +83,7 @@ export default function ActiveWorkoutWidget() {
           {completedSets !== 1 ? 's' : ''} completed
         </Text>
       </View>
-      <Text style={styles.timer}>{formatTime(activeWorkout.elapsedSeconds)}</Text>
+      <Text style={styles.timer}>{formatTime(displaySeconds)}</Text>
       <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </Pressable>
   );

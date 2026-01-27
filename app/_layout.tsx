@@ -9,6 +9,8 @@ import { colors } from '@/constants/theme';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { initializeStoreManager } from '@/lib/storeManager';
+import { useWorkoutStore } from '@/stores/workoutStore';
+import { startWorkoutLiveActivity } from '@/services/liveActivity';
 
 // Lazy import SuperwallProvider to prevent crash if native module isn't ready
 let SuperwallProvider: React.ComponentType<any> | null = null;
@@ -58,6 +60,50 @@ export default function RootLayout() {
 
     prepare();
   }, [initializeFromLocale, fetchProfile]);
+
+  // Restart Live Activity if there's a persisted minimized workout (e.g. after app kill + relaunch)
+  useEffect(() => {
+    if (!appIsReady) return;
+
+    // Check once after rehydration — the store may already have data
+    const checkAndStartLiveActivity = () => {
+      const { activeWorkout } = useWorkoutStore.getState();
+      if (activeWorkout && activeWorkout.isMinimized) {
+        const completedSets = activeWorkout.exercises.reduce(
+          (total: number, ex: any) => total + ex.sets.filter((s: any) => s.completed).length,
+          0
+        );
+        startWorkoutLiveActivity(
+          activeWorkout.templateName || 'Workout',
+          activeWorkout.exercises.length,
+          completedSets,
+          activeWorkout.startedAt
+        );
+      }
+    };
+
+    // Subscribe to store changes to catch rehydration completing
+    const unsub = useWorkoutStore.subscribe((state, prev) => {
+      if (!prev.activeWorkout && state.activeWorkout && state.activeWorkout.isMinimized) {
+        const completedSets = state.activeWorkout.exercises.reduce(
+          (total: number, ex: any) => total + ex.sets.filter((s: any) => s.completed).length,
+          0
+        );
+        startWorkoutLiveActivity(
+          state.activeWorkout.templateName || 'Workout',
+          state.activeWorkout.exercises.length,
+          completedSets,
+          state.activeWorkout.startedAt
+        );
+        unsub(); // Only need this once
+      }
+    });
+
+    // Also check immediately in case store already rehydrated
+    checkAndStartLiveActivity();
+
+    return unsub;
+  }, [appIsReady]);
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {

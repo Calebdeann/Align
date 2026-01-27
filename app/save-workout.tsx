@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,12 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/constants/theme';
 import { saveCompletedWorkout, getExerciseMuscles, ExerciseMuscle } from '@/services/api/workouts';
 import { UnitSystem, kgToLbs, toKgForStorage, getWeightUnit } from '@/utils/units';
@@ -24,7 +25,14 @@ import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { toTitleCase } from '@/utils/textFormatters';
+import {
+  ImagePickerSheet,
+  ImagePlaceholderIcon,
+  SelectedImageData,
+} from '@/components/ImagePickerSheet';
+import { consumePendingTemplateImage } from '@/lib/imagePickerState';
+import { formatExerciseNameString } from '@/utils/textFormatters';
+import { endWorkoutLiveActivity } from '@/services/liveActivity';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -41,6 +49,7 @@ interface ExerciseSet {
   reps: string;
   completed: boolean;
   setType?: SetType;
+  rpe?: number | null;
 }
 
 interface Exercise {
@@ -79,54 +88,6 @@ function BackIcon() {
         strokeLinejoin="round"
       />
     </Svg>
-  );
-}
-
-function ImagePlaceholderIcon() {
-  return (
-    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-        <Rect
-          x={3}
-          y={3}
-          width={18}
-          height={18}
-          rx={2}
-          stroke={colors.textTertiary}
-          strokeWidth={1.5}
-        />
-        <Path
-          d="M8.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"
-          stroke={colors.textTertiary}
-          strokeWidth={1.5}
-        />
-        <Path
-          d="M21 15l-5-5L5 21"
-          stroke={colors.textTertiary}
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
-      {/* Small plus indicator */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: -4,
-          right: -4,
-          width: 16,
-          height: 16,
-          borderRadius: 8,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Svg width={10} height={10} viewBox="0 0 24 24" fill="none">
-          <Path d="M12 5v14M5 12h14" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" />
-        </Svg>
-      </View>
-    </View>
   );
 }
 
@@ -255,10 +216,11 @@ export default function SaveWorkoutScreen() {
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
   const updateTemplateFromWorkout = useTemplateStore((state) => state.updateTemplateFromWorkout);
 
-  // Workout store - for marking scheduled workouts as complete
+  // Workout store - for marking scheduled workouts as complete and clearing active workout
   const markScheduledWorkoutComplete = useWorkoutStore(
     (state) => state.markScheduledWorkoutComplete
   );
+  const discardActiveWorkout = useWorkoutStore((state) => state.discardActiveWorkout);
 
   // Parse workout data from params
   const workoutData: WorkoutData = useMemo(() => {
@@ -274,6 +236,8 @@ export default function SaveWorkoutScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [showExerciseChangeModal, setShowExerciseChangeModal] = useState(false);
   const [pendingSaveCallback, setPendingSaveCallback] = useState<(() => void) | null>(null);
+  const [selectedImage, setSelectedImage] = useState<SelectedImageData | null>(null);
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   // Detailed muscle data from exercise_muscles table
   const [exerciseMusclesMap, setExerciseMusclesMap] = useState<Map<string, ExerciseMuscle[]>>(
@@ -312,6 +276,21 @@ export default function SaveWorkoutScreen() {
     fetchMuscleData();
   }, [workoutData.exercises]);
 
+  // Pick up template image selection when returning from template-images screen
+  useFocusEffect(
+    useCallback(() => {
+      const pending = consumePendingTemplateImage();
+      if (pending) {
+        setSelectedImage({
+          type: 'template',
+          uri: '',
+          localSource: pending.source,
+          templateImageId: pending.id,
+        });
+      }
+    }, [])
+  );
+
   // Calculate stats
   const totalVolume = useMemo(
     () => calculateTotalVolume(workoutData.exercises),
@@ -327,23 +306,20 @@ export default function SaveWorkoutScreen() {
     return calculateDetailedMuscleSplit(workoutData.exercises, exerciseMusclesMap);
   }, [workoutData.exercises, exerciseMusclesMap]);
 
-  // Calculate total sets for percentage calculation
-  const totalPrimarySets = useMemo(() => {
-    return detailedMuscles.filter((m) => m.isPrimary).reduce((sum, m) => sum + m.sets, 0);
-  }, [detailedMuscles]);
-
-  // Separate primary and secondary muscles for display
-  const primaryMuscles = useMemo(() => {
-    return detailedMuscles
-      .filter((m) => m.isPrimary)
-      .map((m) => ({
-        ...m,
-        percentage: totalPrimarySets > 0 ? Math.round((m.sets / totalPrimarySets) * 100) : 0,
-      }));
-  }, [detailedMuscles, totalPrimarySets]);
-
-  const secondaryMuscles = useMemo(() => {
-    return detailedMuscles.filter((m) => !m.isPrimary);
+  // Combine primary + secondary muscles by name with percentage
+  const allMuscles = useMemo(() => {
+    const muscleMap = new Map<string, number>();
+    detailedMuscles.forEach((m) => {
+      muscleMap.set(m.name, (muscleMap.get(m.name) || 0) + m.sets);
+    });
+    const total = Array.from(muscleMap.values()).reduce((sum, s) => sum + s, 0);
+    return Array.from(muscleMap.entries())
+      .map(([name, sets]) => ({
+        name,
+        sets,
+        percentage: total > 0 ? Math.round((sets / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.percentage - a.percentage);
   }, [detailedMuscles]);
 
   // Get exercises with completed sets
@@ -477,6 +453,9 @@ export default function SaveWorkoutScreen() {
         durationSeconds: workoutData.durationSeconds,
         notes: description || undefined,
         sourceTemplateId: workoutData.sourceTemplateId,
+        imageType: selectedImage?.type,
+        imageUri: selectedImage?.uri || undefined,
+        imageTemplateId: selectedImage?.templateImageId || undefined,
         exercises: exercisesWithCompletedSets.map((we) => ({
           exerciseId: we.exercise.id,
           exerciseName: we.exercise.name,
@@ -493,11 +472,16 @@ export default function SaveWorkoutScreen() {
               reps: set.reps ? parseInt(set.reps, 10) : null,
               setType: set.setType || 'normal',
               completed: true,
+              rpe: set.rpe ?? null,
             })),
         })),
       });
 
       if (workoutId) {
+        // Clear active workout now that save is confirmed
+        discardActiveWorkout();
+        endWorkoutLiveActivity();
+
         // Auto-mark any matching scheduled workout as complete for today
         // Use local date to match how calendar displays dates
         const todayKey = `${completedAt.getFullYear()}-${String(completedAt.getMonth() + 1).padStart(2, '0')}-${String(completedAt.getDate()).padStart(2, '0')}`;
@@ -565,22 +549,6 @@ export default function SaveWorkoutScreen() {
     await performSave();
   };
 
-  // Get color for muscle type
-  const getMuscleColor = (muscle: string): string => {
-    const muscleColors: Record<string, string> = {
-      Legs: colors.workout.legs,
-      Arms: colors.workout.arms,
-      Back: colors.workout.back,
-      Chest: colors.workout.chest,
-      Shoulders: colors.workout.shoulders,
-      Core: colors.workout.core,
-      Abs: colors.workout.core,
-      Cardio: colors.workout.cardio,
-      'Full Body': colors.workout.fullBody,
-    };
-    return muscleColors[muscle] || colors.primary;
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -603,13 +571,18 @@ export default function SaveWorkoutScreen() {
         <View style={[styles.card, styles.workoutInfoCard]}>
           <View style={styles.workoutInfoRow}>
             <Pressable
-              style={styles.imagePlaceholder}
-              onPress={() => {
-                // TODO: Implement image picker
-                Alert.alert('Coming Soon', 'Image upload will be available soon.');
-              }}
+              style={[styles.imagePlaceholder, selectedImage && styles.imagePlaceholderFilled]}
+              onPress={() => setShowImagePicker(true)}
             >
-              <ImagePlaceholderIcon />
+              {selectedImage ? (
+                selectedImage.localSource ? (
+                  <Image source={selectedImage.localSource} style={styles.selectedImage} />
+                ) : (
+                  <Image source={{ uri: selectedImage.uri }} style={styles.selectedImage} />
+                )
+              ) : (
+                <ImagePlaceholderIcon />
+              )}
             </Pressable>
             <View style={styles.workoutTextInputs}>
               <TextInput
@@ -671,54 +644,32 @@ export default function SaveWorkoutScreen() {
               color={colors.primary}
               style={{ paddingVertical: spacing.md }}
             />
+          ) : allMuscles.length > 0 ? (
+            <View style={styles.muscleList}>
+              {allMuscles.map((muscle) => (
+                <View key={muscle.name}>
+                  <Text style={styles.muscleName}>
+                    {muscle.name.charAt(0).toUpperCase() + muscle.name.slice(1)}
+                  </Text>
+                  <View style={styles.muscleBarRow}>
+                    <View style={styles.progressBarContainer}>
+                      <View
+                        style={[
+                          styles.progressBar,
+                          {
+                            width: `${muscle.percentage}%`,
+                            backgroundColor: colors.primary,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.musclePercentage}>{muscle.percentage}%</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
           ) : (
-            <>
-              {/* Primary Muscles */}
-              {primaryMuscles.length > 0 && (
-                <View style={styles.muscleSection}>
-                  <Text style={styles.muscleSectionLabel}>Primary</Text>
-                  <View style={styles.muscleList}>
-                    {primaryMuscles.map((muscle) => (
-                      <View key={muscle.name} style={styles.muscleRow}>
-                        <Text style={styles.muscleName}>{muscle.name}</Text>
-                        <View style={styles.progressBarContainer}>
-                          <View
-                            style={[
-                              styles.progressBar,
-                              {
-                                width: `${muscle.percentage}%`,
-                                backgroundColor: getMuscleColor(muscle.name),
-                              },
-                            ]}
-                          />
-                        </View>
-                        <Text style={styles.musclePercentage}>{muscle.sets} sets</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              {/* Secondary Muscles */}
-              {secondaryMuscles.length > 0 && (
-                <View style={styles.muscleSection}>
-                  {primaryMuscles.length > 0 && <View style={styles.cardDivider} />}
-                  <Text style={styles.muscleSectionLabel}>Secondary</Text>
-                  <View style={styles.secondaryMuscleList}>
-                    {secondaryMuscles.map((muscle) => (
-                      <View key={muscle.name} style={styles.secondaryMusclePill}>
-                        <Text style={styles.secondaryMuscleText}>{muscle.name}</Text>
-                        <Text style={styles.secondaryMuscleSets}>{muscle.sets}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              {primaryMuscles.length === 0 && secondaryMuscles.length === 0 && (
-                <Text style={styles.emptyText}>No muscle data available</Text>
-              )}
-            </>
+            <Text style={styles.emptyText}>No muscle data available</Text>
           )}
         </View>
 
@@ -735,7 +686,9 @@ export default function SaveWorkoutScreen() {
                   onPress={() => toggleExercise(`${we.exercise.id}-${index}`)}
                 >
                   <ExerciseImage gifUrl={we.exercise.gifUrl} size={40} borderRadius={8} />
-                  <Text style={styles.exerciseName}>{toTitleCase(we.exercise.name)}</Text>
+                  <Text style={styles.exerciseName}>
+                    {formatExerciseNameString(we.exercise.name)}
+                  </Text>
                   <Ionicons
                     name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                     size={20}
@@ -747,21 +700,19 @@ export default function SaveWorkoutScreen() {
                   <View style={styles.setsContainer}>
                     <View style={styles.setsHeader}>
                       <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-                      <Text style={[styles.setHeaderText, styles.weightRepsColumn]}>
-                        WEIGHT & REPS
-                      </Text>
+                      <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
                     </View>
                     {completedSets.map((set, setIndex) => (
                       <View key={set.id} style={styles.setRow}>
-                        <Text style={[styles.setText, styles.setColumn]}>{setIndex + 1}</Text>
-                        <Text style={[styles.setText, styles.weightRepsColumn]}>
+                        <Text style={[styles.setNumber, styles.setColumn]}>{setIndex + 1}</Text>
+                        <Text style={styles.setText}>
                           {set.kg && set.reps
-                            ? `${set.kg} ${getWeightUnit(units)} × ${set.reps} reps`
+                            ? `${set.kg} ${getWeightUnit(units)} x ${set.reps} reps${set.rpe ? ` @ RPE ${set.rpe}` : ''}`
                             : set.kg
-                              ? `${set.kg} ${getWeightUnit(units)} × - reps`
+                              ? `${set.kg} ${getWeightUnit(units)} x - reps`
                               : set.reps
-                                ? `- × ${set.reps} reps`
-                                : '- × -'}
+                                ? `- x ${set.reps} reps`
+                                : '- x -'}
                         </Text>
                       </View>
                     ))}
@@ -780,6 +731,13 @@ export default function SaveWorkoutScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Image Picker Bottom Sheet */}
+      <ImagePickerSheet
+        visible={showImagePicker}
+        onClose={() => setShowImagePicker(false)}
+        onImageSelected={(image) => setSelectedImage(image)}
+      />
 
       {/* Exercise Change Modal */}
       <Modal visible={showExerciseChangeModal} transparent animationType="fade">
@@ -859,6 +817,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderStyle: 'dashed',
+    overflow: 'hidden',
+  },
+  imagePlaceholderFilled: {
+    borderStyle: 'solid',
+    borderColor: 'transparent',
+    borderWidth: 0,
+  },
+  selectedImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
   },
   workoutTextInputs: {
     flex: 1,
@@ -910,133 +879,85 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
   },
-  muscleSection: {
-    gap: spacing.xs,
-  },
-  muscleSectionLabel: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.xs,
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.xs,
-  },
   muscleList: {
     gap: spacing.md,
   },
-  muscleRow: {
+  muscleName: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  muscleBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  muscleName: {
-    width: 100,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
-  },
   progressBarContainer: {
     flex: 1,
-    height: 8,
+    height: 10,
     backgroundColor: colors.surfaceSecondary,
-    borderRadius: 4,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   musclePercentage: {
-    width: 50,
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    textAlign: 'right',
-  },
-  secondaryMuscleList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  secondaryMusclePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceSecondary,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: 16,
-    gap: spacing.xs,
-  },
-  secondaryMuscleText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-  },
-  secondaryMuscleSets: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.xs,
-    color: colors.primary,
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    overflow: 'hidden',
+    minWidth: 36,
   },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     gap: spacing.md,
   },
   exerciseName: {
     flex: 1,
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: colors.text,
+    color: colors.primary,
   },
   exerciseDivider: {
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
-    marginHorizontal: spacing.md,
   },
   setsContainer: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.surfaceSecondary,
-    marginHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
-    borderRadius: 8,
+    paddingBottom: spacing.sm,
   },
   setsHeader: {
     flexDirection: 'row',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(217, 217, 217, 0.25)',
+    paddingBottom: spacing.xs,
+    marginLeft: 56,
   },
   setHeaderText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    textAlign: 'center',
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
   },
   setColumn: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  weightRepsColumn: {
-    flex: 3,
-    textAlign: 'center',
+    width: 40,
   },
   setRow: {
     flexDirection: 'row',
-    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    paddingVertical: 4,
+    marginLeft: 56,
+  },
+  setNumber: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.sm,
+    color: colors.text,
   },
   setText: {
     fontFamily: fonts.medium,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.text,
-    textAlign: 'center',
   },
   emptyText: {
     fontFamily: fonts.regular,

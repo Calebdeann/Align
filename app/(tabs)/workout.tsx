@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { getWorkoutHistory, WorkoutHistoryItem } from '@/services/api/workouts';
 import { getCurrentUser } from '@/services/api/user';
@@ -33,7 +34,8 @@ import {
   DEFAULT_FOLDER_ID,
 } from '@/stores/templateStore';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_CLONE_WIDTH = SCREEN_WIDTH - spacing.lg * 2 - spacing.xs;
 
 function SettingsIcon() {
   return (
@@ -50,12 +52,11 @@ function SettingsIcon() {
   );
 }
 
-function ClipboardIcon() {
+function PlusCircleIcon() {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Rect x={6} y={4} width={12} height={16} rx={2} stroke={colors.text} strokeWidth={1.5} />
-      <Path d="M9 2h6v3a1 1 0 01-1 1h-4a1 1 0 01-1-1V2z" stroke={colors.text} strokeWidth={1.5} />
-      <Path d="M9 10h6M9 14h4" stroke={colors.text} strokeWidth={1.5} strokeLinecap="round" />
+      <Circle cx={12} cy={12} r={9} stroke={colors.text} strokeWidth={1.5} />
+      <Path d="M12 8v8M8 12h8" stroke={colors.text} strokeWidth={1.5} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -292,15 +293,35 @@ interface TemplateCardProps {
   template: WorkoutTemplate;
   onStart: () => void;
   onPress: () => void;
+  onDragActivate?: (template: WorkoutTemplate, pageX: number, pageY: number) => void;
+  onDragMove?: (pageX: number, pageY: number) => void;
+  onDragEnd?: () => void;
+  isDragGhost?: boolean;
 }
 
-function TemplateCard({ template, onStart, onPress }: TemplateCardProps) {
+function TemplateCard({
+  template,
+  onStart,
+  onPress,
+  onDragActivate,
+  onDragMove,
+  onDragEnd,
+  isDragGhost,
+}: TemplateCardProps) {
   const totalSets = getTemplateTotalSets(template);
   const duration = formatTemplateDuration(template.estimatedDuration);
+  const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragActivatedRef = useRef(false);
+  const startPosRef = useRef({ x: 0, y: 0 });
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  return (
+  const cardContent = (
     <Pressable
-      style={[styles.templateCard, { backgroundColor: template.tagColor + '30' }]}
+      style={[
+        styles.templateCard,
+        { backgroundColor: template.tagColor + '30' },
+        isDragGhost && { opacity: 0.3 },
+      ]}
       onPress={onPress}
     >
       {/* Template Image */}
@@ -336,6 +357,66 @@ function TemplateCard({ template, onStart, onPress }: TemplateCardProps) {
         <Text style={styles.startTemplateText}>Start</Text>
       </Pressable>
     </Pressable>
+  );
+
+  if (!onDragActivate) {
+    return cardContent;
+  }
+
+  return (
+    <View
+      onTouchStart={(e) => {
+        startPosRef.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+        dragActivatedRef.current = false;
+        Animated.timing(scaleAnim, {
+          toValue: 1.02,
+          duration: 2000,
+          useNativeDriver: true,
+        }).start();
+        dragTimerRef.current = setTimeout(() => {
+          dragActivatedRef.current = true;
+          scaleAnim.setValue(1);
+          onDragActivate(template, startPosRef.current.x, startPosRef.current.y);
+        }, 2000);
+      }}
+      onTouchMove={(e) => {
+        if (dragActivatedRef.current && onDragMove) {
+          onDragMove(e.nativeEvent.pageX, e.nativeEvent.pageY);
+        }
+      }}
+      onTouchEnd={() => {
+        if (dragTimerRef.current) {
+          clearTimeout(dragTimerRef.current);
+          dragTimerRef.current = null;
+        }
+        if (dragActivatedRef.current && onDragEnd) {
+          onDragEnd();
+          dragActivatedRef.current = false;
+        }
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }).start();
+      }}
+      onTouchCancel={() => {
+        if (dragTimerRef.current) {
+          clearTimeout(dragTimerRef.current);
+          dragTimerRef.current = null;
+        }
+        if (dragActivatedRef.current && onDragEnd) {
+          onDragEnd();
+          dragActivatedRef.current = false;
+        }
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }).start();
+      }}
+    >
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>{cardContent}</Animated.View>
+    </View>
   );
 }
 
@@ -554,6 +635,24 @@ export default function WorkoutScreen() {
   const toggleFolderCollapsed = useTemplateStore((state) => state.toggleFolderCollapsed);
   const reorderFoldersInStore = useTemplateStore((state) => state.reorderFolders);
   const deleteFolder = useTemplateStore((state) => state.deleteFolder);
+  const moveTemplateToFolder = useTemplateStore((state) => state.moveTemplateToFolder);
+
+  // Drag-to-folder state
+  const [isDragToFolder, setIsDragToFolder] = useState(false);
+  const [draggedTemplate, setDraggedTemplate] = useState<WorkoutTemplate | null>(null);
+  const [hoveredFolderId, setHoveredFolderId] = useState<string | null>(null);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const dragX = useRef(new Animated.Value(0)).current;
+  const dragY = useRef(new Animated.Value(0)).current;
+  const dragOffsetX = useRef(new Animated.Value(CARD_CLONE_WIDTH / 2)).current;
+  const dragOffsetY = useRef(new Animated.Value(40)).current;
+  const dragOpacity = useRef(new Animated.Value(0)).current;
+  const dragScale = useRef(new Animated.Value(1)).current;
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const folderContainerPositions = useRef<Map<string, { y: number; height: number }>>(new Map());
+  const folderContainerRefs = useRef<Map<string, View>>(new Map());
+  const hoveredFolderIdRef = useRef<string | null>(null);
+  const dragSourceFolderId = useRef<string | null>(null);
 
   // Folder creation modal state
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
@@ -572,6 +671,11 @@ export default function WorkoutScreen() {
     // Only show the modal if there's a minimized workout (widget visible at bottom)
     // If there's a non-minimized workout (stale state), discard it and start fresh
     if (activeWorkout?.isMinimized) {
+      // If the minimized workout is empty (no exercises), just resume it
+      if (activeWorkout.exercises.length === 0) {
+        router.push('/active-workout');
+        return;
+      }
       setShowWorkoutInProgressModal(true);
     } else {
       if (activeWorkout) {
@@ -608,6 +712,15 @@ export default function WorkoutScreen() {
   const handleStartFromTemplate = (templateId: string) => {
     // Only show the modal if there's a minimized workout (widget visible at bottom)
     if (activeWorkout?.isMinimized) {
+      // If the minimized workout is empty (no exercises), discard it and start from template
+      if (activeWorkout.exercises.length === 0) {
+        discardActiveWorkout();
+        router.push({
+          pathname: '/active-workout',
+          params: { templateId },
+        });
+        return;
+      }
       setPendingTemplateId(templateId);
       setShowWorkoutInProgressModal(true);
     } else {
@@ -896,6 +1009,89 @@ export default function WorkoutScreen() {
     return templates.filter((t) => !t.folderId);
   };
 
+  // Drag-to-folder functions
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const measureFolderContainers = () => {
+    folderContainerRefs.current.forEach((ref, folderId) => {
+      ref.measureInWindow((_x: number, y: number, _width: number, height: number) => {
+        folderContainerPositions.current.set(folderId, { y, height });
+      });
+    });
+  };
+
+  const activateDrag = (
+    template: WorkoutTemplate,
+    sourceFolderId: string,
+    pageX: number,
+    pageY: number
+  ) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    dragX.setValue(pageX);
+    dragY.setValue(pageY);
+    setIsDragToFolder(true);
+    setDraggedTemplate(template);
+    setScrollEnabled(false);
+    dragSourceFolderId.current = sourceFolderId;
+    measureFolderContainers();
+
+    dragOpacity.setValue(0);
+    Animated.parallel([
+      Animated.spring(dragScale, { toValue: 1.05, useNativeDriver: true }),
+      Animated.timing(dragOpacity, { toValue: 0.95, duration: 150, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const handleDragTouchMove = (pageX: number, pageY: number) => {
+    dragX.setValue(pageX);
+    dragY.setValue(pageY);
+
+    let found: string | null = null;
+    folderContainerPositions.current.forEach((pos, folderId) => {
+      const pad = 8;
+      if (pageY >= pos.y - pad && pageY <= pos.y + pos.height + pad) {
+        found = folderId;
+      }
+    });
+
+    if (found !== hoveredFolderIdRef.current) {
+      hoveredFolderIdRef.current = found;
+      setHoveredFolderId(found);
+      if (found) Haptics.selectionAsync();
+    }
+  };
+
+  const handleDragDrop = () => {
+    const target = hoveredFolderIdRef.current;
+    if (target && draggedTemplate && target !== dragSourceFolderId.current) {
+      moveTemplateToFolder(draggedTemplate.id, target);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    resetDragState();
+  };
+
+  const resetDragState = () => {
+    clearLongPressTimer();
+    Animated.timing(dragOpacity, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsDragToFolder(false);
+      setDraggedTemplate(null);
+      setHoveredFolderId(null);
+      hoveredFolderIdRef.current = null;
+      dragSourceFolderId.current = null;
+      setScrollEnabled(true);
+      dragScale.setValue(1);
+    });
+  };
+
   // Drag-based reorder functions
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
@@ -953,6 +1149,7 @@ export default function WorkoutScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
+        scrollEnabled={scrollEnabled}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -965,9 +1162,6 @@ export default function WorkoutScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Workout</Text>
-          <Pressable style={styles.iconButton}>
-            <SettingsIcon />
-          </Pressable>
         </View>
 
         {/* Start Empty Workout Button */}
@@ -982,7 +1176,7 @@ export default function WorkoutScreen() {
         <View style={styles.cardsRow}>
           {/* New Template Card */}
           <Pressable style={styles.card} onPress={handleNewTemplatePress}>
-            <ClipboardIcon />
+            <PlusCircleIcon />
             <Text style={styles.cardText}>New Template</Text>
           </Pressable>
 
@@ -1006,7 +1200,7 @@ export default function WorkoutScreen() {
           </View>
         )}
 
-        {templates.length === 0 ? (
+        {templates.length === 0 && folders.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="fitness-outline" size={48} color={colors.border} />
             <Text style={styles.emptyStateText}>No templates yet</Text>
@@ -1019,9 +1213,22 @@ export default function WorkoutScreen() {
               const folderTemplates = getTemplatesInFolder(folder.id);
 
               return (
-                <View key={folder.id} style={styles.folderContainer}>
+                <View
+                  key={folder.id}
+                  ref={(ref) => {
+                    if (ref) folderContainerRefs.current.set(folder.id, ref);
+                  }}
+                  style={styles.folderContainer}
+                >
                   {/* Folder header - collapsible with 3-dot menu */}
-                  <View style={styles.folderHeaderRow}>
+                  <View
+                    style={[
+                      styles.folderHeaderRow,
+                      isDragToFolder &&
+                        hoveredFolderId === folder.id &&
+                        styles.folderHeaderDropTarget,
+                    ]}
+                  >
                     <Pressable
                       style={styles.folderHeader}
                       onPress={() => toggleFolderCollapsed(folder.id)}
@@ -1041,7 +1248,18 @@ export default function WorkoutScreen() {
                   {!folder.isCollapsed && (
                     <View style={styles.folderTemplates}>
                       {folderTemplates.length === 0 ? (
-                        <Text style={styles.emptyFolderText}>No templates yet</Text>
+                        <Pressable
+                          style={styles.addTemplateBox}
+                          onPress={() => {
+                            router.push({
+                              pathname: '/create-template',
+                              params: { folderId: folder.id },
+                            });
+                          }}
+                        >
+                          <Text style={styles.addTemplateIcon}>+</Text>
+                          <Text style={styles.addTemplateText}>Add Template</Text>
+                        </Pressable>
                       ) : (
                         folderTemplates.map((template) => (
                           <TemplateCard
@@ -1049,6 +1267,14 @@ export default function WorkoutScreen() {
                             template={template}
                             onStart={() => handleStartFromTemplate(template.id)}
                             onPress={() => handleTemplatePress(template)}
+                            onDragActivate={
+                              folders.length > 1
+                                ? (t, px, py) => activateDrag(t, folder.id, px, py)
+                                : undefined
+                            }
+                            onDragMove={folders.length > 1 ? handleDragTouchMove : undefined}
+                            onDragEnd={folders.length > 1 ? handleDragDrop : undefined}
+                            isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
                           />
                         ))
                       )}
@@ -1065,6 +1291,14 @@ export default function WorkoutScreen() {
                 template={template}
                 onStart={() => handleStartFromTemplate(template.id)}
                 onPress={() => handleTemplatePress(template)}
+                onDragActivate={
+                  folders.length > 1
+                    ? (t, px, py) => activateDrag(t, DEFAULT_FOLDER_ID, px, py)
+                    : undefined
+                }
+                onDragMove={folders.length > 1 ? handleDragTouchMove : undefined}
+                onDragEnd={folders.length > 1 ? handleDragDrop : undefined}
+                isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
               />
             ))}
           </View>
@@ -1297,6 +1531,58 @@ export default function WorkoutScreen() {
           </Animated.View>
         </Pressable>
       </Modal>
+
+      {/* Floating drag overlay */}
+      {isDragToFolder && draggedTemplate && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.dragOverlay,
+            {
+              opacity: dragOpacity,
+              transform: [
+                { translateX: Animated.subtract(dragX, dragOffsetX) },
+                { translateY: Animated.subtract(dragY, dragOffsetY) },
+                { scale: dragScale },
+              ],
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.templateCard,
+              {
+                backgroundColor: draggedTemplate.tagColor + '30',
+                width: CARD_CLONE_WIDTH,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 8,
+              },
+            ]}
+          >
+            <View style={styles.templateImageContainer}>
+              {draggedTemplate.localImage ? (
+                <Image source={draggedTemplate.localImage} style={styles.templateImage} />
+              ) : draggedTemplate.image?.uri ? (
+                <Image source={{ uri: draggedTemplate.image.uri }} style={styles.templateImage} />
+              ) : (
+                <View style={[styles.templateImage, styles.templateImagePlaceholder]}>
+                  <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
+                </View>
+              )}
+            </View>
+            <View style={styles.templateInfo}>
+              <Text style={styles.templateName}>{draggedTemplate.name}</Text>
+              <Text style={styles.templateMeta}>
+                {getTemplateTotalSets(draggedTemplate)} Sets •{' '}
+                {formatTemplateDuration(draggedTemplate.estimatedDuration)}
+              </Text>
+            </View>
+          </View>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1709,7 +1995,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   folderButton: {
-    padding: 4,
+    paddingVertical: 4,
+    paddingLeft: 4,
+    paddingRight: 0,
   },
 
   // Folder styles
@@ -1729,7 +2017,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   folderMenuButton: {
-    padding: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingLeft: spacing.sm,
+    paddingRight: 0,
   },
   folderName: {
     fontFamily: fonts.medium,
@@ -1752,23 +2042,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.md,
-    minHeight: 80,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: 'rgba(128, 128, 128, 0.5)',
+    borderColor: 'rgba(128, 128, 128, 0.25)',
     borderRadius: 16,
-    backgroundColor: 'transparent',
   },
   addTemplateIcon: {
     fontFamily: fonts.medium,
     fontSize: 20,
     color: colors.textSecondary,
+    opacity: 0.5,
     marginRight: spacing.sm,
   },
   addTemplateText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.textSecondary,
+    opacity: 0.5,
   },
 
   // Create folder modal styles
@@ -1857,5 +2147,20 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.text,
+  },
+  dragOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    zIndex: 9999,
+  },
+  folderHeaderDropTarget: {
+    backgroundColor: 'rgba(148, 122, 255, 0.12)',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderStyle: 'dashed' as const,
+    marginHorizontal: -4,
+    paddingHorizontal: 4,
   },
 });

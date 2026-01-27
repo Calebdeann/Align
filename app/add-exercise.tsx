@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { toTitleCase } from '@/utils/textFormatters';
+import { formatExerciseDisplayName } from '@/utils/textFormatters';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
@@ -133,7 +133,7 @@ function ExerciseItem({
       <View style={styles.exerciseInfo}>
         <Pressable onPress={onPressName} disabled={isAlreadyAdded}>
           <Text style={[styles.exerciseName, isAlreadyAdded && styles.exerciseNameDisabled]}>
-            {toTitleCase(exercise.name)}
+            {formatExerciseDisplayName(exercise.name, exercise.equipment)}
           </Text>
         </Pressable>
         <Text style={styles.exerciseMuscle}>
@@ -280,9 +280,13 @@ export default function AddExerciseScreen() {
 
   // Get sections data: Popular at top, then All Exercises below
   const sections = useMemo(() => {
-    // If searching, show search results only
+    // If searching, show search results with active filters applied
     if (debouncedQuery.trim()) {
-      const searchResults = filterExercisesClient(allExercises, { query: debouncedQuery });
+      const searchResults = filterExercisesClient(allExercises, {
+        query: debouncedQuery,
+        muscles: selectedMuscle !== 'all' ? [selectedMuscle] : undefined,
+        equipment: selectedEquipment !== 'all' ? selectedEquipment : undefined,
+      });
       return [{ title: `Results for "${debouncedQuery}"`, data: searchResults }];
     }
 
@@ -702,7 +706,7 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: colors.text,
+    color: colors.primary,
   },
   exerciseMuscle: {
     fontFamily: fonts.regular,

@@ -186,6 +186,7 @@ Use `QuestionLayout` component with `optionStyles` for all multi-select/single-s
 4. Keep components small and focused
 5. All API write functions must validate input with Zod schemas before DB operations
 6. RLS policies enforce data isolation - users can only access their own data
+7. **NEVER reference "male" in the app.** This is a women's workout tracker. All exercise animations, images, and content must use female variants only. Never add male-gendered content, labels, or references in any user-facing code or new scripts.
 
 ## Backend Security
 

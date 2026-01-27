@@ -15,6 +15,7 @@ export interface ActiveExerciseSet {
   kg: string;
   reps: string;
   completed: boolean;
+  rpe?: number | null;
 }
 
 export interface ActiveExercise {

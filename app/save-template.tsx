@@ -19,18 +19,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise } from '@/stores/templateStore';
 import { WorkoutImage } from '@/stores/workoutStore';
 import { getCurrentUser } from '@/services/api/user';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { toTitleCase } from '@/utils/textFormatters';
+import {
+  ImagePickerSheet,
+  ImagePlaceholderIcon,
+  SelectedImageData,
+} from '@/components/ImagePickerSheet';
+import { consumePendingTemplateImage } from '@/lib/imagePickerState';
+import { formatExerciseNameString } from '@/utils/textFormatters';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { getWeightUnit, fromKgForDisplay } from '@/utils/units';
 import { getTemplateImageById } from '@/constants/templateImages';
-import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -46,7 +50,6 @@ const WORKOUT_COLOURS = [
   { id: 'red', color: colors.workout.core },
 ];
 
-// Icons
 function BackIcon() {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -72,53 +75,6 @@ function CloseIcon() {
         strokeLinejoin="round"
       />
     </Svg>
-  );
-}
-
-function ImagePlaceholderIcon() {
-  return (
-    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-        <Rect
-          x={3}
-          y={3}
-          width={18}
-          height={18}
-          rx={2}
-          stroke={colors.textTertiary}
-          strokeWidth={1.5}
-        />
-        <Path
-          d="M8.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"
-          stroke={colors.textTertiary}
-          strokeWidth={1.5}
-        />
-        <Path
-          d="M21 15l-5-5L5 21"
-          stroke={colors.textTertiary}
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
-      <View
-        style={{
-          position: 'absolute',
-          bottom: -4,
-          right: -4,
-          width: 16,
-          height: 16,
-          borderRadius: 8,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Svg width={10} height={10} viewBox="0 0 24 24" fill="none">
-          <Path d="M12 5v14M5 12h14" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" />
-        </Svg>
-      </View>
-    </View>
   );
 }
 
@@ -169,16 +125,8 @@ export default function SaveTemplateScreen() {
   };
 
   // Image state
-  const [selectedImage, setSelectedImage] = useState<{
-    type: 'template' | 'camera' | 'gallery';
-    uri: string;
-    localSource?: ImageSourcePropType;
-    templateImageId?: string;
-  } | null>(null);
-
-  // Image picker modal state
-  const [showImagePickerModal, setShowImagePickerModal] = useState(false);
-  const imageSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const [selectedImage, setSelectedImage] = useState<SelectedImageData | null>(null);
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   // Colour modal state
   const [showColourModal, setShowColourModal] = useState(false);
@@ -276,71 +224,6 @@ export default function SaveTemplateScreen() {
     closeColourModal();
   };
 
-  // Image picker modal functions
-  const openImagePickerModal = () => {
-    setShowImagePickerModal(true);
-    Animated.spring(imageSlideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 11,
-    }).start();
-  };
-
-  const closeImagePickerModal = () => {
-    Animated.timing(imageSlideAnim, {
-      toValue: SCREEN_HEIGHT,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setShowImagePickerModal(false));
-  };
-
-  const handleTakePhoto = async () => {
-    closeImagePickerModal();
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission Needed', 'Please allow camera access in Settings.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setSelectedImage({
-        type: 'camera',
-        uri: result.assets[0].uri,
-      });
-    }
-  };
-
-  const handleChooseFromLibrary = async () => {
-    closeImagePickerModal();
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission Needed', 'Please allow photo library access in Settings.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setSelectedImage({
-        type: 'gallery',
-        uri: result.assets[0].uri,
-      });
-    }
-  };
-
-  const handleOpenTemplates = () => {
-    closeImagePickerModal();
-    router.push('/template-images');
-  };
-
   const getSelectedColour = () => {
     const colour = WORKOUT_COLOURS.find((c) => c.id === selectedColourId);
     return colour?.color || colors.primary;
@@ -432,7 +315,7 @@ export default function SaveTemplateScreen() {
           <View style={styles.infoRow}>
             <Pressable
               style={[styles.imagePlaceholder, selectedImage && styles.imagePlaceholderFilled]}
-              onPress={openImagePickerModal}
+              onPress={() => setShowImagePicker(true)}
             >
               {selectedImage ? (
                 selectedImage.localSource ? (
@@ -488,7 +371,9 @@ export default function SaveTemplateScreen() {
                     size={40}
                     borderRadius={8}
                   />
-                  <Text style={styles.exerciseName}>{toTitleCase(exercise.exerciseName)}</Text>
+                  <Text style={styles.exerciseName}>
+                    {formatExerciseNameString(exercise.exerciseName)}
+                  </Text>
                   <Ionicons
                     name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                     size={20}
@@ -536,55 +421,12 @@ export default function SaveTemplateScreen() {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Image Picker Bottom Sheet Modal */}
-      <Modal
-        visible={showImagePickerModal}
-        transparent
-        animationType="none"
-        onRequestClose={closeImagePickerModal}
-      >
-        <Pressable style={styles.modalOverlay} onPress={closeImagePickerModal}>
-          <Animated.View
-            style={[styles.modalContent, { transform: [{ translateY: imageSlideAnim }] }]}
-          >
-            <Pressable onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalHandle} />
-
-              <View style={styles.modalHeader}>
-                <Pressable style={styles.modalCloseButton} onPress={closeImagePickerModal}>
-                  <CloseIcon />
-                </Pressable>
-                <Text style={styles.modalTitle}>Add Photo</Text>
-                <View style={styles.modalCloseButton} />
-              </View>
-
-              <View style={styles.imagePickerOptions}>
-                <Pressable style={styles.imagePickerRow} onPress={handleChooseFromLibrary}>
-                  <Ionicons name="image-outline" size={22} color={colors.text} />
-                  <Text style={styles.imagePickerLabel}>Choose from Library</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-                </Pressable>
-
-                <View style={styles.divider} />
-
-                <Pressable style={styles.imagePickerRow} onPress={handleTakePhoto}>
-                  <Ionicons name="camera-outline" size={22} color={colors.text} />
-                  <Text style={styles.imagePickerLabel}>Take Photo</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-                </Pressable>
-
-                <View style={styles.divider} />
-
-                <Pressable style={styles.imagePickerRow} onPress={handleOpenTemplates}>
-                  <Ionicons name="grid-outline" size={22} color={colors.text} />
-                  <Text style={styles.imagePickerLabel}>Templates</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-                </Pressable>
-              </View>
-            </Pressable>
-          </Animated.View>
-        </Pressable>
-      </Modal>
+      {/* Image Picker Bottom Sheet */}
+      <ImagePickerSheet
+        visible={showImagePicker}
+        onClose={() => setShowImagePicker(false)}
+        onImageSelected={(image) => setSelectedImage(image)}
+      />
 
       {/* Colour Bottom Sheet Modal */}
       <Modal
@@ -761,9 +603,9 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     flex: 1,
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: colors.text,
+    color: colors.primary,
   },
   setsContainer: {
     paddingHorizontal: spacing.md,
@@ -816,7 +658,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
 
-  // Modal styles
+  // Colour modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -880,24 +722,5 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  // Image picker modal styles
-  imagePickerOptions: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
-  },
-  imagePickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: spacing.sm,
-    gap: spacing.md,
-  },
-  imagePickerLabel: {
-    flex: 1,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
   },
 });

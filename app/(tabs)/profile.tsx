@@ -326,7 +326,7 @@ export default function ProfileScreen() {
         <SectionHeader title="Preferences" />
         <MenuCard>
           <MenuItem
-            icon={<Ionicons name="pencil-outline" size={20} color={colors.text} />}
+            icon={<Ionicons name="scale-outline" size={20} color={colors.text} />}
             label="Units"
             onPress={() => router.push('/profile/select-units')}
           />

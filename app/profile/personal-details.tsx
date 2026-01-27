@@ -16,15 +16,6 @@ import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useUserProfileStore, UserProfile } from '@/stores/userProfileStore';
 import { filterNumericInput } from '@/utils/units';
 
-const GOALS = [
-  'Lose Weight',
-  'Build Muscle',
-  'Get Stronger',
-  'Improve Fitness',
-  'Stay Active',
-  'Tone Up',
-];
-
 interface DetailRowProps {
   label: string;
   value: string;
@@ -50,18 +41,9 @@ function DetailRow({ label, value, onEdit, showDivider = true }: DetailRowProps)
 export default function PersonalDetailsScreen() {
   const { profile, userId, updateProfile } = useUserProfileStore();
 
-  // Modal states
-  const [showGoalModal, setShowGoalModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editField, setEditField] = useState<'weight' | 'height' | 'dob' | null>(null);
   const [editValue, setEditValue] = useState('');
-
-  async function handleGoalChange(newGoal: string) {
-    if (!userId) return;
-
-    await updateProfile({ primary_goal: newGoal });
-    setShowGoalModal(false);
-  }
 
   function openEditModal(field: 'weight' | 'height' | 'dob') {
     setEditField(field);
@@ -162,17 +144,6 @@ export default function PersonalDetailsScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Primary Goal Card */}
-        <View style={styles.goalCard}>
-          <View style={styles.goalLeft}>
-            <Text style={styles.goalLabel}>Primary Goal</Text>
-            <Text style={styles.goalValue}>{profile?.primary_goal || 'Not set'}</Text>
-          </View>
-          <Pressable style={styles.changeGoalButton} onPress={() => setShowGoalModal(true)}>
-            <Text style={styles.changeGoalText}>Change Goal</Text>
-          </Pressable>
-        </View>
-
         {/* Details Card */}
         <View style={styles.detailsCard}>
           <DetailRow
@@ -193,37 +164,6 @@ export default function PersonalDetailsScreen() {
           />
         </View>
       </ScrollView>
-
-      {/* Goal Selection Modal */}
-      <Modal visible={showGoalModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowGoalModal(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Your Goal</Text>
-            {GOALS.map((goal) => (
-              <Pressable
-                key={goal}
-                style={[
-                  styles.goalOption,
-                  profile?.primary_goal === goal && styles.goalOptionSelected,
-                ]}
-                onPress={() => handleGoalChange(goal)}
-              >
-                <Text
-                  style={[
-                    styles.goalOptionText,
-                    profile?.primary_goal === goal && styles.goalOptionTextSelected,
-                  ]}
-                >
-                  {goal}
-                </Text>
-                {profile?.primary_goal === goal && (
-                  <Ionicons name="checkmark" size={20} color={colors.textInverse} />
-                )}
-              </Pressable>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
 
       {/* Edit Field Modal */}
       <Modal visible={showEditModal} transparent animationType="fade">
@@ -288,39 +228,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
   },
-  goalCard: {
-    ...cardStyle,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  goalLeft: {
-    flex: 1,
-  },
-  goalLabel: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  goalValue: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
-    color: colors.text,
-  },
-  changeGoalButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-  },
-  changeGoalText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.sm,
-    color: colors.textInverse,
-  },
   detailsCard: {
     ...cardStyle,
     overflow: 'hidden',
@@ -372,27 +279,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.md,
     textAlign: 'center',
-  },
-  goalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: 12,
-    marginBottom: spacing.sm,
-    backgroundColor: colors.card,
-  },
-  goalOptionSelected: {
-    backgroundColor: colors.primary,
-  },
-  goalOptionText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  goalOptionTextSelected: {
-    color: colors.textInverse,
   },
   editInput: {
     ...cardStyle,

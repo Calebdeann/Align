@@ -23,7 +23,7 @@ import {
   type WorkoutMuscleData,
 } from '@/services/api/workouts';
 import { UnitSystem, kgToLbs, getWeightUnit } from '@/utils/units';
-import { toTitleCase } from '@/utils/textFormatters';
+import { formatExerciseNameString } from '@/utils/textFormatters';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
@@ -439,7 +439,9 @@ export default function WorkoutDetailsScreen() {
                     size={40}
                     borderRadius={8}
                   />
-                  <Text style={styles.exerciseName}>{toTitleCase(ex.exercise_name)}</Text>
+                  <Text style={styles.exerciseName}>
+                    {formatExerciseNameString(ex.exercise_name)}
+                  </Text>
                   <Ionicons
                     name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                     size={20}
@@ -452,21 +454,19 @@ export default function WorkoutDetailsScreen() {
                   <View style={styles.setsContainer}>
                     <View style={styles.setsHeader}>
                       <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-                      <Text style={[styles.setHeaderText, styles.weightRepsColumn]}>
-                        WEIGHT & REPS
-                      </Text>
+                      <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
                     </View>
                     {completedSets.map((set, setIndex) => (
                       <View key={set.id} style={styles.setRow}>
-                        <Text style={[styles.setText, styles.setColumn]}>{setIndex + 1}</Text>
-                        <Text style={[styles.setText, styles.weightRepsColumn]}>
+                        <Text style={[styles.setNumber, styles.setColumn]}>{setIndex + 1}</Text>
+                        <Text style={styles.setText}>
                           {set.weight && set.reps
-                            ? `${units === 'imperial' ? Math.round(kgToLbs(set.weight)) : set.weight} ${weightLabel} × ${set.reps} reps`
+                            ? `${units === 'imperial' ? Math.round(kgToLbs(set.weight)) : set.weight} ${weightLabel} x ${set.reps} reps${set.rpe ? ` @ RPE ${set.rpe}` : ''}`
                             : set.weight
-                              ? `${units === 'imperial' ? Math.round(kgToLbs(set.weight)) : set.weight} ${weightLabel} × - reps`
+                              ? `${units === 'imperial' ? Math.round(kgToLbs(set.weight)) : set.weight} ${weightLabel} x - reps`
                               : set.reps
-                                ? `- × ${set.reps} reps`
-                                : '- × -'}
+                                ? `- x ${set.reps} reps`
+                                : '- x -'}
                         </Text>
                       </View>
                     ))}
@@ -660,58 +660,51 @@ const styles = StyleSheet.create({
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     gap: spacing.md,
   },
   exerciseName: {
     flex: 1,
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: colors.text,
+    color: colors.primary,
   },
   exerciseDivider: {
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
-    marginHorizontal: spacing.md,
   },
   setsContainer: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.surfaceSecondary,
-    marginHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
-    borderRadius: 8,
+    paddingBottom: spacing.sm,
   },
   setsHeader: {
     flexDirection: 'row',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(217, 217, 217, 0.25)',
+    paddingBottom: spacing.xs,
+    marginLeft: 56,
   },
   setHeaderText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    textAlign: 'center',
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
   },
   setColumn: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  weightRepsColumn: {
-    flex: 3,
-    textAlign: 'center',
+    width: 40,
   },
   setRow: {
     flexDirection: 'row',
-    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    paddingVertical: 4,
+    marginLeft: 56,
+  },
+  setNumber: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.sm,
+    color: colors.text,
   },
   setText: {
     fontFamily: fonts.medium,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.text,
-    textAlign: 'center',
   },
   emptyText: {
     fontFamily: fonts.regular,

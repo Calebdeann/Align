@@ -44,7 +44,17 @@ export interface WorkoutTemplate {
   estimatedDuration: number; // in minutes
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   equipment: string; // 'Gym', 'Home', 'No Equipment'
-  category?: 'core' | 'glutes' | 'lower-body' | 'pull' | 'push' | 'upper-body'; // For explore filter categories
+  category?:
+    | 'core'
+    | 'glutes'
+    | 'lower-body'
+    | 'pull'
+    | 'push'
+    | 'upper-body'
+    | 'at-home'
+    | 'travel'
+    | 'cardio'
+    | 'rehab'; // For explore filter categories
   exercises: TemplateExercise[];
   isPreset: boolean; // true for explore library, false for user-created
   createdAt: string;
@@ -78,7 +88,7 @@ interface TemplateStore {
   lastSyncError: string | null;
 
   // Actions
-  addTemplate: (template: WorkoutTemplate) => void;
+  addTemplate: (template: WorkoutTemplate, tagColor?: string) => boolean;
   removeTemplate: (id: string) => void;
   createTemplate: (input: TemplateInput) => WorkoutTemplate;
   updateTemplate: (id: string, updates: Partial<TemplateInput>) => void;
@@ -122,10 +132,20 @@ export const useTemplateStore = create<TemplateStore>()(
       lastSyncError: null,
 
       // Add a preset template to user's library (local only - no backend sync for presets)
-      addTemplate: (template) => {
+      // Returns true if added, false if already exists
+      addTemplate: (template, tagColor) => {
+        const { templates } = get();
+        const alreadyExists = templates.some(
+          (t) => t.id === template.id || t.name === template.name
+        );
+        if (alreadyExists) return false;
         set((state) => ({
-          templates: [...state.templates, { ...template, isPreset: false }],
+          templates: [
+            ...state.templates,
+            { ...template, isPreset: false, ...(tagColor ? { tagColor } : {}) },
+          ],
         }));
+        return true;
       },
 
       // Remove template from user's library (also removes from backend)
@@ -392,6 +412,17 @@ export const useTemplateStore = create<TemplateStore>()(
         templates: state.templates,
         folders: state.folders,
       }),
+      // Deduplicate templates on rehydration (fixes corrupted state from past bugs)
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          const seen = new Set<string>();
+          state.templates = state.templates.filter((t) => {
+            if (seen.has(t.id)) return false;
+            seen.add(t.id);
+            return true;
+          });
+        }
+      },
     }
   )
 );

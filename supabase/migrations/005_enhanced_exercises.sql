@@ -4,9 +4,9 @@
 -- Add new columns to exercises table
 ALTER TABLE exercises
 ADD COLUMN IF NOT EXISTS exercise_db_id TEXT,           -- Original ExerciseDB ID for reference
-ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT 'female',   -- 'male' or 'female' - default to female for our app
+ADD COLUMN IF NOT EXISTS gender TEXT DEFAULT 'female',   -- Animation gender variant - default to female for our app
 ADD COLUMN IF NOT EXISTS video_url TEXT,                 -- Video URL if available
-ADD COLUMN IF NOT EXISTS gif_url_male TEXT,              -- Male animation URL
+ADD COLUMN IF NOT EXISTS gif_url_male TEXT,              -- Unused legacy column (kept for migration compatibility)
 ADD COLUMN IF NOT EXISTS gif_url_female TEXT,            -- Female animation URL
 ADD COLUMN IF NOT EXISTS target_muscles TEXT[],          -- Array of target/primary muscles
 ADD COLUMN IF NOT EXISTS secondary_muscles TEXT[],       -- Array of secondary muscles

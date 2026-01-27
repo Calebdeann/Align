@@ -19,8 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise } from '@/stores/templateStore';
 import { getWeightUnit, fromKgForDisplay } from '@/utils/units';
@@ -28,10 +27,15 @@ import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { WorkoutImage } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { toTitleCase } from '@/utils/textFormatters';
+import { formatExerciseNameString } from '@/utils/textFormatters';
 import { getCurrentUser } from '@/services/api/user';
 import { getTemplateImageById } from '@/constants/templateImages';
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
+import {
+  ImagePickerSheet,
+  ImagePlaceholderIcon,
+  SelectedImageData,
+} from '@/components/ImagePickerSheet';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -51,54 +55,6 @@ const WORKOUT_COLOURS = [
   { id: 'yellow', color: colors.workout.shoulders },
   { id: 'red', color: colors.workout.core },
 ];
-
-// Icons
-function ImagePlaceholderIcon() {
-  return (
-    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-        <Rect
-          x={3}
-          y={3}
-          width={18}
-          height={18}
-          rx={2}
-          stroke={colors.textTertiary}
-          strokeWidth={1.5}
-        />
-        <Path
-          d="M8.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"
-          stroke={colors.textTertiary}
-          strokeWidth={1.5}
-        />
-        <Path
-          d="M21 15l-5-5L5 21"
-          stroke={colors.textTertiary}
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
-      <View
-        style={{
-          position: 'absolute',
-          bottom: -4,
-          right: -4,
-          width: 16,
-          height: 16,
-          borderRadius: 8,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Svg width={10} height={10} viewBox="0 0 24 24" fill="none">
-          <Path d="M12 5v14M5 12h14" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" />
-        </Svg>
-      </View>
-    </View>
-  );
-}
 
 function CloseIcon() {
   return (
@@ -143,7 +99,7 @@ function ExerciseRow({
           size={40}
           borderRadius={8}
         />
-        <Text style={styles.exerciseName}>{toTitleCase(exercise.exerciseName)}</Text>
+        <Text style={styles.exerciseName}>{formatExerciseNameString(exercise.exerciseName)}</Text>
         <Ionicons
           name={isExpanded ? 'chevron-down' : 'chevron-forward'}
           size={20}
@@ -157,21 +113,21 @@ function ExerciseRow({
           {/* Sets Header */}
           <View style={styles.setsHeader}>
             <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-            <Text style={[styles.setHeaderText, styles.weightRepsColumn]}>WEIGHT & REPS</Text>
+            <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
           </View>
 
           {/* Sets Rows */}
           {exercise.sets.map((set) => (
             <View key={set.setNumber} style={styles.setRow}>
-              <Text style={[styles.setText, styles.setColumn]}>{set.setNumber}</Text>
-              <Text style={[styles.setText, styles.weightRepsColumn]}>
+              <Text style={[styles.setNumber, styles.setColumn]}>{set.setNumber}</Text>
+              <Text style={styles.setText}>
                 {set.targetWeight && set.targetReps
-                  ? `${formatWeight(set.targetWeight)} ${weightLabel} × ${set.targetReps} reps`
+                  ? `${formatWeight(set.targetWeight)} ${weightLabel} x ${set.targetReps} reps`
                   : set.targetWeight
-                    ? `${formatWeight(set.targetWeight)} ${weightLabel} × - reps`
+                    ? `${formatWeight(set.targetWeight)} ${weightLabel} x - reps`
                     : set.targetReps
-                      ? `- × ${set.targetReps} reps`
-                      : '- × -'}
+                      ? `- x ${set.targetReps} reps`
+                      : '- x -'}
               </Text>
             </View>
           ))}
@@ -202,23 +158,22 @@ export default function TemplateDetailScreen() {
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editColourId, setEditColourId] = useState('purple');
-  const [editImage, setEditImage] = useState<{
-    type: 'template' | 'camera' | 'gallery';
-    uri: string;
-    localSource?: ImageSourcePropType;
-    templateImageId?: string;
-  } | null>(null);
+  const [editImage, setEditImage] = useState<SelectedImageData | null>(null);
 
   // Track which exercises are expanded
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
 
-  // Colour modal state
+  // Colour modal state (edit mode)
   const [showColourModal, setShowColourModal] = useState(false);
   const colourSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
-  // Image picker modal state
-  const [showImagePickerModal, setShowImagePickerModal] = useState(false);
-  const imageSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  // Colour picker for "Add to Library" flow
+  const [showAddColourModal, setShowAddColourModal] = useState(false);
+  const [addColourId, setAddColourId] = useState('purple');
+  const addColourSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
+  // Image picker state
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   const toggleExercise = (exerciseId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -267,8 +222,33 @@ export default function TemplateDetailScreen() {
 
   const handleAddToLibrary = () => {
     if (!isSaved && template) {
-      addTemplate(template);
+      // Show colour picker before adding
+      setAddColourId('purple');
+      setShowAddColourModal(true);
+      Animated.spring(addColourSlideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
     }
+  };
+
+  const closeAddColourModal = () => {
+    Animated.timing(addColourSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => setShowAddColourModal(false));
+  };
+
+  const confirmAddWithColour = (colourId: string) => {
+    const colour = WORKOUT_COLOURS.find((c) => c.id === colourId);
+    const tagColor = colour?.color || colors.primary;
+    const added = addTemplate(template, tagColor);
+    closeAddColourModal();
+    if (!added) return;
+    router.navigate('/(tabs)/workout');
   };
 
   const handleStartWorkout = () => {
@@ -405,71 +385,6 @@ export default function TemplateDetailScreen() {
     closeColourModal();
   };
 
-  // Image picker helpers
-  const openImagePickerModal = () => {
-    setShowImagePickerModal(true);
-    Animated.spring(imageSlideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 11,
-    }).start();
-  };
-
-  const closeImagePickerModal = () => {
-    Animated.timing(imageSlideAnim, {
-      toValue: SCREEN_HEIGHT,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setShowImagePickerModal(false));
-  };
-
-  const handleTakePhoto = async () => {
-    closeImagePickerModal();
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission Needed', 'Please allow camera access in Settings.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setEditImage({
-        type: 'camera',
-        uri: result.assets[0].uri,
-      });
-    }
-  };
-
-  const handleChooseFromLibrary = async () => {
-    closeImagePickerModal();
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission Needed', 'Please allow photo library access in Settings.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setEditImage({
-        type: 'gallery',
-        uri: result.assets[0].uri,
-      });
-    }
-  };
-
-  const handleOpenTemplates = () => {
-    closeImagePickerModal();
-    router.push('/template-images');
-  };
-
   // Rendering helpers
   const renderTemplateImage = () => {
     if (isEditing) {
@@ -477,7 +392,7 @@ export default function TemplateDetailScreen() {
       return (
         <Pressable
           style={[styles.imagePlaceholder, editImage && styles.imagePlaceholderFilled]}
-          onPress={openImagePickerModal}
+          onPress={() => setShowImagePicker(true)}
         >
           {editImage ? (
             editImage.localSource ? (
@@ -691,55 +606,66 @@ export default function TemplateDetailScreen() {
         </Pressable>
       </Modal>
 
-      {/* Image Picker Bottom Sheet Modal */}
+      {/* Add to Library Colour Picker Modal */}
       <Modal
-        visible={showImagePickerModal}
+        visible={showAddColourModal}
         transparent
         animationType="none"
-        onRequestClose={closeImagePickerModal}
+        onRequestClose={closeAddColourModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeImagePickerModal}>
+        <Pressable style={styles.modalOverlay} onPress={closeAddColourModal}>
           <Animated.View
-            style={[styles.modalContent, { transform: [{ translateY: imageSlideAnim }] }]}
+            style={[styles.modalContent, { transform: [{ translateY: addColourSlideAnim }] }]}
           >
             <Pressable onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalHandle} />
 
               <View style={styles.modalHeader}>
-                <Pressable style={styles.modalCloseButton} onPress={closeImagePickerModal}>
+                <Pressable style={styles.modalCloseButton} onPress={closeAddColourModal}>
                   <CloseIcon />
                 </Pressable>
-                <Text style={styles.modalTitle}>Add Photo</Text>
+                <Text style={styles.modalTitle}>Choose Colour</Text>
                 <View style={styles.modalCloseButton} />
               </View>
 
-              <View style={styles.imagePickerOptions}>
-                <Pressable style={styles.imagePickerRow} onPress={handleChooseFromLibrary}>
-                  <Ionicons name="image-outline" size={22} color={colors.text} />
-                  <Text style={styles.imagePickerLabel}>Choose from Library</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-                </Pressable>
+              <View style={styles.colourContainer}>
+                <View style={styles.colourGrid}>
+                  {WORKOUT_COLOURS.map((colour) => (
+                    <Pressable
+                      key={colour.id}
+                      style={[
+                        styles.colourOption,
+                        addColourId === colour.id && styles.colourOptionSelected,
+                      ]}
+                      onPress={() => setAddColourId(colour.id)}
+                    >
+                      <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
+                        {addColourId === colour.id && (
+                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                        )}
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
 
-                <View style={styles.editDivider} />
-
-                <Pressable style={styles.imagePickerRow} onPress={handleTakePhoto}>
-                  <Ionicons name="camera-outline" size={22} color={colors.text} />
-                  <Text style={styles.imagePickerLabel}>Take Photo</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-                </Pressable>
-
-                <View style={styles.editDivider} />
-
-                <Pressable style={styles.imagePickerRow} onPress={handleOpenTemplates}>
-                  <Ionicons name="grid-outline" size={22} color={colors.text} />
-                  <Text style={styles.imagePickerLabel}>Templates</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                <Pressable
+                  style={styles.addColourConfirmButton}
+                  onPress={() => confirmAddWithColour(addColourId)}
+                >
+                  <Text style={styles.addColourConfirmText}>Add to Library</Text>
                 </Pressable>
               </View>
             </Pressable>
           </Animated.View>
         </Pressable>
       </Modal>
+
+      {/* Image Picker */}
+      <ImagePickerSheet
+        visible={showImagePicker}
+        onClose={() => setShowImagePicker(false)}
+        onImageSelected={(image) => setEditImage(image)}
+      />
     </SafeAreaView>
   );
 }
@@ -962,59 +888,52 @@ const styles = StyleSheet.create({
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     gap: spacing.md,
   },
   exerciseName: {
     flex: 1,
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: colors.text,
+    color: colors.primary,
   },
   exerciseDivider: {
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
-    marginHorizontal: spacing.md,
   },
   // Sets display styles
   setsContainer: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.surfaceSecondary,
-    marginHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
-    borderRadius: 8,
+    paddingBottom: spacing.sm,
   },
   setsHeader: {
     flexDirection: 'row',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(217, 217, 217, 0.25)',
+    paddingBottom: spacing.xs,
+    marginLeft: 56,
   },
   setHeaderText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    textAlign: 'center',
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
   },
   setColumn: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  weightRepsColumn: {
-    flex: 3,
-    textAlign: 'center',
+    width: 40,
   },
   setRow: {
     flexDirection: 'row',
-    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    paddingVertical: 4,
+    marginLeft: 56,
+  },
+  setNumber: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.sm,
+    color: colors.text,
   },
   setText: {
     fontFamily: fonts.medium,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.text,
-    textAlign: 'center',
   },
   deleteTextButton: {
     alignItems: 'center',
@@ -1094,21 +1013,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imagePickerOptions: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
-  },
-  imagePickerRow: {
-    flexDirection: 'row',
+  addColourConfirmButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: spacing.sm,
-    gap: spacing.md,
+    marginTop: spacing.lg,
   },
-  imagePickerLabel: {
-    flex: 1,
-    fontFamily: fonts.medium,
+  addColourConfirmText: {
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: colors.text,
+    color: '#FFFFFF',
   },
 });

@@ -19,10 +19,34 @@ import Svg, { Path, Rect, Circle, Polyline } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
-import { useTemplateStore, WorkoutTemplate, getTemplateTotalSets } from '@/stores/templateStore';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
+  useTemplateStore,
+  WorkoutTemplate,
+  getTemplateTotalSets,
+  DEFAULT_FOLDER_ID,
+} from '@/stores/templateStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
+import { CATEGORY_HERO_IMAGES } from '@/stores/presetTemplates';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const CARD_GAP = spacing.sm;
+const MODAL_HORIZONTAL_PADDING = spacing.lg;
+const CARD_WIDTH = (SCREEN_WIDTH - MODAL_HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
+const CARD_HEIGHT = CARD_WIDTH * 1.25;
+
+const ALL_CATEGORIES = [
+  { id: 'core', label: 'Abs' },
+  { id: 'glutes', label: 'Glutes' },
+  { id: 'lower-body', label: 'Lower Body' },
+  { id: 'pull', label: 'Pull' },
+  { id: 'push', label: 'Push' },
+  { id: 'upper-body', label: 'Upper Body' },
+  { id: 'at-home', label: 'At Home' },
+  { id: 'travel', label: 'Travel' },
+  { id: 'cardio', label: 'Cardio' },
+  { id: 'rehab', label: 'No Equipment' },
+];
 const MONTH_NAMES = [
   'January',
   'February',
@@ -338,14 +362,13 @@ export default function ScheduleWorkoutScreen() {
   // Template selection state (required - defaults to 'Default Workout')
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<WorkoutTemplate | null>(null);
-  const [isDefaultWorkout, setIsDefaultWorkout] = useState(true); // True = Default Workout selected
+  const [isDefaultWorkout, setIsDefaultWorkout] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // Get templates from store
   const templates = useTemplateStore((state) => state.templates);
   const presetTemplates = useTemplateStore((state) => state.presetTemplates);
-
-  // All available templates (user-created + presets without category)
-  const allTemplates = [...templates, ...presetTemplates.filter((t) => !t.category)];
+  const folders = useTemplateStore((state) => state.folders);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const repeatSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -402,7 +425,10 @@ export default function ScheduleWorkoutScreen() {
       toValue: SCREEN_HEIGHT,
       duration: 250,
       useNativeDriver: true,
-    }).start(() => setShowTemplateModal(false));
+    }).start(() => {
+      setShowTemplateModal(false);
+      setSelectedCategory(null);
+    });
   };
 
   const selectTemplate = (template: WorkoutTemplate | null, isDefault: boolean = false) => {
@@ -410,6 +436,34 @@ export default function ScheduleWorkoutScreen() {
     setIsDefaultWorkout(isDefault);
     closeTemplateModal();
   };
+
+  // Helper: get templates in a folder
+  function getTemplatesInFolder(folderId: string) {
+    if (folderId === DEFAULT_FOLDER_ID) {
+      return templates.filter((t) => t.folderId === folderId || !t.folderId);
+    }
+    return templates.filter((t) => t.folderId === folderId);
+  }
+
+  // Helper: count presets per category
+  function getCategoryCount(categoryId: string) {
+    return presetTemplates.filter((t) => t.category === categoryId).length;
+  }
+
+  // Helper: get category label
+  function getCategoryLabel(categoryId: string | null) {
+    if (!categoryId) return '';
+    const cat = ALL_CATEGORIES.find((c) => c.id === categoryId);
+    return cat?.label || '';
+  }
+
+  // Presets filtered by selected category
+  const categoryTemplates = selectedCategory
+    ? presetTemplates.filter((t) => t.category === selectedCategory)
+    : [];
+
+  // Whether user has any templates
+  const hasUserTemplates = templates.length > 0;
 
   const selectColour = (colourId: string) => {
     setSelectedColour(colourId);
@@ -1113,16 +1167,30 @@ export default function ScheduleWorkoutScreen() {
       >
         <Pressable style={styles.modalOverlay} onPress={closeTemplateModal}>
           <Animated.View
-            style={[styles.modalContent, { transform: [{ translateY: templateSlideAnim }] }]}
+            style={[
+              styles.templateModalContent,
+              { transform: [{ translateY: templateSlideAnim }] },
+            ]}
           >
-            <Pressable onPress={(e) => e.stopPropagation()}>
+            <Pressable style={{ flex: 1 }} onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalHandle} />
 
               <View style={styles.modalHeader}>
-                <Pressable style={styles.modalCloseButton} onPress={closeTemplateModal}>
-                  <CloseIcon />
-                </Pressable>
-                <Text style={styles.modalTitle}>Select Template</Text>
+                {selectedCategory ? (
+                  <Pressable
+                    style={styles.modalCloseButton}
+                    onPress={() => setSelectedCategory(null)}
+                  >
+                    <Ionicons name="arrow-back" size={22} color={colors.text} />
+                  </Pressable>
+                ) : (
+                  <Pressable style={styles.modalCloseButton} onPress={closeTemplateModal}>
+                    <CloseIcon />
+                  </Pressable>
+                )}
+                <Text style={styles.modalTitle}>
+                  {selectedCategory ? getCategoryLabel(selectedCategory) : 'Select Template'}
+                </Text>
                 <View style={styles.modalCloseButton} />
               </View>
 
@@ -1131,27 +1199,10 @@ export default function ScheduleWorkoutScreen() {
                 showsVerticalScrollIndicator={false}
                 bounces={false}
               >
-                {/* Default Workout Option */}
-                <Pressable style={styles.templateRow} onPress={() => selectTemplate(null, true)}>
-                  <View style={styles.templateImagePlaceholder}>
-                    <Ionicons name="fitness-outline" size={24} color={colors.textSecondary} />
-                  </View>
-                  <View style={styles.templateInfo}>
-                    <Text style={styles.templateName}>Default Workout</Text>
-                    <Text style={styles.templateMeta}>Quick workout without a template</Text>
-                  </View>
-                  {isDefaultWorkout && !selectedTemplate && (
-                    <View style={styles.templateCheckmark}>
-                      <CheckIcon />
-                    </View>
-                  )}
-                </Pressable>
-
-                {/* User Created Templates Section */}
-                {templates.length > 0 && (
+                {selectedCategory ? (
                   <>
-                    <Text style={styles.templateSectionHeader}>Your Templates</Text>
-                    {templates.map((template) => (
+                    {/* Category drill-down: list of templates in category */}
+                    {categoryTemplates.map((template) => (
                       <Pressable
                         key={template.id}
                         style={styles.templateRow}
@@ -1181,60 +1232,134 @@ export default function ScheduleWorkoutScreen() {
                             {getTemplateTotalSets(template)} Sets • {template.equipment}
                           </Text>
                         </View>
-                        {!isDefaultWorkout && selectedTemplate?.id === template.id && (
-                          <View style={styles.templateCheckmark}>
-                            <CheckIcon />
-                          </View>
-                        )}
-                      </Pressable>
-                    ))}
-                  </>
-                )}
-
-                {/* Preset Templates Section */}
-                {presetTemplates.filter((t) => !t.category).length > 0 && (
-                  <>
-                    <Text style={styles.templateSectionHeader}>Align Templates</Text>
-                    {presetTemplates
-                      .filter((t) => !t.category)
-                      .slice(0, 10) // Show first 10 presets
-                      .map((template) => (
                         <Pressable
-                          key={template.id}
-                          style={styles.templateRow}
+                          style={styles.scheduleButton}
                           onPress={() => selectTemplate(template, false)}
                         >
-                          <View style={styles.templateImageContainer}>
-                            {template.localImage ? (
-                              <Image source={template.localImage} style={styles.templateImage} />
-                            ) : template.image?.uri ? (
-                              <Image
-                                source={{ uri: template.image.uri }}
-                                style={styles.templateImage}
-                              />
+                          <Text style={styles.scheduleButtonText}>Schedule</Text>
+                        </Pressable>
+                      </Pressable>
+                    ))}
+                    {categoryTemplates.length === 0 && (
+                      <View style={styles.emptyCategory}>
+                        <Ionicons name="fitness-outline" size={48} color={colors.border} />
+                        <Text style={styles.emptyCategoryText}>No workouts in this category</Text>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Default Workout Option */}
+                    <Pressable
+                      style={styles.templateRow}
+                      onPress={() => selectTemplate(null, true)}
+                    >
+                      <View style={styles.templateInfo}>
+                        <Text style={styles.templateName}>Default Workout</Text>
+                        <Text style={styles.templateMeta}>Quick workout without a template</Text>
+                      </View>
+                      {isDefaultWorkout && !selectedTemplate && (
+                        <View style={styles.templateCheckmark}>
+                          <CheckIcon />
+                        </View>
+                      )}
+                    </Pressable>
+
+                    {/* User Templates by Folder */}
+                    {hasUserTemplates && (
+                      <>
+                        <Text style={styles.templateSectionHeader}>Your Templates</Text>
+                        {folders.map((folder) => {
+                          const folderTemplates = getTemplatesInFolder(folder.id);
+                          if (folderTemplates.length === 0) return null;
+                          return (
+                            <View key={folder.id}>
+                              {folders.length > 1 && (
+                                <Text style={styles.folderLabel}>{folder.name}</Text>
+                              )}
+                              {folderTemplates.map((template) => (
+                                <Pressable
+                                  key={template.id}
+                                  style={styles.templateRow}
+                                  onPress={() => selectTemplate(template, false)}
+                                >
+                                  <View style={styles.templateImageContainer}>
+                                    {template.localImage ? (
+                                      <Image
+                                        source={template.localImage}
+                                        style={styles.templateImage}
+                                      />
+                                    ) : template.image?.uri ? (
+                                      <Image
+                                        source={{ uri: template.image.uri }}
+                                        style={styles.templateImage}
+                                      />
+                                    ) : (
+                                      <View style={styles.templateImagePlaceholder}>
+                                        <Ionicons
+                                          name="barbell-outline"
+                                          size={24}
+                                          color={colors.textSecondary}
+                                        />
+                                      </View>
+                                    )}
+                                  </View>
+                                  <View style={styles.templateInfo}>
+                                    <Text style={styles.templateName}>{template.name}</Text>
+                                    <Text style={styles.templateMeta}>
+                                      {getTemplateTotalSets(template)} Sets • {template.equipment}
+                                    </Text>
+                                  </View>
+                                  <Pressable
+                                    style={styles.scheduleButton}
+                                    onPress={() => selectTemplate(template, false)}
+                                  >
+                                    <Text style={styles.scheduleButtonText}>Schedule</Text>
+                                  </Pressable>
+                                </Pressable>
+                              ))}
+                            </View>
+                          );
+                        })}
+                      </>
+                    )}
+
+                    {/* Align Templates - Category Grid */}
+                    <Text style={styles.templateSectionHeader}>Align Templates</Text>
+                    <View style={styles.categoryGrid}>
+                      {ALL_CATEGORIES.map((category) => {
+                        const count = getCategoryCount(category.id);
+                        const heroImage = CATEGORY_HERO_IMAGES[category.id];
+                        return (
+                          <Pressable
+                            key={category.id}
+                            style={styles.categoryCard}
+                            onPress={() => setSelectedCategory(category.id)}
+                          >
+                            {heroImage ? (
+                              <Image source={heroImage} style={styles.categoryCardImage} />
                             ) : (
-                              <View style={styles.templateImagePlaceholder}>
+                              <View
+                                style={[styles.categoryCardImage, styles.categoryCardPlaceholder]}
+                              >
                                 <Ionicons
                                   name="barbell-outline"
-                                  size={24}
+                                  size={32}
                                   color={colors.textSecondary}
                                 />
                               </View>
                             )}
-                          </View>
-                          <View style={styles.templateInfo}>
-                            <Text style={styles.templateName}>{template.name}</Text>
-                            <Text style={styles.templateMeta}>
-                              {getTemplateTotalSets(template)} Sets • {template.equipment}
-                            </Text>
-                          </View>
-                          {!isDefaultWorkout && selectedTemplate?.id === template.id && (
-                            <View style={styles.templateCheckmark}>
-                              <CheckIcon />
-                            </View>
-                          )}
-                        </Pressable>
-                      ))}
+                            <LinearGradient
+                              colors={['transparent', 'rgba(0,0,0,0.65)']}
+                              style={styles.categoryCardGradient}
+                            >
+                              <Text style={styles.categoryCardLabel}>{category.label}</Text>
+                              <Text style={styles.categoryCardCount}>{count} workouts</Text>
+                            </LinearGradient>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
                   </>
                 )}
 
@@ -1624,17 +1749,30 @@ const styles = StyleSheet.create({
   },
 
   // Template modal styles
+  templateModalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: SCREEN_HEIGHT * 0.9,
+  },
   templateScrollView: {
-    maxHeight: SCREEN_HEIGHT * 0.6,
+    flex: 1,
     paddingHorizontal: spacing.lg,
   },
   templateSectionHeader: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
+    textTransform: 'uppercase',
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
-    paddingHorizontal: spacing.xs,
+  },
+  folderLabel: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    color: colors.textTertiary,
+    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
   },
   templateRow: {
     flexDirection: 'row',
@@ -1648,13 +1786,13 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   templateImage: {
-    width: 48,
-    height: 48,
+    width: 56,
+    height: 56,
     borderRadius: 8,
   },
   templateImagePlaceholder: {
-    width: 48,
-    height: 48,
+    width: 56,
+    height: 56,
     borderRadius: 8,
     backgroundColor: colors.surfaceSecondary,
     alignItems: 'center',
@@ -1679,6 +1817,69 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  scheduleButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+  },
+  scheduleButtonText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.sm,
+    color: '#FFFFFF',
+  },
+  // Category grid
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: CARD_GAP,
+  },
+  categoryCard: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  categoryCardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  categoryCardPlaceholder: {
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryCardGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    paddingTop: 40,
+  },
+  categoryCardLabel: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: '#FFFFFF',
+  },
+  categoryCardCount: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+  emptyCategory: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+    gap: spacing.md,
+  },
+  emptyCategoryText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.textTertiary,
   },
   menuValueSelected: {
     color: colors.text,

@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { Exercise, getExerciseById } from '@/services/api/exercises';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { toTitleCase } from '@/utils/textFormatters';
+import { toTitleCase, formatExerciseDisplayName } from '@/utils/textFormatters';
 
 // Muscle chip component
 function MuscleChip({ muscle }: { muscle: string }) {
@@ -109,7 +109,7 @@ export default function ExerciseDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {toTitleCase(exercise.name)}
+          {formatExerciseDisplayName(exercise.name, exercise.equipment)}
         </Text>
         <View style={styles.placeholder} />
       </View>

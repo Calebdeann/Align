@@ -12,7 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
@@ -32,12 +32,18 @@ import {
   filterNumericInput,
   fromKgForDisplay,
 } from '@/utils/units';
-import { toTitleCase } from '@/utils/textFormatters';
+import { formatExerciseNameString } from '@/utils/textFormatters';
 import ClockModal from '@/components/workout/ClockModal';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { playTimerSound } from '@/utils/sounds';
+import {
+  startWorkoutLiveActivity,
+  updateWorkoutLiveActivity,
+  endWorkoutLiveActivity,
+} from '@/services/liveActivity';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -59,6 +65,7 @@ interface ExerciseSet {
   reps: string;
   completed: boolean;
   setType: SetType;
+  rpe: number | null;
 }
 
 interface WorkoutExercise {
@@ -306,7 +313,9 @@ function DraggableExerciseRow({
         size={48}
         borderRadius={8}
       />
-      <Text style={styles.reorderExerciseName}>{toTitleCase(workoutExercise.exercise.name)}</Text>
+      <Text style={styles.reorderExerciseName}>
+        {formatExerciseNameString(workoutExercise.exercise.name)}
+      </Text>
       <View style={styles.dragHandle} {...panResponder.panHandlers}>
         <DragHandleIcon />
       </View>
@@ -362,10 +371,19 @@ function createDefaultSets(
       reps: '',
       completed: false,
       setType: 'normal' as SetType,
+      rpe: null,
     }));
   }
   return [
-    { id: '1', previous: '-', kg: '', reps: '', completed: false, setType: 'normal' as SetType },
+    {
+      id: '1',
+      previous: '-',
+      kg: '',
+      reps: '',
+      completed: false,
+      setType: 'normal' as SetType,
+      rpe: null,
+    },
   ];
 }
 
@@ -388,6 +406,10 @@ interface SwipeableSetRowProps {
   onSetTypePress: (exerciseIndex: number, setIndex: number) => void;
   previousWeight?: string;
   previousReps?: string;
+  suggestedWeight?: string;
+  suggestedReps?: string;
+  rpeEnabled: boolean;
+  onRpePress: (exerciseIndex: number, setIndex: number) => void;
 }
 
 function SwipeableSetRow({
@@ -402,6 +424,10 @@ function SwipeableSetRow({
   onSetTypePress,
   previousWeight,
   previousReps,
+  suggestedWeight,
+  suggestedReps,
+  rpeEnabled,
+  onRpePress,
 }: SwipeableSetRowProps) {
   const swipeableRef = useRef<Swipeable>(null);
 
@@ -464,7 +490,7 @@ function SwipeableSetRow({
             onUpdateValue(exerciseIndex, setIndex, 'kg', filterNumericInput(value))
           }
           keyboardType="numeric"
-          placeholder={previousWeight || '0'}
+          placeholder={suggestedWeight || previousWeight || '0'}
           placeholderTextColor={colors.textTertiary}
         />
         <TextInput
@@ -474,9 +500,19 @@ function SwipeableSetRow({
             onUpdateValue(exerciseIndex, setIndex, 'reps', filterNumericInput(value, false))
           }
           keyboardType="numeric"
-          placeholder={previousReps || '0'}
+          placeholder={suggestedReps || previousReps || '0'}
           placeholderTextColor={colors.textTertiary}
         />
+
+        {/* RPE column (conditional) */}
+        {rpeEnabled && (
+          <Pressable style={styles.rpeColumn} onPress={() => onRpePress(exerciseIndex, setIndex)}>
+            <Text style={[styles.setText, set.rpe == null && { color: colors.textTertiary }]}>
+              {set.rpe != null ? set.rpe : '-'}
+            </Text>
+          </Pressable>
+        )}
+
         <Pressable
           style={styles.checkColumn}
           onPress={() => onToggleCompletion(exerciseIndex, setIndex)}
@@ -563,6 +599,13 @@ export default function ActiveWorkoutScreen() {
   const [setTypeModalSetIndex, setSetTypeModalSetIndex] = useState<number | null>(null);
   const setTypeModalSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
+  // RPE modal state
+  const [showRpeModal, setShowRpeModal] = useState(false);
+  const [rpeModalExerciseIndex, setRpeModalExerciseIndex] = useState<number | null>(null);
+  const [rpeModalSetIndex, setRpeModalSetIndex] = useState<number | null>(null);
+  const rpeModalSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const rpeTrackingEnabled = useUserPreferencesStore((s) => s.rpeTrackingEnabled);
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startedAtRef = useRef<Date>(new Date());
   const isRestoringRef = useRef(false);
@@ -587,6 +630,18 @@ export default function ActiveWorkoutScreen() {
       setWorkoutExercises(activeWorkout.exercises as WorkoutExercise[]);
       startedAtRef.current = new Date(activeWorkout.startedAt);
       restoreActiveWorkout();
+
+      // Restart Live Activity for restored workout
+      const completedSets = activeWorkout.exercises.reduce(
+        (total: number, ex: any) => total + ex.sets.filter((s: any) => s.completed).length,
+        0
+      );
+      startWorkoutLiveActivity(
+        activeWorkout.templateName || 'Workout',
+        activeWorkout.exercises.length,
+        completedSets,
+        activeWorkout.startedAt
+      );
     } else if (!activeWorkout || isDifferentTemplate) {
       // No active workout, OR starting a different template — create fresh
       if (templateId) {
@@ -628,6 +683,7 @@ export default function ActiveWorkoutScreen() {
               reps: s.targetReps?.toString() || '',
               completed: false,
               setType: 'normal' as SetType,
+              rpe: null,
             })),
             previousSets: te.sets.map((s, idx) => ({
               setNumber: idx + 1,
@@ -637,11 +693,21 @@ export default function ActiveWorkoutScreen() {
             supersetId: null,
           }));
           setWorkoutExercises(localExercises);
+
+          // Start Live Activity for template workout
+          startWorkoutLiveActivity(
+            template.name,
+            templateExercises.length,
+            0,
+            new Date().toISOString()
+          );
         } else {
           startActiveWorkout(null);
+          startWorkoutLiveActivity('Workout', 0, 0, new Date().toISOString());
         }
       } else {
         startActiveWorkout(null);
+        startWorkoutLiveActivity('Workout', 0, 0, new Date().toISOString());
       }
     }
     // If activeWorkout exists, not minimized, same template — returning from
@@ -649,30 +715,51 @@ export default function ActiveWorkoutScreen() {
     // since React Native keeps components mounted during push navigation.
   }, []);
 
-  // Start timer automatically when screen mounts
+  // Set startedAt on mount (only for fresh workouts, not restored ones)
   useEffect(() => {
     if (!isRestoringRef.current) {
       startedAtRef.current = new Date();
     }
 
-    let currentTime = isRestoringRef.current ? (activeWorkout?.elapsedSeconds ?? 0) : 0;
-
-    intervalRef.current = setInterval(() => {
-      currentTime += 1;
-      setElapsedSeconds(currentTime);
-      // Sync time to store - done outside setState to avoid render conflicts
-      updateActiveWorkoutTime(currentTime);
-    }, 1000);
-
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
       if (restTimerRef.current) {
         clearInterval(restTimerRef.current);
       }
     };
   }, []);
+
+  // Single timer source: start on focus, stop on blur.
+  // Uses a ref to read the current elapsed time to avoid recreating the callback.
+  const elapsedSecondsRef = useRef(elapsedSeconds);
+  elapsedSecondsRef.current = elapsedSeconds;
+
+  useFocusEffect(
+    useCallback(() => {
+      // Clear any stale interval before starting a new one
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      let currentTime = elapsedSecondsRef.current;
+      intervalRef.current = setInterval(() => {
+        currentTime += 1;
+        setElapsedSeconds(currentTime);
+        updateActiveWorkoutTime(currentTime);
+      }, 1000);
+
+      // Cleanup: stop timer when screen loses focus
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      };
+    }, [])
+  );
 
   // Handle pending exercises from the store (set by add-exercise screen)
   useEffect(() => {
@@ -741,6 +828,18 @@ export default function ActiveWorkoutScreen() {
   useEffect(() => {
     if (workoutExercises.length > 0) {
       setActiveWorkoutExercises(workoutExercises);
+
+      // Update Live Activity with new exercise/set counts
+      const completedSets = workoutExercises.reduce(
+        (total, ex) => total + ex.sets.filter((s) => s.completed).length,
+        0
+      );
+      updateWorkoutLiveActivity(
+        activeWorkout?.templateName || 'Workout',
+        workoutExercises.length,
+        completedSets,
+        startedAtRef.current.toISOString()
+      );
     }
   }, [workoutExercises]);
 
@@ -772,7 +871,10 @@ export default function ActiveWorkoutScreen() {
       const newWorkoutExercises: WorkoutExercise[] = exercises.map((exercise) => {
         const previousSets = previousSetsMap.get(exercise.id) || null;
         const preference = preferencesMap.get(exercise.id);
-        const restTimerSeconds = preference?.restTimerSeconds || 0;
+        // Per-exercise preference overrides global default; only fall back when no preference exists
+        const { defaultRestTimerSeconds } = useUserPreferencesStore.getState();
+        const restTimerSeconds =
+          preference != null ? preference.restTimerSeconds : defaultRestTimerSeconds;
 
         return {
           exercise,
@@ -1047,6 +1149,7 @@ export default function ActiveWorkoutScreen() {
     // Stop the timer
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
     // Prepare workout data for save screen
@@ -1065,10 +1168,8 @@ export default function ActiveWorkoutScreen() {
       templateName: activeWorkout?.templateName,
     };
 
-    // Clear the active workout from store since we're saving
-    discardActiveWorkout();
-
-    // Navigate to save workout screen
+    // Navigate to save workout screen — workout stays in store until save completes
+    // so the user can go back without losing progress
     router.push({
       pathname: '/save-workout',
       params: { workoutData: JSON.stringify(workoutData) },
@@ -1102,6 +1203,7 @@ export default function ActiveWorkoutScreen() {
         reps: '',
         completed: false,
         setType: 'normal',
+        rpe: null,
       });
       return updated;
     });
@@ -1117,18 +1219,23 @@ export default function ActiveWorkoutScreen() {
       const updatedSet = updated[exerciseIndex].sets[setIndex];
       updatedSet.completed = !wasCompleted;
 
-      // When completing a set, auto-fill empty fields with previous workout data
-      // so placeholder values get saved (not lost as null)
+      // When completing a set, auto-fill empty fields with suggestion or previous workout data
       if (!wasCompleted) {
-        const prevSet = updated[exerciseIndex].previousSets?.[setIndex];
-        if (prevSet) {
-          if (!updatedSet.kg && prevSet.weightKg != null) {
-            // DB stores kg; convert to display unit (lbs if imperial)
-            const displayWeight = fromKgForDisplay(prevSet.weightKg, units);
-            updatedSet.kg = displayWeight.toString();
+        const prevCurrentSet = setIndex > 0 ? updated[exerciseIndex].sets[setIndex - 1] : null;
+        const prevHistoricalSet = updated[exerciseIndex].previousSets?.[setIndex];
+
+        if (!updatedSet.kg) {
+          if (prevCurrentSet?.kg) {
+            updatedSet.kg = prevCurrentSet.kg;
+          } else if (prevHistoricalSet?.weightKg != null) {
+            updatedSet.kg = fromKgForDisplay(prevHistoricalSet.weightKg, units).toString();
           }
-          if (!updatedSet.reps && prevSet.reps != null) {
-            updatedSet.reps = prevSet.reps.toString();
+        }
+        if (!updatedSet.reps) {
+          if (prevCurrentSet?.reps) {
+            updatedSet.reps = prevCurrentSet.reps;
+          } else if (prevHistoricalSet?.reps != null) {
+            updatedSet.reps = prevHistoricalSet.reps.toString();
           }
         }
       }
@@ -1176,6 +1283,41 @@ export default function ActiveWorkoutScreen() {
     });
   };
 
+  // RPE functions
+  const updateRpe = (exerciseIndex: number, setIndex: number, value: number | null) => {
+    setWorkoutExercises((prev) => {
+      const updated = [...prev];
+      updated[exerciseIndex].sets[setIndex].rpe = value;
+      return updated;
+    });
+  };
+
+  const RPE_VALUES = [6, 7, 7.5, 8, 8.5, 9, 9.5, 10];
+
+  const openRpeModal = (exerciseIndex: number, setIndex: number) => {
+    setRpeModalExerciseIndex(exerciseIndex);
+    setRpeModalSetIndex(setIndex);
+    setShowRpeModal(true);
+    Animated.spring(rpeModalSlideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeRpeModal = () => {
+    Animated.timing(rpeModalSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowRpeModal(false);
+      setRpeModalExerciseIndex(null);
+      setRpeModalSetIndex(null);
+    });
+  };
+
   const handleDiscard = () => {
     Alert.alert('Discard Workout?', 'Your workout progress will be lost.', [
       { text: 'Cancel', style: 'cancel' },
@@ -1183,8 +1325,12 @@ export default function ActiveWorkoutScreen() {
         text: 'Discard',
         style: 'destructive',
         onPress: () => {
-          if (intervalRef.current) clearInterval(intervalRef.current);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
           if (restTimerRef.current) clearInterval(restTimerRef.current);
+          endWorkoutLiveActivity();
           discardActiveWorkout();
           router.back();
         },
@@ -1252,8 +1398,12 @@ export default function ActiveWorkoutScreen() {
           if (restTimerRef.current) {
             clearInterval(restTimerRef.current);
           }
-          // Haptic feedback when timer completes
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          // Timer completion alerts based on user preferences
+          const { vibrationEnabled, timerSoundId } = useUserPreferencesStore.getState();
+          if (vibrationEnabled) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          }
+          playTimerSound(timerSoundId);
           Animated.timing(restPopupSlideAnim, {
             toValue: 200,
             duration: 200,
@@ -1401,7 +1551,10 @@ export default function ActiveWorkoutScreen() {
             <Text style={styles.addExerciseText}>Add Exercise</Text>
           </Pressable>
           <View style={styles.bottomButtons}>
-            <Pressable style={styles.secondaryButton}>
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={() => router.push('/profile/workout-settings')}
+            >
               <Text style={styles.secondaryButtonText}>Settings</Text>
             </Pressable>
             <Pressable style={styles.discardButton} onPress={handleDiscard}>
@@ -1430,7 +1583,7 @@ export default function ActiveWorkoutScreen() {
                   onPress={() => router.push(`/exercise/${workoutExercise.exercise.id}`)}
                 >
                   <Text style={styles.exerciseTitle}>
-                    {toTitleCase(workoutExercise.exercise.name)}
+                    {formatExerciseNameString(workoutExercise.exercise.name)}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -1467,7 +1620,7 @@ export default function ActiveWorkoutScreen() {
                 style={styles.restTimerRow}
                 onPress={() => openRestTimerModal(exerciseIndex)}
               >
-                <Ionicons name="stopwatch-outline" size={18} color={colors.text} />
+                <Ionicons name="stopwatch-outline" size={18} color={colors.primary} />
                 <Text style={styles.restTimerText}>
                   Rest Timer: {formatRestTimerDisplay(workoutExercise.restTimerSeconds)}
                 </Text>
@@ -1480,6 +1633,9 @@ export default function ActiveWorkoutScreen() {
                 <Text style={[styles.setHeaderText, styles.previousColumn]}>PREVIOUS</Text>
                 <Text style={[styles.setHeaderText, styles.kgColumn]}>{weightLabel}</Text>
                 <Text style={[styles.setHeaderText, styles.repsColumn]}>REPS</Text>
+                {rpeTrackingEnabled && (
+                  <Text style={[styles.setHeaderText, styles.rpeColumn]}>RPE</Text>
+                )}
                 <View style={styles.checkColumn}>
                   <Ionicons name="checkmark" size={16} color={colors.textSecondary} />
                 </View>
@@ -1493,6 +1649,16 @@ export default function ActiveWorkoutScreen() {
                     ? fromKgForDisplay(prevSet.weightKg, units).toString()
                     : undefined;
                 const prevReps = prevSet?.reps != null ? prevSet.reps.toString() : undefined;
+
+                // Suggestion from previous set in current workout
+                let suggestedWeight: string | undefined;
+                let suggestedReps: string | undefined;
+                if (setIndex > 0) {
+                  const prevCurrentSet = workoutExercise.sets[setIndex - 1];
+                  if (prevCurrentSet.kg) suggestedWeight = prevCurrentSet.kg;
+                  if (prevCurrentSet.reps) suggestedReps = prevCurrentSet.reps;
+                }
+
                 return (
                   <SwipeableSetRow
                     key={set.id}
@@ -1507,6 +1673,10 @@ export default function ActiveWorkoutScreen() {
                     onSetTypePress={openSetTypeModal}
                     previousWeight={prevWeight}
                     previousReps={prevReps}
+                    suggestedWeight={suggestedWeight}
+                    suggestedReps={suggestedReps}
+                    rpeEnabled={rpeTrackingEnabled}
+                    onRpePress={openRpeModal}
                   />
                 );
               })}
@@ -1525,7 +1695,10 @@ export default function ActiveWorkoutScreen() {
           </Pressable>
 
           <View style={styles.bottomButtonsFilled}>
-            <Pressable style={styles.secondaryButton}>
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={() => router.push('/profile/workout-settings')}
+            >
               <Text style={styles.secondaryButtonText}>Settings</Text>
             </Pressable>
             <Pressable style={styles.discardButton} onPress={handleDiscard}>
@@ -1651,7 +1824,7 @@ export default function ActiveWorkoutScreen() {
                 <Text style={styles.restTimerModalTitle}>Rest Timer</Text>
                 {restTimerModalExerciseIndex !== null && (
                   <Text style={styles.restTimerModalSubtitle}>
-                    {toTitleCase(
+                    {formatExerciseNameString(
                       workoutExercises[restTimerModalExerciseIndex]?.exercise.name || ''
                     )}
                   </Text>
@@ -1753,7 +1926,7 @@ export default function ActiveWorkoutScreen() {
 
                       <View style={styles.supersetExerciseInfo}>
                         <Text style={styles.supersetExerciseName}>
-                          {toTitleCase(workoutExercise.exercise.name)}
+                          {formatExerciseNameString(workoutExercise.exercise.name)}
                         </Text>
                         <Text style={styles.supersetExerciseMuscle}>
                           {workoutExercise.exercise.muscle}
@@ -1847,6 +2020,64 @@ export default function ActiveWorkoutScreen() {
                     <Ionicons name="trash-outline" size={18} color="#E53935" />
                   </View>
                   <Text style={styles.menuItemTextRemove}>Remove Set</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      {/* RPE Picker Modal */}
+      <Modal visible={showRpeModal} transparent animationType="none" onRequestClose={closeRpeModal}>
+        <Pressable style={styles.modalOverlay} onPress={closeRpeModal}>
+          <Animated.View
+            style={[styles.menuModalContent, { transform: [{ translateY: rpeModalSlideAnim }] }]}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalHandle} />
+              <View style={styles.rpeModalHeader}>
+                <Text style={styles.rpeModalTitle}>Rate of Perceived Exertion</Text>
+              </View>
+              <View style={styles.menuContainer}>
+                {RPE_VALUES.map((rpeValue) => {
+                  const currentRpe =
+                    rpeModalExerciseIndex !== null && rpeModalSetIndex !== null
+                      ? workoutExercises[rpeModalExerciseIndex]?.sets[rpeModalSetIndex]?.rpe
+                      : null;
+                  const isSelected = currentRpe === rpeValue;
+                  return (
+                    <Pressable
+                      key={rpeValue}
+                      style={styles.menuItem}
+                      onPress={() => {
+                        if (rpeModalExerciseIndex !== null && rpeModalSetIndex !== null) {
+                          updateRpe(rpeModalExerciseIndex, rpeModalSetIndex, rpeValue);
+                        }
+                        closeRpeModal();
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.menuItemText,
+                          isSelected && { color: colors.primary, fontFamily: fonts.semiBold },
+                        ]}
+                      >
+                        {rpeValue}
+                      </Text>
+                      {isSelected && <Ionicons name="checkmark" size={20} color={colors.primary} />}
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    if (rpeModalExerciseIndex !== null && rpeModalSetIndex !== null) {
+                      updateRpe(rpeModalExerciseIndex, rpeModalSetIndex, null);
+                    }
+                    closeRpeModal();
+                  }}
+                >
+                  <Text style={[styles.menuItemText, { color: colors.textSecondary }]}>Clear</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -2028,9 +2259,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   exerciseTitle: {
-    fontFamily: fonts.bold,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
-    color: colors.text,
+    color: colors.primary,
   },
   moreButton: {
     padding: spacing.xs,
@@ -2050,7 +2281,7 @@ const styles = StyleSheet.create({
   restTimerText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
-    color: colors.text,
+    color: colors.primary,
   },
   setsHeader: {
     flexDirection: 'row',
@@ -2067,7 +2298,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   previousColumn: {
-    flex: 1.5,
+    flex: 1.3,
     textAlign: 'center',
   },
   kgColumn: {
@@ -2077,6 +2308,21 @@ const styles = StyleSheet.create({
   repsColumn: {
     flex: 1,
     textAlign: 'center',
+  },
+  rpeColumn: {
+    flex: 1,
+    textAlign: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rpeModalHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  rpeModalTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.lg,
+    color: colors.text,
   },
   checkColumn: {
     flex: 0.8,
@@ -2147,7 +2393,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   bottomSpacer: {
-    height: 40,
+    height: 140,
   },
   setInput: {
     textAlign: 'center',

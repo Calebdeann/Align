@@ -1,26 +1,80 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Modal, Dimensions } from 'react-native';
+import { useState, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Modal,
+  Dimensions,
+  Animated,
+} from 'react-native';
 import { Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useTemplateStore, WorkoutTemplate, getTemplateTotalSets } from '@/stores/templateStore';
+import { CATEGORY_HERO_IMAGES } from '@/stores/presetTemplates';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const WORKOUT_COLOURS = [
+  { id: 'purple', color: colors.primary },
+  { id: 'green', color: colors.workout.back },
+  { id: 'blue', color: colors.workout.chest },
+  { id: 'orange', color: colors.workout.arms },
+  { id: 'pink', color: colors.workout.legs },
+  { id: 'teal', color: colors.workout.cardio },
+  { id: 'yellow', color: colors.workout.shoulders },
+  { id: 'red', color: colors.workout.core },
+];
 
-// Workout categories
-const FILTER_CATEGORIES = [
-  { id: 'core', label: 'Core', icon: 'flame-outline' },
-  { id: 'glutes', label: 'Glutes', icon: 'fitness-outline' },
-  { id: 'lower-body', label: 'Lower Body', icon: 'body-outline' },
-  { id: 'pull', label: 'Pull', icon: 'arrow-down-outline' },
-  { id: 'push', label: 'Push', icon: 'arrow-up-outline' },
-  { id: 'upper-body', label: 'Upper Body', icon: 'barbell-outline' },
-] as const;
+function CloseIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M18 6L6 18M6 6l12 12"
+        stroke={colors.text}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
-type CategoryId = (typeof FILTER_CATEGORIES)[number]['id'];
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const CARD_GAP = spacing.sm;
+const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - CARD_GAP) / 2;
+const CARD_HEIGHT = CARD_WIDTH * 1.25;
+
+// All category cards displayed as image grid
+const ALL_CATEGORIES = [
+  { id: 'core' as const, label: 'Abs' },
+  { id: 'glutes' as const, label: 'Glutes' },
+  { id: 'lower-body' as const, label: 'Lower Body' },
+  { id: 'pull' as const, label: 'Pull' },
+  { id: 'push' as const, label: 'Push' },
+  { id: 'upper-body' as const, label: 'Upper Body' },
+  { id: 'at-home' as const, label: 'At Home' },
+  { id: 'travel' as const, label: 'Travel' },
+  { id: 'cardio' as const, label: 'Cardio' },
+  { id: 'rehab' as const, label: 'No Equipment' },
+];
+
+type CategoryId =
+  | 'core'
+  | 'glutes'
+  | 'lower-body'
+  | 'pull'
+  | 'push'
+  | 'upper-body'
+  | 'at-home'
+  | 'travel'
+  | 'cardio'
+  | 'rehab';
 
 interface TemplateRowProps {
   template: WorkoutTemplate;
@@ -34,7 +88,6 @@ function TemplateRow({ template, onPress, onAdd, isAdded }: TemplateRowProps) {
 
   return (
     <Pressable style={styles.templateRow} onPress={onPress}>
-      {/* Template Image */}
       <View style={styles.templateImageContainer}>
         {template.localImage ? (
           <Image source={template.localImage} style={styles.templateImage} />
@@ -47,7 +100,6 @@ function TemplateRow({ template, onPress, onAdd, isAdded }: TemplateRowProps) {
         )}
       </View>
 
-      {/* Template Info */}
       <View style={styles.templateInfo}>
         <Text style={styles.templateName}>{template.name}</Text>
         <Text style={styles.templateMeta}>
@@ -55,7 +107,6 @@ function TemplateRow({ template, onPress, onAdd, isAdded }: TemplateRowProps) {
         </Text>
       </View>
 
-      {/* Add Button */}
       <Pressable
         style={[styles.addButton, isAdded && styles.addButtonAdded]}
         onPress={isAdded ? undefined : onAdd}
@@ -113,10 +164,7 @@ function CategoryModal({
                 <TemplateRow
                   key={template.id}
                   template={template}
-                  onPress={() => {
-                    onClose();
-                    onTemplatePress(template);
-                  }}
+                  onPress={() => onTemplatePress(template)}
                   onAdd={() => onAddTemplate(template)}
                   isAdded={isTemplateSaved(template.id)}
                 />
@@ -144,44 +192,88 @@ export default function ExploreTemplatesScreen() {
   const addTemplate = useTemplateStore((state) => state.addTemplate);
   const isTemplateSavedFn = useTemplateStore((state) => state.isTemplateSaved);
 
-  // Wrapper to pass userId to isTemplateSaved
   const isTemplateSaved = (id: string) => isTemplateSavedFn(id, userId);
 
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  // Get templates for selected category
+  // Reopen the category modal when returning from template-detail
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedCategory && !showCategoryModal) {
+        setShowCategoryModal(true);
+      }
+    }, [selectedCategory, showCategoryModal])
+  );
+
+  // Colour picker state for quick-add
+  const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
+  const [showColourModal, setShowColourModal] = useState(false);
+  const [addColourId, setAddColourId] = useState('purple');
+  const colourSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
   const categoryTemplates = selectedCategory
     ? presetTemplates.filter((t) => t.category === selectedCategory)
     : [];
 
-  // Get workout count for a category
   const getCategoryCount = (categoryId: CategoryId): number =>
     presetTemplates.filter((t) => t.category === categoryId).length;
 
   const getCategoryLabel = (categoryId: CategoryId | null): string => {
     if (!categoryId) return '';
-    const category = FILTER_CATEGORIES.find((c) => c.id === categoryId);
-    return category?.label || '';
+    const cat = ALL_CATEGORIES.find((c) => c.id === categoryId);
+    return cat?.label || '';
   };
 
   const handleAddTemplate = (template: WorkoutTemplate) => {
-    addTemplate(template);
+    // Show colour picker before adding
+    setPendingTemplate(template);
+    setAddColourId('purple');
+    setShowColourModal(true);
+    Animated.spring(colourSlideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
   };
 
-  const handleTemplatePress = (template: WorkoutTemplate) => {
-    router.push({
-      pathname: '/template-detail',
-      params: { templateId: template.id },
+  const closeColourModal = () => {
+    Animated.timing(colourSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowColourModal(false);
+      setPendingTemplate(null);
     });
   };
 
-  const handleCategoryPress = (categoryId: CategoryId) => {
-    setSelectedCategory(categoryId);
+  const confirmAddWithColour = () => {
+    if (!pendingTemplate) return;
+    const colour = WORKOUT_COLOURS.find((c) => c.id === addColourId);
+    const tagColor = colour?.color || colors.primary;
+    const added = addTemplate(pendingTemplate, tagColor);
+    closeColourModal();
+    if (!added) return;
+    setShowCategoryModal(false);
+    setSelectedCategory(null);
+    router.navigate('/(tabs)/workout');
+  };
+
+  const handleTemplatePress = (template: WorkoutTemplate) => {
+    setShowCategoryModal(false);
+    // Delay navigation so the modal slide-down animation finishes first
+    setTimeout(() => {
+      router.push({
+        pathname: '/template-detail',
+        params: { templateId: template.id },
+      });
+    }, 300);
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -191,40 +283,106 @@ export default function ExploreTemplatesScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Categories</Text>
+        <Text style={styles.sectionTitle}>Workouts</Text>
 
-        <View style={styles.filterGrid}>
-          {FILTER_CATEGORIES.map((category) => (
-            <Pressable
-              key={category.id}
-              style={styles.filterCard}
-              onPress={() => handleCategoryPress(category.id)}
-            >
-              <View style={styles.filterIconCircle}>
-                <Ionicons name={category.icon as any} size={20} color={colors.primary} />
-              </View>
-              <View style={styles.filterLabelContainer}>
-                <Text style={styles.filterLabel}>{category.label}</Text>
-                <Text style={styles.filterCount}>{getCategoryCount(category.id)} workouts</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-            </Pressable>
-          ))}
+        <View style={styles.cardGrid}>
+          {ALL_CATEGORIES.map((category) => {
+            const count = getCategoryCount(category.id);
+            const heroImage = CATEGORY_HERO_IMAGES[category.id];
+            return (
+              <Pressable
+                key={category.id}
+                style={styles.categoryCard}
+                onPress={() => {
+                  setSelectedCategory(category.id);
+                  setShowCategoryModal(true);
+                }}
+              >
+                {heroImage ? (
+                  <Image source={heroImage} style={styles.categoryCardImage} />
+                ) : (
+                  <View style={[styles.categoryCardImage, styles.categoryCardPlaceholder]}>
+                    <Ionicons name="barbell-outline" size={32} color={colors.textSecondary} />
+                  </View>
+                )}
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.65)']}
+                  style={styles.categoryCardGradient}
+                >
+                  <Text style={styles.categoryCardLabel}>{category.label}</Text>
+                  <Text style={styles.categoryCardCount}>{count} workouts</Text>
+                </LinearGradient>
+              </Pressable>
+            );
+          })}
         </View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Category Modal */}
       <CategoryModal
-        visible={selectedCategory !== null}
+        visible={showCategoryModal}
         categoryLabel={getCategoryLabel(selectedCategory)}
         templates={categoryTemplates}
-        onClose={() => setSelectedCategory(null)}
+        onClose={() => {
+          setShowCategoryModal(false);
+          setSelectedCategory(null);
+        }}
         onAddTemplate={handleAddTemplate}
         onTemplatePress={handleTemplatePress}
         isTemplateSaved={isTemplateSaved}
       />
+
+      {/* Colour Picker Modal for Add */}
+      <Modal
+        visible={showColourModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeColourModal}
+      >
+        <Pressable style={styles.colourModalOverlay} onPress={closeColourModal}>
+          <Animated.View
+            style={[styles.colourModalContent, { transform: [{ translateY: colourSlideAnim }] }]}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.colourModalHandle} />
+
+              <View style={styles.colourModalHeader}>
+                <Pressable style={styles.colourModalCloseButton} onPress={closeColourModal}>
+                  <CloseIcon />
+                </Pressable>
+                <Text style={styles.colourModalTitle}>Choose Colour</Text>
+                <View style={styles.colourModalCloseButton} />
+              </View>
+
+              <View style={styles.colourContainer}>
+                <View style={styles.colourGrid}>
+                  {WORKOUT_COLOURS.map((colour) => (
+                    <Pressable
+                      key={colour.id}
+                      style={[
+                        styles.colourOption,
+                        addColourId === colour.id && styles.colourOptionSelected,
+                      ]}
+                      onPress={() => setAddColourId(colour.id)}
+                    >
+                      <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
+                        {addColourId === colour.id && (
+                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                        )}
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Pressable style={styles.addColourConfirmButton} onPress={confirmAddWithColour}>
+                  <Text style={styles.addColourConfirmText}>Add to Library</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -268,9 +426,55 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     marginBottom: spacing.md,
   },
-  templateList: {
-    gap: spacing.sm,
+
+  // 2-column category card grid
+  cardGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: CARD_GAP,
   },
+  categoryCard: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  categoryCardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  categoryCardPlaceholder: {
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryCardGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    paddingTop: 40,
+  },
+  categoryCardLabel: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: '#FFFFFF',
+  },
+  categoryCardCount: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 2,
+  },
+
+  bottomSpacer: {
+    height: 40,
+  },
+
+  // Template row (used inside modal)
   templateRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -335,47 +539,6 @@ const styles = StyleSheet.create({
   addButtonTextAdded: {
     color: colors.primary,
   },
-  filterGrid: {
-    gap: spacing.sm,
-  },
-  filterCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    gap: spacing.md,
-  },
-  filterIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(148, 122, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterLabelContainer: {
-    flex: 1,
-  },
-  filterLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  filterCount: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  bottomSpacer: {
-    height: 40,
-  },
 
   // Modal styles
   modalOverlay: {
@@ -433,5 +596,83 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
     marginTop: spacing.md,
+  },
+
+  // Colour picker modal styles
+  colourModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  colourModalContent: {
+    backgroundColor: colors.surfaceSecondary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+  },
+  colourModalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  colourModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  colourModalCloseButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colourModalTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.lg,
+    color: colors.text,
+  },
+  colourContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  colourGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.lg,
+  },
+  colourOption: {
+    padding: spacing.sm,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colourOptionSelected: {
+    borderColor: colors.text,
+  },
+  colourCircleLarge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addColourConfirmButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  addColourConfirmText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: '#FFFFFF',
   },
 });

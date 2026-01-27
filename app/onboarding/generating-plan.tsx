@@ -152,17 +152,17 @@ export default function GeneratingPlanScreen() {
     Animated.sequence(animations).start(async () => {
       setIsLoading(false);
 
-      // Present Superwall paywall when loading reaches 100%
-      await registerPlacementRef.current('campaign_trigger');
+      // TODO: Re-enable Superwall paywall before release
+      // await registerPlacementRef.current('campaign_trigger');
+      // const status = subscriptionStatusRef.current;
+      // if (status?.status === 'ACTIVE') {
+      //   router.push('/onboarding/signup');
+      // } else {
+      //   router.push('/onboarding/plan-ready');
+      // }
 
-      // Check if user subscribed after paywall interaction
-      const status = subscriptionStatusRef.current;
-      if (status?.status === 'ACTIVE') {
-        router.push('/onboarding/signup');
-      } else {
-        // If dismissed, go to plan-ready as fallback
-        router.push('/onboarding/plan-ready');
-      }
+      // Temporarily skip paywall — go straight to signup
+      router.push('/onboarding/signup');
     });
 
     const percentListener = progressAnim.addListener(({ value }) => {

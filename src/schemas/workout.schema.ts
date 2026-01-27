@@ -19,6 +19,7 @@ export const WorkoutSetInputSchema = z.object({
   reps: RepsSchema,
   setType: SetTypeSchema.default('normal'),
   completed: z.boolean(),
+  rpe: z.number().min(6).max(10).nullable().optional(),
 });
 
 // Exercise in a workout
@@ -32,6 +33,9 @@ export const WorkoutExerciseInputSchema = z.object({
   sets: z.array(WorkoutSetInputSchema).min(1).max(50),
 });
 
+// Image type for workout/template photos
+export const ImageTypeSchema = z.enum(['template', 'camera', 'gallery']);
+
 // Complete workout save input
 export const SaveWorkoutInputSchema = z.object({
   userId: UuidSchema,
@@ -41,6 +45,9 @@ export const SaveWorkoutInputSchema = z.object({
   durationSeconds: DurationSecondsSchema,
   notes: z.string().max(2000).optional(),
   sourceTemplateId: UuidSchema.optional(),
+  imageType: ImageTypeSchema.optional(),
+  imageUri: z.string().max(2000).optional(),
+  imageTemplateId: z.string().max(200).optional(),
   exercises: z.array(WorkoutExerciseInputSchema).min(1).max(100),
 });
 

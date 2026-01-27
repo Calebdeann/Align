@@ -13,7 +13,7 @@ import {
   getTemplateTotalSets,
 } from '@/stores/templateStore';
 import { getCurrentUser } from '@/services/api/user';
-import { toTitleCase } from '@/utils/textFormatters';
+import { formatExerciseNameString } from '@/utils/textFormatters';
 import { ExerciseImage } from '@/components/ExerciseImage';
 import { useState, useEffect } from 'react';
 
@@ -374,7 +374,9 @@ export default function WorkoutPreviewScreen() {
                         size={40}
                         borderRadius={8}
                       />
-                      <Text style={styles.exerciseName}>{toTitleCase(ex.exerciseName)}</Text>
+                      <Text style={styles.exerciseName}>
+                        {formatExerciseNameString(ex.exerciseName)}
+                      </Text>
                       <Ionicons
                         name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                         size={20}
@@ -391,7 +393,9 @@ export default function WorkoutPreviewScreen() {
                         </View>
                         {ex.sets.map((set) => (
                           <View key={set.setNumber} style={styles.setRow}>
-                            <Text style={[styles.setText, styles.setColumn]}>{set.setNumber}</Text>
+                            <Text style={[styles.setNumber, styles.setColumn]}>
+                              {set.setNumber}
+                            </Text>
                             <Text style={[styles.setText, styles.weightColumn]}>
                               {set.targetWeight ?? '-'}
                             </Text>
@@ -600,42 +604,45 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     flex: 1,
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
     fontSize: fontSize.sm,
-    color: colors.text,
+    color: colors.primary,
   },
   exerciseDivider: {
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.15)',
-    marginLeft: 56,
   },
   setsContainer: {
     marginLeft: 56,
-    marginBottom: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   setsHeader: {
     flexDirection: 'row',
     paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(217, 217, 217, 0.15)',
   },
   setHeaderText: {
-    fontFamily: fonts.semiBold,
+    fontFamily: fonts.medium,
     fontSize: fontSize.xs,
     color: colors.textTertiary,
     textTransform: 'uppercase',
   },
   setRow: {
     flexDirection: 'row',
-    paddingVertical: 6,
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  setNumber: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.sm,
+    color: colors.text,
   },
   setText: {
-    fontFamily: fonts.regular,
+    fontFamily: fonts.medium,
     fontSize: fontSize.sm,
     color: colors.text,
   },
   setColumn: {
-    width: 50,
+    width: 40,
   },
   weightColumn: {
     width: 60,

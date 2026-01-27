@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { filterNumericInput } from '@/utils/units';
-import { toTitleCase } from '@/utils/textFormatters';
+import { formatExerciseNameString } from '@/utils/textFormatters';
 import { ExerciseImage } from '@/components/ExerciseImage';
 
 type TutorialStep = 'weight' | 'reps' | 'checkmark' | 'complete';
@@ -111,7 +111,7 @@ export default function ExerciseTutorialScreen() {
       {/* Exercise Title */}
       <View style={styles.titleContainer}>
         <Text style={styles.title}>
-          {exerciseName ? toTitleCase(exerciseName) : 'Leg Extension'}
+          {exerciseName ? formatExerciseNameString(exerciseName) : 'Leg Extension'}
         </Text>
       </View>
 
@@ -119,7 +119,7 @@ export default function ExerciseTutorialScreen() {
       <View style={styles.exerciseInfo}>
         <ExerciseImage thumbnailUrl={gifUrl} size={40} borderRadius={8} />
         <Text style={styles.exerciseType}>
-          {exerciseName ? toTitleCase(exerciseName) : 'Exercise'}
+          {exerciseName ? formatExerciseNameString(exerciseName) : 'Exercise'}
         </Text>
       </View>
 
@@ -320,11 +320,12 @@ const styles = StyleSheet.create({
   },
   restTimerIcon: {
     fontSize: 16,
+    color: colors.primary,
   },
   restTimerText: {
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
-    color: colors.text,
+    color: colors.primary,
   },
   tableContainer: {
     marginTop: spacing.lg,

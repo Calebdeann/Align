@@ -7,6 +7,7 @@ export type WeightUnit = 'kg' | 'lbs';
 export type DistanceUnit = 'kilometers' | 'miles';
 export type MeasurementUnit = 'cm' | 'in';
 export type UnitSystem = 'metric' | 'imperial';
+export type TimerSoundId = 'chime' | 'bell' | 'ding';
 
 // Countries that use imperial system (US, Liberia, Myanmar)
 const IMPERIAL_COUNTRIES = ['US', 'LR', 'MM'];
@@ -16,6 +17,12 @@ interface UserPreferences {
   distanceUnit: DistanceUnit;
   measurementUnit: MeasurementUnit;
   hasInitialized: boolean;
+
+  // Workout settings
+  defaultRestTimerSeconds: number;
+  rpeTrackingEnabled: boolean;
+  timerSoundId: TimerSoundId;
+  vibrationEnabled: boolean;
 }
 
 interface UserPreferencesState extends UserPreferences {
@@ -26,6 +33,12 @@ interface UserPreferencesState extends UserPreferences {
   setWeightUnit: (unit: WeightUnit) => void;
   setDistanceUnit: (unit: DistanceUnit) => void;
   setMeasurementUnit: (unit: MeasurementUnit) => void;
+
+  // Workout settings setters
+  setDefaultRestTimerSeconds: (seconds: number) => void;
+  setRpeTrackingEnabled: (enabled: boolean) => void;
+  setTimerSoundId: (soundId: TimerSoundId) => void;
+  setVibrationEnabled: (enabled: boolean) => void;
 
   // Initialize based on device locale (only runs once)
   initializeFromLocale: () => void;
@@ -75,6 +88,10 @@ function getDefaultUnits(): Pick<
 const initialState: UserPreferences = {
   ...getDefaultUnits(),
   hasInitialized: false,
+  defaultRestTimerSeconds: 0,
+  rpeTrackingEnabled: false,
+  timerSoundId: 'chime',
+  vibrationEnabled: true,
 };
 
 export const useUserPreferencesStore = create<UserPreferencesState>()(
@@ -90,6 +107,11 @@ export const useUserPreferencesStore = create<UserPreferencesState>()(
       setWeightUnit: (unit) => set({ weightUnit: unit }),
       setDistanceUnit: (unit) => set({ distanceUnit: unit }),
       setMeasurementUnit: (unit) => set({ measurementUnit: unit }),
+
+      setDefaultRestTimerSeconds: (seconds) => set({ defaultRestTimerSeconds: seconds }),
+      setRpeTrackingEnabled: (enabled) => set({ rpeTrackingEnabled: enabled }),
+      setTimerSoundId: (soundId) => set({ timerSoundId: soundId }),
+      setVibrationEnabled: (enabled) => set({ vibrationEnabled: enabled }),
 
       initializeFromLocale: () => {
         const { hasInitialized } = get();
