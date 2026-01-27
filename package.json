@@ -79,5 +79,8 @@
     "ts-node": "^10.9.2",
     "typescript": "~5.9.2"
   },
+  "overrides": {
+    "react-dom": "19.1.0"
+  },
   "private": true
 }
