@@ -58,8 +58,8 @@
           "cameraPermission": "Allow Align to take photos for your workout templates."
         }
       ],
-      "expo-live-activity",
-      "./plugins/withWorkoutWidget"
+      "./plugins/withWorkoutWidget",
+      "expo-live-activity"
     ],
     "extra": {
       "router": {},
