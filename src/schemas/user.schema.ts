@@ -16,12 +16,12 @@ export const UpdateProfileSchema = z.object({
   weight: z.number().min(20).max(500).optional(), // kg
   target_weight: z.number().min(20).max(500).optional(),
   units: UnitsSchema.optional(),
+  tried_other_apps: z.string().max(50).optional(),
+  body_change_goal: z.string().max(100).optional(),
   training_location: z.string().max(100).optional(),
-  preferred_equipment: z.array(z.string().max(100)).optional(),
   workout_frequency: z.number().int().min(1).max(7).optional(),
   workout_days: z.array(z.string()).optional(),
   main_obstacle: z.string().max(200).optional(),
-  accomplish: z.string().max(500).optional(),
   notifications_enabled: z.boolean().optional(),
   reminder_time: z.string().max(10).optional(), // "HH:MM" format
 });
@@ -45,12 +45,12 @@ export const OnboardingDataSchema = z.object({
   weight: z.number().min(20).max(500).optional(),
   target_weight: z.number().min(20).max(500).optional(),
   units: UnitsSchema.optional(),
+  tried_other_apps: z.string().max(50).optional(),
+  body_change_goal: z.string().max(100).optional(),
   training_location: z.string().max(100).optional(),
-  preferred_equipment: z.array(z.string().max(100)).optional(),
   workout_frequency: z.number().int().min(1).max(7).optional(),
   workout_days: z.array(z.string()).optional(),
   main_obstacle: z.string().max(200).optional(),
-  accomplish: z.string().max(500).optional(),
   notifications_enabled: z.boolean().optional(),
   reminder_time: z.string().max(10).optional(),
 });

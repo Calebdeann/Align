@@ -12,8 +12,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authStateManager } from '@/services/authState';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTemplateStore } from '@/stores/templateStore';
+import { useRecentExercisesStore } from '@/stores/recentExercisesStore';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { useUserProfileStore } from '@/stores/userProfileStore';
 import { supabase } from '@/services/supabase';
+import { logger } from '@/utils/logger';
 
 // Lazy-load SuperwallExpoModule to avoid crashes if native module isn't ready
 let _superwallModule: any = null;
@@ -22,7 +25,7 @@ function getSuperwallModule() {
     try {
       _superwallModule = require('expo-superwall').SuperwallExpoModule;
     } catch (e) {
-      console.warn('[StoreManager] Failed to load SuperwallExpoModule:', e);
+      logger.warn('[StoreManager] Failed to load SuperwallExpoModule', { error: e });
     }
   }
   return _superwallModule;
@@ -44,6 +47,10 @@ const TEMPLATE_STORE_INITIAL = {
   lastSyncError: null,
 };
 
+const RECENT_EXERCISES_STORE_INITIAL = {
+  recentExerciseIds: [],
+};
+
 let isInitialized = false;
 
 /**
@@ -52,18 +59,18 @@ let isInitialized = false;
  */
 export function initializeStoreManager() {
   if (isInitialized) {
-    console.warn('[StoreManager] Already initialized');
+    logger.warn('[StoreManager] Already initialized');
     return;
   }
 
   isInitialized = true;
   let previousUserId: string | null = authStateManager.getUserId();
 
-  console.log(`[StoreManager] Initialized with userId: ${previousUserId?.slice(0, 8) ?? 'null'}`);
+  logger.info(`[StoreManager] Initialized with userId: ${previousUserId?.slice(0, 8) ?? 'null'}`);
 
   authStateManager.subscribe(async (newUserId) => {
     try {
-      console.log(
+      logger.info(
         `[StoreManager] Auth changed: ${previousUserId?.slice(0, 8) ?? 'null'} -> ${newUserId?.slice(0, 8) ?? 'null'}`
       );
 
@@ -75,20 +82,24 @@ export function initializeStoreManager() {
         // Reset Superwall identity so the next user gets fresh assignments
         const sw = getSuperwallModule();
         if (sw) {
-          sw.reset().catch((e: any) => console.warn('[StoreManager] Superwall reset error:', e));
+          sw.reset().catch((e: unknown) =>
+            logger.warn('[StoreManager] Superwall reset error', { error: e })
+          );
         }
       }
 
       // New user logged in
       if (newUserId !== null) {
         await rehydrateStores();
+        // Fetch the correct profile for the new user (bypasses cache)
+        useUserProfileStore.getState().refreshProfile();
         // Identify user in Superwall for paywall targeting
         identifySuperwallUser(newUserId);
       }
 
       previousUserId = newUserId;
     } catch (e) {
-      console.error('[StoreManager] Auth change handler error:', e);
+      logger.error('[StoreManager] Auth change handler error', { error: e });
     }
   });
 }
@@ -98,7 +109,7 @@ export function initializeStoreManager() {
  * Called on logout to clear the previous user's data from memory.
  */
 function resetStores() {
-  console.log('[StoreManager] Resetting stores to initial state...');
+  logger.info('[StoreManager] Resetting stores to initial state...');
 
   // Reset workout store
   useWorkoutStore.setState(WORKOUT_STORE_INITIAL);
@@ -109,8 +120,14 @@ function resetStores() {
     presetTemplates: useTemplateStore.getState().presetTemplates,
   });
 
+  // Reset recent exercises
+  useRecentExercisesStore.setState(RECENT_EXERCISES_STORE_INITIAL);
+
   // Reset user preferences so the next user doesn't inherit the previous user's units/settings
   useUserPreferencesStore.getState().reset();
+
+  // Clear profile so the next user doesn't see the previous user's data
+  useUserProfileStore.getState().clearProfile();
 }
 
 /**
@@ -118,7 +135,7 @@ function resetStores() {
  * Zustand persist middleware handles this via the storage adapter.
  */
 async function rehydrateStores() {
-  console.log('[StoreManager] Rehydrating stores from user storage...');
+  logger.info('[StoreManager] Rehydrating stores from user storage...');
 
   try {
     // Zustand persist exposes a rehydrate method on the store
@@ -134,9 +151,14 @@ async function rehydrateStores() {
       await templatePersist.rehydrate();
     }
 
-    console.log('[StoreManager] Stores rehydrated successfully');
+    const recentExercisesPersist = (useRecentExercisesStore as any).persist;
+    if (recentExercisesPersist?.rehydrate) {
+      await recentExercisesPersist.rehydrate();
+    }
+
+    logger.info('[StoreManager] Stores rehydrated successfully');
   } catch (error) {
-    console.error('[StoreManager] Rehydration error:', error);
+    logger.error('[StoreManager] Rehydration error', { error });
   }
 }
 
@@ -167,9 +189,9 @@ async function identifySuperwallUser(userId: string) {
       }
     }
 
-    console.log(`[StoreManager] Superwall identified user ${userId.slice(0, 8)}...`);
+    logger.info(`[StoreManager] Superwall identified user ${userId.slice(0, 8)}...`);
   } catch (error) {
-    console.warn('[StoreManager] Superwall identify error:', error);
+    logger.warn('[StoreManager] Superwall identify error', { error });
   }
 }
 
@@ -178,13 +200,17 @@ async function identifySuperwallUser(userId: string) {
  * Call this when deleting an account to remove all local data.
  */
 export async function clearUserDataFromStorage(userId: string): Promise<void> {
-  const keysToDelete = [`workout-store-${userId}`, `template-store-${userId}`];
+  const keysToDelete = [
+    `workout-store-${userId}`,
+    `template-store-${userId}`,
+    `recent-exercises-${userId}`,
+  ];
 
   try {
     await AsyncStorage.multiRemove(keysToDelete);
-    console.log(`[StoreManager] Cleared storage for user ${userId.slice(0, 8)}...`);
+    logger.info(`[StoreManager] Cleared storage for user ${userId.slice(0, 8)}...`);
   } catch (error) {
-    console.error('[StoreManager] Failed to clear user storage:', error);
+    logger.error('[StoreManager] Failed to clear user storage', { error });
   }
 }
 
@@ -198,8 +224,8 @@ export async function clearLegacyStorage(): Promise<void> {
 
   try {
     await AsyncStorage.multiRemove(legacyKeys);
-    console.log('[StoreManager] Cleared legacy storage keys');
+    logger.info('[StoreManager] Cleared legacy storage keys');
   } catch (error) {
-    console.error('[StoreManager] Failed to clear legacy storage:', error);
+    logger.error('[StoreManager] Failed to clear legacy storage', { error });
   }
 }

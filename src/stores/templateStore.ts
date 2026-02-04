@@ -4,6 +4,7 @@ import { ImageSourcePropType } from 'react-native';
 import { createUserNamespacedStorage } from '@/lib/userNamespacedStorage';
 import { WorkoutImage } from './workoutStore';
 import { PRESET_TEMPLATES } from './presetTemplates';
+import { logger } from '@/utils/logger';
 
 import {
   saveUserTemplate,
@@ -31,6 +32,7 @@ export interface TemplateExercise {
   sets: TemplateSet[];
   notes?: string;
   restTimerSeconds: number;
+  supersetId?: number | null; // null = not in a superset, 1+ = superset group
 }
 
 // Main template structure
@@ -158,7 +160,7 @@ export const useTemplateStore = create<TemplateStore>()(
         // If template has a userId, it was synced to backend - delete from there too
         if (template?.userId) {
           deleteUserTemplate(id).catch((err) => {
-            console.warn('Failed to delete template from backend:', err);
+            logger.warn('Failed to delete template from backend', { error: err });
           });
         }
       },
@@ -209,7 +211,7 @@ export const useTemplateStore = create<TemplateStore>()(
               }
             })
             .catch((err) => {
-              console.warn('Failed to save template to backend:', err);
+              logger.warn('Failed to save template to backend', { error: err });
             });
         }
 
@@ -240,7 +242,7 @@ export const useTemplateStore = create<TemplateStore>()(
           // Strip client-only fields (localImage is not serializable for the backend)
           const { localImage, ...backendUpdates } = updates as any;
           updateUserTemplate(id, backendUpdates, backendUpdates.exercises).catch((err) => {
-            console.warn('Failed to update template on backend:', err);
+            logger.warn('Failed to update template on backend', { error: err });
           });
         }
       },
@@ -290,7 +292,7 @@ export const useTemplateStore = create<TemplateStore>()(
         // Update on backend if template was synced
         if (template?.userId) {
           updateUserTemplate(templateId, {}, exercises).catch((err) => {
-            console.warn('Failed to update template exercises on backend:', err);
+            logger.warn('Failed to update template exercises on backend', { error: err });
           });
         }
       },
@@ -326,7 +328,7 @@ export const useTemplateStore = create<TemplateStore>()(
       deleteFolder: (folderId) => {
         // Protect the default folder from deletion
         if (folderId === DEFAULT_FOLDER_ID) {
-          console.warn('Cannot delete the default "My Templates" folder');
+          logger.warn('Cannot delete the default "My Templates" folder');
           return;
         }
         set((state) => ({
@@ -405,7 +407,7 @@ export const useTemplateStore = create<TemplateStore>()(
             set({ isSyncing: false });
           }
         } catch (error: any) {
-          console.warn('Failed to sync templates from backend:', error);
+          logger.warn('Failed to sync templates from backend', { error });
           set({ isSyncing: false, lastSyncError: error?.message || 'Sync failed' });
         }
       },
@@ -425,7 +427,7 @@ export const useTemplateStore = create<TemplateStore>()(
           }
           return false;
         } catch (error) {
-          console.warn('Failed to save template to backend:', error);
+          logger.warn('Failed to save template to backend', { error });
           return false;
         }
       },
@@ -441,7 +443,7 @@ export const useTemplateStore = create<TemplateStore>()(
           }
           return success;
         } catch (error) {
-          console.warn('Failed to delete template from backend:', error);
+          logger.warn('Failed to delete template from backend', { error });
           return false;
         }
       },

@@ -21,11 +21,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise } from '@/stores/templateStore';
 import { WorkoutImage } from '@/stores/workoutStore';
 import { getCurrentUser } from '@/services/api/user';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { prefetchExerciseGif } from '@/stores/exerciseStore';
 import {
   ImagePickerSheet,
   ImagePlaceholderIcon,
@@ -34,6 +37,7 @@ import {
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 import { formatExerciseNameString } from '@/utils/textFormatters';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 import { getWeightUnit, fromKgForDisplay } from '@/utils/units';
 import { getTemplateImageById } from '@/constants/templateImages';
 
@@ -95,6 +99,8 @@ export default function SaveTemplateScreen() {
   }>();
 
   const isEditMode = !!params.templateId;
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
 
   const units = useUserPreferencesStore((s) => s.getUnitSystem());
   const weightLabel = getWeightUnit(units).toLowerCase();
@@ -235,12 +241,12 @@ export default function SaveTemplateScreen() {
     if (isSaving) return;
 
     if (!name.trim()) {
-      Alert.alert('Missing Name', 'Please enter a template name');
+      Alert.alert(i18n.t('template.missingName'), i18n.t('template.pleaseEnterName'));
       return;
     }
 
     if (exercises.length === 0) {
-      Alert.alert('No Exercises', 'Please add at least one exercise');
+      Alert.alert(i18n.t('template.noExercises'), i18n.t('template.pleaseAddExercise'));
       return;
     }
 
@@ -288,12 +294,8 @@ export default function SaveTemplateScreen() {
       createTemplate(templateData);
     }
 
-    // Go back past both save-template and create-template screens
-    if (router.canGoBack()) {
-      router.dismiss(2);
-    } else {
-      router.back();
-    }
+    // Navigate to workout tab so user can see their template
+    router.navigate('/(tabs)/workout');
   };
 
   return (
@@ -309,7 +311,7 @@ export default function SaveTemplateScreen() {
         >
           <BackIcon />
         </Pressable>
-        <Text style={styles.headerTitle}>Save Template</Text>
+        <Text style={styles.headerTitle}>{t('template.saveTemplate')}</Text>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -317,7 +319,7 @@ export default function SaveTemplateScreen() {
           }}
           style={styles.saveButton}
         >
-          <Text style={styles.saveText}>SAVE</Text>
+          <Text style={styles.saveText}>{t('saveWorkout.save')}</Text>
         </Pressable>
       </View>
 
@@ -351,14 +353,14 @@ export default function SaveTemplateScreen() {
             <View style={styles.textInputs}>
               <TextInput
                 style={styles.nameInput}
-                placeholder="Template Name"
+                placeholder={t('template.templateName')}
                 placeholderTextColor={colors.textTertiary}
                 value={name}
                 onChangeText={setName}
               />
               <TextInput
                 style={styles.descriptionInput}
-                placeholder="Description (Optional)"
+                placeholder={t('template.descriptionOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={description}
                 onChangeText={setDescription}
@@ -376,7 +378,7 @@ export default function SaveTemplateScreen() {
               openColourModal();
             }}
           >
-            <Text style={styles.menuLabel}>Colour</Text>
+            <Text style={styles.menuLabel}>{t('template.colour')}</Text>
             <View style={styles.menuRight}>
               <View style={[styles.colourCircle, { backgroundColor: getSelectedColour() }]} />
               <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
@@ -385,7 +387,7 @@ export default function SaveTemplateScreen() {
         </View>
 
         {/* Exercises */}
-        <Text style={styles.sectionHeader}>Exercises</Text>
+        <Text style={styles.sectionHeader}>{t('saveWorkout.exercises')}</Text>
         <View style={styles.card}>
           {exercises.map((exercise, index) => {
             const isExpanded = expandedExercises.has(exercise.id);
@@ -400,9 +402,13 @@ export default function SaveTemplateScreen() {
                 >
                   <Pressable
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/exercise/${exercise.exerciseId}`);
+                      withLock(() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        prefetchExerciseGif(exercise.exerciseId);
+                        router.push(`/exercise/${exercise.exerciseId}`);
+                      });
                     }}
+                    disabled={isNavigating}
                   >
                     <ExerciseImage
                       gifUrl={exercise.gifUrl}
@@ -411,17 +417,24 @@ export default function SaveTemplateScreen() {
                       borderRadius={8}
                     />
                   </Pressable>
-                  <Pressable
-                    style={{ flex: 1, justifyContent: 'center' }}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/exercise/${exercise.exerciseId}`);
-                    }}
-                  >
-                    <Text style={styles.exerciseName}>
+                  <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
+                    <Text
+                      style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
+                      onPress={
+                        isNavigating
+                          ? undefined
+                          : () => {
+                              withLock(() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                prefetchExerciseGif(exercise.exerciseId);
+                                router.push(`/exercise/${exercise.exerciseId}`);
+                              });
+                            }
+                      }
+                    >
                       {formatExerciseNameString(exercise.exerciseName)}
                     </Text>
-                  </Pressable>
+                  </View>
                   <Ionicons
                     name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                     size={20}
@@ -432,8 +445,10 @@ export default function SaveTemplateScreen() {
                 {isExpanded && (
                   <View style={styles.setsContainer}>
                     <View style={styles.setsHeader}>
-                      <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-                      <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
+                      <Text style={[styles.setHeaderText, styles.setColumn]}>
+                        {t('template.set')}
+                      </Text>
+                      <Text style={styles.setHeaderText}>{t('template.weightAndReps')}</Text>
                     </View>
                     {exercise.sets.map((set) => (
                       <View key={set.setNumber} style={styles.setRow}>
@@ -459,7 +474,7 @@ export default function SaveTemplateScreen() {
 
           {exercises.length === 0 && (
             <View style={styles.emptyExercises}>
-              <Text style={styles.emptyText}>No exercises added</Text>
+              <Text style={styles.emptyText}>{t('template.noExercisesAdded')}</Text>
             </View>
           )}
         </View>
@@ -504,7 +519,7 @@ export default function SaveTemplateScreen() {
                 >
                   <CloseIcon />
                 </Pressable>
-                <Text style={styles.modalTitle}>Colour</Text>
+                <Text style={styles.modalTitle}>{t('template.colour')}</Text>
                 <View style={styles.modalCloseButton} />
               </View>
 

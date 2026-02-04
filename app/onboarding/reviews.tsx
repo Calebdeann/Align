@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
 import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const LeafLeft = require('../../assets/images/LeafLeft.png');
 const LeafRight = require('../../assets/images/LeafRight.png');
@@ -25,23 +27,6 @@ interface Review {
   avatar: ReturnType<typeof require>;
 }
 
-const reviews: Review[] = [
-  {
-    id: '1',
-    name: 'Ellie Sullivan',
-    rating: 5,
-    text: 'I lost 15 lbs in 2 months! I was about to go on Ozempic but decided to give this app a shot and it worked :)',
-    avatar: EllieSullivan,
-  },
-  {
-    id: '2',
-    name: 'Alexis Sandra',
-    rating: 5,
-    text: 'This app changed my fitness journey completely. The workouts are perfect and easy to follow!',
-    avatar: AlexisSandra,
-  },
-];
-
 function StarRating({ rating }: { rating: number }) {
   return (
     <View style={styles.starsContainer}>
@@ -55,20 +40,51 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function ReviewsScreen() {
+  const { t } = useTranslation();
+  const { isNavigating: navLocked, withLock } = useNavigationLock();
   const [hasRated, setHasRated] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
-  const handleRatePress = async () => {
+  const reviews: Review[] = useMemo(
+    () => [
+      {
+        id: '1',
+        name: t('onboarding.reviews.review1Author'),
+        rating: 5,
+        text: t('onboarding.reviews.review1Text'),
+        avatar: EllieSullivan,
+      },
+      {
+        id: '2',
+        name: t('onboarding.reviews.review2Author'),
+        rating: 5,
+        text: t('onboarding.reviews.review2Text'),
+        avatar: AlexisSandra,
+      },
+    ],
+    [t]
+  );
+
+  const handleRatePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setIsButtonDisabled(true);
 
-    // Check if store review is available and request it
-    const isAvailable = await StoreReview.isAvailableAsync();
-    if (isAvailable) {
-      await StoreReview.requestReview();
+    if (__DEV__) {
+      // Native StoreKit dialog freezes iOS Simulator, show alert instead
+      Alert.alert(
+        'Rate Align',
+        'Thanks for your support! The native review dialog will appear in production builds.'
+      );
+    } else {
+      StoreReview.isAvailableAsync()
+        .then((isAvailable) => {
+          if (isAvailable) {
+            StoreReview.requestReview().catch(() => {});
+          }
+        })
+        .catch(() => {});
     }
 
-    // After 2 seconds, enable button and change to Continue
     setTimeout(() => {
       setHasRated(true);
       setIsButtonDisabled(false);
@@ -76,8 +92,10 @@ export default function ReviewsScreen() {
   };
 
   const handleContinue = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.push('/onboarding/generate-plan');
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      router.push('/onboarding/generate-plan');
+    });
   };
 
   return (
@@ -85,10 +103,13 @@ export default function ReviewsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
+          disabled={navLocked}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            })
+          }
           style={styles.backButton}
         >
           <Text style={styles.backArrow}>←</Text>
@@ -104,23 +125,23 @@ export default function ReviewsScreen() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Title */}
-        <Text style={styles.titleText}>Help us Grow!</Text>
+        <Text style={styles.titleText}>{t('onboarding.reviews.title')}</Text>
 
         {/* Rating card */}
         <View style={styles.ratingCard}>
           <Image source={LeafLeft} style={styles.leafImage} resizeMode="contain" />
           <View style={styles.ratingContent}>
             <View style={styles.ratingRow}>
-              <Text style={styles.ratingNumber}>4.8</Text>
+              <Text style={styles.ratingNumber}>{t('onboarding.reviews.rating')}</Text>
               <StarRating rating={5} />
             </View>
-            <Text style={styles.ratingLabel}>App Store Rating</Text>
+            <Text style={styles.ratingLabel}>{t('onboarding.reviews.appStoreRating')}</Text>
           </View>
           <Image source={LeafRight} style={styles.leafImage} resizeMode="contain" />
         </View>
 
         {/* Made for you section */}
-        <Text style={styles.sectionTitle}>Align was made for{'\n'}people like you</Text>
+        <Text style={styles.sectionTitle}>{t('onboarding.reviews.sectionTitle')}</Text>
 
         {/* User avatars */}
         <View style={styles.avatarsContainer}>
@@ -129,9 +150,7 @@ export default function ReviewsScreen() {
           <Image source={Girl3} style={[styles.avatar, styles.avatarOverlap]} />
         </View>
 
-        <Text style={styles.usersLoveText}>
-          Users <Text style={styles.loveBold}>LOVE</Text> Align!
-        </Text>
+        <Text style={styles.usersLoveText}>{t('onboarding.reviews.usersLove')}</Text>
 
         {/* Reviews */}
         <View style={styles.reviewsContainer}>
@@ -153,10 +172,10 @@ export default function ReviewsScreen() {
         <Pressable
           style={[styles.continueButton, isButtonDisabled && styles.continueButtonDisabled]}
           onPress={hasRated ? handleContinue : handleRatePress}
-          disabled={isButtonDisabled}
+          disabled={isButtonDisabled || navLocked}
         >
           <Text style={[styles.continueText, isButtonDisabled && styles.continueTextDisabled]}>
-            {hasRated ? 'Continue' : 'Rate 5 Stars'}
+            {hasRated ? t('common.continue') : t('onboarding.reviews.rate5Stars')}
           </Text>
         </Pressable>
       </View>

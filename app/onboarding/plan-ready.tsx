@@ -2,12 +2,19 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 export default function PlanReadyScreen() {
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
+
   const handleContinue = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.push('/onboarding/signup');
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      router.push('/onboarding/signup');
+    });
   };
 
   return (
@@ -22,25 +29,28 @@ export default function PlanReadyScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/onboarding/signup');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/onboarding/signup');
+            })
+          }
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.title}>Your plan is ready!</Text>
-        <Text style={styles.subtitle}>We've created a personalized workout plan just for you.</Text>
+        <Text style={styles.title}>{t('onboarding.planReady.title')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.planReady.subtitle')}</Text>
       </View>
 
       {/* Continue Button */}
       <View style={styles.bottomSection}>
-        <Pressable style={styles.continueButton} onPress={handleContinue}>
-          <Text style={styles.continueText}>Continue</Text>
+        <Pressable style={styles.continueButton} onPress={handleContinue} disabled={isNavigating}>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

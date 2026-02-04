@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -20,6 +21,7 @@ import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useTemplateStore, WorkoutTemplate, getTemplateTotalSets } from '@/stores/templateStore';
 import { CATEGORY_HERO_IMAGES } from '@/stores/presetTemplates';
 import { useUserProfileStore } from '@/stores/userProfileStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const WORKOUT_COLOURS = [
   { id: 'purple', color: colors.primary },
@@ -51,18 +53,18 @@ const CARD_GAP = spacing.sm;
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - CARD_GAP) / 2;
 const CARD_HEIGHT = CARD_WIDTH * 1.25;
 
-// All category cards displayed as image grid
-const ALL_CATEGORIES = [
-  { id: 'core' as const, label: 'Abs' },
-  { id: 'glutes' as const, label: 'Glutes' },
-  { id: 'lower-body' as const, label: 'Lower Body' },
-  { id: 'pull' as const, label: 'Pull' },
-  { id: 'push' as const, label: 'Push' },
-  { id: 'upper-body' as const, label: 'Upper Body' },
-  { id: 'at-home' as const, label: 'At Home' },
-  { id: 'travel' as const, label: 'Travel' },
-  { id: 'cardio' as const, label: 'Cardio' },
-  { id: 'rehab' as const, label: 'No Equipment' },
+// Category IDs - labels resolved via i18n inside the component
+const ALL_CATEGORY_IDS: CategoryId[] = [
+  'core',
+  'glutes',
+  'lower-body',
+  'pull',
+  'push',
+  'upper-body',
+  'at-home',
+  'travel',
+  'cardio',
+  'rehab',
 ];
 
 type CategoryId =
@@ -82,9 +84,18 @@ interface TemplateRowProps {
   onPress: () => void;
   onAdd: () => void;
   isAdded: boolean;
+  addLabel: string;
+  addedLabel: string;
 }
 
-function TemplateRow({ template, onPress, onAdd, isAdded }: TemplateRowProps) {
+function TemplateRow({
+  template,
+  onPress,
+  onAdd,
+  isAdded,
+  addLabel,
+  addedLabel,
+}: TemplateRowProps) {
   const totalSets = getTemplateTotalSets(template);
 
   return (
@@ -128,7 +139,7 @@ function TemplateRow({ template, onPress, onAdd, isAdded }: TemplateRowProps) {
       >
         {!isAdded && <Text style={styles.addButtonPlus}>+</Text>}
         <Text style={[styles.addButtonText, isAdded && styles.addButtonTextAdded]}>
-          {isAdded ? 'Added' : 'Add'}
+          {isAdded ? addedLabel : addLabel}
         </Text>
       </Pressable>
     </Pressable>
@@ -143,6 +154,10 @@ interface CategoryModalProps {
   onAddTemplate: (template: WorkoutTemplate) => void;
   onTemplatePress: (template: WorkoutTemplate) => void;
   isTemplateSaved: (id: string) => boolean;
+  workoutsLabel: string;
+  emptyLabel: string;
+  addLabel: string;
+  addedLabel: string;
 }
 
 function CategoryModal({
@@ -153,66 +168,141 @@ function CategoryModal({
   onAddTemplate,
   onTemplatePress,
   isTemplateSaved,
+  workoutsLabel,
+  emptyLabel,
+  addLabel,
+  addedLabel,
 }: CategoryModalProps) {
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setModalVisible(true);
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (modalVisible) {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: SCREEN_HEIGHT,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setModalVisible(false);
+      });
+    }
+  }, [visible]);
+
+  if (!modalVisible && !visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHandle} />
+    <Modal visible={modalVisible} transparent animationType="none" onRequestClose={onClose}>
+      <Pressable
+        style={styles.modalOverlayPressable}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onClose();
+        }}
+      >
+        <Animated.View style={[styles.modalBackdrop, { opacity: fadeAnim }]} />
+        <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
+          <View onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHandle} />
 
-          <View style={styles.modalHeader}>
-            <Pressable
-              style={styles.modalCloseButton}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onClose();
-              }}
-            >
-              <Ionicons name="close" size={24} color={colors.text} />
-            </Pressable>
-            <Text style={styles.modalTitle}>{categoryLabel} Workouts</Text>
-            <View style={styles.modalCloseButton} />
-          </View>
-
-          <ScrollView
-            style={styles.modalScrollView}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            <View style={styles.modalTemplateList}>
-              {templates.map((template) => (
-                <TemplateRow
-                  key={template.id}
-                  template={template}
-                  onPress={() => onTemplatePress(template)}
-                  onAdd={() => onAddTemplate(template)}
-                  isAdded={isTemplateSaved(template.id)}
-                />
-              ))}
+            <View style={styles.modalHeader}>
+              <Pressable
+                style={styles.modalCloseButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onClose();
+                }}
+              >
+                <Ionicons name="close" size={24} color={colors.text} />
+              </Pressable>
+              <Text style={styles.modalTitle}>
+                {categoryLabel} {workoutsLabel}
+              </Text>
+              <View style={styles.modalCloseButton} />
             </View>
 
-            {templates.length === 0 && (
-              <View style={styles.emptyState}>
-                <Ionicons name="fitness-outline" size={48} color={colors.border} />
-                <Text style={styles.emptyStateText}>No workouts in this category yet</Text>
+            <ScrollView
+              style={styles.modalScrollView}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
+              <View style={styles.modalTemplateList}>
+                {templates.map((template) => (
+                  <TemplateRow
+                    key={template.id}
+                    template={template}
+                    onPress={() => onTemplatePress(template)}
+                    onAdd={() => onAddTemplate(template)}
+                    isAdded={isTemplateSaved(template.id)}
+                    addLabel={addLabel}
+                    addedLabel={addedLabel}
+                  />
+                ))}
               </View>
-            )}
 
-            <View style={{ height: 40 }} />
-          </ScrollView>
-        </View>
-      </View>
+              {templates.length === 0 && (
+                <View style={styles.emptyState}>
+                  <Ionicons name="fitness-outline" size={48} color={colors.border} />
+                  <Text style={styles.emptyStateText}>{emptyLabel}</Text>
+                </View>
+              )}
+
+              <View style={{ height: 40 }} />
+            </ScrollView>
+          </View>
+        </Animated.View>
+      </Pressable>
     </Modal>
   );
 }
 
 export default function ExploreTemplatesScreen() {
+  const { t } = useTranslation();
   const userId = useUserProfileStore((state) => state.userId);
   const presetTemplates = useTemplateStore((state) => state.presetTemplates);
+  const { isNavigating, withLock } = useNavigationLock();
   const addTemplate = useTemplateStore((state) => state.addTemplate);
   const isTemplateSavedFn = useTemplateStore((state) => state.isTemplateSaved);
 
   const isTemplateSaved = (id: string) => isTemplateSavedFn(id, userId);
+
+  const ALL_CATEGORIES = useMemo(() => {
+    const labelMap: Record<string, string> = {
+      core: t('templateCategories.abs'),
+      glutes: t('templateCategories.glutes'),
+      'lower-body': t('templateCategories.lowerBody'),
+      pull: t('templateCategories.pull'),
+      push: t('templateCategories.push'),
+      'upper-body': t('templateCategories.upperBody'),
+      'at-home': t('templateCategories.atHome'),
+      travel: t('templateCategories.travel'),
+      cardio: t('templateCategories.cardio'),
+      rehab: t('templateCategories.noEquipment'),
+    };
+    return ALL_CATEGORY_IDS.map((id) => ({ id, label: labelMap[id] || id }));
+  }, [t]);
 
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -299,11 +389,13 @@ export default function ExploreTemplatesScreen() {
   };
 
   const handleTemplatePress = (template: WorkoutTemplate) => {
-    shouldReopenModalRef.current = true;
-    setShowCategoryModal(false);
-    router.push({
-      pathname: '/template-detail',
-      params: { templateId: template.id },
+    withLock(() => {
+      shouldReopenModalRef.current = true;
+      setShowCategoryModal(false);
+      router.push({
+        pathname: '/template-detail',
+        params: { templateId: template.id },
+      });
     });
   };
 
@@ -319,12 +411,12 @@ export default function ExploreTemplatesScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Explore</Text>
+        <Text style={styles.headerTitle}>{t('explore.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Workouts</Text>
+        <Text style={styles.sectionTitle}>{t('explore.workouts')}</Text>
 
         <View style={styles.cardGrid}>
           {ALL_CATEGORIES.map((category) => {
@@ -352,7 +444,9 @@ export default function ExploreTemplatesScreen() {
                   style={styles.categoryCardGradient}
                 >
                   <Text style={styles.categoryCardLabel}>{category.label}</Text>
-                  <Text style={styles.categoryCardCount}>{count} workouts</Text>
+                  <Text style={styles.categoryCardCount}>
+                    {t('explore.countWorkouts', { count })}
+                  </Text>
                 </LinearGradient>
               </Pressable>
             );
@@ -374,6 +468,10 @@ export default function ExploreTemplatesScreen() {
         onAddTemplate={handleAddTemplate}
         onTemplatePress={handleTemplatePress}
         isTemplateSaved={isTemplateSaved}
+        workoutsLabel={t('explore.workouts')}
+        emptyLabel={t('explore.noWorkoutsInCategory')}
+        addLabel={t('explore.add')}
+        addedLabel={t('explore.added')}
       />
 
       {/* Colour Picker Modal for Add */}
@@ -406,7 +504,7 @@ export default function ExploreTemplatesScreen() {
                 >
                   <CloseIcon />
                 </Pressable>
-                <Text style={styles.colourModalTitle}>Choose Colour</Text>
+                <Text style={styles.colourModalTitle}>{t('explore.chooseColour')}</Text>
                 <View style={styles.colourModalCloseButton} />
               </View>
 
@@ -426,7 +524,7 @@ export default function ExploreTemplatesScreen() {
                     >
                       <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
                         {addColourId === colour.id && (
-                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                          <Ionicons name="checkmark" size={20} color={colors.textInverse} />
                         )}
                       </View>
                     </Pressable>
@@ -440,7 +538,7 @@ export default function ExploreTemplatesScreen() {
                     confirmAddWithColour();
                   }}
                 >
-                  <Text style={styles.addColourConfirmText}>Add to Library</Text>
+                  <Text style={styles.addColourConfirmText}>{t('explore.addToLibrary')}</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -525,7 +623,7 @@ const styles = StyleSheet.create({
   categoryCardLabel: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   categoryCardCount: {
     fontFamily: fonts.regular,
@@ -605,10 +703,13 @@ const styles = StyleSheet.create({
   },
 
   // Modal styles
-  modalOverlay: {
+  modalOverlayPressable: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   modalContent: {
     backgroundColor: colors.background,
@@ -737,6 +838,6 @@ const styles = StyleSheet.create({
   addColourConfirmText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
 });

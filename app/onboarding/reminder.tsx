@@ -13,10 +13,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 // TODO: Re-enable when Push Notifications capability is added in Apple Developer Portal
 // import * as Notifications from 'expo-notifications';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const ITEM_HEIGHT = 60;
 const VISIBLE_ITEMS = 5;
@@ -27,6 +29,8 @@ const minutes = Array.from({ length: 60 }, (_, i) => i); // 0-59
 const periods = ['AM', 'PM'];
 
 export default function ReminderScreen() {
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
   const hourListRef = useRef<FlatList>(null);
   const minuteListRef = useRef<FlatList>(null);
   const periodListRef = useRef<FlatList>(null);
@@ -199,18 +203,21 @@ export default function ReminderScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/onboarding/first-exercises');
-          }}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/onboarding/thank-you');
+            })
+          }
+          disabled={isNavigating}
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
       {/* Question */}
       <View style={styles.questionContainer}>
-        <Text style={styles.questionText}>Do you want to receive workout reminders?</Text>
+        <Text style={styles.questionText}>{t('onboarding.reminder.question')}</Text>
       </View>
 
       {/* Notification Preview Card */}
@@ -221,13 +228,13 @@ export default function ReminderScreen() {
         />
         <View style={styles.notificationContent}>
           <View style={styles.notificationHeader}>
-            <Text style={styles.notificationTitle}>Align</Text>
-            <Text style={styles.notificationTime}>2h ago</Text>
+            <Text style={styles.notificationTitle}>{t('onboarding.reminder.notificationApp')}</Text>
+            <Text style={styles.notificationTime}>{t('onboarding.reminder.notificationTime')}</Text>
           </View>
-          <Text style={styles.notificationHeadline}>Todays Workout: Glutes 🍑🔥</Text>
-          <Text style={styles.notificationBody}>
-            Hip Thrusts, Romanian Deadlifts, Bulgarian Split Squats
+          <Text style={styles.notificationHeadline}>
+            {t('onboarding.reminder.notificationTitle')}
           </Text>
+          <Text style={styles.notificationBody}>{t('onboarding.reminder.notificationBody')}</Text>
         </View>
       </View>
 
@@ -308,33 +315,41 @@ export default function ReminderScreen() {
       {/* Bottom Section */}
       <View style={styles.bottomSection}>
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            useOnboardingStore.getState().setAndSave('notificationsEnabled', false);
-            router.push('/onboarding/first-exercises');
-          }}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              useOnboardingStore.getState().setAndSave('notificationsEnabled', false);
+              router.push('/onboarding/thank-you');
+            })
+          }
+          disabled={isNavigating}
         >
-          <Text style={styles.maybeLaterText}>Maybe later</Text>
+          <Text style={styles.maybeLaterText}>{t('common.maybeLater')}</Text>
         </Pressable>
 
         <Pressable
           style={styles.continueButton}
-          onPress={async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-            // TODO: Re-enable when Push Notifications capability is added in Apple Developer Portal
-            // Request notification permissions
-            // const { status } = await Notifications.requestPermissionsAsync();
-            // const granted = status === 'granted';
+              // TODO: Re-enable when Push Notifications capability is added in Apple Developer Portal
+              // Request notification permissions
+              // const { status } = await Notifications.requestPermissionsAsync();
+              // const granted = status === 'granted';
 
-            // Save preferences (for now, just save as true since we can't request permissions yet)
-            useOnboardingStore.getState().setAndSave('notificationsEnabled', true);
-            useOnboardingStore.getState().setAndSave('reminderTime', timeString);
+              // Save preferences (for now, just save as true since we can't request permissions yet)
+              useOnboardingStore.getState().setAndSave('notificationsEnabled', true);
+              useOnboardingStore.getState().setAndSave('reminderTime', timeString);
 
-            router.push('/onboarding/first-exercises');
-          }}
+              router.push('/onboarding/thank-you');
+            })
+          }
         >
-          <Text style={styles.continueText}>Remind me at {timeString}</Text>
+          <Text style={styles.continueText}>
+            {t('onboarding.reminder.remindMeAt', { time: timeString })}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>

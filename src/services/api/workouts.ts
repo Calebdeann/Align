@@ -6,6 +6,7 @@ import {
   UserExercisePreferenceSchema,
   type SaveWorkoutInput as ValidatedSaveWorkoutInput,
 } from '@/schemas/workout.schema';
+import { logger } from '@/utils/logger';
 
 // Helper: detect Supabase schema/column errors (e.g. migration not applied yet)
 function isSchemaError(error: any): boolean {
@@ -141,7 +142,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
   // Validate input before any database operations
   const parseResult = SaveWorkoutInputSchema.safeParse(input);
   if (!parseResult.success) {
-    console.error('Invalid workout input:', parseResult.error.flatten());
+    logger.warn('Invalid workout input', { error: parseResult.error.flatten() });
     Alert.alert('Save Error', 'Unable to save workout. Please try again.');
     return null;
   }
@@ -187,7 +188,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
       .single();
 
     if (firstError && hasImageFields && isSchemaError(firstError)) {
-      console.warn(
+      logger.warn(
         'Image columns not found in database (migration 010 not applied). Saving workout without image.'
       );
       const { data: retryAttempt, error: retryError } = await supabase
@@ -197,13 +198,13 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
         .single();
 
       if (retryError || !retryAttempt) {
-        console.error('Error saving workout (retry without image):', retryError);
+        logger.warn('Error saving workout (retry without image)', { error: retryError });
         Alert.alert('Save Error', 'Unable to save workout. Please try again.');
         return null;
       }
       workout = retryAttempt;
     } else if (firstError || !firstAttempt) {
-      console.error('Error saving workout:', firstError);
+      logger.warn('Error saving workout', { error: firstError });
       Alert.alert('Save Error', 'Unable to save workout. Please try again.');
       return null;
     } else {
@@ -236,7 +237,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
         .single();
 
       if (exerciseError || !workoutExercise) {
-        console.error('Error saving workout exercise:', exerciseError);
+        logger.warn('Error saving workout exercise', { error: exerciseError });
         continue;
       }
 
@@ -255,7 +256,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
         const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert);
 
         if (setsError) {
-          console.error('Error saving workout sets:', setsError);
+          logger.warn('Error saving workout sets', { error: setsError });
         }
       }
 
@@ -312,13 +313,13 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
         .insert(musclesToInsert);
 
       if (musclesError) {
-        console.error('Error saving workout muscles:', musclesError);
+        logger.warn('Error saving workout muscles', { error: musclesError });
       }
     }
 
     return workoutId;
   } catch (error) {
-    console.error('Error in saveCompletedWorkout:', error);
+    logger.warn('Error in saveCompletedWorkout', { error });
     Alert.alert('Save Error', 'Unable to save workout. Please try again.');
     return null;
   }
@@ -335,7 +336,7 @@ export async function updateCompletedWorkout(
   // Validate input before any database operations
   const parseResult = SaveWorkoutInputSchema.safeParse(input);
   if (!parseResult.success) {
-    console.error('Invalid workout input:', parseResult.error.flatten());
+    logger.warn('Invalid workout input', { error: parseResult.error.flatten() });
     Alert.alert('Save Error', 'Unable to update workout. Please try again.');
     return false;
   }
@@ -370,20 +371,20 @@ export async function updateCompletedWorkout(
       .eq('id', workoutId);
 
     if (updateError && hasImageFields && isSchemaError(updateError)) {
-      console.warn('Image columns not found. Updating workout without image.');
+      logger.warn('Image columns not found. Updating workout without image.');
       const { error: retryError } = await supabase
         .from('workouts')
         .update(baseWorkoutUpdate)
         .eq('id', workoutId);
 
       if (retryError) {
-        console.error('Error updating workout (retry):', retryError);
+        logger.warn('Error updating workout (retry)', { error: retryError });
         Alert.alert('Save Error', 'Unable to update workout. Please try again.');
         return false;
       }
       updateSuccess = true;
     } else if (updateError) {
-      console.error('Error updating workout:', updateError);
+      logger.warn('Error updating workout', { error: updateError });
       Alert.alert('Save Error', 'Unable to update workout. Please try again.');
       return false;
     } else {
@@ -397,7 +398,7 @@ export async function updateCompletedWorkout(
       .eq('workout_id', workoutId);
 
     if (deleteExError) {
-      console.error('Error deleting existing exercises:', deleteExError);
+      logger.warn('Error deleting existing exercises', { error: deleteExError });
       Alert.alert('Save Error', 'Unable to update workout exercises. Please try again.');
       return false;
     }
@@ -409,7 +410,7 @@ export async function updateCompletedWorkout(
       .eq('workout_id', workoutId);
 
     if (deleteMuscleError) {
-      console.error('Error deleting existing muscles:', deleteMuscleError);
+      logger.warn('Error deleting existing muscles', { error: deleteMuscleError });
       // Non-fatal, continue
     }
 
@@ -436,7 +437,7 @@ export async function updateCompletedWorkout(
         .single();
 
       if (exerciseError || !workoutExercise) {
-        console.error('Error saving workout exercise:', exerciseError);
+        logger.warn('Error saving workout exercise', { error: exerciseError });
         continue;
       }
 
@@ -453,7 +454,7 @@ export async function updateCompletedWorkout(
       if (setsToInsert.length > 0) {
         const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert);
         if (setsError) {
-          console.error('Error saving workout sets:', setsError);
+          logger.warn('Error saving workout sets', { error: setsError });
         }
       }
 
@@ -508,13 +509,13 @@ export async function updateCompletedWorkout(
         .from('workout_muscles')
         .insert(musclesToInsert);
       if (musclesError) {
-        console.error('Error saving workout muscles:', musclesError);
+        logger.warn('Error saving workout muscles', { error: musclesError });
       }
     }
 
     return true;
   } catch (error) {
-    console.error('Error in updateCompletedWorkout:', error);
+    logger.warn('Error in updateCompletedWorkout', { error });
     Alert.alert('Save Error', 'Unable to update workout. Please try again.');
     return false;
   }
@@ -590,7 +591,7 @@ export async function getBatchExercisePreviousSets(
 
     return result;
   } catch (error) {
-    console.error('Error fetching batch previous sets:', error);
+    logger.warn('Error fetching batch previous sets', { error });
     return result;
   }
 }
@@ -623,7 +624,7 @@ export async function getWorkoutHistory(userId: string, limit = 20): Promise<Wor
       .limit(limit);
 
     if (error || !workouts) {
-      console.error('Error fetching workout history:', error);
+      logger.warn('Error fetching workout history', { error });
       Alert.alert('Connection Error', 'Unable to load workout history. Please try again.');
       return [];
     }
@@ -646,7 +647,7 @@ export async function getWorkoutHistory(userId: string, limit = 20): Promise<Wor
       };
     });
   } catch (error) {
-    console.error('Error in getWorkoutHistory:', error);
+    logger.warn('Error in getWorkoutHistory', { error });
     Alert.alert('Connection Error', 'Unable to load workout history. Please try again.');
     return [];
   }
@@ -684,7 +685,7 @@ export async function getWorkoutById(workoutId: string): Promise<{
       .order('order_index');
 
     if (exercisesError) {
-      console.error('Error fetching workout exercises:', exercisesError);
+      logger.warn('Error fetching workout exercises', { error: exercisesError });
       return { workout, exercises: [] };
     }
 
@@ -698,7 +699,7 @@ export async function getWorkoutById(workoutId: string): Promise<{
       })),
     };
   } catch (error) {
-    console.error('Error in getWorkoutById:', error);
+    logger.warn('Error in getWorkoutById', { error });
     return null;
   }
 }
@@ -712,14 +713,14 @@ export async function deleteWorkout(workoutId: string): Promise<boolean> {
     const { error } = await supabase.from('workouts').delete().eq('id', workoutId);
 
     if (error) {
-      console.error('Error deleting workout:', error);
+      logger.warn('Error deleting workout', { error });
       Alert.alert('Error', 'Unable to delete workout. Please try again.');
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error in deleteWorkout:', error);
+    logger.warn('Error in deleteWorkout', { error });
     Alert.alert('Error', 'Unable to delete workout. Please try again.');
     return false;
   }
@@ -756,7 +757,7 @@ export async function getUserExercisePreference(
       restTimerSeconds: data.rest_timer_seconds || 0,
     };
   } catch (error) {
-    console.error('Error fetching exercise preference:', error);
+    logger.warn('Error fetching exercise preference', { error });
     return null;
   }
 }
@@ -790,7 +791,7 @@ export async function getUserExercisePreferences(
 
     return preferencesMap;
   } catch (error) {
-    console.error('Error fetching exercise preferences:', error);
+    logger.warn('Error fetching exercise preferences', { error });
     return preferencesMap;
   }
 }
@@ -808,7 +809,7 @@ export async function saveUserExercisePreference(
     restTimerSeconds,
   });
   if (!parseResult.success) {
-    console.error('Invalid exercise preference input:', parseResult.error.flatten());
+    logger.warn('Invalid exercise preference input', { error: parseResult.error.flatten() });
     return false;
   }
 
@@ -826,13 +827,13 @@ export async function saveUserExercisePreference(
     );
 
     if (error) {
-      console.error('Error saving exercise preference:', error);
+      logger.warn('Error saving exercise preference', { error });
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error in saveUserExercisePreference:', error);
+    logger.warn('Error in saveUserExercisePreference', { error });
     return false;
   }
 }
@@ -867,7 +868,7 @@ export async function getWorkoutsByDateRange(
       .order('completed_at');
 
     if (error || !workouts) {
-      console.error('Error fetching workouts by date range:', error);
+      logger.warn('Error fetching workouts by date range', { error });
       return [];
     }
 
@@ -884,7 +885,7 @@ export async function getWorkoutsByDateRange(
       imageTemplateId: workout.image_template_id ?? null,
     }));
   } catch (error) {
-    console.error('Error in getWorkoutsByDateRange:', error);
+    logger.warn('Error in getWorkoutsByDateRange', { error });
     return [];
   }
 }
@@ -913,7 +914,7 @@ export async function getExerciseMuscles(
       .in('exercise_id', exerciseIds);
 
     if (error || !data) {
-      console.error('Error fetching exercise muscles:', error);
+      logger.warn('Error fetching exercise muscles', { error });
       return result;
     }
 
@@ -930,7 +931,7 @@ export async function getExerciseMuscles(
 
     return result;
   } catch (error) {
-    console.error('Error in getExerciseMuscles:', error);
+    logger.warn('Error in getExerciseMuscles', { error });
     return result;
   }
 }
@@ -953,7 +954,7 @@ export async function getWorkoutMuscles(workoutId: string): Promise<WorkoutMuscl
       .eq('workout_id', workoutId);
 
     if (error || !data) {
-      console.error('Error fetching workout muscles:', error);
+      logger.warn('Error fetching workout muscles', { error });
       return [];
     }
 
@@ -963,7 +964,7 @@ export async function getWorkoutMuscles(workoutId: string): Promise<WorkoutMuscl
       activation: wm.activation as 'primary' | 'secondary',
     }));
   } catch (error) {
-    console.error('Error in getWorkoutMuscles:', error);
+    logger.warn('Error in getWorkoutMuscles', { error });
     return [];
   }
 }

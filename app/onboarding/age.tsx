@@ -11,7 +11,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 
 const ITEM_HEIGHT = 50;
@@ -20,6 +22,8 @@ const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const ages = Array.from({ length: 83 }, (_, i) => i + 13); // 13-95
 
 export default function AgeScreen() {
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
   const flatListRef = useRef<FlatList>(null);
   const [selectedIndex, setSelectedIndex] = useState(ages.indexOf(18));
   const lastIndexRef = useRef(ages.indexOf(18));
@@ -90,10 +94,13 @@ export default function AgeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            })
+          }
           style={styles.backButton}
         >
           <Text style={styles.backArrow}>←</Text>
@@ -105,20 +112,23 @@ export default function AgeScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            useOnboardingStore.getState().skipField('age');
-            router.push('/onboarding/height');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              useOnboardingStore.getState().skipField('age');
+              router.push('/onboarding/height');
+            })
+          }
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
       {/* Question */}
       <View style={styles.questionContainer}>
-        <Text style={styles.questionText}>How old are you?</Text>
-        <Text style={styles.subtitle}>This will be used to calibrate your custom plan.</Text>
+        <Text style={styles.questionText}>{t('onboarding.age.question')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.age.subtitle')}</Text>
       </View>
 
       {/* Age Picker */}
@@ -152,13 +162,16 @@ export default function AgeScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            useOnboardingStore.getState().setAndSave('age', ages[selectedIndex]);
-            router.push('/onboarding/height');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              useOnboardingStore.getState().setAndSave('age', ages[selectedIndex]);
+              router.push('/onboarding/height');
+            })
+          }
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

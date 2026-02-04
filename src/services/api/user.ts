@@ -4,6 +4,7 @@ import {
   UserPreferencesSchema,
   OnboardingDataSchema,
 } from '@/schemas/user.schema';
+import { logger } from '@/utils/logger';
 
 export interface UserProfile {
   id: string;
@@ -20,12 +21,12 @@ export interface UserProfile {
   weight?: number;
   target_weight?: number;
   units?: 'imperial' | 'metric';
+  tried_other_apps?: string;
+  body_change_goal?: string;
   training_location?: string;
-  preferred_equipment?: string[];
   workout_frequency?: number;
   workout_days?: string[];
   main_obstacle?: string;
-  accomplish?: string;
   notifications_enabled?: boolean;
   reminder_time?: string;
   referral_code?: string;
@@ -51,7 +52,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       const created = await createProfileIfMissing(userId);
       return created;
     }
-    console.error('Error fetching user profile:', error);
+    logger.warn('Error fetching user profile', { error });
     return null;
   }
 
@@ -79,7 +80,7 @@ async function createProfileIfMissing(userId: string): Promise<UserProfile | nul
     .single();
 
   if (error) {
-    console.error('Error creating profile:', error);
+    logger.warn('Error creating profile', { error });
     return null;
   }
 
@@ -94,7 +95,7 @@ export async function updateUserProfile(
   // Validate updates
   const parseResult = UpdateProfileSchema.safeParse(updates);
   if (!parseResult.success) {
-    console.error('Invalid profile update input:', parseResult.error.flatten());
+    logger.warn('Invalid profile update input', { error: parseResult.error.flatten() });
     return null;
   }
 
@@ -106,7 +107,7 @@ export async function updateUserProfile(
     .single();
 
   if (error) {
-    console.error('Error updating user profile:', error);
+    logger.warn('Error updating user profile', { error });
     return null;
   }
 
@@ -121,7 +122,7 @@ export async function updateUserPreferences(
   // Validate preferences
   const parseResult = UserPreferencesSchema.safeParse(preferences);
   if (!parseResult.success) {
-    console.error('Invalid preferences input:', parseResult.error.flatten());
+    logger.warn('Invalid preferences input', { error: parseResult.error.flatten() });
     return false;
   }
 
@@ -131,7 +132,7 @@ export async function updateUserPreferences(
     .eq('id', userId);
 
   if (error) {
-    console.error('Error updating user preferences:', error);
+    logger.warn('Error updating user preferences', { error });
     return false;
   }
 
@@ -146,7 +147,7 @@ export async function saveOnboardingData(
   // Validate onboarding data
   const parseResult = OnboardingDataSchema.safeParse(onboardingData);
   if (!parseResult.success) {
-    console.error('Invalid onboarding data input:', parseResult.error.flatten());
+    logger.warn('Invalid onboarding data input', { error: parseResult.error.flatten() });
     return false;
   }
 
@@ -156,7 +157,7 @@ export async function saveOnboardingData(
     .eq('id', userId);
 
   if (error) {
-    console.error('Error saving onboarding data:', error);
+    logger.warn('Error saving onboarding data', { error });
     return false;
   }
 
@@ -170,6 +171,20 @@ export async function uploadAvatar(userId: string, imageUri: string): Promise<st
     const response = await fetch(imageUri);
     const blob = await response.blob();
 
+    // Validate file size (max 5MB)
+    const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
+    if (blob.size > MAX_AVATAR_SIZE) {
+      logger.warn('Avatar too large', { size: blob.size });
+      return null;
+    }
+
+    // Validate content type
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (blob.type && !validImageTypes.includes(blob.type)) {
+      logger.warn('Invalid avatar type', { type: blob.type });
+      return null;
+    }
+
     const filePath = `${userId}/avatar.jpg`;
 
     // Upload to Supabase Storage (upsert to replace existing)
@@ -179,7 +194,7 @@ export async function uploadAvatar(userId: string, imageUri: string): Promise<st
     });
 
     if (uploadError) {
-      console.warn('Error uploading avatar:', uploadError);
+      logger.warn('Error uploading avatar', { error: uploadError });
       return null;
     }
 
@@ -189,18 +204,17 @@ export async function uploadAvatar(userId: string, imageUri: string): Promise<st
     // Append cache-buster so the new image loads immediately
     return `${data.publicUrl}?t=${Date.now()}`;
   } catch (error) {
-    console.warn('Error in uploadAvatar:', error);
+    logger.warn('Error in uploadAvatar', { error });
     return null;
   }
 }
 
-// Delete user account
-export async function deleteUserAccount(userId: string): Promise<boolean> {
-  // This will also trigger cascade deletes for related data if set up in Supabase
-  const { error } = await supabase.from('profiles').delete().eq('id', userId);
+// Delete user account (uses SECURITY DEFINER function to delete auth user + all data)
+export async function deleteUserAccount(): Promise<boolean> {
+  const { error } = await supabase.rpc('delete_own_account');
 
   if (error) {
-    console.error('Error deleting user account:', error);
+    logger.warn('Error deleting user account', { error });
     return false;
   }
 
@@ -217,7 +231,7 @@ export async function getCurrentUser() {
   if (error) {
     // Don't log "Auth session missing" - this is expected when user isn't logged in
     if (error.name !== 'AuthSessionMissingError') {
-      console.error('Error getting current user:', error);
+      logger.warn('Error getting current user', { error });
     }
     return null;
   }
@@ -230,7 +244,7 @@ export async function signOut(): Promise<boolean> {
   const { error } = await supabase.auth.signOut();
 
   if (error) {
-    console.error('Error signing out:', error);
+    logger.warn('Error signing out', { error });
     return false;
   }
 

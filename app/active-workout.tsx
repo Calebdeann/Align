@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import {
   View,
   Text,
@@ -10,6 +12,8 @@ import {
   Modal,
   Animated,
   Dimensions,
+  PanResponder,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -32,18 +36,28 @@ import {
   filterNumericInput,
   fromKgForDisplay,
 } from '@/utils/units';
-import { formatExerciseNameString } from '@/utils/textFormatters';
 import ClockModal from '@/components/workout/ClockModal';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore } from '@/stores/templateStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import {
+  useExerciseStore,
+  prefetchExerciseGif,
+  getExerciseDisplayName,
+} from '@/stores/exerciseStore';
 import { playTimerSound } from '@/utils/sounds';
 import {
   startWorkoutLiveActivity,
   updateWorkoutLiveActivity,
   endWorkoutLiveActivity,
 } from '@/services/liveActivity';
+import {
+  writeWorkoutStateToWidget,
+  onWidgetSetCompleted,
+  readWidgetActions,
+  WidgetAction,
+} from '@/services/widgetBridge';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -227,12 +241,20 @@ function MinusCircleIcon() {
         d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
         fill="#C75050"
       />
-      <Line x1={8} y1={12} x2={16} y2={12} stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" />
+      <Line
+        x1={8}
+        y1={12}
+        x2={16}
+        y2={12}
+        stroke={colors.textInverse}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
 
-// Draggable row for exercises - improved drag-based reorder
+// Draggable row for exercises - drag-based reorder with free-flowing movement
 const REORDER_ROW_HEIGHT = 72;
 
 interface DraggableExerciseRowProps {
@@ -240,9 +262,10 @@ interface DraggableExerciseRowProps {
   index: number;
   onRemove: () => void;
   isDragging: boolean;
-  draggedIndex: number | null;
-  onDragStart: (index: number) => void;
-  onDragMove: (gestureY: number) => void;
+  anyDragging: boolean;
+  translateY: Animated.Value;
+  onDragStart: (index: number, screenY: number) => void;
+  onDragMove: (moveY: number, dy: number) => void;
   onDragEnd: () => void;
 }
 
@@ -251,56 +274,74 @@ function DraggableExerciseRow({
   index,
   onRemove,
   isDragging,
-  draggedIndex,
+  anyDragging,
+  translateY,
   onDragStart,
   onDragMove,
   onDragEnd,
 }: DraggableExerciseRowProps) {
   const scale = useRef(new Animated.Value(1)).current;
 
+  // Store current values in refs so PanResponder always reads the latest
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  const onDragStartRef = useRef(onDragStart);
+  onDragStartRef.current = onDragStart;
+  const onDragMoveRef = useRef(onDragMove);
+  onDragMoveRef.current = onDragMove;
+  const onDragEndRef = useRef(onDragEnd);
+  onDragEndRef.current = onDragEnd;
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        onDragStart(index);
+      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 5,
+      onPanResponderGrant: (evt) => {
+        onDragStartRef.current(indexRef.current, evt.nativeEvent.pageY);
         Animated.spring(scale, {
-          toValue: 1.02,
+          toValue: 1.03,
           useNativeDriver: true,
         }).start();
       },
       onPanResponderMove: (_, gestureState) => {
-        onDragMove(gestureState.moveY);
+        onDragMoveRef.current(gestureState.moveY, gestureState.dy);
       },
       onPanResponderRelease: () => {
         Animated.spring(scale, {
           toValue: 1,
           useNativeDriver: true,
         }).start();
-        onDragEnd();
+        onDragEndRef.current();
       },
       onPanResponderTerminate: () => {
         Animated.spring(scale, {
           toValue: 1,
           useNativeDriver: true,
         }).start();
-        onDragEnd();
+        onDragEndRef.current();
       },
     })
   ).current;
 
-  // Visual feedback: dim non-dragged items when dragging
-  const opacity = draggedIndex !== null && draggedIndex !== index ? 0.5 : 1;
+  const opacity = anyDragging && !isDragging ? 0.5 : 1;
 
   return (
     <Animated.View
       style={[
         styles.reorderItem,
         {
-          transform: [{ scale }],
+          transform: [{ translateY }, { scale }],
           opacity,
           zIndex: isDragging ? 100 : 1,
           elevation: isDragging ? 5 : 0,
+          ...(isDragging
+            ? {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+              }
+            : {}),
         },
       ]}
     >
@@ -320,7 +361,7 @@ function DraggableExerciseRow({
         borderRadius={8}
       />
       <Text style={styles.reorderExerciseName}>
-        {formatExerciseNameString(workoutExercise.exercise.name)}
+        {getExerciseDisplayName(workoutExercise.exercise)}
       </Text>
       <View style={styles.dragHandle} {...panResponder.panHandlers}>
         <DragHandleIcon />
@@ -343,7 +384,7 @@ function formatRestTime(seconds: number): string {
 }
 
 function formatRestTimerDisplay(seconds: number): string {
-  if (seconds === 0) return 'OFF';
+  if (seconds === 0) return i18n.t('workout.off');
   const option = REST_TIMER_OPTIONS.find((o) => o.value === seconds);
   return option?.label || formatRestTime(seconds);
 }
@@ -465,7 +506,7 @@ function SwipeableSetRow({
           handleDelete();
         }}
       >
-        <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
+        <Ionicons name="trash-outline" size={20} color={colors.textInverse} />
       </Pressable>
     );
   }, [handleDelete]);
@@ -542,7 +583,9 @@ function SwipeableSetRow({
           }}
         >
           <View style={[styles.setCheckbox, set.completed && styles.setCheckboxCompleted]}>
-            {set.completed && <Ionicons name="checkmark-sharp" size={14} color="#FFFFFF" />}
+            {set.completed && (
+              <Ionicons name="checkmark-sharp" size={14} color={colors.textInverse} />
+            )}
           </View>
         </Pressable>
       </View>
@@ -564,6 +607,7 @@ const swipeStyles = StyleSheet.create({
 });
 
 export default function ActiveWorkoutScreen() {
+  const { t } = useTranslation();
   const { templateId, editData: editDataParam } = useLocalSearchParams<{
     templateId?: string;
     editData?: string;
@@ -588,6 +632,9 @@ export default function ActiveWorkoutScreen() {
   const pendingExercises = useWorkoutStore((state) => state.pendingExercises);
   const clearPendingExercises = useWorkoutStore((state) => state.clearPendingExercises);
 
+  // Subscribe to translation changes so exercise names update when language changes
+  const translationsLanguage = useExerciseStore((state) => state.translationsLanguage);
+
   // Template store for getting template data
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
 
@@ -599,9 +646,23 @@ export default function ActiveWorkoutScreen() {
   // Reorder state
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [reorderExercises, setReorderExercises] = useState<WorkoutExercise[]>([]);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const reorderListRef = useRef<View>(null);
-  const reorderListTopRef = useRef<number>(0);
+  const draggedIndexRef = useRef<number>(-1);
+  const exerciseOrderRef = useRef<WorkoutExercise[]>([]);
+  const rowTranslateY = useRef<Animated.Value[]>([]);
+  const dragTranslateY = useRef(new Animated.Value(0)).current;
+  // Accumulated offset adjustment from swaps (PanResponder dy doesn't account for slot changes)
+  const dragAdjustmentRef = useRef<number>(0);
+  const [activeDragIndex, setActiveDragIndex] = useState<number>(-1);
+  const reorderKeysRef = useRef<string[]>([]);
+
+  // Sync exerciseOrderRef and rowTranslateY when reorderExercises changes
+  useEffect(() => {
+    exerciseOrderRef.current = reorderExercises;
+    while (rowTranslateY.current.length < reorderExercises.length) {
+      rowTranslateY.current.push(new Animated.Value(0));
+    }
+    rowTranslateY.current.length = reorderExercises.length;
+  }, [reorderExercises]);
 
   // Rest timer modal state
   const [showRestTimerModal, setShowRestTimerModal] = useState(false);
@@ -637,6 +698,8 @@ export default function ActiveWorkoutScreen() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startedAtRef = useRef<Date>(new Date());
   const isRestoringRef = useRef(false);
+  // Wall-clock epoch for elapsed timer: elapsed = floor((now - epoch) / 1000)
+  const timerEpochRef = useRef<number>(Date.now());
 
   // Parse edit data for edit mode
   const editDataParsed = useMemo(() => {
@@ -684,7 +747,9 @@ export default function ActiveWorkoutScreen() {
         supersetId: we.supersetId ?? null,
       }));
       setWorkoutExercises(editExercises);
-      setElapsedSeconds(editDataParsed.durationSeconds || 0);
+      const editDuration = editDataParsed.durationSeconds || 0;
+      setElapsedSeconds(editDuration);
+      timerEpochRef.current = Date.now() - editDuration * 1000;
       startedAtRef.current = new Date(editDataParsed.startedAt || new Date().toISOString());
       if (editDataParsed.userId) {
         setUserId(editDataParsed.userId);
@@ -700,6 +765,7 @@ export default function ActiveWorkoutScreen() {
       // Restore minimized workout (same template or no template specified)
       isRestoringRef.current = true;
       setElapsedSeconds(activeWorkout.elapsedSeconds);
+      timerEpochRef.current = Date.now() - activeWorkout.elapsedSeconds * 1000;
       setWorkoutExercises(activeWorkout.exercises as WorkoutExercise[]);
       startedAtRef.current = new Date(activeWorkout.startedAt);
       restoreActiveWorkout();
@@ -710,7 +776,7 @@ export default function ActiveWorkoutScreen() {
         0
       );
       startWorkoutLiveActivity(
-        activeWorkout.templateName || 'Workout',
+        activeWorkout.templateName || t('workout.title'),
         activeWorkout.exercises.length,
         completedSets,
         activeWorkout.startedAt
@@ -776,11 +842,11 @@ export default function ActiveWorkoutScreen() {
           );
         } else {
           startActiveWorkout(null);
-          startWorkoutLiveActivity('Workout', 0, 0, new Date().toISOString());
+          startWorkoutLiveActivity(t('workout.title'), 0, 0, new Date().toISOString());
         }
       } else {
         startActiveWorkout(null);
-        startWorkoutLiveActivity('Workout', 0, 0, new Date().toISOString());
+        startWorkoutLiveActivity(t('workout.title'), 0, 0, new Date().toISOString());
       }
     }
     // If activeWorkout exists, not minimized, same template — returning from
@@ -805,26 +871,21 @@ export default function ActiveWorkoutScreen() {
     };
   }, []);
 
-  // Single timer source: start on focus, stop on blur.
-  // Uses a ref to read the current elapsed time to avoid recreating the callback.
-  const elapsedSecondsRef = useRef(elapsedSeconds);
-  elapsedSecondsRef.current = elapsedSeconds;
-
+  // Single timer source: wall-clock based so interruptions (modals, blur) never lose time.
+  // Elapsed = floor((now - timerEpochRef) / 1000). The epoch is set when the workout
+  // starts, restores, or enters edit mode.
   useFocusEffect(
     useCallback(() => {
-      // Clear any stale interval before starting a new one
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      let currentTime = elapsedSecondsRef.current;
       intervalRef.current = setInterval(() => {
-        currentTime += 1;
-        setElapsedSeconds(currentTime);
-        updateActiveWorkoutTime(currentTime);
+        const elapsed = Math.floor((Date.now() - timerEpochRef.current) / 1000);
+        setElapsedSeconds(elapsed);
+        updateActiveWorkoutTime(elapsed);
       }, 1000);
 
-      // Cleanup: stop timer when screen loses focus
       return () => {
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
@@ -843,7 +904,7 @@ export default function ActiveWorkoutScreen() {
       clearPendingExercises();
       handlePendingExercises(exercisesToAdd)
         .catch(() => {
-          Alert.alert('Error', 'Failed to add exercises. Please try again.');
+          Alert.alert(t('common.error'), t('workout.failedToAddExercises'));
         })
         .finally(() => {
           processingPendingRef.current = false;
@@ -914,25 +975,143 @@ export default function ActiveWorkoutScreen() {
     if (workoutExercises.length > 0) {
       setActiveWorkoutExercises(workoutExercises);
 
-      // Update Live Activity with new exercise/set counts
+      // Find the current (first uncompleted) set
+      let currentExerciseIndex = -1;
+      let currentSetIndex = -1;
+      for (let eIdx = 0; eIdx < workoutExercises.length; eIdx++) {
+        for (let sIdx = 0; sIdx < workoutExercises[eIdx].sets.length; sIdx++) {
+          if (!workoutExercises[eIdx].sets[sIdx].completed) {
+            currentExerciseIndex = eIdx;
+            currentSetIndex = sIdx;
+            break;
+          }
+        }
+        if (currentExerciseIndex !== -1) break;
+      }
+
+      const totalSets = workoutExercises.reduce((t, ex) => t + ex.sets.length, 0);
       const completedSets = workoutExercises.reduce(
         (total, ex) => total + ex.sets.filter((s) => s.completed).length,
         0
       );
+
+      // Write full workout state to widget via App Groups
+      writeWorkoutStateToWidget({
+        workoutName: activeWorkout?.templateName || t('workout.title'),
+        startedAtMs: startedAtRef.current.getTime(),
+        exercises: workoutExercises.map((we) => ({
+          name: we.exercise.name,
+          thumbnailUrl: we.exercise.thumbnailUrl,
+          sets: we.sets.map((s, idx) => ({
+            setNumber: idx + 1,
+            totalSets: we.sets.length,
+            weight: s.kg,
+            reps: s.reps,
+            completed: s.completed,
+            setType: s.setType,
+          })),
+        })),
+        currentExerciseIndex,
+        currentSetIndex,
+        totalCompletedSets: completedSets,
+        totalSets,
+        allSetsComplete: currentExerciseIndex === -1,
+        weightUnit: units === 'imperial' ? 'lbs' : 'kg',
+      });
+
+      // Get current exercise thumbnail for the Live Activity image
+      const currentThumbnailUrl =
+        currentExerciseIndex >= 0
+          ? workoutExercises[currentExerciseIndex]?.exercise?.thumbnailUrl
+          : undefined;
+
+      // Update Live Activity (serves as wake-up signal for the widget)
       updateWorkoutLiveActivity(
-        activeWorkout?.templateName || 'Workout',
+        activeWorkout?.templateName || t('workout.title'),
         workoutExercises.length,
         completedSets,
-        startedAtRef.current.toISOString()
+        startedAtRef.current.toISOString(),
+        currentThumbnailUrl
       );
     }
   }, [workoutExercises]);
 
+  // Listen for set completions from the Live Activity widget
+  useEffect(() => {
+    if (isEditMode) return;
+
+    const unsubscribe = onWidgetSetCompleted((event) => {
+      const actions: WidgetAction[] = event?.actions ?? [];
+      for (const action of actions) {
+        if (action.type === 'completeSet') {
+          const { exerciseIndex, setIndex } = action;
+          if (
+            exerciseIndex >= 0 &&
+            exerciseIndex < workoutExercises.length &&
+            setIndex >= 0 &&
+            setIndex < workoutExercises[exerciseIndex].sets.length
+          ) {
+            if (!workoutExercises[exerciseIndex].sets[setIndex].completed) {
+              toggleSetCompletion(exerciseIndex, setIndex);
+            }
+          }
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [workoutExercises, isEditMode]);
+
+  // Check for pending widget actions when app comes to foreground
+  useEffect(() => {
+    if (isEditMode) return;
+
+    const checkPendingActions = async () => {
+      const actions = await readWidgetActions();
+      for (const action of actions) {
+        if (action.type === 'completeSet') {
+          const { exerciseIndex, setIndex } = action;
+          if (
+            exerciseIndex >= 0 &&
+            exerciseIndex < workoutExercises.length &&
+            setIndex >= 0 &&
+            setIndex < workoutExercises[exerciseIndex].sets.length &&
+            !workoutExercises[exerciseIndex].sets[setIndex].completed
+          ) {
+            toggleSetCompletion(exerciseIndex, setIndex);
+          }
+        }
+      }
+    };
+
+    checkPendingActions();
+
+    const subscription = AppState.addEventListener('change', (nextState: string) => {
+      if (nextState === 'active') {
+        checkPendingActions();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [workoutExercises, isEditMode]);
+
   async function handlePendingExercises(exercises: Exercise[]) {
     try {
       const exerciseIds = exercises.map((e) => e.id);
+      const { defaultRestTimerSeconds } = useUserPreferencesStore.getState();
 
-      // If userId isn't loaded yet, fetch it now
+      // Phase 1: Add exercises immediately with defaults for instant UI
+      const newWorkoutExercises: WorkoutExercise[] = exercises.map((exercise) => ({
+        exercise,
+        notes: '',
+        restTimerSeconds: defaultRestTimerSeconds,
+        sets: createDefaultSets(null, units),
+        previousSets: null,
+        supersetId: null,
+      }));
+      setWorkoutExercises((prev) => [...prev, ...newWorkoutExercises]);
+
+      // Phase 2: Fetch history and preferences in background, then patch
       let currentUserId = userId;
       if (!currentUserId) {
         const user = await getCurrentUser();
@@ -941,37 +1120,28 @@ export default function ActiveWorkoutScreen() {
           setUserId(user.id);
         }
       }
+      if (!currentUserId) return;
 
-      // Fetch all data in parallel using batch functions
       const [preferencesMap, previousSetsMap] = await Promise.all([
-        currentUserId
-          ? getUserExercisePreferences(currentUserId, exerciseIds)
-          : Promise.resolve(new Map()),
-        currentUserId
-          ? getBatchExercisePreviousSets(currentUserId, exerciseIds)
-          : Promise.resolve(new Map()),
+        getUserExercisePreferences(currentUserId, exerciseIds),
+        getBatchExercisePreviousSets(currentUserId, exerciseIds),
       ]);
 
-      // Build workout exercises synchronously using the pre-fetched data
-      const newWorkoutExercises: WorkoutExercise[] = exercises.map((exercise) => {
-        const previousSets = previousSetsMap.get(exercise.id) || null;
-        const preference = preferencesMap.get(exercise.id);
-        // Per-exercise preference overrides global default; only fall back when no preference exists
-        const { defaultRestTimerSeconds } = useUserPreferencesStore.getState();
-        const restTimerSeconds =
-          preference != null ? preference.restTimerSeconds : defaultRestTimerSeconds;
-
-        return {
-          exercise,
-          notes: '',
-          restTimerSeconds,
-          sets: createDefaultSets(previousSets, units),
-          previousSets,
-          supersetId: null,
-        };
-      });
-
-      setWorkoutExercises((prev) => [...prev, ...newWorkoutExercises]);
+      // Patch exercises in-place with fetched data
+      setWorkoutExercises((prev) =>
+        prev.map((we) => {
+          if (!exerciseIds.includes(we.exercise.id)) return we;
+          const previousSets = previousSetsMap.get(we.exercise.id) || null;
+          const preference = preferencesMap.get(we.exercise.id);
+          const restTimer = preference != null ? preference.restTimerSeconds : we.restTimerSeconds;
+          return {
+            ...we,
+            restTimerSeconds: restTimer,
+            sets: previousSets ? createDefaultSets(previousSets, units) : we.sets,
+            previousSets,
+          };
+        })
+      );
     } catch (e) {
       console.error('Failed to add exercises:', e);
     }
@@ -1023,7 +1193,16 @@ export default function ActiveWorkoutScreen() {
     closeExerciseMenu();
     setTimeout(() => {
       closeAllModals();
-      setReorderExercises([...workoutExercises]);
+      const exercises = [...workoutExercises];
+      // Generate stable keys so React doesn't remount during swaps
+      const ts = Date.now();
+      reorderKeysRef.current = exercises.map((ex, i) => `${ex.exercise.id}-${i}-${ts}`);
+      setReorderExercises(exercises);
+      exerciseOrderRef.current = exercises;
+      draggedIndexRef.current = -1;
+      setActiveDragIndex(-1);
+      dragTranslateY.setValue(0);
+      rowTranslateY.current = exercises.map(() => new Animated.Value(0));
       setShowReorderModal(true);
     }, 300);
   };
@@ -1081,7 +1260,7 @@ export default function ActiveWorkoutScreen() {
   // Confirm and create the superset
   const confirmSuperset = () => {
     if (supersetSelectedIndices.length < 2) {
-      Alert.alert('Select Exercises', 'Please select at least 2 exercises for a superset.');
+      Alert.alert(t('workout.selectExercises'), t('workout.selectAtLeast2'));
       return;
     }
 
@@ -1110,7 +1289,7 @@ export default function ActiveWorkoutScreen() {
     if (selectedExerciseIndex === null) return;
 
     const exercise = workoutExercises[selectedExerciseIndex];
-    if (exercise.supersetId === null) return;
+    if (exercise.supersetId == null) return;
 
     const supersetIdToRemove = exercise.supersetId;
 
@@ -1161,40 +1340,87 @@ export default function ActiveWorkoutScreen() {
   };
 
   // Drag-based reorder functions
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
+  const handleDragStart = useCallback(
+    (index: number, screenY: number) => {
+      draggedIndexRef.current = index;
+      dragAdjustmentRef.current = 0;
+      dragTranslateY.setValue(0);
+      rowTranslateY.current.forEach((val) => val.setValue(0));
+      setActiveDragIndex(index);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    },
+    [dragTranslateY]
+  );
 
-  const handleDragMove = (gestureY: number) => {
-    if (draggedIndex === null) return;
+  const handleDragMove = useCallback(
+    (moveY: number, dy: number) => {
+      const currentIndex = draggedIndexRef.current;
+      if (currentIndex === -1) return;
 
-    // Calculate which index the gesture is over based on Y position
-    // Account for list top offset (header + safe area)
-    const listTop = reorderListTopRef.current || 120;
-    const relativeY = gestureY - listTop;
-    const targetIndex = Math.floor(relativeY / REORDER_ROW_HEIGHT);
+      // Adjusted dy accounts for slot changes from previous swaps
+      const adjustedDy = dy - dragAdjustmentRef.current;
+      dragTranslateY.setValue(adjustedDy);
 
-    // Clamp to valid range
-    const clampedIndex = Math.max(0, Math.min(targetIndex, reorderExercises.length - 1));
+      // Calculate target position based on adjusted displacement
+      const rowsCrossed = Math.round(adjustedDy / REORDER_ROW_HEIGHT);
+      const targetIndex = Math.max(
+        0,
+        Math.min(currentIndex + rowsCrossed, exerciseOrderRef.current.length - 1)
+      );
 
-    // Swap if we've moved to a different position
-    if (clampedIndex !== draggedIndex) {
-      setReorderExercises((prev) => {
-        const updated = [...prev];
-        const draggedItem = updated[draggedIndex];
-        updated.splice(draggedIndex, 1);
-        updated.splice(clampedIndex, 0, draggedItem);
-        return updated;
-      });
-      setDraggedIndex(clampedIndex);
-    }
-  };
+      if (targetIndex !== currentIndex) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-  };
+        // Swap in the data array and keep keys in sync
+        const updated = [...exerciseOrderRef.current];
+        const [draggedItem] = updated.splice(currentIndex, 1);
+        updated.splice(targetIndex, 0, draggedItem);
+        exerciseOrderRef.current = updated;
+
+        const updatedKeys = [...reorderKeysRef.current];
+        const [draggedKey] = updatedKeys.splice(currentIndex, 1);
+        updatedKeys.splice(targetIndex, 0, draggedKey);
+        reorderKeysRef.current = updatedKeys;
+
+        // Accumulate the slot shift so future dy values are adjusted correctly
+        dragAdjustmentRef.current += (targetIndex - currentIndex) * REORDER_ROW_HEIGHT;
+
+        // Update visual offset to match the new slot position
+        dragTranslateY.setValue(dy - dragAdjustmentRef.current);
+
+        draggedIndexRef.current = targetIndex;
+        setReorderExercises(updated);
+        setActiveDragIndex(targetIndex);
+      }
+    },
+    [dragTranslateY]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (draggedIndexRef.current === -1) return;
+    draggedIndexRef.current = -1;
+
+    // Snap-back animation to final slot position
+    Animated.spring(dragTranslateY, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 200,
+      friction: 20,
+    }).start(() => {
+      setActiveDragIndex(-1);
+      rowTranslateY.current.forEach((val) => val.setValue(0));
+    });
+  }, [dragTranslateY]);
 
   const removeExerciseFromReorder = (index: number) => {
+    // Cancel any active drag before removing
+    if (draggedIndexRef.current !== -1) {
+      draggedIndexRef.current = -1;
+      setActiveDragIndex(-1);
+      dragTranslateY.setValue(0);
+      rowTranslateY.current.forEach((val) => val.setValue(0));
+    }
+    reorderKeysRef.current = reorderKeysRef.current.filter((_, i) => i !== index);
     setReorderExercises((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -1264,19 +1490,19 @@ export default function ActiveWorkoutScreen() {
 
   const handleSave = () => {
     if (!userId) {
-      Alert.alert('Error', 'You must be logged in to save workouts.');
+      Alert.alert(t('common.error'), t('workout.mustBeLoggedIn'));
       return;
     }
 
     if (workoutExercises.length === 0) {
-      Alert.alert('No Exercises', 'Add at least one exercise to save your workout.');
+      Alert.alert(t('workout.noExercisesTitle'), t('workout.noExercisesMessage'));
       return;
     }
 
     const hasCompletedSets = workoutExercises.some((we) => we.sets.some((set) => set.completed));
 
     if (!hasCompletedSets) {
-      Alert.alert('No Completed Sets', 'Complete at least one set before saving your workout.');
+      Alert.alert(t('workout.noCompletedSetsTitle'), t('workout.noCompletedSetsMessage'));
       return;
     }
 
@@ -1467,14 +1693,14 @@ export default function ActiveWorkoutScreen() {
   };
 
   const handleDiscard = () => {
-    const title = isEditMode ? 'Discard Changes?' : 'Discard Workout?';
+    const title = isEditMode ? t('workout.discardChangesTitle') : t('workout.discardWorkoutTitle');
     const message = isEditMode
-      ? 'Your changes will not be saved.'
-      : 'Your workout progress will be lost.';
+      ? t('workout.discardChangesMessage')
+      : t('workout.discardWorkoutMessage');
     Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Discard',
+        text: t('workout.discard'),
         style: 'destructive',
         onPress: () => {
           if (intervalRef.current) {
@@ -1704,7 +1930,7 @@ export default function ActiveWorkoutScreen() {
               handleSave();
             }}
           >
-            <Text style={styles.saveText}>SAVE</Text>
+            <Text style={styles.saveText}>{t('common.save').toUpperCase()}</Text>
           </Pressable>
         </View>
       </View>
@@ -1718,8 +1944,8 @@ export default function ActiveWorkoutScreen() {
           <View style={styles.checkmarkContainer}>
             <Ionicons name="checkmark" size={26} color={colors.border} />
           </View>
-          <Text style={styles.title}>Get Started</Text>
-          <Text style={styles.subtitle}>Add an exercise to start your workout</Text>
+          <Text style={styles.title}>{t('workout.getStarted')}</Text>
+          <Text style={styles.subtitle}>{t('workout.addExerciseToStart')}</Text>
           <Pressable
             style={styles.addExerciseButton}
             onPress={() => {
@@ -1727,8 +1953,8 @@ export default function ActiveWorkoutScreen() {
               handleAddExercise();
             }}
           >
-            <Ionicons name="add" size={24} color="#FFFFFF" />
-            <Text style={styles.addExerciseText}>Add Exercise</Text>
+            <Ionicons name="add" size={24} color={colors.textInverse} />
+            <Text style={styles.addExerciseText}>{t('workout.addExercise')}</Text>
           </Pressable>
           <View style={styles.bottomButtons}>
             <Pressable
@@ -1738,7 +1964,7 @@ export default function ActiveWorkoutScreen() {
                 router.push('/profile/workout-settings');
               }}
             >
-              <Text style={styles.secondaryButtonText}>Settings</Text>
+              <Text style={styles.secondaryButtonText}>{t('workout.settings')}</Text>
             </Pressable>
             <Pressable
               style={styles.discardButton}
@@ -1747,13 +1973,19 @@ export default function ActiveWorkoutScreen() {
                 handleDiscard();
               }}
             >
-              <Text style={styles.discardButtonText}>Discard</Text>
+              <Text style={styles.discardButtonText}>{t('workout.discard')}</Text>
             </Pressable>
           </View>
         </View>
       ) : (
         // Filled State with Exercises
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
           {workoutExercises.map((workoutExercise, exerciseIndex) => (
             <View
               key={`${workoutExercise.exercise.id}-${exerciseIndex}`}
@@ -1764,6 +1996,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    prefetchExerciseGif(workoutExercise.exercise.id);
                     router.push(`/exercise/${workoutExercise.exercise.id}`);
                   }}
                 >
@@ -1774,17 +2007,19 @@ export default function ActiveWorkoutScreen() {
                     borderRadius={8}
                   />
                 </Pressable>
-                <Pressable
-                  style={styles.exerciseTitlePressable}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/exercise/${workoutExercise.exercise.id}`);
-                  }}
-                >
-                  <Text style={styles.exerciseTitle}>
-                    {formatExerciseNameString(workoutExercise.exercise.name)}
+                <View style={styles.exerciseTitlePressable} pointerEvents="box-none">
+                  <Text
+                    numberOfLines={2}
+                    style={[styles.exerciseTitle, { alignSelf: 'flex-start' }]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      prefetchExerciseGif(workoutExercise.exercise.id);
+                      router.push(`/exercise/${workoutExercise.exercise.id}`);
+                    }}
+                  >
+                    {getExerciseDisplayName(workoutExercise.exercise)}
                   </Text>
-                </Pressable>
+                </View>
                 <Pressable
                   style={styles.moreButton}
                   onPress={() => {
@@ -1797,21 +2032,21 @@ export default function ActiveWorkoutScreen() {
               </View>
 
               {/* Superset Badge */}
-              {workoutExercise.supersetId !== null && (
+              {workoutExercise.supersetId != null && (
                 <View
                   style={[
                     styles.supersetBadge,
                     { backgroundColor: getSupersetColor(workoutExercise.supersetId) },
                   ]}
                 >
-                  <Text style={styles.supersetBadgeText}>Superset</Text>
+                  <Text style={styles.supersetBadgeText}>{t('workout.superset')}</Text>
                 </View>
               )}
 
               {/* Notes Input */}
               <TextInput
                 style={styles.notesInput}
-                placeholder="Add notes here..."
+                placeholder={t('workout.addNotesPlaceholder')}
                 placeholderTextColor={colors.textSecondary}
                 value={workoutExercise.notes}
                 onChangeText={(text) => updateNotes(exerciseIndex, text)}
@@ -1827,19 +2062,23 @@ export default function ActiveWorkoutScreen() {
               >
                 <Ionicons name="stopwatch-outline" size={18} color={colors.primary} />
                 <Text style={styles.restTimerText}>
-                  Rest Timer: {formatRestTimerDisplay(workoutExercise.restTimerSeconds)}
+                  {t('workout.restTimerColon', {
+                    value: formatRestTimerDisplay(workoutExercise.restTimerSeconds),
+                  })}
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
               </Pressable>
 
               {/* Sets Table Header */}
               <View style={styles.setsHeader}>
-                <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-                <Text style={[styles.setHeaderText, styles.previousColumn]}>PREVIOUS</Text>
+                <Text style={[styles.setHeaderText, styles.setColumn]}>{t('workout.set')}</Text>
+                <Text style={[styles.setHeaderText, styles.previousColumn]}>
+                  {t('workout.previous')}
+                </Text>
                 <Text style={[styles.setHeaderText, styles.kgColumn]}>{weightLabel}</Text>
-                <Text style={[styles.setHeaderText, styles.repsColumn]}>REPS</Text>
+                <Text style={[styles.setHeaderText, styles.repsColumn]}>{t('workout.reps')}</Text>
                 {rpeTrackingEnabled && (
-                  <Text style={[styles.setHeaderText, styles.rpeColumn]}>RPE</Text>
+                  <Text style={[styles.setHeaderText, styles.rpeColumn]}>{t('workout.rpe')}</Text>
                 )}
                 <View style={styles.checkColumn}>
                   <Ionicons name="checkmark" size={16} color={colors.textSecondary} />
@@ -1894,7 +2133,7 @@ export default function ActiveWorkoutScreen() {
                   addSet(exerciseIndex);
                 }}
               >
-                <Text style={styles.addSetText}>+ Add Set</Text>
+                <Text style={styles.addSetText}>{t('workout.addSet')}</Text>
               </Pressable>
             </View>
           ))}
@@ -1907,8 +2146,8 @@ export default function ActiveWorkoutScreen() {
               handleAddExercise();
             }}
           >
-            <Ionicons name="add" size={24} color="#FFFFFF" />
-            <Text style={styles.addExerciseText}>Add Exercise</Text>
+            <Ionicons name="add" size={24} color={colors.textInverse} />
+            <Text style={styles.addExerciseText}>{t('workout.addExercise')}</Text>
           </Pressable>
 
           <View style={styles.bottomButtonsFilled}>
@@ -1919,7 +2158,7 @@ export default function ActiveWorkoutScreen() {
                 router.push('/profile/workout-settings');
               }}
             >
-              <Text style={styles.secondaryButtonText}>Settings</Text>
+              <Text style={styles.secondaryButtonText}>{t('workout.settings')}</Text>
             </Pressable>
             <Pressable
               style={styles.discardButton}
@@ -1928,7 +2167,7 @@ export default function ActiveWorkoutScreen() {
                 handleDiscard();
               }}
             >
-              <Text style={styles.discardButtonText}>Discard Workout</Text>
+              <Text style={styles.discardButtonText}>{t('workout.discardWorkout')}</Text>
             </Pressable>
           </View>
 
@@ -1969,11 +2208,11 @@ export default function ActiveWorkoutScreen() {
                   }}
                 >
                   <ReorderIcon />
-                  <Text style={styles.menuItemText}>Reorder Exercises</Text>
+                  <Text style={styles.menuItemText}>{t('workout.reorderExercises')}</Text>
                 </Pressable>
 
                 {selectedExerciseIndex !== null &&
-                workoutExercises[selectedExerciseIndex]?.supersetId !== null ? (
+                workoutExercises[selectedExerciseIndex]?.supersetId != null ? (
                   <Pressable
                     style={styles.menuItem}
                     onPress={() => {
@@ -1982,7 +2221,7 @@ export default function ActiveWorkoutScreen() {
                     }}
                   >
                     <CloseIcon />
-                    <Text style={styles.menuItemText}>Remove from Superset</Text>
+                    <Text style={styles.menuItemText}>{t('workout.removeFromSuperset')}</Text>
                   </Pressable>
                 ) : (
                   <Pressable
@@ -1993,7 +2232,7 @@ export default function ActiveWorkoutScreen() {
                     }}
                   >
                     <PlusIcon />
-                    <Text style={styles.menuItemText}>Add to Superset</Text>
+                    <Text style={styles.menuItemText}>{t('workout.addToSuperset')}</Text>
                   </Pressable>
                 )}
 
@@ -2005,7 +2244,7 @@ export default function ActiveWorkoutScreen() {
                   }}
                 >
                   <RemoveIcon />
-                  <Text style={styles.menuItemTextRemove}>Remove Exercise</Text>
+                  <Text style={styles.menuItemTextRemove}>{t('workout.removeExercise')}</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -2022,26 +2261,25 @@ export default function ActiveWorkoutScreen() {
         <SafeAreaView style={styles.reorderContainer} edges={['top']}>
           {/* Reorder Header */}
           <View style={styles.reorderHeader}>
-            <Text style={styles.reorderTitle}>Reorder</Text>
+            <Text style={styles.reorderTitle}>{t('common.reorder')}</Text>
           </View>
           <View style={styles.divider} />
 
           {/* Exercise List */}
-          <View
-            ref={reorderListRef}
-            style={styles.reorderList}
-            onLayout={(e) => {
-              reorderListTopRef.current = e.nativeEvent.layout.y;
-            }}
-          >
+          <View style={styles.reorderList}>
             {reorderExercises.map((workoutExercise, index) => (
               <DraggableExerciseRow
-                key={`${workoutExercise.exercise.id}-${index}`}
+                key={reorderKeysRef.current[index] || `reorder-${index}`}
                 workoutExercise={workoutExercise}
                 index={index}
                 onRemove={() => removeExerciseFromReorder(index)}
-                isDragging={draggedIndex === index}
-                draggedIndex={draggedIndex}
+                isDragging={activeDragIndex === index}
+                anyDragging={activeDragIndex !== -1}
+                translateY={
+                  activeDragIndex === index
+                    ? dragTranslateY
+                    : rowTranslateY.current[index] || new Animated.Value(0)
+                }
                 onDragStart={handleDragStart}
                 onDragMove={handleDragMove}
                 onDragEnd={handleDragEnd}
@@ -2058,7 +2296,7 @@ export default function ActiveWorkoutScreen() {
                 saveReorder();
               }}
             >
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={styles.doneButtonText}>{t('common.done')}</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -2089,12 +2327,15 @@ export default function ActiveWorkoutScreen() {
 
               {/* Header */}
               <View style={styles.restTimerModalHeader}>
-                <Text style={styles.restTimerModalTitle}>Rest Timer</Text>
+                <Text style={styles.restTimerModalTitle}>{t('workout.restTimerTitle')}</Text>
                 {restTimerModalExerciseIndex !== null && (
                   <Text style={styles.restTimerModalSubtitle}>
-                    {formatExerciseNameString(
-                      workoutExercises[restTimerModalExerciseIndex]?.exercise.name || ''
-                    )}
+                    {restTimerModalExerciseIndex !== null &&
+                    workoutExercises[restTimerModalExerciseIndex]
+                      ? getExerciseDisplayName(
+                          workoutExercises[restTimerModalExerciseIndex].exercise
+                        )
+                      : ''}
                   </Text>
                 )}
               </View>
@@ -2123,7 +2364,7 @@ export default function ActiveWorkoutScreen() {
                           isSelected && styles.restTimerOptionTextSelected,
                         ]}
                       >
-                        {option.label}
+                        {option.value === 0 ? t('workout.restTimerOff') : option.label}
                       </Text>
                       {isSelected && <CheckIconSmall />}
                     </Pressable>
@@ -2140,7 +2381,7 @@ export default function ActiveWorkoutScreen() {
                     closeRestTimerModal();
                   }}
                 >
-                  <Text style={styles.doneButtonText}>Done</Text>
+                  <Text style={styles.doneButtonText}>{t('common.done')}</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -2173,7 +2414,7 @@ export default function ActiveWorkoutScreen() {
 
               {/* Header */}
               <View style={styles.supersetModalHeader}>
-                <Text style={styles.supersetModalTitle}>Super Set</Text>
+                <Text style={styles.supersetModalTitle}>{t('workout.superSet')}</Text>
               </View>
 
               {/* Exercise List */}
@@ -2191,11 +2432,11 @@ export default function ActiveWorkoutScreen() {
                         toggleSupersetExercise(index);
                       }}
                     >
-                      {/* Color indicator bar - inline, not absolute */}
+                      {/* Color indicator bar */}
                       <View
                         style={[
                           styles.supersetColorBar,
-                          existingSuperset !== null
+                          existingSuperset != null
                             ? { backgroundColor: getSupersetColor(existingSuperset) }
                             : { backgroundColor: 'transparent' },
                         ]}
@@ -2210,11 +2451,25 @@ export default function ActiveWorkoutScreen() {
 
                       <View style={styles.supersetExerciseInfo}>
                         <Text style={styles.supersetExerciseName}>
-                          {formatExerciseNameString(workoutExercise.exercise.name)}
+                          {getExerciseDisplayName(workoutExercise.exercise)}
                         </Text>
-                        <Text style={styles.supersetExerciseMuscle}>
-                          {workoutExercise.exercise.muscle}
-                        </Text>
+                        <View style={styles.supersetExerciseSubRow}>
+                          <Text style={styles.supersetExerciseMuscle}>
+                            {workoutExercise.exercise.muscle}
+                          </Text>
+                          {existingSuperset != null && (
+                            <View
+                              style={[
+                                styles.supersetExistingBadge,
+                                { backgroundColor: getSupersetColor(existingSuperset) },
+                              ]}
+                            >
+                              <Text style={styles.supersetExistingBadgeText}>
+                                {t('workout.superset')} {existingSuperset}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
                       </View>
 
                       {/* Selection checkbox */}
@@ -2224,7 +2479,9 @@ export default function ActiveWorkoutScreen() {
                           isSelected && styles.supersetCheckboxSelected,
                         ]}
                       >
-                        {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+                        {isSelected && (
+                          <Ionicons name="checkmark" size={16} color={colors.textInverse} />
+                        )}
                       </View>
                     </Pressable>
                   );
@@ -2244,7 +2501,7 @@ export default function ActiveWorkoutScreen() {
                   }}
                 >
                   <Text style={styles.supersetConfirmButtonText}>
-                    Add to Superset {getNextSupersetId()}
+                    {t('workout.addToSupersetN', { number: getNextSupersetId() })}
                   </Text>
                 </Pressable>
               </View>
@@ -2288,7 +2545,7 @@ export default function ActiveWorkoutScreen() {
                   <View style={styles.setTypeLetterContainer}>
                     <Text style={styles.setTypeTextWarmup}>W</Text>
                   </View>
-                  <Text style={styles.setTypeTextWarmup}>Warm-up Set</Text>
+                  <Text style={styles.setTypeTextWarmup}>{t('workout.warmupSet')}</Text>
                 </Pressable>
 
                 <Pressable
@@ -2303,7 +2560,7 @@ export default function ActiveWorkoutScreen() {
                       {setTypeModalSetIndex !== null ? setTypeModalSetIndex + 1 : '1'}
                     </Text>
                   </View>
-                  <Text style={styles.menuItemText}>Normal Set</Text>
+                  <Text style={styles.menuItemText}>{t('workout.normalSet')}</Text>
                 </Pressable>
 
                 <Pressable
@@ -2316,7 +2573,7 @@ export default function ActiveWorkoutScreen() {
                   <View style={styles.setTypeLetterContainer}>
                     <Text style={styles.setTypeTextFailure}>F</Text>
                   </View>
-                  <Text style={styles.setTypeTextFailure}>Failure Set</Text>
+                  <Text style={styles.setTypeTextFailure}>{t('workout.failureSet')}</Text>
                 </Pressable>
 
                 <Pressable
@@ -2329,7 +2586,7 @@ export default function ActiveWorkoutScreen() {
                   <View style={styles.setTypeLetterContainer}>
                     <Text style={styles.setTypeTextDropset}>D</Text>
                   </View>
-                  <Text style={styles.setTypeTextDropset}>Drop Set</Text>
+                  <Text style={styles.setTypeTextDropset}>{t('workout.dropSet')}</Text>
                 </Pressable>
 
                 <Pressable
@@ -2342,7 +2599,7 @@ export default function ActiveWorkoutScreen() {
                   <View style={styles.setTypeLetterContainer}>
                     <Ionicons name="trash-outline" size={18} color="#E53935" />
                   </View>
-                  <Text style={styles.menuItemTextRemove}>Remove Set</Text>
+                  <Text style={styles.menuItemTextRemove}>{t('workout.removeSet')}</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -2365,7 +2622,7 @@ export default function ActiveWorkoutScreen() {
             <Pressable onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalHandle} />
               <View style={styles.rpeModalHeader}>
-                <Text style={styles.rpeModalTitle}>Rate of Perceived Exertion</Text>
+                <Text style={styles.rpeModalTitle}>{t('workout.rateOfPerceivedExertion')}</Text>
               </View>
               <View style={styles.menuContainer}>
                 {RPE_VALUES.map((rpeValue) => {
@@ -2408,7 +2665,9 @@ export default function ActiveWorkoutScreen() {
                     closeRpeModal();
                   }}
                 >
-                  <Text style={[styles.menuItemText, { color: colors.textSecondary }]}>Clear</Text>
+                  <Text style={[styles.menuItemText, { color: colors.textSecondary }]}>
+                    {t('workout.clear')}
+                  </Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -2431,7 +2690,7 @@ export default function ActiveWorkoutScreen() {
                   adjustRestTimer(-15);
                 }}
               >
-                <Text style={styles.restTimerAdjustText}>-15</Text>
+                <Text style={styles.restTimerAdjustText}>{t('clock.minus15')}</Text>
               </Pressable>
               <Pressable
                 style={styles.restTimerAdjustButton}
@@ -2440,7 +2699,7 @@ export default function ActiveWorkoutScreen() {
                   adjustRestTimer(15);
                 }}
               >
-                <Text style={styles.restTimerAdjustText}>+15</Text>
+                <Text style={styles.restTimerAdjustText}>{t('clock.plus15')}</Text>
               </Pressable>
               <Pressable
                 style={styles.restTimerSkipButton}
@@ -2449,7 +2708,7 @@ export default function ActiveWorkoutScreen() {
                   skipRestTimer();
                 }}
               >
-                <Text style={styles.restTimerSkipText}>Skip</Text>
+                <Text style={styles.restTimerSkipText}>{t('workout.skip')}</Text>
               </Pressable>
             </View>
           </SafeAreaView>
@@ -2545,7 +2804,7 @@ const styles = StyleSheet.create({
   addExerciseText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   bottomButtons: {
     flexDirection: 'row',
@@ -2558,9 +2817,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    backgroundColor: '#F5F4FA',
+    backgroundColor: colors.card,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: colors.cardStroke,
     borderRadius: 16,
   },
   secondaryButtonText: {
@@ -2573,15 +2832,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    backgroundColor: '#F5F4FA',
+    backgroundColor: colors.card,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: colors.cardStroke,
     borderRadius: 16,
   },
   discardButtonText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
-    color: '#E53935',
+    color: colors.danger,
   },
   scrollView: {
     flex: 1,
@@ -2708,7 +2967,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1.5,
     borderColor: colors.border,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2843,7 +3102,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   dragHandle: {
-    padding: spacing.xs,
+    padding: spacing.sm,
   },
   reorderArrows: {
     flexDirection: 'row',
@@ -2874,7 +3133,7 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
 
   // Rest Timer Modal Styles
@@ -2984,7 +3243,7 @@ const styles = StyleSheet.create({
   restTimerSkipText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
 
   // Superset Badge Styles
@@ -2998,7 +3257,7 @@ const styles = StyleSheet.create({
   supersetBadgeText: {
     fontFamily: fonts.semiBold,
     fontSize: 11,
-    color: '#FFFFFF',
+    color: colors.textInverse,
     letterSpacing: 0.2,
   },
 
@@ -3052,11 +3311,27 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.text,
   },
+  supersetExerciseSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    gap: 8,
+  },
   supersetExerciseMuscle: {
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+  },
+  supersetExistingBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  supersetExistingBadgeText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: colors.textInverse,
+    letterSpacing: 0.2,
   },
   supersetCheckbox: {
     width: 26,
@@ -3064,7 +3339,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     borderWidth: 2,
     borderColor: colors.border,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3088,7 +3363,7 @@ const styles = StyleSheet.create({
   supersetConfirmButtonText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
 
   // Set Type Text Styles
@@ -3100,7 +3375,7 @@ const styles = StyleSheet.create({
   setTypeTextFailure: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
-    color: '#E53935',
+    color: colors.danger,
   },
   setTypeTextDropset: {
     fontFamily: fonts.medium,

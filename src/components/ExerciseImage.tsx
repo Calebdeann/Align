@@ -53,12 +53,13 @@ export function ExerciseImage({
             width: size,
             height: size,
             borderRadius,
-            backgroundColor: backgroundColor ?? '#F5F4FA',
+            backgroundColor: backgroundColor ?? colors.surfaceSecondary,
           },
         ]}
-        contentFit="cover"
+        contentFit={animated ? 'cover' : 'contain'}
         cachePolicy="memory-disk"
         autoplay={animated}
+        transition={100}
         onError={() => setHasError(true)}
       />
     );

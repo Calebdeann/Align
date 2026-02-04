@@ -2,6 +2,7 @@ import { supabase } from '../supabase';
 import { WorkoutTemplate, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { WorkoutImage } from '@/stores/workoutStore';
 import { CreateTemplateInputSchema, UpdateTemplateInputSchema } from '@/schemas/template.schema';
+import { logger } from '@/utils/logger';
 
 // UUID v4 format check — local template IDs like "template_123_abc" are not valid UUIDs
 const isValidUuid = (id: string) =>
@@ -93,7 +94,7 @@ export async function saveUserTemplate(
   });
 
   if (!parseResult.success) {
-    console.warn('Invalid template input:', parseResult.error.flatten());
+    logger.warn('Invalid template input', { error: parseResult.error.flatten() });
     return null;
   }
 
@@ -119,7 +120,7 @@ export async function saveUserTemplate(
       .single();
 
     if (templateError || !savedTemplate) {
-      console.warn('Error saving template:', templateError);
+      logger.warn('Error saving template', { error: templateError });
       return null;
     }
 
@@ -155,7 +156,7 @@ export async function saveUserTemplate(
         .single();
 
       if (exerciseError && hasImageFields && isSchemaError(exerciseError)) {
-        console.warn(
+        logger.warn(
           'Image columns not found in template_exercises. Retrying without image fields.'
         );
         const { data: retryData, error: retryError } = await supabase
@@ -164,12 +165,12 @@ export async function saveUserTemplate(
           .select('id')
           .single();
         if (retryError || !retryData) {
-          console.warn('Error saving template exercise (retry):', retryError);
+          logger.warn('Error saving template exercise (retry)', { error: retryError });
           continue;
         }
         templateExercise = retryData;
       } else if (exerciseError || !exData) {
-        console.warn('Error saving template exercise:', exerciseError);
+        logger.warn('Error saving template exercise', { error: exerciseError });
         continue;
       } else {
         templateExercise = exData;
@@ -187,14 +188,14 @@ export async function saveUserTemplate(
         const { error: setsError } = await supabase.from('template_sets').insert(setsToInsert);
 
         if (setsError) {
-          console.warn('Error saving template sets:', setsError);
+          logger.warn('Error saving template sets', { error: setsError });
         }
       }
     }
 
     return templateId;
   } catch (error) {
-    console.warn('Error in saveUserTemplate:', error);
+    logger.warn('Error in saveUserTemplate', { error });
     return null;
   }
 }
@@ -210,7 +211,7 @@ export async function updateUserTemplate(
 ): Promise<boolean> {
   // Skip if templateId is a local-only ID (not yet synced to backend)
   if (!isValidUuid(templateId)) {
-    console.warn('Skipping backend update for local template:', templateId);
+    logger.warn('Skipping backend update for local template', { error: templateId });
     return false;
   }
 
@@ -239,7 +240,7 @@ export async function updateUserTemplate(
   });
 
   if (!parseResult.success) {
-    console.warn('Invalid template update input:', parseResult.error.flatten());
+    logger.warn('Invalid template update input', { error: parseResult.error.flatten() });
     return false;
   }
 
@@ -269,7 +270,7 @@ export async function updateUserTemplate(
       .eq('id', templateId);
 
     if (updateError) {
-      console.warn('Error updating template:', updateError);
+      logger.warn('Error updating template', { error: updateError });
       return false;
     }
 
@@ -282,7 +283,7 @@ export async function updateUserTemplate(
         .eq('template_id', templateId);
 
       if (deleteError) {
-        console.warn('Error deleting old exercises:', deleteError);
+        logger.warn('Error deleting old exercises', { error: deleteError });
         return false;
       }
 
@@ -316,7 +317,7 @@ export async function updateUserTemplate(
           .single();
 
         if (exerciseError && hasImageFields && isSchemaError(exerciseError)) {
-          console.warn(
+          logger.warn(
             'Image columns not found in template_exercises. Retrying without image fields.'
           );
           const { data: retryData, error: retryError } = await supabase
@@ -325,12 +326,12 @@ export async function updateUserTemplate(
             .select('id')
             .single();
           if (retryError || !retryData) {
-            console.warn('Error saving template exercise (retry):', retryError);
+            logger.warn('Error saving template exercise (retry)', { error: retryError });
             continue;
           }
           templateExercise = retryData;
         } else if (exerciseError || !exData) {
-          console.warn('Error saving template exercise:', exerciseError);
+          logger.warn('Error saving template exercise', { error: exerciseError });
           continue;
         } else {
           templateExercise = exData;
@@ -348,7 +349,7 @@ export async function updateUserTemplate(
           const { error: setsError } = await supabase.from('template_sets').insert(setsToInsert);
 
           if (setsError) {
-            console.warn('Error saving template sets:', setsError);
+            logger.warn('Error saving template sets', { error: setsError });
           }
         }
       }
@@ -356,7 +357,7 @@ export async function updateUserTemplate(
 
     return true;
   } catch (error) {
-    console.warn('Error in updateUserTemplate:', error);
+    logger.warn('Error in updateUserTemplate', { error });
     return false;
   }
 }
@@ -368,7 +369,7 @@ export async function updateUserTemplate(
 export async function deleteUserTemplate(templateId: string): Promise<boolean> {
   // Skip if templateId is a local-only ID (not yet synced to backend)
   if (!isValidUuid(templateId)) {
-    console.warn('Skipping backend delete for local template:', templateId);
+    logger.warn('Skipping backend delete for local template', { error: templateId });
     return true;
   }
 
@@ -376,13 +377,13 @@ export async function deleteUserTemplate(templateId: string): Promise<boolean> {
     const { error } = await supabase.from('workout_templates').delete().eq('id', templateId);
 
     if (error) {
-      console.warn('Error deleting template:', error);
+      logger.warn('Error deleting template', { error });
       return false;
     }
 
     return true;
   } catch (error) {
-    console.warn('Error in deleteUserTemplate:', error);
+    logger.warn('Error in deleteUserTemplate', { error });
     return false;
   }
 }
@@ -401,7 +402,7 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
       .order('created_at', { ascending: false });
 
     if (templatesError || !templates) {
-      console.warn('Error fetching templates:', templatesError);
+      logger.warn('Error fetching templates', { error: templatesError });
       return [];
     }
 
@@ -416,7 +417,7 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
         .order('order_index', { ascending: true });
 
       if (exercisesError) {
-        console.warn('Error fetching template exercises:', exercisesError);
+        logger.warn('Error fetching template exercises', { error: exercisesError });
         continue;
       }
 
@@ -430,7 +431,7 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
           .order('set_number', { ascending: true });
 
         if (setsError) {
-          console.warn('Error fetching template sets:', setsError);
+          logger.warn('Error fetching template sets', { error: setsError });
         }
 
         const templateSets: TemplateSet[] = (sets || []).map((set) => ({
@@ -481,7 +482,7 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
 
     return fullTemplates;
   } catch (error) {
-    console.warn('Error in getUserTemplates:', error);
+    logger.warn('Error in getUserTemplates', { error });
     return [];
   }
 }
@@ -500,7 +501,7 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
       .single();
 
     if (templateError || !template) {
-      console.warn('Error fetching template:', templateError);
+      logger.warn('Error fetching template', { error: templateError });
       return null;
     }
 
@@ -512,7 +513,7 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
       .order('order_index', { ascending: true });
 
     if (exercisesError) {
-      console.warn('Error fetching template exercises:', exercisesError);
+      logger.warn('Error fetching template exercises', { error: exercisesError });
       return null;
     }
 
@@ -526,7 +527,7 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
         .order('set_number', { ascending: true });
 
       if (setsError) {
-        console.warn('Error fetching template sets:', setsError);
+        logger.warn('Error fetching template sets', { error: setsError });
       }
 
       const templateSets: TemplateSet[] = (sets || []).map((set) => ({
@@ -574,7 +575,7 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
       userId: template.user_id,
     };
   } catch (error) {
-    console.warn('Error in getTemplateById:', error);
+    logger.warn('Error in getTemplateById', { error });
     return null;
   }
 }
@@ -598,7 +599,7 @@ export async function lookupExerciseImageUrls(
       .in('name', exerciseNames);
 
     if (error || !data) {
-      console.warn('Error looking up exercise image URLs:', error);
+      logger.warn('Error looking up exercise image URLs', { error });
       return result;
     }
 
@@ -609,7 +610,7 @@ export async function lookupExerciseImageUrls(
       });
     }
   } catch (error) {
-    console.warn('Error in lookupExerciseImageUrls:', error);
+    logger.warn('Error in lookupExerciseImageUrls', { error });
   }
 
   return result;

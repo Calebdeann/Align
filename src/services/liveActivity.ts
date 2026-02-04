@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearWidgetWorkoutState } from './widgetBridge';
 
 // Persisted key for surviving app restarts
 const ACTIVITY_ID_KEY = 'live-activity-id';
@@ -71,6 +72,7 @@ export async function cleanupStaleLiveActivities(): Promise<void> {
       // Activity may already be expired - that's fine
     }
     await persistActivityId(null);
+    clearWidgetWorkoutState();
   }
 }
 
@@ -137,12 +139,14 @@ export async function startWorkoutLiveActivity(
 /**
  * Update the Live Activity with new exercise/set counts.
  * The timer keeps counting automatically — only subtitle changes.
+ * Optionally pass thumbnailUrl for the current exercise image.
  */
 export async function updateWorkoutLiveActivity(
   workoutName: string,
   exerciseCount: number,
   completedSets: number,
-  startedAt: string
+  startedAt: string,
+  thumbnailUrl?: string
 ): Promise<void> {
   if (!isSupported() || !currentActivityId) return;
 
@@ -156,6 +160,7 @@ export async function updateWorkoutLiveActivity(
       progressBar: {
         date: new Date(startedAt).getTime(),
       },
+      ...(thumbnailUrl ? { imageName: thumbnailUrl } : {}),
     });
   } catch (e) {
     console.warn('[LiveActivity] Failed to update:', e);
@@ -180,6 +185,7 @@ export async function endWorkoutLiveActivity(): Promise<void> {
   }
   currentActivityId = null;
   await persistActivityId(null);
+  clearWidgetWorkoutState();
 }
 
 /**

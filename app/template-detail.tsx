@@ -21,13 +21,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise } from '@/stores/templateStore';
 import { getWeightUnit, fromKgForDisplay } from '@/utils/units';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
-import { WorkoutImage } from '@/stores/workoutStore';
+import { useWorkoutStore, WorkoutImage } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { prefetchExerciseGif } from '@/stores/exerciseStore';
 import { formatExerciseNameString } from '@/utils/textFormatters';
 import { getTemplateImageById } from '@/constants/templateImages';
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
@@ -36,6 +39,7 @@ import {
   ImagePlaceholderIcon,
   SelectedImageData,
 } from '@/components/ImagePickerSheet';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -77,13 +81,16 @@ function ExerciseRow({
   onToggle,
   weightLabel,
   units,
+  withLock,
 }: {
   exercise: TemplateExercise;
   isExpanded: boolean;
   onToggle: () => void;
   weightLabel: string;
   units: string;
+  withLock: (callback: () => void) => void;
 }) {
+  const { t } = useTranslation();
   const formatWeight = (weightKg?: number) => {
     if (weightKg == null) return '-';
     const display = units === 'imperial' ? fromKgForDisplay(weightKg, 'imperial') : weightKg;
@@ -101,8 +108,11 @@ function ExerciseRow({
       >
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push(`/exercise/${exercise.exerciseId}`);
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              prefetchExerciseGif(exercise.exerciseId);
+              router.push(`/exercise/${exercise.exerciseId}`);
+            });
           }}
         >
           <ExerciseImage
@@ -112,15 +122,20 @@ function ExerciseRow({
             borderRadius={8}
           />
         </Pressable>
-        <Pressable
-          style={{ flex: 1, justifyContent: 'center' }}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push(`/exercise/${exercise.exerciseId}`);
-          }}
-        >
-          <Text style={styles.exerciseName}>{formatExerciseNameString(exercise.exerciseName)}</Text>
-        </Pressable>
+        <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
+          <Text
+            style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
+            onPress={() => {
+              withLock(() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                prefetchExerciseGif(exercise.exerciseId);
+                router.push(`/exercise/${exercise.exerciseId}`);
+              });
+            }}
+          >
+            {formatExerciseNameString(exercise.exerciseName)}
+          </Text>
+        </View>
         <Ionicons
           name={isExpanded ? 'chevron-down' : 'chevron-forward'}
           size={20}
@@ -133,8 +148,8 @@ function ExerciseRow({
         <View style={styles.setsContainer}>
           {/* Sets Header */}
           <View style={styles.setsHeader}>
-            <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-            <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
+            <Text style={[styles.setHeaderText, styles.setColumn]}>{t('template.set')}</Text>
+            <Text style={styles.setHeaderText}>{t('template.weightAndReps')}</Text>
           </View>
 
           {/* Sets Rows */}
@@ -160,13 +175,24 @@ function ExerciseRow({
 
 export default function TemplateDetailScreen() {
   const { templateId } = useLocalSearchParams<{ templateId: string }>();
+  const { t } = useTranslation();
 
+  const { isNavigating, withLock } = useNavigationLock();
   const userId = useUserProfileStore((state) => state.userId);
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
   const addTemplate = useTemplateStore((state) => state.addTemplate);
   const removeTemplate = useTemplateStore((state) => state.removeTemplate);
   const updateTemplate = useTemplateStore((state) => state.updateTemplate);
   const isTemplateSaved = useTemplateStore((state) => state.isTemplateSaved);
+  const getScheduledWorkoutsForTemplate = useWorkoutStore(
+    (state) => state.getScheduledWorkoutsForTemplate
+  );
+  const detachScheduledWorkoutsFromTemplate = useWorkoutStore(
+    (state) => state.detachScheduledWorkoutsFromTemplate
+  );
+  const removeScheduledWorkoutsForTemplate = useWorkoutStore(
+    (state) => state.removeScheduledWorkoutsForTemplate
+  );
 
   const units = useUserPreferencesStore((s) => s.getUnitSystem());
   const weightLabel = getWeightUnit(units).toLowerCase();
@@ -237,11 +263,11 @@ export default function TemplateDetailScreen() {
           >
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </Pressable>
-          <Text style={styles.headerTitle}>Workout</Text>
+          <Text style={styles.headerTitle}>{t('workout.title')}</Text>
           <View style={styles.backButton} />
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Template not found</Text>
+          <Text style={styles.errorText}>{t('template.templateNotFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -287,9 +313,11 @@ export default function TemplateDetailScreen() {
   };
 
   const handleStartWorkout = () => {
-    router.push({
-      pathname: '/active-workout',
-      params: { templateId: template.id },
+    withLock(() => {
+      router.push({
+        pathname: '/active-workout',
+        params: { templateId: template.id },
+      });
     });
   };
 
@@ -332,7 +360,7 @@ export default function TemplateDetailScreen() {
 
   const handleSaveEdit = async () => {
     if (!editName.trim()) {
-      Alert.alert('Missing Name', 'Please enter a template name');
+      Alert.alert(t('template.missingName'), t('template.pleaseEnterName'));
       return;
     }
 
@@ -367,28 +395,60 @@ export default function TemplateDetailScreen() {
   };
 
   const handleEditExercises = () => {
-    router.push({
-      pathname: '/create-template',
-      params: { templateId: template.id },
+    withLock(() => {
+      router.push({
+        pathname: '/create-template',
+        params: { templateId: template.id },
+      });
     });
   };
 
   const handleDeleteTemplate = () => {
-    Alert.alert(
-      'Delete Template',
-      `Are you sure you want to delete "${template.name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            removeTemplate(template.id);
-            router.back();
+    const linkedWorkouts = getScheduledWorkoutsForTemplate(template.id);
+
+    if (linkedWorkouts.length > 0) {
+      const count = linkedWorkouts.length;
+      Alert.alert(
+        t('template.deleteTemplate'),
+        t('template.deleteWithWorkouts', { name: template.name, count }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('template.keepWorkouts'),
+            onPress: () => {
+              detachScheduledWorkoutsFromTemplate(template.id);
+              removeTemplate(template.id);
+              router.back();
+            },
           },
-        },
-      ]
-    );
+          {
+            text: t('template.deleteAll'),
+            style: 'destructive',
+            onPress: () => {
+              removeScheduledWorkoutsForTemplate(template.id);
+              removeTemplate(template.id);
+              router.back();
+            },
+          },
+        ]
+      );
+    } else {
+      Alert.alert(
+        t('template.deleteTemplate'),
+        t('template.deleteConfirm', { name: template.name }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('common.delete'),
+            style: 'destructive',
+            onPress: () => {
+              removeTemplate(template.id);
+              router.back();
+            },
+          },
+        ]
+      );
+    }
   };
 
   // Colour helpers
@@ -472,9 +532,9 @@ export default function TemplateDetailScreen() {
               }}
               style={styles.backButton}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
             </Pressable>
-            <Text style={styles.headerTitle}>Edit Template</Text>
+            <Text style={styles.headerTitle}>{t('template.editTemplate')}</Text>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -482,7 +542,7 @@ export default function TemplateDetailScreen() {
               }}
               style={styles.backButton}
             >
-              <Text style={styles.saveText}>Save</Text>
+              <Text style={styles.saveText}>{t('common.save')}</Text>
             </Pressable>
           </>
         ) : (
@@ -496,7 +556,7 @@ export default function TemplateDetailScreen() {
             >
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </Pressable>
-            <Text style={styles.headerTitle}>Workout</Text>
+            <Text style={styles.headerTitle}>{t('workout.title')}</Text>
             {!template.isPreset ? (
               <Pressable
                 onPress={() => {
@@ -528,14 +588,14 @@ export default function TemplateDetailScreen() {
               <View style={styles.editTextInputs}>
                 <TextInput
                   style={styles.nameInput}
-                  placeholder="Template Name"
+                  placeholder={t('template.templateName')}
                   placeholderTextColor={colors.textTertiary}
                   value={editName}
                   onChangeText={setEditName}
                 />
                 <TextInput
                   style={styles.descriptionInput}
-                  placeholder="Description (Optional)"
+                  placeholder={t('template.descriptionOptional')}
                   placeholderTextColor={colors.textTertiary}
                   value={editDescription}
                   onChangeText={setEditDescription}
@@ -553,7 +613,7 @@ export default function TemplateDetailScreen() {
                 openColourModal();
               }}
             >
-              <Text style={styles.colourLabel}>Colour</Text>
+              <Text style={styles.colourLabel}>{t('template.colour')}</Text>
               <View style={styles.colourRight}>
                 <View style={[styles.colourCircle, { backgroundColor: getSelectedColour() }]} />
                 <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
@@ -583,7 +643,7 @@ export default function TemplateDetailScreen() {
             disabled={isSaved}
           >
             <Text style={[styles.addToLibraryText, isSaved && styles.addToLibraryTextSaved]}>
-              {isSaved ? 'Saved to your Library' : 'Add to your Library'}
+              {isSaved ? t('template.savedToLibrary') : t('template.addToLibrary')}
             </Text>
           </Pressable>
         )}
@@ -597,7 +657,7 @@ export default function TemplateDetailScreen() {
               handleStartWorkout();
             }}
           >
-            <Text style={styles.startWorkoutText}>Start Workout</Text>
+            <Text style={styles.startWorkoutText}>{t('template.startWorkout')}</Text>
           </Pressable>
         )}
 
@@ -610,13 +670,13 @@ export default function TemplateDetailScreen() {
               handleEditExercises();
             }}
           >
-            <Ionicons name="barbell-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.editExercisesText}>Edit Exercises</Text>
+            <Ionicons name="barbell-outline" size={20} color={colors.textInverse} />
+            <Text style={styles.editExercisesText}>{t('template.editExercises')}</Text>
           </Pressable>
         )}
 
         {/* Exercises Section */}
-        <Text style={styles.sectionTitle}>Exercises</Text>
+        <Text style={styles.sectionTitle}>{t('template.exercises')}</Text>
         <View style={styles.exercisesCard}>
           {template.exercises.map((exercise, index) => (
             <View key={exercise.id}>
@@ -626,6 +686,7 @@ export default function TemplateDetailScreen() {
                 onToggle={() => toggleExercise(exercise.id)}
                 weightLabel={weightLabel}
                 units={units}
+                withLock={withLock}
               />
               {index < template.exercises.length - 1 && <View style={styles.exerciseDivider} />}
             </View>
@@ -641,7 +702,7 @@ export default function TemplateDetailScreen() {
             }}
             style={styles.deleteTextButton}
           >
-            <Text style={styles.deleteText}>Delete Template</Text>
+            <Text style={styles.deleteText}>{t('template.deleteTemplate')}</Text>
           </Pressable>
         )}
 
@@ -678,7 +739,7 @@ export default function TemplateDetailScreen() {
                 >
                   <CloseIcon />
                 </Pressable>
-                <Text style={styles.modalTitle}>Colour</Text>
+                <Text style={styles.modalTitle}>{t('template.colour')}</Text>
                 <View style={styles.modalCloseButton} />
               </View>
 
@@ -698,7 +759,7 @@ export default function TemplateDetailScreen() {
                     >
                       <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
                         {editColourId === colour.id && (
-                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                          <Ionicons name="checkmark" size={20} color={colors.textInverse} />
                         )}
                       </View>
                     </Pressable>
@@ -740,7 +801,7 @@ export default function TemplateDetailScreen() {
                 >
                   <CloseIcon />
                 </Pressable>
-                <Text style={styles.modalTitle}>Choose Colour</Text>
+                <Text style={styles.modalTitle}>{t('template.chooseColour')}</Text>
                 <View style={styles.modalCloseButton} />
               </View>
 
@@ -760,7 +821,7 @@ export default function TemplateDetailScreen() {
                     >
                       <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
                         {addColourId === colour.id && (
-                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                          <Ionicons name="checkmark" size={20} color={colors.textInverse} />
                         )}
                       </View>
                     </Pressable>
@@ -774,7 +835,7 @@ export default function TemplateDetailScreen() {
                     confirmAddWithColour(addColourId);
                   }}
                 >
-                  <Text style={styles.addColourConfirmText}>Add to Library</Text>
+                  <Text style={styles.addColourConfirmText}>{t('template.addToLibrary')}</Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -964,7 +1025,7 @@ const styles = StyleSheet.create({
   addToLibraryText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   addToLibraryTextSaved: {
     color: colors.textSecondary,
@@ -979,7 +1040,7 @@ const styles = StyleSheet.create({
   startWorkoutText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   editExercisesButton: {
     flexDirection: 'row',
@@ -994,7 +1055,7 @@ const styles = StyleSheet.create({
   editExercisesText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   sectionTitle: {
     fontFamily: fonts.medium,
@@ -1148,6 +1209,6 @@ const styles = StyleSheet.create({
   addColourConfirmText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
 });

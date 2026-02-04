@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
 
@@ -13,6 +14,7 @@ function formatTime(seconds: number): string {
 }
 
 export default function ActiveWorkoutWidget() {
+  const { t } = useTranslation();
   const activeWorkout = useWorkoutStore((state) => state.activeWorkout);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -21,6 +23,13 @@ export default function ActiveWorkoutWidget() {
   // Use local display time to avoid reading from store each tick.
   // This prevents compounding if any other timer also writes to the store.
   const [displaySeconds, setDisplaySeconds] = useState(activeWorkout?.elapsedSeconds ?? 0);
+
+  const exercises = activeWorkout?.exercises ?? [];
+  const exerciseCount = exercises.length;
+  const completedSets = useMemo(
+    () => exercises.reduce((total, ex) => total + ex.sets.filter((s) => s.completed).length, 0),
+    [exercises]
+  );
 
   useEffect(() => {
     if (isMinimized) {
@@ -57,12 +66,6 @@ export default function ActiveWorkoutWidget() {
     return null;
   }
 
-  const exerciseCount = activeWorkout.exercises.length;
-  const completedSets = activeWorkout.exercises.reduce(
-    (total, ex) => total + ex.sets.filter((s) => s.completed).length,
-    0
-  );
-
   const handlePress = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -72,15 +75,18 @@ export default function ActiveWorkoutWidget() {
   };
 
   return (
-    <Pressable style={styles.container} onPress={handlePress}>
+    <Pressable
+      style={({ pressed }) => [styles.container, pressed && { opacity: 0.7 }]}
+      onPress={handlePress}
+    >
       <View style={styles.iconContainer}>
         <Ionicons name="barbell" size={20} color="#FFFFFF" />
       </View>
       <View style={styles.info}>
-        <Text style={styles.title}>Workout in Progress</Text>
+        <Text style={styles.title}>{t('workout.activeWorkout')}</Text>
         <Text style={styles.subtitle}>
-          {exerciseCount} exercise{exerciseCount !== 1 ? 's' : ''} • {completedSets} set
-          {completedSets !== 1 ? 's' : ''} completed
+          {t('workout.exerciseCount', { count: exerciseCount })} •{' '}
+          {t('workout.setCount', { count: completedSets })}
         </Text>
       </View>
       <Text style={styles.timer}>{formatTime(displaySeconds)}</Text>

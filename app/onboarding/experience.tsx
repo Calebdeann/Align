@@ -1,16 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
 import { useOnboardingStore } from '@/stores/onboardingStore';
-
-const experienceLevels = [
-  { id: 'never', label: "I've never worked out", bars: 1 },
-  { id: 'beginner', label: 'Beginner - Tried it before', bars: 2 },
-  { id: 'intermediate', label: 'Intermediate - Regular training', bars: 3 },
-  { id: 'advanced', label: 'Advanced - Years of experience', bars: 4 },
-];
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 function BarIcon({ filled, isSelected }: { filled: number; isSelected: boolean }) {
   const filledColor = isSelected ? '#FFFFFF' : '#000000';
@@ -33,25 +28,40 @@ function BarIcon({ filled, isSelected }: { filled: number; isSelected: boolean }
 }
 
 export default function ExperienceScreen() {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
   const { setAndSave, skipField } = useOnboardingStore();
+  const { isNavigating, withLock } = useNavigationLock();
+
+  const experienceLevels = useMemo(
+    () => [
+      { id: 'never', label: t('onboarding.experience.never'), bars: 1 },
+      { id: 'beginner', label: t('onboarding.experience.beginner'), bars: 2 },
+      { id: 'intermediate', label: t('onboarding.experience.intermediate'), bars: 3 },
+      { id: 'advanced', label: t('onboarding.experience.advanced'), bars: 4 },
+    ],
+    [t]
+  );
 
   const handleSelect = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSelected(id);
-    setAndSave('experienceLevel', id);
-    setTimeout(() => {
-      router.push('/onboarding/goals');
-    }, 300);
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setSelected(id);
+      setAndSave('experienceLevel', id);
+      setTimeout(() => {
+        router.push('/onboarding/tried-apps');
+      }, 300);
+    });
   };
 
   return (
     <QuestionLayout
-      question="How experienced are you with working out?"
+      navigationDisabled={isNavigating}
+      question={t('onboarding.experience.question')}
       progress={4}
       onSkip={() => {
         skipField('experienceLevel');
-        router.push('/onboarding/goals');
+        router.push('/onboarding/tried-apps');
       }}
     >
       <View style={optionStyles.optionsContainer}>

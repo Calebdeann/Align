@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, Pressable, Image, ImageSourcePropType } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 type SituationId = 'none' | 'injury' | 'pregnant' | 'postpartum' | 'menopause';
 
@@ -13,42 +15,62 @@ interface SituationOption {
   icon: ImageSourcePropType;
 }
 
-const situationOptions: SituationOption[] = [
-  { id: 'none', label: 'No', icon: require('../../assets/images/No.png') },
-  { id: 'injury', label: 'Injury or recovery', icon: require('../../assets/images/Injury.png') },
-  {
-    id: 'pregnant',
-    label: 'Pregnant or planning',
-    icon: require('../../assets/images/Pregnant.png'),
-  },
-  {
-    id: 'postpartum',
-    label: 'Postpartum recovery',
-    icon: require('../../assets/images/Postpartum.png'),
-  },
-  { id: 'menopause', label: 'Menopause', icon: require('../../assets/images/Menopause.png') },
-];
-
 export default function HealthSituationsScreen() {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
   const { setAndSave, skipField } = useOnboardingStore();
+  const { isNavigating, withLock } = useNavigationLock();
+
+  const situationOptions: SituationOption[] = useMemo(
+    () => [
+      {
+        id: 'none',
+        label: t('onboarding.healthSituations.none'),
+        icon: require('../../assets/images/No_icon.png'),
+      },
+      {
+        id: 'injury',
+        label: t('onboarding.healthSituations.injury'),
+        icon: require('../../assets/images/FeelBetter_icon.png'),
+      },
+      {
+        id: 'pregnant',
+        label: t('onboarding.healthSituations.pregnant'),
+        icon: require('../../assets/images/Pregnant_icon.png'),
+      },
+      {
+        id: 'postpartum',
+        label: t('onboarding.healthSituations.postpartum'),
+        icon: require('../../assets/images/Energy_icon.png'),
+      },
+      {
+        id: 'menopause',
+        label: t('onboarding.healthSituations.menopause'),
+        icon: require('../../assets/images/Menopause_icon.png'),
+      },
+    ],
+    [t]
+  );
 
   const handleSelect = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSelected(id);
-    setAndSave('healthSituation', id);
-    setTimeout(() => {
-      router.push('/onboarding/obstacles');
-    }, 300);
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setSelected(id);
+      setAndSave('healthSituation', id);
+      setTimeout(() => {
+        router.push('/onboarding/energy-fluctuation');
+      }, 300);
+    });
   };
 
   return (
     <QuestionLayout
-      question="Are you in any of the following situations?"
+      navigationDisabled={isNavigating}
+      question={t('onboarding.healthSituations.question')}
       progress={46}
       onSkip={() => {
         skipField('healthSituation');
-        router.push('/onboarding/obstacles');
+        router.push('/onboarding/energy-fluctuation');
       }}
     >
       <View style={optionStyles.optionsContainer}>

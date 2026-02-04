@@ -58,7 +58,8 @@
           "cameraPermission": "Allow Align to take photos for your workout templates."
         }
       ],
-      "expo-live-activity"
+      "expo-live-activity",
+      "./plugins/withWorkoutWidget"
     ],
     "extra": {
       "router": {},
@@ -70,7 +71,9 @@
                 {
                   "targetName": "LiveActivity",
                   "bundleIdentifier": "com.aligntracker.app.LiveActivity",
-                  "entitlements": {}
+                  "entitlements": {
+                    "com.apple.security.application-groups": ["group.com.aligntracker.app"]
+                  }
                 }
               ]
             }

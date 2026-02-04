@@ -11,7 +11,9 @@ import {
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 
@@ -37,6 +39,8 @@ const LONG_TICK_HEIGHT = 2; // same vertical thickness
 const DEFAULT_HEIGHT_CM = 170;
 
 export default function HeightScreen() {
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
   const { measurementUnit, setMeasurementUnit } = useUserPreferencesStore();
   const unit = measurementUnit === 'cm' ? 'cm' : 'ft';
 
@@ -190,10 +194,13 @@ export default function HeightScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            })
+          }
           style={styles.backButton}
         >
           <Text style={styles.backArrow}>←</Text>
@@ -205,20 +212,23 @@ export default function HeightScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            useOnboardingStore.getState().skipField('heightInches');
-            router.push('/onboarding/weight');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              useOnboardingStore.getState().skipField('heightInches');
+              router.push('/onboarding/weight');
+            })
+          }
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
       {/* Question */}
       <View style={styles.questionContainer}>
-        <Text style={styles.questionText}>How tall are you?</Text>
-        <Text style={styles.subtitle}>This will be used to calibrate your custom plan.</Text>
+        <Text style={styles.questionText}>{t('onboarding.height.question')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.height.subtitle')}</Text>
       </View>
 
       {/* Unit Toggle */}
@@ -228,13 +238,17 @@ export default function HeightScreen() {
             style={[styles.toggleOption, unit === 'cm' && styles.toggleOptionActive]}
             onPress={() => handleUnitChange('cm')}
           >
-            <Text style={[styles.toggleText, unit === 'cm' && styles.toggleTextActive]}>cm</Text>
+            <Text style={[styles.toggleText, unit === 'cm' && styles.toggleTextActive]}>
+              {t('units.cm')}
+            </Text>
           </Pressable>
           <Pressable
             style={[styles.toggleOption, unit === 'ft' && styles.toggleOptionActive]}
             onPress={() => handleUnitChange('ft')}
           >
-            <Text style={[styles.toggleText, unit === 'ft' && styles.toggleTextActive]}>ft</Text>
+            <Text style={[styles.toggleText, unit === 'ft' && styles.toggleTextActive]}>
+              {t('units.ft')}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -267,7 +281,7 @@ export default function HeightScreen() {
           {unit === 'cm' ? (
             <View style={styles.heightRow}>
               <Text style={styles.heightText}>{heightCm}</Text>
-              <Text style={styles.unitLabel}>cm</Text>
+              <Text style={styles.unitLabel}>{t('units.cm')}</Text>
             </View>
           ) : (
             <Text style={styles.heightText}>
@@ -281,13 +295,16 @@ export default function HeightScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            useOnboardingStore.getState().setAndSave('heightInches', totalInches);
-            router.push('/onboarding/weight');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              useOnboardingStore.getState().setAndSave('heightInches', totalInches);
+              router.push('/onboarding/weight');
+            })
+          }
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -12,6 +13,7 @@ import {
   SectionList,
   ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatExerciseDisplayName } from '@/utils/textFormatters';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -21,42 +23,18 @@ import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { filterExercisesClient, Exercise } from '@/services/api/exercises';
 import { useWorkoutStore } from '@/stores/workoutStore';
-import { useExerciseStore } from '@/stores/exerciseStore';
+import {
+  useExerciseStore,
+  prefetchExerciseGif,
+  getExerciseDisplayName,
+} from '@/stores/exerciseStore';
+import { useRecentExercisesStore } from '@/stores/recentExercisesStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Equipment options (IDs and labels match ExerciseDB values)
-const EQUIPMENT_OPTIONS = [
-  { id: 'all', label: 'All Equipment' },
-  { id: 'body weight', label: 'Body Weight' },
-  { id: 'barbell', label: 'Barbell' },
-  { id: 'dumbbell', label: 'Dumbbell' },
-  { id: 'kettlebell', label: 'Kettlebell' },
-  { id: 'cable', label: 'Cable' },
-  { id: 'band', label: 'Band' },
-  { id: 'machine', label: 'Machine' },
-  { id: 'other', label: 'Other' },
-];
-
-// Muscle options (IDs and labels match ExerciseDB target values)
-const MUSCLE_OPTIONS = [
-  { id: 'all', label: 'All Muscles' },
-  { id: 'abs', label: 'Abs' },
-  { id: 'biceps', label: 'Biceps' },
-  { id: 'calves', label: 'Calves' },
-  { id: 'delts', label: 'Delts' },
-  { id: 'forearms', label: 'Forearms' },
-  { id: 'glutes', label: 'Glutes' },
-  { id: 'hamstrings', label: 'Hamstrings' },
-  { id: 'lats', label: 'Lats' },
-  { id: 'pectorals', label: 'Pectorals' },
-  { id: 'quads', label: 'Quads' },
-  { id: 'spine', label: 'Spine' },
-  { id: 'traps', label: 'Traps' },
-  { id: 'triceps', label: 'Triceps' },
-  { id: 'upper back', label: 'Upper Back' },
-];
+// Equipment and muscle option IDs - labels are resolved via i18n inside the component
 
 // SVG Icons
 function CloseIcon() {
@@ -107,6 +85,7 @@ interface ExerciseItemProps {
   isAlreadyAdded: boolean;
   onToggle: () => void;
   onPressName: () => void;
+  alreadyInWorkoutLabel: string;
 }
 
 function ExerciseItem({
@@ -115,6 +94,7 @@ function ExerciseItem({
   isAlreadyAdded,
   onToggle,
   onPressName,
+  alreadyInWorkoutLabel,
 }: ExerciseItemProps) {
   const showSelected = isSelected || isAlreadyAdded;
 
@@ -147,20 +127,26 @@ function ExerciseItem({
           backgroundColor={colors.background}
         />
       </Pressable>
-      <View style={styles.exerciseInfo}>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onPressName();
-          }}
-          disabled={isAlreadyAdded}
+      <View style={styles.exerciseInfo} pointerEvents="box-none">
+        <Text
+          style={[
+            styles.exerciseName,
+            isAlreadyAdded && styles.exerciseNameDisabled,
+            { alignSelf: 'flex-start' },
+          ]}
+          onPress={
+            isAlreadyAdded
+              ? undefined
+              : () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onPressName();
+                }
+          }
         >
-          <Text style={[styles.exerciseName, isAlreadyAdded && styles.exerciseNameDisabled]}>
-            {formatExerciseDisplayName(exercise.name, exercise.equipment)}
-          </Text>
-        </Pressable>
+          {getExerciseDisplayName(exercise)}
+        </Text>
         <Text style={styles.exerciseMuscle}>
-          {isAlreadyAdded ? 'Already in workout' : exercise.muscle_group}
+          {isAlreadyAdded ? alreadyInWorkoutLabel : exercise.muscle_group}
         </Text>
       </View>
       <View
@@ -170,7 +156,7 @@ function ExerciseItem({
           isAlreadyAdded && styles.checkboxDisabled,
         ]}
       >
-        {showSelected && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+        {showSelected && <Ionicons name="checkmark" size={14} color={colors.textInverse} />}
       </View>
     </Pressable>
   );
@@ -248,14 +234,17 @@ function FilterModal({ visible, title, options, selectedId, onSelect, onClose }:
                     onClose();
                   }}
                 >
-                  <Text
-                    style={[
-                      styles.filterOptionText,
-                      selectedId === option.id && styles.filterOptionTextSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
+                  <View style={styles.filterOptionLeft}>
+                    {option.id !== 'all' && <View style={styles.filterOptionCircle} />}
+                    <Text
+                      style={[
+                        styles.filterOptionText,
+                        selectedId === option.id && styles.filterOptionTextSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </View>
                   {selectedId === option.id && <CheckIcon />}
                 </Pressable>
               ))}
@@ -277,6 +266,8 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 export default function AddExerciseScreen() {
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
@@ -291,6 +282,46 @@ export default function AddExerciseScreen() {
   // Exercise store (cached exercises)
   const { allExercises, isLoaded, isLoading, error, loadExercises, getPopularExercises } =
     useExerciseStore();
+  // Subscribe to translation changes so exercise names re-render in the selected language
+  const translationsLanguage = useExerciseStore((state) => state.translationsLanguage);
+  const { getRecentExercises, addRecentExercises } = useRecentExercisesStore();
+
+  // Translatable filter options
+  const EQUIPMENT_OPTIONS = useMemo(
+    () => [
+      { id: 'all', label: t('equipment.all') },
+      { id: 'body weight', label: t('equipment.bodyWeight') },
+      { id: 'barbell', label: t('equipment.barbell') },
+      { id: 'dumbbell', label: t('equipment.dumbbell') },
+      { id: 'kettlebell', label: t('equipment.kettlebell') },
+      { id: 'cable', label: t('equipment.cable') },
+      { id: 'band', label: t('equipment.band') },
+      { id: 'machine', label: t('equipment.machine') },
+      { id: 'other', label: t('equipment.other') },
+    ],
+    [t]
+  );
+
+  const MUSCLE_OPTIONS = useMemo(
+    () => [
+      { id: 'all', label: t('muscles.all') },
+      { id: 'abs', label: t('muscles.abs') },
+      { id: 'biceps', label: t('muscles.biceps') },
+      { id: 'calves', label: t('muscles.calves') },
+      { id: 'delts', label: t('muscles.delts') },
+      { id: 'forearms', label: t('muscles.forearms') },
+      { id: 'glutes', label: t('muscles.glutes') },
+      { id: 'hamstrings', label: t('muscles.hamstrings') },
+      { id: 'lats', label: t('muscles.lats') },
+      { id: 'pectorals', label: t('muscles.pectorals') },
+      { id: 'quads', label: t('muscles.quads') },
+      { id: 'spine', label: t('muscles.spine') },
+      { id: 'traps', label: t('muscles.traps') },
+      { id: 'triceps', label: t('muscles.triceps') },
+      { id: 'upper back', label: t('muscles.upperBack') },
+    ],
+    [t]
+  );
 
   // Parse existing exercise IDs from params
   const existingExerciseIds: string[] = params.existingExerciseIds
@@ -314,7 +345,7 @@ export default function AddExerciseScreen() {
   // Check if filters are active
   const hasActiveFilters = selectedMuscle !== 'all' || selectedEquipment !== 'all';
 
-  // Get sections data: Popular at top, then All Exercises below
+  // Get sections data: Recent at top, then Popular, then All Exercises
   const sections = useMemo(() => {
     // If searching, show search results with active filters applied
     if (debouncedQuery.trim()) {
@@ -323,10 +354,13 @@ export default function AddExerciseScreen() {
         muscles: selectedMuscle !== 'all' ? [selectedMuscle] : undefined,
         equipment: selectedEquipment !== 'all' ? selectedEquipment : undefined,
       });
-      return [{ title: `Results for "${debouncedQuery}"`, data: searchResults }];
+      return [
+        { title: t('addExercise.resultsFor', { query: debouncedQuery }), data: searchResults },
+      ];
     }
 
-    // Get popular exercises (always unfiltered)
+    // Get recent and popular exercises
+    const recent = getRecentExercises(allExercises);
     const popular = getPopularExercises();
 
     // Get all exercises with filters applied
@@ -335,21 +369,28 @@ export default function AddExerciseScreen() {
       equipment: selectedEquipment !== 'all' ? selectedEquipment : undefined,
     });
 
-    // Filter out popular exercises from "All Exercises" to avoid duplicates
-    const popularIds = new Set(popular.map((e) => e.id));
-    const allWithoutPopular = allFiltered.filter((e) => !popularIds.has(e.id));
+    // Deduplication: Recent > Popular > All
+    const recentIds = new Set(recent.map((e) => e.id));
+    const popularWithoutRecent = popular.filter((e) => !recentIds.has(e.id));
+    const excludedIds = new Set([...recentIds, ...popular.map((e) => e.id)]);
+    const allWithoutRecentAndPopular = allFiltered.filter((e) => !excludedIds.has(e.id));
 
     const result = [];
 
-    // Only show Popular section if no filters are active
-    if (!hasActiveFilters && popular.length > 0) {
-      result.push({ title: 'Popular', data: popular });
+    // Only show Recent and Popular sections if no filters are active
+    if (!hasActiveFilters) {
+      if (recent.length > 0) {
+        result.push({ title: t('addExercise.recent'), data: recent });
+      }
+      if (popularWithoutRecent.length > 0) {
+        result.push({ title: t('addExercise.popular'), data: popularWithoutRecent });
+      }
     }
 
-    if (allWithoutPopular.length > 0 || hasActiveFilters) {
+    if (allWithoutRecentAndPopular.length > 0 || hasActiveFilters) {
       result.push({
-        title: 'All Exercises',
-        data: hasActiveFilters ? allFiltered : allWithoutPopular,
+        title: t('addExercise.allExercises'),
+        data: hasActiveFilters ? allFiltered : allWithoutRecentAndPopular,
       });
     }
 
@@ -360,8 +401,25 @@ export default function AddExerciseScreen() {
     selectedMuscle,
     selectedEquipment,
     getPopularExercises,
+    getRecentExercises,
     hasActiveFilters,
+    t,
   ]);
+
+  // Prefetch GIFs for Recent + Popular exercises so detail view loads instantly
+  useEffect(() => {
+    const gifUrls: string[] = [];
+    for (const section of sections) {
+      if (section.title === t('addExercise.recent') || section.title === t('addExercise.popular')) {
+        for (const ex of section.data) {
+          if (ex.image_url) gifUrls.push(ex.image_url);
+        }
+      }
+    }
+    if (gifUrls.length > 0) {
+      Image.prefetch(gifUrls).catch(() => {});
+    }
+  }, [sections]);
 
   const toggleExercise = useCallback(
     (exerciseId: string) => {
@@ -378,10 +436,12 @@ export default function AddExerciseScreen() {
 
   const handleAddExercises = () => {
     const selected = allExercises.filter((e) => selectedExercises.includes(e.id));
+    // Track as recent exercises for quick access next time
+    addRecentExercises(selected.map((e) => e.id));
     setPendingExercises(
       selected.map((e) => ({
         id: e.id,
-        name: e.name,
+        name: e.display_name || formatExerciseDisplayName(e.name, e.equipment),
         muscle: e.muscle_group || 'Unknown',
         gifUrl: e.image_url || '',
         thumbnailUrl: e.thumbnail_url || '',
@@ -390,21 +450,24 @@ export default function AddExerciseScreen() {
     router.back();
   };
 
-  // Navigate to exercise detail
+  // Navigate to exercise detail (prefetch GIF for instant animation)
   const handlePressExerciseName = (exerciseId: string) => {
-    router.push(`/exercise/${exerciseId}`);
+    withLock(() => {
+      prefetchExerciseGif(exerciseId);
+      router.push(`/exercise/${exerciseId}`);
+    });
   };
 
   // Get display labels for filters
   const muscleLabel =
     selectedMuscle === 'all'
-      ? 'All Muscles'
-      : MUSCLE_OPTIONS.find((o) => o.id === selectedMuscle)?.label || 'Muscle';
+      ? t('muscles.all')
+      : MUSCLE_OPTIONS.find((o) => o.id === selectedMuscle)?.label || t('addExercise.muscle');
 
   const equipmentLabel =
     selectedEquipment === 'all'
-      ? 'All Equipment'
-      : EQUIPMENT_OPTIONS.find((o) => o.id === selectedEquipment)?.label || 'Equipment';
+      ? t('equipment.all')
+      : EQUIPMENT_OPTIONS.find((o) => o.id === selectedEquipment)?.label || t('workout.equipment');
 
   // Clear all filters
   const clearFilters = () => {
@@ -414,6 +477,7 @@ export default function AddExerciseScreen() {
   };
 
   // Render item for SectionList
+  const alreadyInWorkoutLabel = t('addExercise.alreadyInWorkout');
   const renderItem = useCallback(
     ({ item }: { item: Exercise }) => (
       <ExerciseItem
@@ -422,9 +486,10 @@ export default function AddExerciseScreen() {
         isAlreadyAdded={existingExerciseIds.includes(item.id)}
         onToggle={() => toggleExercise(item.id)}
         onPressName={() => handlePressExerciseName(item.id)}
+        alreadyInWorkoutLabel={alreadyInWorkoutLabel}
       />
     ),
-    [selectedExercises, existingExerciseIds, toggleExercise]
+    [selectedExercises, existingExerciseIds, toggleExercise, alreadyInWorkoutLabel]
   );
 
   // Render section header
@@ -449,7 +514,7 @@ export default function AddExerciseScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Add Exercise</Text>
+        <Text style={styles.headerTitle}>{t('addExercise.title')}</Text>
         <View style={{ width: 50 }} />
       </View>
 
@@ -458,7 +523,7 @@ export default function AddExerciseScreen() {
         <Ionicons name="search" size={20} color={colors.textSecondary} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search exercise"
+          placeholder={t('addExercise.searchPlaceholder')}
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -535,7 +600,7 @@ export default function AddExerciseScreen() {
               loadExercises();
             }}
           >
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('addExercise.retry')}</Text>
           </Pressable>
         </View>
       )}
@@ -549,19 +614,23 @@ export default function AddExerciseScreen() {
               renderItem={renderItem}
               renderSectionHeader={renderSectionHeader}
               keyExtractor={(item) => item.id}
+              extraData={translationsLanguage}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 100 }}
               stickySectionHeadersEnabled={false}
+              initialNumToRender={15}
+              maxToRenderPerBatch={10}
+              windowSize={5}
             />
           ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="search-outline" size={48} color={colors.textSecondary} />
               <Text style={styles.emptyText}>
                 {debouncedQuery
-                  ? `No exercises found for "${debouncedQuery}"`
+                  ? t('addExercise.noExercisesForQuery', { query: debouncedQuery })
                   : hasActiveFilters
-                    ? 'No exercises match the selected filters'
-                    : 'No exercises found'}
+                    ? t('addExercise.noExercisesMatchFilters')
+                    : t('addExercise.noExercisesFound')}
               </Text>
               {(hasActiveFilters || debouncedQuery) && (
                 <Pressable
@@ -571,7 +640,7 @@ export default function AddExerciseScreen() {
                     clearFilters();
                   }}
                 >
-                  <Text style={styles.clearFiltersText}>Clear Filters</Text>
+                  <Text style={styles.clearFiltersText}>{t('addExercise.clearFilters')}</Text>
                 </Pressable>
               )}
             </View>
@@ -590,7 +659,7 @@ export default function AddExerciseScreen() {
             }}
           >
             <Text style={styles.addButtonText}>
-              Add {selectedExercises.length} Exercise{selectedExercises.length > 1 ? 's' : ''}
+              {t('addExercise.addCount', { count: selectedExercises.length })}
             </Text>
           </Pressable>
         </View>
@@ -599,7 +668,7 @@ export default function AddExerciseScreen() {
       {/* Muscle Filter Modal */}
       <FilterModal
         visible={showMuscleModal}
-        title="Select Muscle"
+        title={t('addExercise.selectMuscle')}
         options={MUSCLE_OPTIONS}
         selectedId={selectedMuscle}
         onSelect={setSelectedMuscle}
@@ -609,7 +678,7 @@ export default function AddExerciseScreen() {
       {/* Equipment Filter Modal */}
       <FilterModal
         visible={showEquipmentModal}
-        title="Select Equipment"
+        title={t('addExercise.selectEquipment')}
         options={EQUIPMENT_OPTIONS}
         selectedId={selectedEquipment}
         onSelect={setSelectedEquipment}
@@ -713,7 +782,7 @@ const styles = StyleSheet.create({
   retryText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   emptyContainer: {
     flex: 1,
@@ -738,7 +807,7 @@ const styles = StyleSheet.create({
   clearFiltersText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.sm,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   listContainer: {
     flex: 1,
@@ -818,7 +887,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   exerciseItemDisabled: {
     opacity: 0.6,
@@ -882,6 +951,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border + '30',
+  },
+  filterOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  filterOptionCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceSecondary,
   },
   filterOptionText: {
     fontFamily: fonts.medium,

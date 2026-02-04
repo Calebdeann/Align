@@ -5,7 +5,9 @@ import { getAnonymousSessionId, clearAnonymousSession } from '../anonymousSessio
 // Also used to identify which field was skipped
 const fieldToColumn: Record<string, string> = {
   experienceLevel: 'experience_level',
+  triedOtherApps: 'tried_other_apps',
   mainGoal: 'main_goal',
+  bodyChangeGoal: 'body_change_goal',
   otherGoals: 'goals',
   referralSource: 'referral_source',
   age: 'age',
@@ -13,9 +15,7 @@ const fieldToColumn: Record<string, string> = {
   currentWeight: 'weight',
   targetWeight: 'target_weight',
   unit: 'units',
-  weeklyGoal: 'weekly_goal',
   trainingLocation: 'training_location',
-  equipment: 'preferred_equipment',
   workoutFrequency: 'workout_frequency',
   workoutDays: 'workout_days',
   mainObstacle: 'main_obstacle',
@@ -53,7 +53,7 @@ export async function saveOnboardingField(field: string, value: unknown): Promis
   );
 
   if (error) {
-    console.error('Error saving onboarding field:', error);
+    console.warn('Error saving onboarding field:', error);
     return false;
   }
   return true;
@@ -100,8 +100,9 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
       weight: session.weight,
       target_weight: session.target_weight,
       units: session.units,
+      tried_other_apps: session.tried_other_apps,
+      body_change_goal: session.body_change_goal,
       training_location: session.training_location,
-      preferred_equipment: session.preferred_equipment,
       workout_frequency: session.workout_frequency,
       workout_days: session.workout_days,
       main_obstacle: session.main_obstacle,
@@ -116,7 +117,7 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
   );
 
   if (updateError) {
-    console.error('Error transferring onboarding data to profile:', updateError);
+    console.warn('Error transferring onboarding data to profile:', updateError);
     return false;
   }
 
@@ -127,7 +128,7 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
     .eq('anonymous_id', anonymousId);
 
   if (deleteError) {
-    console.error('Error deleting anonymous session:', deleteError);
+    console.warn('Error deleting anonymous session:', deleteError);
     // Don't fail the whole operation, data was transferred successfully
   }
 
@@ -179,7 +180,7 @@ export async function saveSkippedField(field: string): Promise<boolean> {
   );
 
   if (error) {
-    console.error('Error saving skipped field:', error);
+    console.warn('Error saving skipped field:', error);
     return false;
   }
   return true;

@@ -19,6 +19,8 @@ import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/constants/theme';
 import {
   saveCompletedWorkout,
@@ -31,6 +33,7 @@ import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { prefetchExerciseGif } from '@/stores/exerciseStore';
 import {
   ImagePickerSheet,
   ImagePlaceholderIcon,
@@ -40,6 +43,7 @@ import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 import { getTemplateImageById } from '@/constants/templateImages';
 import { formatExerciseNameString } from '@/utils/textFormatters';
 import { endWorkoutLiveActivity } from '@/services/liveActivity';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -74,6 +78,26 @@ interface WorkoutExercise {
   supersetId?: number | null;
   restTimerSeconds?: number;
 }
+
+// Superset colors matching active-workout
+const SUPERSET_COLORS = ['#64B5F6', '#7AC29A', '#FF8A65', '#E53935', '#BA68C8'];
+
+const getSupersetColor = (supersetId: number): string => {
+  return SUPERSET_COLORS[(supersetId - 1) % SUPERSET_COLORS.length];
+};
+
+const getSetTypeLabel = (setType: SetType | undefined, setIndex: number): string => {
+  switch (setType) {
+    case 'warmup':
+      return 'W';
+    case 'failure':
+      return 'F';
+    case 'dropset':
+      return 'D';
+    default:
+      return (setIndex + 1).toString();
+  }
+};
 
 interface WorkoutData {
   exercises: WorkoutExercise[];
@@ -203,9 +227,9 @@ function formatDuration(seconds: number): string {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   if (hours > 0) {
-    return `${hours} hour, ${minutes} minutes`;
+    return i18n.t('saveWorkout.hourMinutes', { hours, minutes });
   }
-  return `${minutes} minutes`;
+  return i18n.t('saveWorkout.minutes', { minutes });
 }
 
 // Format volume with units
@@ -217,9 +241,11 @@ function formatVolume(volumeKg: number, units: UnitSystem): string {
 }
 
 export default function SaveWorkoutScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
   const { getUnitSystem } = useUserPreferencesStore();
   const units = getUnitSystem();
+  const { isNavigating, withLock } = useNavigationLock();
 
   // Edit mode params
   const editWorkoutId = params.editWorkoutId as string | undefined;
@@ -549,22 +575,27 @@ export default function SaveWorkoutScreen() {
         // Update existing workout
         const success = await updateCompletedWorkout(editWorkoutId, saveInput);
         if (success) {
-          Alert.alert('Workout Updated!', 'Your workout has been updated.', [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Dismiss all edit screens back to tabs, then re-open workout-details
-                // workout-details will fetch fresh data
-                router.dismissAll();
-                router.push({
-                  pathname: '/workout-details',
-                  params: { workoutId: editWorkoutId },
-                });
+          Alert.alert(
+            i18n.t('saveWorkout.workoutUpdated'),
+            i18n.t('saveWorkout.workoutUpdatedMessage'),
+            [
+              {
+                text: i18n.t('common.ok'),
+                onPress: () => {
+                  router.dismissAll();
+                  router.push({
+                    pathname: '/workout-details',
+                    params: { workoutId: editWorkoutId },
+                  });
+                },
               },
-            },
-          ]);
+            ]
+          );
         } else {
-          Alert.alert('Update Failed', 'Could not update workout. Please try again.');
+          Alert.alert(
+            i18n.t('saveWorkout.updateFailed'),
+            i18n.t('saveWorkout.updateFailedMessage')
+          );
         }
       } else {
         // Save new workout
@@ -586,29 +617,33 @@ export default function SaveWorkoutScreen() {
               todayKey,
               workoutData.userId,
               workoutData.sourceTemplateId,
-              workoutTitle || workoutData.templateName
+              workoutTitle || workoutData.templateName || undefined
             );
           }
 
-          Alert.alert('Workout Saved!', 'Great job on completing your workout.', [
-            {
-              text: 'OK',
-              onPress: () => {
-                router.dismissAll();
-                router.replace('/(tabs)/workout');
-              },
-            },
-          ]);
-        } else {
           Alert.alert(
-            'Save Failed',
-            'Could not save workout to database. The workout tables may not be set up yet.'
+            i18n.t('saveWorkout.workoutSaved'),
+            i18n.t('saveWorkout.workoutSavedMessage'),
+            [
+              {
+                text: i18n.t('common.ok'),
+                onPress: () => {
+                  router.dismissAll();
+                  router.replace('/(tabs)/workout');
+                },
+              },
+            ]
           );
+        } else {
+          Alert.alert(i18n.t('saveWorkout.saveFailed'), i18n.t('saveWorkout.saveFailedMessage'));
         }
       }
     } catch (error: any) {
       console.error('Error saving workout:', error);
-      Alert.alert('Error', `Failed to save workout: ${error?.message || 'Unknown error'}`);
+      Alert.alert(
+        i18n.t('common.error'),
+        i18n.t('saveWorkout.saveError', { error: error?.message || 'Unknown error' })
+      );
     } finally {
       setIsSaving(false);
     }
@@ -616,7 +651,7 @@ export default function SaveWorkoutScreen() {
 
   const handleSave = async () => {
     if (!workoutData.userId) {
-      Alert.alert('Error', 'You must be logged in to save workouts.');
+      Alert.alert(i18n.t('common.error'), i18n.t('saveWorkout.mustBeLoggedIn'));
       return;
     }
 
@@ -626,7 +661,10 @@ export default function SaveWorkoutScreen() {
     );
 
     if (exercisesWithCompletedSets.length === 0) {
-      Alert.alert('No Completed Sets', 'You need at least one completed set to save.');
+      Alert.alert(
+        i18n.t('saveWorkout.noCompletedSets'),
+        i18n.t('saveWorkout.noCompletedSetsMessage')
+      );
       return;
     }
 
@@ -657,7 +695,9 @@ export default function SaveWorkoutScreen() {
         <Pressable onPress={handleBack} style={styles.backButton}>
           <BackIcon />
         </Pressable>
-        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Workout' : 'Save Workout'}</Text>
+        <Text style={styles.headerTitle}>
+          {isEditMode ? t('saveWorkout.editWorkout') : t('saveWorkout.saveWorkout')}
+        </Text>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -669,7 +709,9 @@ export default function SaveWorkoutScreen() {
           {isSaving ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Text style={styles.saveText}>{isEditMode ? 'UPDATE' : 'SAVE'}</Text>
+            <Text style={styles.saveText}>
+              {isEditMode ? t('saveWorkout.update') : t('saveWorkout.save')}
+            </Text>
           )}
         </Pressable>
       </View>
@@ -698,14 +740,14 @@ export default function SaveWorkoutScreen() {
             <View style={styles.workoutTextInputs}>
               <TextInput
                 style={styles.titleInput}
-                placeholder="Workout Title"
+                placeholder={t('saveWorkout.workoutTitle')}
                 placeholderTextColor={colors.textTertiary}
                 value={workoutTitle}
                 onChangeText={setWorkoutTitle}
               />
               <TextInput
                 style={styles.descriptionInput}
-                placeholder="Description (Optional)"
+                placeholder={t('saveWorkout.descriptionOptional')}
                 placeholderTextColor={colors.textTertiary}
                 value={description}
                 onChangeText={setDescription}
@@ -734,7 +776,7 @@ export default function SaveWorkoutScreen() {
             <View style={styles.statIconContainer}>
               <Ionicons name="time-outline" size={18} color={colors.text} />
             </View>
-            <Text style={styles.statLabel}>Duration</Text>
+            <Text style={styles.statLabel}>{t('saveWorkout.duration')}</Text>
             <Text style={styles.statValue}>{formatDuration(currentDuration)}</Text>
             {isEditMode && (
               <Ionicons
@@ -762,7 +804,7 @@ export default function SaveWorkoutScreen() {
             <View style={styles.statIconContainer}>
               <Ionicons name="layers-outline" size={18} color={colors.text} />
             </View>
-            <Text style={styles.statLabel}>Sets</Text>
+            <Text style={styles.statLabel}>{t('saveWorkout.sets')}</Text>
             <Text style={styles.statValue}>{totalSets}</Text>
           </View>
         </View>
@@ -806,13 +848,23 @@ export default function SaveWorkoutScreen() {
         </View>
 
         {/* Exercises Section */}
-        <Text style={styles.sectionTitle}>Exercises</Text>
+        <Text style={styles.sectionTitle}>{t('saveWorkout.exercises')}</Text>
         <View style={styles.card}>
           {completedExercises.map((we, index) => {
             const isExpanded = expandedExercises.has(`${we.exercise.id}-${index}`);
             const completedSets = we.sets.filter((s) => s.completed);
             return (
               <View key={`${we.exercise.id}-${index}`}>
+                {we.supersetId != null && (
+                  <View
+                    style={[
+                      styles.supersetBadge,
+                      { backgroundColor: getSupersetColor(we.supersetId) },
+                    ]}
+                  >
+                    <Text style={styles.supersetBadgeText}>Superset {we.supersetId}</Text>
+                  </View>
+                )}
                 <Pressable
                   style={styles.exerciseRow}
                   onPress={() => {
@@ -822,9 +874,13 @@ export default function SaveWorkoutScreen() {
                 >
                   <Pressable
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/exercise/${we.exercise.id}`);
+                      withLock(() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        prefetchExerciseGif(we.exercise.id);
+                        router.push(`/exercise/${we.exercise.id}`);
+                      });
                     }}
+                    disabled={isNavigating}
                   >
                     <ExerciseImage
                       gifUrl={we.exercise.gifUrl}
@@ -833,17 +889,24 @@ export default function SaveWorkoutScreen() {
                       borderRadius={8}
                     />
                   </Pressable>
-                  <Pressable
-                    style={{ flex: 1, justifyContent: 'center' }}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/exercise/${we.exercise.id}`);
-                    }}
-                  >
-                    <Text style={styles.exerciseName}>
+                  <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
+                    <Text
+                      style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
+                      onPress={
+                        isNavigating
+                          ? undefined
+                          : () => {
+                              withLock(() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                prefetchExerciseGif(we.exercise.id);
+                                router.push(`/exercise/${we.exercise.id}`);
+                              });
+                            }
+                      }
+                    >
                       {formatExerciseNameString(we.exercise.name)}
                     </Text>
-                  </Pressable>
+                  </View>
                   <Ionicons
                     name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                     size={20}
@@ -859,7 +922,17 @@ export default function SaveWorkoutScreen() {
                     </View>
                     {completedSets.map((set, setIndex) => (
                       <View key={set.id} style={styles.setRow}>
-                        <Text style={[styles.setNumber, styles.setColumn]}>{setIndex + 1}</Text>
+                        <Text
+                          style={[
+                            styles.setNumber,
+                            styles.setColumn,
+                            set.setType === 'warmup' && styles.setTypeWarmup,
+                            set.setType === 'failure' && styles.setTypeFailure,
+                            set.setType === 'dropset' && styles.setTypeDropset,
+                          ]}
+                        >
+                          {getSetTypeLabel(set.setType, setIndex)}
+                        </Text>
                         <Text style={styles.setText}>
                           {set.kg && set.reps
                             ? `${set.kg} ${getWeightUnit(units)} x ${set.reps} reps${set.rpe ? ` @ RPE ${set.rpe}` : ''}`
@@ -888,22 +961,25 @@ export default function SaveWorkoutScreen() {
           <Pressable
             style={styles.editExercisesButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              // Navigate to active-workout with edit data
-              const editData = {
-                exercises: workoutData.exercises,
-                durationSeconds: currentDuration,
-                startedAt: workoutData.startedAt,
-                userId: workoutData.userId,
-                editWorkoutId,
-                editTitle: workoutTitle,
-                editNotes: description,
-              };
-              router.push({
-                pathname: '/active-workout',
-                params: { editData: JSON.stringify(editData) },
+              withLock(() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                // Navigate to active-workout with edit data
+                const editData = {
+                  exercises: workoutData.exercises,
+                  durationSeconds: currentDuration,
+                  startedAt: workoutData.startedAt,
+                  userId: workoutData.userId,
+                  editWorkoutId,
+                  editTitle: workoutTitle,
+                  editNotes: description,
+                };
+                router.push({
+                  pathname: '/active-workout',
+                  params: { editData: JSON.stringify(editData) },
+                });
               });
             }}
+            disabled={isNavigating}
           >
             <Ionicons name="pencil-outline" size={18} color={colors.primary} />
             <Text style={styles.editExercisesText}>Edit Exercises</Text>
@@ -957,7 +1033,7 @@ export default function SaveWorkoutScreen() {
       <Modal visible={showDurationModal} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setShowDurationModal(false)}>
           <Pressable style={styles.exerciseChangeModal} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>Edit Duration</Text>
+            <Text style={styles.modalTitle}>{t('saveWorkout.editWorkout')}</Text>
             <View style={styles.durationInputRow}>
               <View style={styles.durationInputGroup}>
                 <TextInput
@@ -994,7 +1070,7 @@ export default function SaveWorkoutScreen() {
                 setShowDurationModal(false);
               }}
             >
-              <Text style={styles.updateTemplateButtonText}>Save</Text>
+              <Text style={styles.updateTemplateButtonText}>{t('common.save')}</Text>
             </Pressable>
             <Pressable
               style={styles.keepOriginalButton}
@@ -1003,7 +1079,7 @@ export default function SaveWorkoutScreen() {
                 setShowDurationModal(false);
               }}
             >
-              <Text style={styles.keepOriginalButtonText}>Cancel</Text>
+              <Text style={styles.keepOriginalButtonText}>{t('common.cancel')}</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -1209,6 +1285,28 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
     color: colors.text,
+  },
+  setTypeWarmup: {
+    color: '#F5A623',
+  },
+  setTypeFailure: {
+    color: colors.danger,
+  },
+  setTypeDropset: {
+    color: '#2196F3',
+  },
+  supersetBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginBottom: spacing.xs,
+  },
+  supersetBadgeText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: colors.textInverse,
+    letterSpacing: 0.2,
   },
   emptyText: {
     fontFamily: fonts.regular,

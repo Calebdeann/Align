@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, {
   useSharedValue,
@@ -22,7 +22,9 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 // Carousel images
 const Screen1 = require('../../assets/images/Screen1.png');
@@ -30,29 +32,7 @@ const Screen2 = require('../../assets/images/Screen2.png');
 const Screen3 = require('../../assets/images/Screen3.png');
 const Screen4 = require('../../assets/images/Screen4.png');
 
-// Slide data for the intro carousel
-const SLIDES: { title: string; subtitle: string; image: ImageSourcePropType }[] = [
-  {
-    title: 'Welcome to Align!',
-    subtitle: 'Easily log your workouts, tracking each set',
-    image: Screen1,
-  },
-  {
-    title: 'Measure Progress',
-    subtitle: 'Analyze your workout history with in depth analytics',
-    image: Screen2,
-  },
-  {
-    title: 'Never Miss a Workout',
-    subtitle: 'Schedule your workouts ahead of time to stay consistent',
-    image: Screen3,
-  },
-  {
-    title: "You're ready!",
-    subtitle: 'Now lets get to know you a little bit better!',
-    image: Screen4,
-  },
-];
+const SLIDE_IMAGES: ImageSourcePropType[] = [Screen1, Screen2, Screen3, Screen4];
 
 // Animated dot component for pagination
 function PaginationDot({
@@ -97,7 +77,7 @@ function Slide({
   scrollX,
   width,
 }: {
-  item: (typeof SLIDES)[0];
+  item: { title: string; subtitle: string; image: ImageSourcePropType };
   index: number;
   scrollX: Animated.SharedValue<number>;
   width: number;
@@ -129,16 +109,36 @@ function Slide({
 }
 
 export default function IntroScreen() {
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const scrollX = useSharedValue(0);
   const scrollViewRef = useRef<ScrollView>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
+  const { isNavigating, withLock } = useNavigationLock();
 
-  // Reset navigation state when screen comes back into focus
-  useFocusEffect(
-    useCallback(() => {
-      setIsNavigating(false);
-    }, [])
+  const slides = useMemo(
+    () => [
+      {
+        title: t('onboarding.intro.slide1Title'),
+        subtitle: t('onboarding.intro.slide1Subtitle'),
+        image: SLIDE_IMAGES[0],
+      },
+      {
+        title: t('onboarding.intro.slide2Title'),
+        subtitle: t('onboarding.intro.slide2Subtitle'),
+        image: SLIDE_IMAGES[1],
+      },
+      {
+        title: t('onboarding.intro.slide3Title'),
+        subtitle: t('onboarding.intro.slide3Subtitle'),
+        image: SLIDE_IMAGES[2],
+      },
+      {
+        title: t('onboarding.intro.slide4Title'),
+        subtitle: t('onboarding.intro.slide4Subtitle'),
+        image: SLIDE_IMAGES[3],
+      },
+    ],
+    [t]
   );
 
   const scrollHandler = useAnimatedScrollHandler({
@@ -148,25 +148,24 @@ export default function IntroScreen() {
   });
 
   const handleSkip = useCallback(() => {
-    if (isNavigating) return;
-    setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/onboarding/experience');
-  }, [isNavigating]);
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push('/onboarding/experience');
+    });
+  }, [withLock]);
 
   const handleContinue = useCallback(() => {
     const currentPage = Math.round(scrollX.value / width);
-    if (currentPage >= SLIDES.length - 1) {
-      if (isNavigating) return;
-      setIsNavigating(true);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      router.push('/onboarding/experience');
+    if (currentPage >= slides.length - 1) {
+      withLock(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        router.push('/onboarding/experience');
+      });
     } else {
-      // Scroll to next slide (no navigation guard needed for scrolling)
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       scrollViewRef.current?.scrollTo({ x: (currentPage + 1) * width, animated: true });
     }
-  }, [scrollX, width, isNavigating]);
+  }, [scrollX, width, slides.length, withLock]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -182,7 +181,7 @@ export default function IntroScreen() {
           decelerationRate="fast"
           bounces={false}
         >
-          {SLIDES.map((slide, index) => (
+          {slides.map((slide, index) => (
             <Slide key={index} item={slide} index={index} scrollX={scrollX} width={width} />
           ))}
         </Animated.ScrollView>
@@ -190,7 +189,7 @@ export default function IntroScreen() {
 
       {/* Pagination dots */}
       <View style={styles.pagination}>
-        {SLIDES.map((_, index) => (
+        {slides.map((_, index) => (
           <PaginationDot key={index} index={index} scrollX={scrollX} width={width} />
         ))}
       </View>
@@ -198,7 +197,9 @@ export default function IntroScreen() {
       {/* Bottom buttons */}
       <View style={styles.bottomSection}>
         <Pressable onPress={handleSkip} disabled={isNavigating}>
-          <Text style={[styles.skipText, isNavigating && styles.skipTextDisabled]}>Skip</Text>
+          <Text style={[styles.skipText, isNavigating && styles.skipTextDisabled]}>
+            {t('common.skip')}
+          </Text>
         </Pressable>
 
         <Pressable
@@ -206,7 +207,7 @@ export default function IntroScreen() {
           onPress={handleContinue}
           disabled={isNavigating}
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

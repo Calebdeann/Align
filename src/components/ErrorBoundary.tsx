@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 interface ErrorBoundaryProps {
@@ -37,12 +38,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
       return (
         <View style={styles.container}>
-          <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.subtitle}>
-            The app ran into an unexpected error. Please try again.
-          </Text>
+          <Text style={styles.title}>{i18n.t('errors.somethingWentWrong')}</Text>
+          <Text style={styles.subtitle}>{i18n.t('errors.unexpectedError')}</Text>
           <Pressable style={styles.button} onPress={this.handleRetry}>
-            <Text style={styles.buttonText}>Try Again</Text>
+            <Text style={styles.buttonText}>{i18n.t('errors.tryAgain')}</Text>
           </Pressable>
         </View>
       );

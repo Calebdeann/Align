@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, Dimensions, Animated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { playTimerSound } from '@/utils/sounds';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
@@ -25,6 +26,7 @@ interface ClockModalProps {
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function ClockModal({ visible, onClose }: ClockModalProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ClockTab>('timer');
 
   // Timer state (countdown)
@@ -184,7 +186,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
       <Pressable style={styles.overlay} onPress={handleClose}>
         <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
           {/* Title */}
-          <Text style={styles.title}>Clock</Text>
+          <Text style={styles.title}>{t('clock.title')}</Text>
 
           {/* Tab Toggle */}
           <View style={styles.tabContainer}>
@@ -193,7 +195,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
               onPress={() => handleTabChange('timer')}
             >
               <Text style={[styles.tabText, activeTab === 'timer' && styles.tabTextActive]}>
-                Timer
+                {t('clock.timer')}
               </Text>
             </Pressable>
             <Pressable
@@ -201,7 +203,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
               onPress={() => handleTabChange('stopwatch')}
             >
               <Text style={[styles.tabText, activeTab === 'stopwatch' && styles.tabTextActive]}>
-                Stop Watch
+                {t('clock.stopWatch')}
               </Text>
             </Pressable>
           </View>
@@ -251,7 +253,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
                   activeTab === 'timer' ? handleTimerAdjust(-15) : handleStopwatchAdjust(-15)
                 }
               >
-                <Text style={styles.adjustText}>-15s</Text>
+                <Text style={styles.adjustText}>{t('clock.minus15')}</Text>
               </Pressable>
               <Pressable
                 style={styles.adjustButton}
@@ -259,7 +261,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
                   activeTab === 'timer' ? handleTimerAdjust(15) : handleStopwatchAdjust(15)
                 }
               >
-                <Text style={styles.adjustText}>+15s</Text>
+                <Text style={styles.adjustText}>{t('clock.plus15')}</Text>
               </Pressable>
             </View>
 
@@ -269,7 +271,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
               onPress={activeTab === 'timer' ? handleTimerStartStop : handleStopwatchStartStop}
             >
               <Text style={[styles.actionButtonText, isRunning && styles.actionButtonTextRunning]}>
-                {isRunning ? 'Stop' : 'Start'}
+                {isRunning ? t('common.stop') : t('common.start')}
               </Text>
             </Pressable>
           </View>

@@ -11,11 +11,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useUserProfileStore } from '@/stores/userProfileStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 export default function NameScreen() {
+  const { t } = useTranslation();
   const { updateProfile } = useUserProfileStore();
+  const { isNavigating, withLock } = useNavigationLock();
   const [name, setName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -25,7 +29,7 @@ export default function NameScreen() {
 
   async function handleContinue() {
     if (!trimmedName) {
-      setNameError('Please enter a name');
+      setNameError(t('onboarding.name.errorEmpty'));
       return;
     }
 
@@ -41,11 +45,11 @@ export default function NameScreen() {
         // Navigate to main app
         router.replace('/(tabs)');
       } else {
-        setNameError('Failed to save. Please try again.');
+        setNameError(t('errors.failedToSave'));
       }
     } catch (error) {
       console.error('Error saving name:', error);
-      setNameError('Something went wrong. Please try again.');
+      setNameError(t('errors.somethingWentWrongTryAgain'));
     } finally {
       setIsSaving(false);
     }
@@ -76,18 +80,21 @@ export default function NameScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.replace('/(tabs)');
-          }}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.replace('/(tabs)');
+            })
+          }
+          disabled={isNavigating}
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
       {/* Question */}
       <View style={styles.questionContainer}>
-        <Text style={styles.questionText}>What should we call you?</Text>
+        <Text style={styles.questionText}>{t('onboarding.name.question')}</Text>
       </View>
 
       {/* Input */}
@@ -97,7 +104,7 @@ export default function NameScreen() {
             style={styles.input}
             value={name}
             onChangeText={handleNameChange}
-            placeholder="Enter your name"
+            placeholder={t('onboarding.name.placeholder')}
             placeholderTextColor={colors.textSecondary}
             autoCapitalize="words"
             autoFocus
@@ -106,7 +113,7 @@ export default function NameScreen() {
           />
         </View>
         {nameError && <Text style={styles.errorText}>{nameError}</Text>}
-        <Text style={styles.helperText}>This is how we'll address you in the app</Text>
+        <Text style={styles.helperText}>{t('onboarding.name.helper')}</Text>
       </View>
 
       {/* Spacer */}
@@ -125,7 +132,7 @@ export default function NameScreen() {
           {isSaving ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.continueText}>Continue</Text>
+            <Text style={styles.continueText}>{t('common.continue')}</Text>
           )}
         </Pressable>
       </View>

@@ -32,7 +32,9 @@ async function saveWithRetry<T>(
 // Height is stored in inches
 export interface OnboardingData {
   experienceLevel: string | null;
+  triedOtherApps: string | null;
   mainGoal: string | null;
+  bodyChangeGoal: string | null;
   otherGoals: string[];
   referralSource: string | null;
   age: number | null;
@@ -40,13 +42,10 @@ export interface OnboardingData {
   currentWeight: number; // Always stored in kg
   targetWeight: number; // Always stored in kg
   unit: 'kg' | 'lb'; // User's display preference (for legacy compatibility)
-  weeklyGoal: number;
   trainingLocation: string | null;
-  equipment: string[];
   workoutFrequency: string | null;
   workoutDays: string[];
   mainObstacle: string | null;
-  accomplish: string | null;
   healthSituation: string | null;
   energyFluctuation: string | null;
   notificationsEnabled: boolean;
@@ -56,7 +55,9 @@ export interface OnboardingData {
 interface OnboardingState extends OnboardingData {
   // Individual setters (for local state without saving)
   setExperienceLevel: (level: string) => void;
+  setTriedOtherApps: (value: string) => void;
   setMainGoal: (goal: string) => void;
+  setBodyChangeGoal: (goal: string) => void;
   setOtherGoals: (goals: string[]) => void;
   setReferralSource: (source: string) => void;
   setAge: (age: number) => void;
@@ -64,13 +65,10 @@ interface OnboardingState extends OnboardingData {
   setCurrentWeight: (weight: number) => void;
   setTargetWeight: (weight: number) => void;
   setUnit: (unit: 'kg' | 'lb') => void;
-  setWeeklyGoal: (goal: number) => void;
   setTrainingLocation: (location: string) => void;
-  setEquipment: (equipment: string[]) => void;
   setWorkoutFrequency: (frequency: string) => void;
   setWorkoutDays: (days: string[]) => void;
   setMainObstacle: (obstacle: string) => void;
-  setAccomplish: (accomplish: string) => void;
   setHealthSituation: (situation: string) => void;
   setEnergyFluctuation: (fluctuation: string) => void;
   setNotificationsEnabled: (enabled: boolean) => void;
@@ -96,7 +94,9 @@ interface OnboardingState extends OnboardingData {
 
 const initialState: OnboardingData = {
   experienceLevel: null,
+  triedOtherApps: null,
   mainGoal: null,
+  bodyChangeGoal: null,
   otherGoals: [],
   referralSource: null,
   age: null,
@@ -104,13 +104,10 @@ const initialState: OnboardingData = {
   currentWeight: 0, // Will be set by weight screen (in kg)
   targetWeight: 0, // Will be set by target-weight screen (in kg)
   unit: 'lb', // Default, will be overridden by userPreferencesStore
-  weeklyGoal: 0.8,
   trainingLocation: null,
-  equipment: [],
   workoutFrequency: null,
   workoutDays: [],
   mainObstacle: null,
-  accomplish: null,
   healthSituation: null,
   energyFluctuation: null,
   notificationsEnabled: false,
@@ -122,7 +119,9 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
 
   // Individual setters
   setExperienceLevel: (level) => set({ experienceLevel: level }),
+  setTriedOtherApps: (value) => set({ triedOtherApps: value }),
   setMainGoal: (goal) => set({ mainGoal: goal }),
+  setBodyChangeGoal: (goal) => set({ bodyChangeGoal: goal }),
   setOtherGoals: (goals) => set({ otherGoals: goals }),
   setReferralSource: (source) => set({ referralSource: source }),
   setAge: (age) => set({ age }),
@@ -130,13 +129,10 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   setCurrentWeight: (weight) => set({ currentWeight: weight }),
   setTargetWeight: (weight) => set({ targetWeight: weight }),
   setUnit: (unit) => set({ unit }),
-  setWeeklyGoal: (goal) => set({ weeklyGoal: goal }),
   setTrainingLocation: (location) => set({ trainingLocation: location }),
-  setEquipment: (equipment) => set({ equipment }),
   setWorkoutFrequency: (frequency) => set({ workoutFrequency: frequency }),
   setWorkoutDays: (days) => set({ workoutDays: days }),
   setMainObstacle: (obstacle) => set({ mainObstacle: obstacle }),
-  setAccomplish: (accomplish) => set({ accomplish }),
   setHealthSituation: (situation) => set({ healthSituation: situation }),
   setEnergyFluctuation: (fluctuation) => set({ energyFluctuation: fluctuation }),
   setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),

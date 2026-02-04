@@ -39,12 +39,12 @@ export interface UserProfile {
   distance_unit?: 'kilometers' | 'miles';
   measurement_unit?: 'cm' | 'in';
   language?: string;
+  tried_other_apps?: string;
+  body_change_goal?: string;
   training_location?: string;
-  preferred_equipment?: string[];
   workout_frequency?: number;
   workout_days?: string[];
   main_obstacle?: string;
-  accomplish?: string;
   notifications_enabled?: boolean;
   reminder_time?: string;
   referral_code?: string;

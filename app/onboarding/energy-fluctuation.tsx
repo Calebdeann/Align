@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, Pressable, Image, ImageSourcePropType } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 type FluctuationId = 'yes' | 'sometimes' | 'no';
 
@@ -13,32 +15,52 @@ interface FluctuationOption {
   icon: ImageSourcePropType;
 }
 
-const fluctuationOptions: FluctuationOption[] = [
-  { id: 'yes', label: 'Yes, noticeably', icon: require('../../assets/images/YesNoticeably.png') },
-  { id: 'sometimes', label: 'Sometimes', icon: require('../../assets/images/Sometimes.png') },
-  { id: 'no', label: 'Not really', icon: require('../../assets/images/NotReally.png') },
-];
-
 export default function EnergyFluctuationScreen() {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
   const { setAndSave, skipField } = useOnboardingStore();
+  const { isNavigating, withLock } = useNavigationLock();
+
+  const fluctuationOptions: FluctuationOption[] = useMemo(
+    () => [
+      {
+        id: 'yes',
+        label: t('onboarding.energyFluctuation.yesNoticeably'),
+        icon: require('../../assets/images/ThumbsUp.png'),
+      },
+      {
+        id: 'sometimes',
+        label: t('onboarding.energyFluctuation.sometimes'),
+        icon: require('../../assets/images/Sometimes_icon.png'),
+      },
+      {
+        id: 'no',
+        label: t('onboarding.energyFluctuation.notReally'),
+        icon: require('../../assets/images/ThumbsDown.png'),
+      },
+    ],
+    [t]
+  );
 
   const handleSelect = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSelected(id);
-    setAndSave('energyFluctuation', id);
-    setTimeout(() => {
-      router.push('/onboarding/training-location');
-    }, 300);
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setSelected(id);
+      setAndSave('energyFluctuation', id);
+      setTimeout(() => {
+        router.push('/onboarding/reminder');
+      }, 300);
+    });
   };
 
   return (
     <QuestionLayout
-      question="Does your energy for training tend to fluctuate throughout the month?"
+      navigationDisabled={isNavigating}
+      question={t('onboarding.energyFluctuation.question')}
       progress={50}
       onSkip={() => {
         skipField('energyFluctuation');
-        router.push('/onboarding/training-location');
+        router.push('/onboarding/reminder');
       }}
     >
       <View style={optionStyles.optionsContainer}>

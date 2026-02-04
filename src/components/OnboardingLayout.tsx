@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 interface OnboardingLayoutProps {
@@ -56,6 +57,7 @@ export default function OnboardingLayout({
   onSkip,
   onTitlePress,
 }: OnboardingLayoutProps) {
+  const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function OnboardingLayout({
             onSkip();
           }}
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
 
         <Pressable
@@ -114,7 +116,7 @@ export default function OnboardingLayout({
             onContinue();
           }}
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

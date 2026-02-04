@@ -5,9 +5,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { Exercise, getExerciseById } from '@/services/api/exercises';
+import { useExerciseStore } from '@/stores/exerciseStore';
 import * as Haptics from 'expo-haptics';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { toTitleCase, formatExerciseDisplayName } from '@/utils/textFormatters';
+import { useTranslation } from 'react-i18next';
+import { toTitleCase } from '@/utils/textFormatters';
 
 // Muscle chip component
 function MuscleChip({ muscle }: { muscle: string }) {
@@ -20,12 +22,24 @@ function MuscleChip({ muscle }: { muscle: string }) {
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useTranslation();
 
-  const [exercise, setExercise] = useState<Exercise | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Try to get cached exercise data from the store for instant display
+  const cachedExercise = useExerciseStore((state) => state.allExercises.find((e) => e.id === id));
+
+  const [exercise, setExercise] = useState<Exercise | null>(cachedExercise || null);
+  const [isLoading, setIsLoading] = useState(!cachedExercise);
 
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = useRef(true);
+
+  // Hooks must be called before any early returns
+  const translatedDisplayName = useExerciseStore((state) =>
+    exercise ? state.getTranslatedDisplayName(exercise) : ''
+  );
+  const translatedInstructions = useExerciseStore((state) =>
+    exercise ? (state.translations.get(exercise.id)?.instructions_array ?? null) : null
+  );
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -39,13 +53,18 @@ export default function ExerciseDetailScreen() {
   async function loadData() {
     if (!id) return;
 
-    setIsLoading(true);
+    // Only show loading spinner if we have no cached data
+    if (!cachedExercise) {
+      setIsLoading(true);
+    }
 
     try {
-      // Load exercise from Supabase (now includes all detail fields)
+      // Fetch full exercise details (instructions, muscles, etc.)
       const exerciseData = await getExerciseById(id);
       if (!isMountedRef.current) return;
-      setExercise(exerciseData);
+      if (exerciseData) {
+        setExercise(exerciseData);
+      }
       setIsLoading(false);
     } catch (error) {
       console.error('Error loading exercise data:', error);
@@ -67,7 +86,7 @@ export default function ExerciseDetailScreen() {
           <Pressable onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </Pressable>
-          <Text style={styles.headerTitle}>Exercise</Text>
+          <Text style={styles.headerTitle}>{t('workout.exercise')}</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.loadingContainer}>
@@ -84,18 +103,17 @@ export default function ExerciseDetailScreen() {
           <Pressable onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </Pressable>
-          <Text style={styles.headerTitle}>Exercise</Text>
+          <Text style={styles.headerTitle}>{t('workout.exercise')}</Text>
           <View style={styles.placeholder} />
         </View>
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Exercise not found</Text>
+          <Text style={styles.emptyText}>{t('workout.exerciseNotFound')}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Use data from local database (no more API calls needed)
-  const rawInstructions = exercise.instructions_array || [];
+  const rawInstructions = translatedInstructions || exercise.instructions_array || [];
   const instructions = rawInstructions.map((step) =>
     step.replace(/^step\s*:?\s*\d+\s*:?\s*/i, '').trim()
   );
@@ -111,7 +129,7 @@ export default function ExerciseDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {formatExerciseDisplayName(exercise.name, exercise.equipment)}
+          {translatedDisplayName}
         </Text>
         <View style={styles.placeholder} />
       </View>
@@ -121,6 +139,7 @@ export default function ExerciseDetailScreen() {
         <View style={styles.gifContainer}>
           <ExerciseImage
             gifUrl={exercise.image_url}
+            thumbnailUrl={exercise.thumbnail_url}
             size={280}
             borderRadius={16}
             animated={true}
@@ -130,7 +149,7 @@ export default function ExerciseDetailScreen() {
 
         {/* Primary Muscles */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Primary Muscles</Text>
+          <Text style={styles.sectionTitle}>{t('workout.primaryMuscles')}</Text>
           <View style={styles.muscleChipsContainer}>
             {primaryMuscles.length > 0 ? (
               primaryMuscles.map((muscle, index) => (
@@ -145,7 +164,7 @@ export default function ExerciseDetailScreen() {
         {/* Secondary Muscles */}
         {secondaryMuscles.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Secondary Muscles</Text>
+            <Text style={styles.sectionTitle}>{t('workout.secondaryMuscles')}</Text>
             <View style={styles.muscleChipsContainer}>
               {secondaryMuscles.map((muscle, index) => (
                 <MuscleChip key={`secondary-${index}`} muscle={muscle} />
@@ -156,14 +175,16 @@ export default function ExerciseDetailScreen() {
 
         {/* How to Perform */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How to Perform</Text>
+          <Text style={styles.sectionTitle}>{t('workout.howToPerform')}</Text>
 
           {instructions.length > 0 ? (
             <View style={styles.instructionsContainer}>
               {instructions.map((step, index) => (
                 <View key={index} style={styles.instructionStep}>
                   <Text style={styles.stepText}>
-                    <Text style={styles.stepLabel}>Step {index + 1}: </Text>
+                    <Text style={styles.stepLabel}>
+                      {t('workout.stepLabel', { number: index + 1 })}
+                    </Text>
                     {step}
                   </Text>
                 </View>
@@ -172,9 +193,9 @@ export default function ExerciseDetailScreen() {
           ) : (
             <View style={styles.noInstructionsContainer}>
               <Ionicons name="help-circle-outline" size={32} color={colors.textTertiary} />
-              <Text style={styles.noInstructionsText}>Instructions coming soon</Text>
+              <Text style={styles.noInstructionsText}>{t('workout.instructionsComingSoon')}</Text>
               <Text style={styles.noInstructionsSubtext}>
-                Search YouTube for "{toTitleCase(exercise.name)}" to learn proper form.
+                {t('workout.searchYouTube', { name: toTitleCase(exercise.name) })}
               </Text>
             </View>
           )}
@@ -183,7 +204,7 @@ export default function ExerciseDetailScreen() {
         {/* Equipment */}
         {equipment.length > 0 && (
           <View style={styles.equipmentSection}>
-            <Text style={styles.equipmentLabel}>Equipment</Text>
+            <Text style={styles.equipmentLabel}>{t('workout.equipment')}</Text>
             <Text style={styles.equipmentValue}>
               {Array.isArray(equipment) ? equipment.join(', ') : equipment}
             </Text>

@@ -2,10 +2,12 @@ import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { kgToLbs } from '@/utils/units';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const starsTopRight = require('../../assets/images/TopRightPurple.png');
 const starsLeft = require('../../assets/images/MiddlePurple.png');
@@ -13,29 +15,19 @@ const starsBottomRight = require('../../assets/images/BottomRightPurple.png');
 const purpleThumbsUp = require('../../assets/images/PurpleThumbsUp.png');
 
 export default function GoalRealityScreen() {
+  const { t } = useTranslation();
   const { currentWeight, targetWeight } = useOnboardingStore();
   const { weightUnit } = useUserPreferencesStore();
+  const { isNavigating, withLock } = useNavigationLock();
 
   // Weights are stored in kg
   const diffKg = Math.abs(targetWeight - currentWeight);
   const isLosing = targetWeight < currentWeight;
-  const percentChange = (diffKg / currentWeight) * 100;
-
-  // Determine difficulty message
-  let difficultyMessage: string;
-
-  if (percentChange < 10) {
-    difficultyMessage = "It's not hard at all!";
-  } else if (percentChange < 20) {
-    difficultyMessage = "It's a solid challenge!";
-  } else {
-    difficultyMessage = "It's ambitious but achievable!";
-  }
 
   // Display weight in user's preferred unit
   const isLbs = weightUnit === 'lbs';
   const displayDiff = isLbs ? Math.round(kgToLbs(diffKg)) : Math.round(diffKg);
-  const unitLabel = isLbs ? 'lb' : 'kg';
+  const unitLabel = isLbs ? t('units.lb') : t('units.kg');
   const weightText = `${displayDiff}${unitLabel}`;
 
   return (
@@ -58,12 +50,15 @@ export default function GoalRealityScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/onboarding/goal-comparison');
-          }}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/onboarding/goal-comparison');
+            })
+          }
+          disabled={isNavigating}
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
@@ -82,14 +77,8 @@ export default function GoalRealityScreen() {
 
         {/* Main text */}
         <Text style={styles.mainText}>
-          {isLosing ? 'Losing' : 'Gaining'} <Text style={styles.highlightText}>{weightText}</Text>{' '}
-          is a realistic target. {difficultyMessage}
-        </Text>
-
-        {/* Sub text */}
-        <Text style={styles.subText}>
-          90% of users say that the change is obvious after using Align and it is not easy to
-          rebound
+          {isLosing ? t('onboarding.targetWeight.losing') : t('onboarding.targetWeight.gaining')}{' '}
+          {t('onboarding.goalReality.realisticTarget', { diff: displayDiff, unit: unitLabel })}
         </Text>
 
         {/* Stars bottom right */}
@@ -100,12 +89,15 @@ export default function GoalRealityScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push('/onboarding/goal-comparison');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.push('/onboarding/goal-comparison');
+            })
+          }
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -202,14 +194,6 @@ const styles = StyleSheet.create({
   },
   highlightText: {
     color: colors.primary,
-  },
-  subText: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: spacing.md,
   },
   bottomSection: {
     paddingHorizontal: spacing.lg,

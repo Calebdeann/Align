@@ -9,8 +9,16 @@ import { colors } from '@/constants/theme';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { initializeStoreManager } from '@/lib/storeManager';
+// Note: Profile fetching is handled by storeManager on auth state change, not eagerly here
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { cleanupStaleLiveActivities } from '@/services/liveActivity';
+import '@/i18n';
+import { useLanguageSync } from '@/hooks/useLanguageSync';
+import { useExerciseTranslations } from '@/hooks/useExerciseTranslations';
+
+// Context to signal whether SuperwallProvider is active in the tree
+// Tabs layout checks this before calling useSuperwall to avoid crashes
+export const SuperwallReadyContext = React.createContext(false);
 
 // Lazy import SuperwallProvider to prevent crash if native module isn't ready
 let SuperwallProvider: React.ComponentType<any> | null = null;
@@ -28,41 +36,20 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
   const initializeFromLocale = useUserPreferencesStore((state) => state.initializeFromLocale);
-  const fetchProfile = useUserProfileStore((state) => state.fetchProfile);
+  useLanguageSync();
+  useExerciseTranslations();
 
   useEffect(() => {
     async function prepare() {
       try {
-        // Initialize store manager to handle auth state changes
-        // This enables per-user data isolation in Zustand stores
-        try {
-          initializeStoreManager();
-        } catch (e) {
-          console.warn('[RootLayout] Store manager init error:', e);
-        }
+        // Run independent init tasks in parallel for faster startup
+        await Promise.allSettled([
+          Promise.resolve().then(() => initializeStoreManager()),
+          Promise.resolve().then(() => initializeFromLocale()),
+          Promise.resolve().then(() => cleanupStaleLiveActivities()),
+        ]);
 
-        // Initialize unit preferences based on device locale
-        try {
-          initializeFromLocale();
-        } catch (e) {
-          console.warn('[RootLayout] Locale init error:', e);
-        }
-
-        // Pre-fetch user profile so it's ready when navigating to Profile tab
-        try {
-          fetchProfile();
-        } catch (e) {
-          console.warn('[RootLayout] Profile fetch error:', e);
-        }
-
-        // Clean up any stale Live Activities from a previous app session
-        try {
-          cleanupStaleLiveActivities();
-        } catch (e) {
-          console.warn('[RootLayout] Live Activity cleanup error:', e);
-        }
-
-        // Load fonts using Font.loadAsync instead of useFonts hook
+        // Load fonts (must complete before render)
         await Font.loadAsync({
           'Quicksand-Regular': require('../assets/fonts/Quicksand-Regular.ttf'),
           'Quicksand-Medium': require('../assets/fonts/Quicksand-Medium.ttf'),
@@ -78,7 +65,7 @@ export default function RootLayout() {
     }
 
     prepare();
-  }, [initializeFromLocale, fetchProfile]);
+  }, [initializeFromLocale]);
 
   // Refresh profile when app returns to foreground
   const appStateRef = useRef(AppState.currentState);
@@ -131,7 +118,9 @@ export default function RootLayout() {
         {SuperwallProvider ? (
           <ErrorBoundary fallback={appContent}>
             <SuperwallProvider apiKeys={{ ios: 'pk_vhA9Ry9TLgVUTyK_ugU0P' }}>
-              {appContent}
+              <SuperwallReadyContext.Provider value={true}>
+                {appContent}
+              </SuperwallReadyContext.Provider>
             </SuperwallProvider>
           </ErrorBoundary>
         ) : (

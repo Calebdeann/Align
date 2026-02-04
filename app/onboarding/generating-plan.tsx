@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 // Safe import of useSuperwall - returns no-op hook if module not available
@@ -18,22 +19,6 @@ try {
 function useSuperwallFallback() {
   return { registerPlacement: async () => {}, subscriptionStatus: null };
 }
-
-const programDetails = [
-  { id: 'fitness', label: 'Fitness level' },
-  { id: 'muscle', label: 'Muscle balance' },
-  { id: 'sets', label: 'Sets & reps' },
-  { id: 'progression', label: 'Progression' },
-  { id: 'health', label: 'Health score' },
-];
-
-const stages = [
-  { percent: 11, message: 'Customizing your plan...', checksCompleted: 1 },
-  { percent: 25, message: 'Picking the best exercises for you...', checksCompleted: 2 },
-  { percent: 45, message: 'Creating your personal plan...', checksCompleted: 3 },
-  { percent: 68, message: 'Customizing your plan...', checksCompleted: 4 },
-  { percent: 97, message: 'Finalizing results...', checksCompleted: 5 },
-];
 
 // Segments with varying speeds to simulate buffering (~10s total)
 const progressSegments = [
@@ -101,6 +86,31 @@ const useSuperwallSafe = useSuperwall
   : useSuperwallFallback;
 
 export default function GeneratingPlanScreen() {
+  const { t } = useTranslation();
+
+  const programDetails = useMemo(
+    () => [
+      { id: 'fitness', label: t('onboarding.generatePlan.fitnessLevel') },
+      { id: 'goals', label: t('onboarding.generatePlan.workoutGoals') },
+      { id: 'templates', label: t('onboarding.generatePlan.buildingTemplates') },
+      { id: 'sets', label: t('onboarding.generatePlan.setsAndReps') },
+      { id: 'muscle', label: t('onboarding.generatePlan.muscleBalance') },
+    ],
+    [t]
+  );
+
+  const stages = useMemo(
+    () => [
+      { percent: 11, message: t('onboarding.generatePlan.stage1'), checksCompleted: 1 },
+      { percent: 25, message: t('onboarding.generatePlan.stage2'), checksCompleted: 2 },
+      { percent: 45, message: t('onboarding.generatePlan.stage3'), checksCompleted: 3 },
+      { percent: 60, message: t('onboarding.generatePlan.stage4'), checksCompleted: 4 },
+      { percent: 80, message: t('onboarding.generatePlan.stage5'), checksCompleted: 5 },
+      { percent: 97, message: t('onboarding.generatePlan.stage6'), checksCompleted: 5 },
+    ],
+    [t]
+  );
+
   const superwallState = useSuperwallSafe((state: any) => ({
     registerPlacement: state.registerPlacement,
     subscriptionStatus: state.subscriptionStatus,
@@ -149,10 +159,12 @@ export default function GeneratingPlanScreen() {
       })
     );
 
-    Animated.sequence(animations).start(async () => {
+    Animated.sequence(animations).start(() => {
       setIsLoading(false);
 
-      await registerPlacementRef.current('campaign_trigger');
+      // Fire-and-forget Superwall registration (don't block navigation)
+      registerPlacementRef.current('campaign_trigger').catch(() => {});
+
       const status = subscriptionStatusRef.current;
       if (status?.status === 'ACTIVE') {
         router.push('/onboarding/signup');
@@ -165,8 +177,9 @@ export default function GeneratingPlanScreen() {
       setDisplayPercent(Math.round(value));
 
       let newStage = 0;
-      if (value >= 97) newStage = 4;
-      else if (value >= 68) newStage = 3;
+      if (value >= 97) newStage = 5;
+      else if (value >= 80) newStage = 4;
+      else if (value >= 60) newStage = 3;
       else if (value >= 45) newStage = 2;
       else if (value >= 25) newStage = 1;
       else newStage = 0;
@@ -203,8 +216,8 @@ export default function GeneratingPlanScreen() {
         <Text style={styles.percentText}>{displayPercent}%</Text>
 
         {/* Title */}
-        <Text style={styles.title}>We're setting</Text>
-        <Text style={styles.title}>everything up for you</Text>
+        <Text style={styles.title}>{t('onboarding.generatePlan.title1')}</Text>
+        <Text style={styles.title}>{t('onboarding.generatePlan.title2')}</Text>
 
         {/* Progress Bar */}
         <View style={styles.progressBarContainer}>

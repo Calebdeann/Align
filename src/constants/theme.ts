@@ -36,10 +36,18 @@ export const colors = {
   // Feedback
   error: '#FF4444',
   errorLight: '#FFE5E5',
+  danger: '#E53935',
   success: '#4CAF50',
   successLight: '#E8F5E9',
   warning: '#FFA726',
   warningLight: '#FFF3E0',
+
+  // Overlays
+  overlay: 'rgba(0, 0, 0, 0.5)',
+  overlayLight: 'rgba(0, 0, 0, 0.3)',
+
+  // Superset group colors (for distinguishing grouped exercises)
+  supersetPalette: ['#64B5F6', '#7AC29A', '#FF8A65', '#E53935', '#BA68C8'] as readonly string[],
 
   // Workout type colors (for calendar dots and labels)
   workout: {
@@ -140,9 +148,9 @@ export const shadows = {
 
 // Common card style - use for all containers across the app
 export const cardStyle = {
-  backgroundColor: '#F5F4FA',
+  backgroundColor: colors.card,
   borderWidth: 2,
-  borderColor: '#FFFFFF',
+  borderColor: colors.background,
   borderRadius: 16,
 } as const;
 

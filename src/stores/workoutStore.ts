@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { createUserNamespacedStorage } from '@/lib/userNamespacedStorage';
+import { logger } from '@/utils/logger';
 
 export interface WorkoutImage {
   type: 'template' | 'camera' | 'gallery';
@@ -68,7 +69,7 @@ export interface ScheduledWorkout {
   image?: WorkoutImage;
   tagId: string | null; // Now stores colour id (e.g., 'purple', 'green')
   tagColor: string;
-  templateName: string; // Display name: 'Default Workout' or template name
+  templateName: string | null; // Template name for display, or null if no template
   date: string; // ISO date string (YYYY-MM-DD)
   time?: {
     hour: number;
@@ -137,6 +138,12 @@ interface WorkoutStore {
     templateId: string,
     updates: { name?: string; tagColor?: string; image?: WorkoutImage }
   ) => void;
+  // Get scheduled workouts linked to a template (for checking before deletion)
+  getScheduledWorkoutsForTemplate: (templateId: string) => ScheduledWorkout[];
+  // Detach scheduled workouts from a deleted template (keeps workouts, clears templateId)
+  detachScheduledWorkoutsFromTemplate: (templateId: string) => void;
+  // Remove all scheduled workouts linked to a template
+  removeScheduledWorkoutsForTemplate: (templateId: string) => void;
   // Auto-mark scheduled workouts as complete when a workout is saved
   markScheduledWorkoutComplete: (
     dateKey: string,
@@ -416,6 +423,25 @@ export const useWorkoutStore = create<WorkoutStore>()(
         }));
       },
 
+      getScheduledWorkoutsForTemplate: (templateId) => {
+        return get().scheduledWorkouts.filter((w) => w.templateId === templateId);
+      },
+
+      detachScheduledWorkoutsFromTemplate: (templateId) => {
+        set((state) => ({
+          scheduledWorkouts: state.scheduledWorkouts.map((w) => {
+            if (w.templateId !== templateId) return w;
+            return { ...w, templateId: undefined, templateName: null };
+          }),
+        }));
+      },
+
+      removeScheduledWorkoutsForTemplate: (templateId) => {
+        set((state) => ({
+          scheduledWorkouts: state.scheduledWorkouts.filter((w) => w.templateId !== templateId),
+        }));
+      },
+
       editSingleOccurrence: (originalId, originalDateKey, newWorkoutData) => {
         const original = get().scheduledWorkouts.find((w) => w.id === originalId);
         if (!original) return;
@@ -624,8 +650,10 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
       // Cached completed workouts methods
       setCachedCompletedWorkouts: (workouts) => {
+        // Cap at 200 entries to prevent AsyncStorage bloat over time
+        const limited = workouts.length > 200 ? workouts.slice(0, 200) : workouts;
         set({
-          cachedCompletedWorkouts: workouts,
+          cachedCompletedWorkouts: limited,
           cachedCompletedWorkoutsLastFetch: new Date().toISOString(),
         });
       },
@@ -655,6 +683,29 @@ export const useWorkoutStore = create<WorkoutStore>()(
         cachedCompletedWorkouts: state.cachedCompletedWorkouts,
         cachedCompletedWorkoutsLastFetch: state.cachedCompletedWorkoutsLastFetch,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        // Defer until template store is also rehydrated
+        setTimeout(() => {
+          const { useTemplateStore } = require('@/stores/templateStore');
+          const { getTemplateById } = useTemplateStore.getState();
+          const workoutState = useWorkoutStore.getState();
+          const orphaned = workoutState.scheduledWorkouts.filter(
+            (w: ScheduledWorkout) => w.templateId && !getTemplateById(w.templateId)
+          );
+          if (orphaned.length > 0) {
+            useWorkoutStore.setState((prev: { scheduledWorkouts: ScheduledWorkout[] }) => ({
+              scheduledWorkouts: prev.scheduledWorkouts.map((w: ScheduledWorkout) => {
+                if (!w.templateId || getTemplateById(w.templateId)) return w;
+                return { ...w, templateId: undefined, templateName: null };
+              }),
+            }));
+            logger.info(
+              `Detached ${orphaned.length} orphaned scheduled workout(s) from deleted templates`
+            );
+          }
+        }, 0);
+      },
     }
   )
 );

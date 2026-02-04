@@ -14,6 +14,8 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Svg, { Path, Rect } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -93,6 +95,7 @@ export function ImagePlaceholderIcon() {
 }
 
 export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePickerSheetProps) {
+  const { t } = useTranslation();
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   useEffect(() => {
@@ -118,7 +121,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
     close();
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission Needed', 'Please allow photo library access in Settings.');
+      Alert.alert(i18n.t('errors.permissionNeeded'), i18n.t('errors.photoLibraryPermission'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -139,7 +142,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
     close();
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission Needed', 'Please allow camera access in Settings.');
+      Alert.alert(i18n.t('errors.permissionNeeded'), i18n.t('errors.cameraPermission'));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -171,14 +174,14 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
               <Pressable style={styles.modalCloseButton} onPress={close}>
                 <CloseIcon />
               </Pressable>
-              <Text style={styles.modalTitle}>Add Photo</Text>
+              <Text style={styles.modalTitle}>{t('imagePicker.addPhoto')}</Text>
               <View style={styles.modalCloseButton} />
             </View>
 
             <View style={styles.imagePickerOptions}>
               <Pressable style={styles.imagePickerRow} onPress={handleChooseFromLibrary}>
                 <Ionicons name="image-outline" size={22} color={colors.text} />
-                <Text style={styles.imagePickerLabel}>Choose from Library</Text>
+                <Text style={styles.imagePickerLabel}>{t('imagePicker.chooseFromLibrary')}</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
               </Pressable>
 
@@ -186,7 +189,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
 
               <Pressable style={styles.imagePickerRow} onPress={handleTakePhoto}>
                 <Ionicons name="camera-outline" size={22} color={colors.text} />
-                <Text style={styles.imagePickerLabel}>Take Photo</Text>
+                <Text style={styles.imagePickerLabel}>{t('imagePicker.takePhoto')}</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
               </Pressable>
 
@@ -194,7 +197,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
 
               <Pressable style={styles.imagePickerRow} onPress={handleOpenTemplates}>
                 <Ionicons name="grid-outline" size={22} color={colors.text} />
-                <Text style={styles.imagePickerLabel}>Templates</Text>
+                <Text style={styles.imagePickerLabel}>{t('imagePicker.templates')}</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
               </Pressable>
             </View>

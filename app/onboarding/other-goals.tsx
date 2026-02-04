@@ -1,34 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Image, ImageSourcePropType } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
 import { colors } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
-
-const otherGoals: { id: string; label: string; icon: ImageSourcePropType }[] = [
-  {
-    id: 'confidence',
-    label: 'Gain confidence',
-    icon: require('../../assets/images/Onboarding Icons/2. Other Goals/bi_stars.png'),
-  },
-  {
-    id: 'strength',
-    label: 'Build strength',
-    icon: require('../../assets/images/Onboarding Icons/2. Other Goals/icon-park-solid_muscle.png'),
-  },
-  {
-    id: 'look',
-    label: 'Look better',
-    icon: require('../../assets/images/Onboarding Icons/2. Other Goals/temaki_dress.png'),
-  },
-  {
-    id: 'energy',
-    label: 'Feel more energized',
-    icon: require('../../assets/images/Onboarding Icons/2. Other Goals/ix_electrical-energy-filled.png'),
-  },
-];
 
 function Checkbox({ checked }: { checked: boolean }) {
   return (
@@ -59,8 +37,35 @@ function Checkbox({ checked }: { checked: boolean }) {
 }
 
 export default function OtherGoalsScreen() {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string[]>([]);
   const { setAndSave, skipField } = useOnboardingStore();
+
+  const otherGoals = useMemo<{ id: string; label: string; icon: ImageSourcePropType }[]>(
+    () => [
+      {
+        id: 'confidence',
+        label: t('onboarding.otherGoals.gainConfidence'),
+        icon: require('../../assets/images/Onboarding Icons/2. Other Goals/bi_stars.png'),
+      },
+      {
+        id: 'strength',
+        label: t('onboarding.otherGoals.buildStrength'),
+        icon: require('../../assets/images/Onboarding Icons/2. Other Goals/icon-park-solid_muscle.png'),
+      },
+      {
+        id: 'look',
+        label: t('onboarding.otherGoals.lookBetter'),
+        icon: require('../../assets/images/Onboarding Icons/2. Other Goals/temaki_dress.png'),
+      },
+      {
+        id: 'energy',
+        label: t('onboarding.otherGoals.feelEnergized'),
+        icon: require('../../assets/images/Onboarding Icons/2. Other Goals/ix_electrical-energy-filled.png'),
+      },
+    ],
+    [t]
+  );
 
   const toggleSelect = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -77,7 +82,7 @@ export default function OtherGoalsScreen() {
 
   return (
     <QuestionLayout
-      question="Are there any other goals you want to achieve?"
+      question={t('onboarding.otherGoals.question')}
       progress={12}
       showContinue
       continueDisabled={selected.length === 0}

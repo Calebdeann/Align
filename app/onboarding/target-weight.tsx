@@ -1,20 +1,22 @@
-import React, { useRef, useState, useMemo, useCallback } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Dimensions, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { lbsToKg, kgToLbs } from '@/utils/units';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const TICK_SPACING = 12; // Spacing between each whole number tick - larger for easier dragging
 
 // Weight ranges
-const MIN_LBS = 60;
+const MIN_LBS = 100;
 const MAX_LBS = 600;
-const MIN_KG = 30;
+const MIN_KG = 45;
 const MAX_KG = 250;
 
 // Starting weights
@@ -33,7 +35,7 @@ function getGoalInfo(currentWeight: number, targetWeight: number) {
   if (percentChange < 10) {
     difficulty = 'moderate';
     description =
-      'Moderate dietary control and physical activity aid fat reduction, enhance health levels.';
+      'You will lose <10% of your body weight. This is a realistic and sustainable goal achievable through moderate dietary control and increased physical activity.';
   } else if (percentChange < 20) {
     difficulty = 'challenging';
     description =
@@ -53,9 +55,10 @@ function getGoalInfo(currentWeight: number, targetWeight: number) {
 }
 
 export default function TargetWeightScreen() {
+  const { t } = useTranslation();
   const { currentWeight, targetWeight, setTargetWeight } = useOnboardingStore();
   const { weightUnit, setWeightUnit } = useUserPreferencesStore();
-  const [isNavigating, setIsNavigating] = useState(false);
+  const { isNavigating, withLock } = useNavigationLock();
 
   // Derive display unit from preferences ('lbs' -> 'lb' for UI)
   const unit = weightUnit === 'lbs' ? 'lb' : 'kg';
@@ -76,13 +79,6 @@ export default function TargetWeightScreen() {
   const [weightLbs, setWeightLbs] = useState(getInitialWeightLbs);
   const scrollViewRef = useRef<ScrollView>(null);
   const lastWeightRef = useRef(Math.round(getInitialWeightLbs()));
-
-  // Reset navigation state when screen comes into focus (e.g., user navigates back)
-  useFocusEffect(
-    useCallback(() => {
-      setIsNavigating(false);
-    }, [])
-  );
 
   // currentWeight is in kg, convert to lbs for comparison
   const currentWeightLbs = kgToLbs(currentWeight);
@@ -216,25 +212,24 @@ export default function TargetWeightScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            if (isNavigating) return;
-            setIsNavigating(true);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            useOnboardingStore.getState().skipField('targetWeight');
-            // Skip goal screens since user didn't set a target weight
-            router.push('/onboarding/health-situations');
-          }}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              useOnboardingStore.getState().skipField('targetWeight');
+              router.push('/onboarding/training-location');
+            })
+          }
           disabled={isNavigating}
         >
-          <Text style={[styles.skipText, isNavigating && styles.skipTextDisabled]}>Skip</Text>
+          <Text style={[styles.skipText, isNavigating && styles.skipTextDisabled]}>
+            {t('common.skip')}
+          </Text>
         </Pressable>
       </View>
 
       {/* Question */}
       <View style={styles.questionContainer}>
-        <Text style={styles.questionText}>
-          What is your <Text style={styles.targetText}>target</Text> weight?
-        </Text>
+        <Text style={styles.questionText}>{t('onboarding.targetWeight.question')}</Text>
       </View>
 
       {/* Unit Toggle */}
@@ -244,13 +239,17 @@ export default function TargetWeightScreen() {
             style={[styles.toggleOption, unit === 'kg' && styles.toggleOptionActive]}
             onPress={() => handleUnitChange('kg')}
           >
-            <Text style={[styles.toggleText, unit === 'kg' && styles.toggleTextActive]}>kg</Text>
+            <Text style={[styles.toggleText, unit === 'kg' && styles.toggleTextActive]}>
+              {t('units.kg')}
+            </Text>
           </Pressable>
           <Pressable
             style={[styles.toggleOption, unit === 'lb' && styles.toggleOptionActive]}
             onPress={() => handleUnitChange('lb')}
           >
-            <Text style={[styles.toggleText, unit === 'lb' && styles.toggleTextActive]}>lb</Text>
+            <Text style={[styles.toggleText, unit === 'lb' && styles.toggleTextActive]}>
+              {t('units.lb')}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -314,26 +313,22 @@ export default function TargetWeightScreen() {
         <Pressable
           style={[styles.continueButton, isNavigating && styles.continueButtonDisabled]}
           disabled={isNavigating}
-          onPress={() => {
-            if (isNavigating) return;
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            setIsNavigating(true);
-            // Always store weight in kg
-            const weightInKg = lbsToKg(weightLbs);
-            setTargetWeight(weightInKg);
-            // Save to Supabase (in kg)
-            useOnboardingStore.getState().setAndSave('targetWeight', weightInKg);
-
-            // If target weight equals current weight (maintaining), skip goal screens
-            const isMaintaining = Math.abs(weightLbs - currentWeightLbs) < 1;
-            if (isMaintaining) {
-              router.push('/onboarding/health-situations');
-            } else {
-              router.push('/onboarding/goal-reality');
-            }
-          }}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              const weightInKg = lbsToKg(weightLbs);
+              setTargetWeight(weightInKg);
+              useOnboardingStore.getState().setAndSave('targetWeight', weightInKg);
+              const isMaintaining = Math.abs(weightLbs - currentWeightLbs) < 1;
+              if (isMaintaining) {
+                router.push('/onboarding/training-location');
+              } else {
+                router.push('/onboarding/goal-reality');
+              }
+            })
+          }
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

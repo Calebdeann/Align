@@ -188,6 +188,7 @@ Use `QuestionLayout` component with `optionStyles` for all multi-select/single-s
 6. RLS policies enforce data isolation - users can only access their own data
 7. **NEVER reference "male" in the app.** This is a women's workout tracker. All exercise animations, images, and content must use female variants only. Never add male-gendered content, labels, or references in any user-facing code or new scripts.
 8. **Database columns must be backwards-compatible in code.** When adding new database columns: (a) never unconditionally include them in INSERT or UPDATE statements, (b) always provide a fallback retry path that strips new columns if the insert fails with a schema error (PGRST204), and (c) core save operations (workouts, templates, profiles) must NEVER hard-fail due to optional feature columns. See `.claude/backend-rules.md` for the full pattern and protected operations list.
+9. **Exercise row tap targets:** Exercise detail view must ONLY open when tapping the thumbnail image or the exercise name text. Never wrap entire exercise rows in a navigation Pressable. Always use `Text.onPress` with `alignSelf: 'flex-start'` on exercise name Text elements so the tap target is constrained to the visible text only (not the full row width). The parent View should use `flex: 1` + `pointerEvents="box-none"` so taps on empty space pass through harmlessly.
 
 ## Backend Security
 

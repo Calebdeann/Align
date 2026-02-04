@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { router } from 'expo-router';
 import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop, G } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import QuestionLayout from '@/components/QuestionLayout';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
@@ -16,18 +18,22 @@ const COLOR_3DAYS = '#A855F7'; // Violet purple (~22%)
 const COLOR_7DAYS = '#D946EF'; // Magenta/fuchsia (~42%)
 const COLOR_END = '#F472B6'; // Warm pink/coral (100%)
 
-const goalMotivationalText: Record<string, string> = {
-  lose: 'Women like you see real results within weeks, not months',
-  tone: "You're not starting from scratch, you're building on what's already there",
-  health: 'Strong women move better, feel better, and live longer',
-  love: "This isn't about fixing yourself, it's about finding out what you're capable of",
-};
-
 export default function PotentialScreen() {
+  const { t } = useTranslation();
   const { mainGoal } = useOnboardingStore();
 
+  const goalMotivationalText: Record<string, string> = useMemo(
+    () => ({
+      body_composition: t('onboarding.potential.bodyCompositionText'),
+      health: t('onboarding.potential.healthText'),
+      consistency: t('onboarding.potential.consistencyText'),
+      love: t('onboarding.potential.loveText'),
+    }),
+    [t]
+  );
+
   const dynamicText =
-    (mainGoal && goalMotivationalText[mainGoal]) || "Stay focused, and you'll reach your goal!";
+    (mainGoal && goalMotivationalText[mainGoal]) || t('onboarding.potential.fallbackText');
 
   // Define the curve points
   const startX = 0;
@@ -55,18 +61,18 @@ export default function PotentialScreen() {
 
   return (
     <QuestionLayout
-      question="You have great potential to crush your goals"
+      question={t('onboarding.potential.question')}
       progress={16}
       showContinue
-      onContinue={() => router.push('/onboarding/referral')}
-      onSkip={() => router.push('/onboarding/referral')}
+      onContinue={() => router.push('/onboarding/age')}
+      onSkip={() => router.push('/onboarding/age')}
     >
       <View style={styles.content}>
         {/* Chart Container */}
         <View style={styles.chartContainer}>
           {/* Y-Axis Label */}
           <View style={styles.yAxisContainer}>
-            <Text style={styles.yAxisLabel}>Goal Reacher</Text>
+            <Text style={styles.yAxisLabel}>{t('onboarding.potential.progress')}</Text>
           </View>
 
           {/* Chart Area */}
@@ -178,16 +184,20 @@ export default function PotentialScreen() {
 
             {/* X-axis labels */}
             <View style={styles.xAxisLabels}>
-              <Text style={[styles.xLabel, { left: point3Days.x - 20 }]}>3 Days</Text>
-              <Text style={[styles.xLabel, { left: point7Days.x - 20 }]}>7 Days</Text>
+              <Text style={[styles.xLabel, { left: point3Days.x - 20 }]}>
+                {t('onboarding.potential.days7')}
+              </Text>
+              <Text style={[styles.xLabel, { left: point7Days.x - 20 }]}>
+                {t('onboarding.potential.days14')}
+              </Text>
               <Text style={[styles.xLabel, styles.xLabel30Days, { left: point30Days.x - 25 }]}>
-                30 Days
+                {t('onboarding.potential.days60')}
               </Text>
             </View>
 
             {/* Goal label */}
             <Text style={[styles.goalLabel, { left: point30Days.x - 15, top: point30Days.y - 30 }]}>
-              Goal
+              {t('onboarding.potential.goal')}
             </Text>
           </View>
         </View>

@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, Pressable, Image, ImageSourcePropType } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
-type ObstacleId = 'consistency' | 'schedule' | 'energy' | 'hormonal' | 'life';
+type ObstacleId = 'schedule' | 'knowledge' | 'motivation' | 'confidence';
 
 interface ObstacleOption {
   id: ObstacleId;
@@ -13,54 +15,57 @@ interface ObstacleOption {
   icon: ImageSourcePropType;
 }
 
-const obstacleOptions: ObstacleOption[] = [
-  {
-    id: 'consistency',
-    label: 'Lack of consistency',
-    icon: require('../../assets/images/Onboarding Icons/3. Stopping you/solar_chart-2-bold.png'),
-  },
-  {
-    id: 'schedule',
-    label: 'Busy schedule',
-    icon: require('../../assets/images/Onboarding Icons/3. Stopping you/bx_calendar.png'),
-  },
-  {
-    id: 'energy',
-    label: 'Low energy / motivation',
-    icon: require('../../assets/images/Energy.png'),
-  },
-  {
-    id: 'hormonal',
-    label: 'Hormonal changes or period',
-    icon: require('../../assets/images/Hormonal.png'),
-  },
-  {
-    id: 'life',
-    label: 'Life stuff (travel, stress)',
-    icon: require('../../assets/images/LifeStuff.png'),
-  },
-];
-
 export default function ObstaclesScreen() {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
   const { setAndSave, skipField } = useOnboardingStore();
+  const { isNavigating, withLock } = useNavigationLock();
+
+  const obstacleOptions: ObstacleOption[] = useMemo(
+    () => [
+      {
+        id: 'schedule',
+        label: t('onboarding.obstacles.schedule'),
+        icon: require('../../assets/images/busy-schedule.png'),
+      },
+      {
+        id: 'knowledge',
+        label: t('onboarding.obstacles.knowledge'),
+        icon: require('../../assets/images/idk.png'),
+      },
+      {
+        id: 'motivation',
+        label: t('onboarding.obstacles.motivation'),
+        icon: require('../../assets/images/no-motivation.png'),
+      },
+      {
+        id: 'confidence',
+        label: t('onboarding.obstacles.confidence'),
+        icon: require('../../assets/images/i-lack-confidence.png'),
+      },
+    ],
+    [t]
+  );
 
   const handleSelect = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSelected(id);
-    setAndSave('mainObstacle', id);
-    setTimeout(() => {
-      router.push('/onboarding/energy-fluctuation');
-    }, 300);
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setSelected(id);
+      setAndSave('mainObstacle', id);
+      setTimeout(() => {
+        router.push('/onboarding/obstacle-response');
+      }, 300);
+    });
   };
 
   return (
     <QuestionLayout
-      question="What usually throws off your training?"
+      navigationDisabled={isNavigating}
+      question={t('onboarding.obstacles.question')}
       progress={48}
       onSkip={() => {
         skipField('mainObstacle');
-        router.push('/onboarding/energy-fluctuation');
+        router.push('/onboarding/obstacle-response');
       }}
     >
       <View style={optionStyles.optionsContainer}>

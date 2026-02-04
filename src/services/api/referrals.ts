@@ -16,7 +16,7 @@ export async function validateReferralCode(
   });
 
   if (error) {
-    console.error('Error validating referral code:', error);
+    console.warn('Error validating referral code:', error);
     return { valid: false, referrerId: null };
   }
 
@@ -44,7 +44,7 @@ export async function applyReferralCode(userId: string, referrerUserId: string):
     if (referralError.code === '23505') {
       return true;
     }
-    console.error('Error recording referral:', referralError);
+    console.warn('Error recording referral:', referralError);
     return false;
   }
 
@@ -55,7 +55,7 @@ export async function applyReferralCode(userId: string, referrerUserId: string):
     .eq('id', userId);
 
   if (profileError) {
-    console.error('Error updating referred_by:', profileError);
+    console.warn('Error updating referred_by:', profileError);
   }
 
   return true;
@@ -70,7 +70,7 @@ export async function getUserReferralCode(userId: string): Promise<string | null
     .single();
 
   if (error) {
-    console.error('Error fetching referral code:', error);
+    console.warn('Error fetching referral code:', error);
     return null;
   }
 
@@ -85,7 +85,7 @@ export async function getReferralCount(userId: string): Promise<number> {
     .eq('referrer_id', userId);
 
   if (error) {
-    console.error('Error fetching referral count:', error);
+    console.warn('Error fetching referral count:', error);
     return 0;
   }
 

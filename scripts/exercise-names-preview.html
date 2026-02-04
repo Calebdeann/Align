@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Exercise Name Review - 201 Exercises</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 24px; }
+    h1 { color: #947AFF; margin-bottom: 8px; font-size: 24px; }
+    .subtitle { color: #888; margin-bottom: 24px; font-size: 14px; }
+    .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: #ccc; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+    .filter-btn:hover { border-color: #947AFF; color: #947AFF; }
+    .filter-btn.active { background: #947AFF; border-color: #947AFF; color: white; }
+    .search-box { width: 100%; padding: 10px 16px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; margin-bottom: 20px; }
+    .search-box::placeholder { color: #666; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 10px 12px; background: #1a1a1a; color: #947AFF; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 1; }
+    td { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; font-size: 14px; vertical-align: top; }
+    tr:hover td { background: #111; }
+    .id { color: #666; font-family: monospace; font-size: 12px; }
+    .original { color: #888; }
+    .display-name { color: #fff; font-weight: 600; }
+    .keywords { display: flex; flex-wrap: wrap; gap: 4px; }
+    .keyword { background: #1a1a2e; color: #947AFF; padding: 2px 8px; border-radius: 10px; font-size: 11px; white-space: nowrap; }
+    .category-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .cat-glutes { background: #2d1a3e; color: #c084fc; }
+    .cat-back { background: #1a2d3e; color: #60a5fa; }
+    .cat-chest { background: #3e1a1a; color: #f87171; }
+    .cat-shoulders { background: #3e2d1a; color: #fb923c; }
+    .cat-biceps { background: #1a3e2d; color: #34d399; }
+    .cat-triceps { background: #1a3e3e; color: #22d3ee; }
+    .cat-core { background: #3e3e1a; color: #facc15; }
+    .cat-other { background: #2a2a2a; color: #a0a0a0; }
+    .count { color: #947AFF; font-size: 14px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Exercise Display Names Review</h1>
+  <p class="subtitle">201 exercises with new display names and search keywords. Review before applying to Supabase.</p>
+
+  <input type="text" class="search-box" id="search" placeholder="Search by original name, display name, or keyword..." />
+
+  <div class="filters" id="filters"></div>
+
+  <p class="count" id="count">Showing 201 of 201</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:50px">#</th>
+        <th style="width:60px">ID</th>
+        <th style="width:90px">Category</th>
+        <th style="width:280px">Original Name (ExerciseDB)</th>
+        <th style="width:280px">New Display Name</th>
+        <th>Search Keywords</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <script>
+    const exercises = [
+      // Glutes & Legs
+      { id: '1409', original: 'barbell glute bridge', display: 'Barbell Glute Bridge', keywords: ['hip thrust', 'barbell hip thrust', 'glute thrust', 'barbell glute bridge', 'bridge'], cat: 'Glutes/Legs' },
+      { id: '3236', original: 'resistance band hip thrusts on knees (female)', display: 'Banded Hip Thrust (Kneeling)', keywords: ['hip thrust', 'banded hip thrust', 'kneeling hip thrust', 'resistance band hip thrust'], cat: 'Glutes/Legs' },
+      { id: '0085', original: 'barbell romanian deadlift', display: 'Romanian Deadlift (Barbell)', keywords: ['rdl', 'romanian deadlift', 'barbell rdl', 'stiff leg deadlift', 'hamstring deadlift'], cat: 'Glutes/Legs' },
+      { id: '0032', original: 'barbell deadlift', display: 'Deadlift (Barbell)', keywords: ['deadlift', 'barbell deadlift', 'conventional deadlift'], cat: 'Glutes/Legs' },
+      { id: '0117', original: 'barbell sumo deadlift', display: 'Sumo Deadlift (Barbell)', keywords: ['sumo deadlift', 'barbell sumo deadlift', 'wide stance deadlift'], cat: 'Glutes/Legs' },
+      { id: '1756', original: 'barbell single leg deadlift', display: 'Single Leg Deadlift (Barbell)', keywords: ['single leg deadlift', 'one leg deadlift', 'barbell single leg rdl'], cat: 'Glutes/Legs' },
+      { id: '0043', original: 'barbell full squat', display: 'Barbell Squat', keywords: ['squat', 'back squat', 'barbell squat', 'full squat', 'barbell back squat'], cat: 'Glutes/Legs' },
+      { id: '1436', original: 'barbell high bar squat', display: 'High Bar Squat (Barbell)', keywords: ['high bar squat', 'barbell high bar squat', 'back squat'], cat: 'Glutes/Legs' },
+      { id: '1435', original: 'barbell low bar squat', display: 'Low Bar Squat (Barbell)', keywords: ['low bar squat', 'barbell low bar squat', 'powerlifting squat'], cat: 'Glutes/Legs' },
+      { id: '0042', original: 'barbell front squat', display: 'Front Squat (Barbell)', keywords: ['front squat', 'barbell front squat'], cat: 'Glutes/Legs' },
+      { id: '0046', original: 'barbell hack squat', display: 'Hack Squat (Barbell)', keywords: ['hack squat', 'barbell hack squat'], cat: 'Glutes/Legs' },
+      { id: '0770', original: 'smith squat', display: 'Smith Machine Squat', keywords: ['smith squat', 'smith machine squat', 'machine squat'], cat: 'Glutes/Legs' },
+      { id: '0755', original: 'smith hack squat', display: 'Smith Machine Hack Squat', keywords: ['smith hack squat', 'smith machine hack squat', 'hack squat'], cat: 'Glutes/Legs' },
+      { id: '0053', original: 'barbell jump squat', display: 'Jump Squat (Barbell)', keywords: ['jump squat', 'barbell jump squat', 'squat jump'], cat: 'Glutes/Legs' },
+      { id: '3769', original: 'curtsey squat', display: 'Curtsy Squat', keywords: ['curtsy squat', 'curtsey squat', 'crossover squat', 'curtsy lunge'], cat: 'Glutes/Legs' },
+      { id: '0054', original: 'barbell lunge', display: 'Barbell Lunge', keywords: ['lunge', 'barbell lunge', 'forward lunge', 'walking lunge'], cat: 'Glutes/Legs' },
+      { id: '0078', original: 'barbell rear lunge', display: 'Reverse Lunge (Barbell)', keywords: ['reverse lunge', 'barbell reverse lunge', 'backward lunge', 'rear lunge'], cat: 'Glutes/Legs' },
+      { id: '1410', original: 'barbell lateral lunge', display: 'Lateral Lunge (Barbell)', keywords: ['lateral lunge', 'side lunge', 'barbell side lunge'], cat: 'Glutes/Legs' },
+      { id: '0769', original: 'smith sprint lunge', display: 'Smith Machine Sprint Lunge', keywords: ['smith lunge', 'smith machine lunge', 'sprint lunge'], cat: 'Glutes/Legs' },
+      { id: '0739', original: 'sled 45\u00b0 leg press', display: 'Leg Press (45 Degree)', keywords: ['leg press', '45 degree leg press', 'sled leg press', 'machine leg press'], cat: 'Glutes/Legs' },
+      { id: '0760', original: 'smith leg press', display: 'Leg Press (Smith Machine)', keywords: ['smith leg press', 'smith machine leg press', 'leg press'], cat: 'Glutes/Legs' },
+      { id: '0114', original: 'barbell step-up', display: 'Step Up (Barbell)', keywords: ['step up', 'step ups', 'barbell step up', 'box step up'], cat: 'Glutes/Legs' },
+      { id: '1008', original: 'band step-up', display: 'Step Up (Band)', keywords: ['banded step up', 'band step up', 'step up', 'step ups'], cat: 'Glutes/Legs' },
+      { id: '0130', original: 'bench hip extension', display: 'Hip Extension (Bench)', keywords: ['hip extension', 'bench hip extension', 'glute extension', 'back extension'], cat: 'Glutes/Legs' },
+      { id: '0228', original: 'cable standing hip extension', display: 'Hip Extension (Cable)', keywords: ['cable hip extension', 'cable glute kickback', 'cable kickback', 'kickback'], cat: 'Glutes/Legs' },
+      { id: '0980', original: 'band bent-over hip extension', display: 'Hip Extension (Band)', keywords: ['band hip extension', 'banded kickback', 'band glute kickback', 'kickback'], cat: 'Glutes/Legs' },
+      { id: '0578', original: 'lever deadlift', display: 'Deadlift (Lever Machine)', keywords: ['lever deadlift', 'machine deadlift', 'deadlift'], cat: 'Glutes/Legs' },
+      { id: '0593', original: 'lever reverse hyperextension', display: 'Reverse Hyperextension (Machine)', keywords: ['reverse hyper', 'reverse hyperextension', 'reverse hypers', 'glute hyper'], cat: 'Glutes/Legs' },
+      { id: '0668', original: 'rear decline bridge', display: 'Rear Decline Bridge', keywords: ['decline bridge', 'glute bridge', 'rear bridge'], cat: 'Glutes/Legs' },
+      { id: '3561', original: 'glute bridge march', display: 'Glute Bridge March', keywords: ['glute bridge march', 'marching bridge', 'bridge march', 'glute bridge'], cat: 'Glutes/Legs' },
+      { id: '3013', original: 'low glute bridge on floor', display: 'Glute Bridge (Floor)', keywords: ['glute bridge', 'floor glute bridge', 'hip bridge', 'bridge'], cat: 'Glutes/Legs' },
+      { id: '1422', original: 'pelvic tilt into bridge', display: 'Pelvic Tilt Bridge', keywords: ['pelvic tilt', 'pelvic bridge', 'glute bridge', 'bridge'], cat: 'Glutes/Legs' },
+      { id: '3645', original: 'single leg bridge with outstretched leg', display: 'Single Leg Bridge', keywords: ['single leg bridge', 'one leg bridge', 'single leg glute bridge'], cat: 'Glutes/Legs' },
+      { id: '0099', original: 'barbell single leg split squat', display: 'Bulgarian Split Squat (Barbell)', keywords: ['bulgarian split squat', 'split squat', 'rear foot elevated squat', 'bss'], cat: 'Glutes/Legs' },
+      { id: '1004', original: 'band squat', display: 'Squat (Band)', keywords: ['banded squat', 'band squat', 'resistance band squat', 'squat'], cat: 'Glutes/Legs' },
+      { id: '0991', original: 'band pull through', display: 'Pull Through (Band)', keywords: ['band pull through', 'pull through', 'banded pull through', 'hip hinge'], cat: 'Glutes/Legs' },
+      { id: '0196', original: 'cable pull through (with rope)', display: 'Cable Pull Through', keywords: ['cable pull through', 'pull through', 'rope pull through'], cat: 'Glutes/Legs' },
+      { id: '1408', original: 'band hip lift', display: 'Hip Lift (Band)', keywords: ['band hip lift', 'banded hip lift', 'hip thrust', 'banded hip thrust'], cat: 'Glutes/Legs' },
+      { id: '0157', original: 'cable deadlift', display: 'Deadlift (Cable)', keywords: ['cable deadlift', 'cable rdl', 'deadlift'], cat: 'Glutes/Legs' },
+      { id: '1009', original: 'band stiff leg deadlift', display: 'Stiff Leg Deadlift (Band)', keywords: ['band deadlift', 'banded rdl', 'band stiff leg deadlift', 'rdl'], cat: 'Glutes/Legs' },
+      { id: '0291', original: 'dumbbell bench squat', display: 'Squat (Dumbbell)', keywords: ['dumbbell squat', 'goblet squat', 'db squat'], cat: 'Glutes/Legs' },
+      { id: '0334', original: 'dumbbell goblet squat', display: 'Goblet Squat (Dumbbell)', keywords: ['goblet squat', 'dumbbell goblet squat', 'db goblet squat', 'squat'], cat: 'Glutes/Legs' },
+      { id: '0295', original: 'dumbbell clean', display: 'Dumbbell Clean', keywords: ['dumbbell clean', 'db clean', 'clean'], cat: 'Glutes/Legs' },
+      { id: '0586', original: 'lever lying leg curl', display: 'Leg Curl (Machine)', keywords: ['leg curl', 'lying leg curl', 'hamstring curl', 'machine leg curl', 'lever leg curl'], cat: 'Glutes/Legs' },
+      { id: '0588', original: 'lever leg extension', display: 'Leg Extension (Machine)', keywords: ['leg extension', 'machine leg extension', 'quad extension', 'lever leg extension'], cat: 'Glutes/Legs' },
+      { id: '0582', original: 'lever seated hip adduction', display: 'Hip Adduction (Machine)', keywords: ['hip adduction', 'inner thigh', 'adductor machine', 'thigh adduction'], cat: 'Glutes/Legs' },
+      { id: '0583', original: 'lever seated hip abduction', display: 'Hip Abduction (Machine)', keywords: ['hip abduction', 'outer thigh', 'abductor machine', 'thigh abduction'], cat: 'Glutes/Legs' },
+      { id: '0610', original: 'lever seated calf raise', display: 'Seated Calf Raise (Machine)', keywords: ['seated calf raise', 'calf raise', 'machine calf raise', 'lever calf raise'], cat: 'Glutes/Legs' },
+      { id: '0708', original: 'sled standing calf raise', display: 'Standing Calf Raise (Machine)', keywords: ['standing calf raise', 'calf raise', 'machine calf raise', 'calf press'], cat: 'Glutes/Legs' },
+      { id: '1370', original: 'barbell floor calf raise', display: 'Calf Raise (Barbell)', keywords: ['barbell calf raise', 'calf raise', 'standing calf raise'], cat: 'Glutes/Legs' },
+      { id: '0752', original: 'smith deadlift', display: 'Smith Machine Deadlift', keywords: ['smith deadlift', 'smith machine deadlift', 'deadlift'], cat: 'Glutes/Legs' },
+      { id: '3281', original: 'smith full squat', display: 'Smith Machine Full Squat', keywords: ['smith squat', 'smith machine squat', 'full squat', 'squat'], cat: 'Glutes/Legs' },
+      { id: '3142', original: 'smith sumo squat', display: 'Smith Machine Sumo Squat', keywords: ['smith sumo squat', 'sumo squat', 'smith machine sumo', 'wide squat'], cat: 'Glutes/Legs' },
+      { id: '0044', original: 'barbell good morning', display: 'Good Morning (Barbell)', keywords: ['good morning', 'barbell good morning', 'good mornings'], cat: 'Glutes/Legs' },
+      { id: '0115', original: 'barbell stiff leg good morning', display: 'Stiff Leg Good Morning (Barbell)', keywords: ['stiff leg good morning', 'good morning', 'barbell good morning'], cat: 'Glutes/Legs' },
+      { id: '0074', original: 'barbell rack pull', display: 'Rack Pull (Barbell)', keywords: ['rack pull', 'barbell rack pull', 'rack deadlift', 'block pull'], cat: 'Glutes/Legs' },
+      { id: '0063', original: 'barbell narrow stance squat', display: 'Narrow Stance Squat (Barbell)', keywords: ['narrow squat', 'close stance squat', 'narrow stance squat'], cat: 'Glutes/Legs' },
+      { id: '0051', original: 'barbell jefferson squat', display: 'Jefferson Squat', keywords: ['jefferson squat', 'jefferson deadlift', 'straddle deadlift'], cat: 'Glutes/Legs' },
+      { id: '0127', original: 'barbell zercher squat', display: 'Zercher Squat (Barbell)', keywords: ['zercher squat', 'barbell zercher squat'], cat: 'Glutes/Legs' },
+      { id: '0098', original: 'barbell side split squat', display: 'Side Split Squat (Barbell)', keywords: ['side split squat', 'lateral squat', 'cossack squat'], cat: 'Glutes/Legs' },
+      { id: '0116', original: 'barbell straight leg deadlift', display: 'Straight Leg Deadlift (Barbell)', keywords: ['straight leg deadlift', 'stiff leg deadlift', 'sldl', 'barbell sldl'], cat: 'Glutes/Legs' },
+      { id: '3193', original: 'glute-ham raise', display: 'Glute-Ham Raise', keywords: ['glute ham raise', 'ghr', 'glute ham', 'nordic curl', 'hamstring raise'], cat: 'Glutes/Legs' },
+      { id: '0339', original: 'dumbbell lying femoral', display: 'Lying Leg Curl (Dumbbell)', keywords: ['dumbbell leg curl', 'lying leg curl', 'hamstring curl', 'db leg curl'], cat: 'Glutes/Legs' },
+      { id: '0496', original: 'inverse leg curl (bench support)', display: 'Inverse Leg Curl', keywords: ['inverse leg curl', 'natural leg curl', 'bodyweight leg curl', 'nordic curl'], cat: 'Glutes/Legs' },
+      { id: '0069', original: 'barbell overhead squat', display: 'Overhead Squat (Barbell)', keywords: ['overhead squat', 'barbell overhead squat', 'ohs'], cat: 'Glutes/Legs' },
+      { id: '0068', original: 'barbell one leg squat', display: 'Pistol Squat (Barbell)', keywords: ['pistol squat', 'single leg squat', 'one leg squat', 'barbell pistol squat'], cat: 'Glutes/Legs' },
+      { id: '0987', original: 'band one arm single leg split squat', display: 'Split Squat (Band, Single Arm)', keywords: ['split squat', 'band split squat', 'single leg squat', 'lunge'], cat: 'Glutes/Legs' },
+      { id: '1001', original: 'band single leg split squat', display: 'Single Leg Split Squat (Band)', keywords: ['split squat', 'bulgarian split squat', 'band split squat', 'single leg squat'], cat: 'Glutes/Legs' },
+      { id: '0984', original: 'band lying hip internal rotation', display: 'Lying Hip Internal Rotation (Band)', keywords: ['hip rotation', 'hip internal rotation', 'hip mobility', 'hip warmup'], cat: 'Glutes/Legs' },
+
+      // Back
+      { id: '2330', original: 'cable lat pulldown full range of motion', display: 'Lat Pulldown (Cable)', keywords: ['lat pulldown', 'lat pull down', 'cable pulldown', 'pull down', 'cable lat pulldown'], cat: 'Back' },
+      { id: '0007', original: 'alternate lateral pulldown', display: 'Alternating Lat Pulldown', keywords: ['lat pulldown', 'alternate pulldown', 'alternating pulldown', 'pull down'], cat: 'Back' },
+      { id: '0673', original: 'reverse grip machine lat pulldown', display: 'Reverse Grip Lat Pulldown (Machine)', keywords: ['reverse grip pulldown', 'underhand pulldown', 'lat pulldown', 'pull down'], cat: 'Back' },
+      { id: '0818', original: 'twin handle parallel grip lat pulldown', display: 'Parallel Grip Lat Pulldown', keywords: ['parallel grip pulldown', 'close grip pulldown', 'lat pulldown', 'neutral grip pulldown'], cat: 'Back' },
+      { id: '0027', original: 'barbell bent over row', display: 'Bent Over Row (Barbell)', keywords: ['bent over row', 'barbell row', 'bb row', 'bent row', 'barbell bent over row'], cat: 'Back' },
+      { id: '0118', original: 'barbell reverse grip bent over row', display: 'Reverse Grip Bent Over Row (Barbell)', keywords: ['reverse grip row', 'underhand row', 'barbell row', 'bent over row'], cat: 'Back' },
+      { id: '3017', original: 'barbell pendlay row', display: 'Pendlay Row (Barbell)', keywords: ['pendlay row', 'barbell pendlay row', 'strict row'], cat: 'Back' },
+      { id: '0652', original: 'cable seated row', display: 'Seated Row (Cable)', keywords: ['seated row', 'cable row', 'cable seated row', 'low row', 'machine row'], cat: 'Back' },
+      { id: '0862', original: 'lever seated row', display: 'Seated Row (Machine)', keywords: ['seated row', 'machine row', 'lever seated row', 'chest supported row'], cat: 'Back' },
+      { id: '0049', original: 'barbell incline row', display: 'Incline Row (Barbell)', keywords: ['incline row', 'barbell incline row', 'chest supported row', 'seal row'], cat: 'Back' },
+      { id: '0296', original: 'dumbbell one arm row', display: 'Dumbbell Row (One Arm)', keywords: ['dumbbell row', 'one arm row', 'single arm row', 'db row'], cat: 'Back' },
+      { id: '0293', original: 'dumbbell bent over row', display: 'Bent Over Row (Dumbbell)', keywords: ['dumbbell bent over row', 'dumbbell row', 'db row', 'bent over row'], cat: 'Back' },
+      { id: '0017', original: 'assisted pull-up', display: 'Assisted Pull Up', keywords: ['pull up', 'pull ups', 'pullup', 'pullups', 'assisted pull up', 'chin up'], cat: 'Back' },
+      { id: '3293', original: 'archer pull up', display: 'Archer Pull Up', keywords: ['archer pull up', 'pull up', 'pullup', 'advanced pull up'], cat: 'Back' },
+      { id: '0974', original: 'band close-grip pulldown', display: 'Close Grip Pulldown (Band)', keywords: ['band pulldown', 'banded pulldown', 'close grip pulldown', 'lat pulldown'], cat: 'Back' },
+      { id: '1013', original: 'band underhand pulldown', display: 'Underhand Pulldown (Band)', keywords: ['band pulldown', 'underhand pulldown', 'banded lat pulldown', 'lat pulldown'], cat: 'Back' },
+      { id: '0198', original: 'cable rear delt fly', display: 'Cable Rear Delt Fly', keywords: ['cable rear delt fly', 'reverse fly', 'rear delt fly', 'face pull', 'reverse cable fly'], cat: 'Back' },
+      { id: '0150', original: 'cable face pull', display: 'Cable Face Pull', keywords: ['face pull', 'cable face pull', 'rear delt pull', 'face pulls'], cat: 'Back' },
+      { id: '0073', original: 'barbell pullover', display: 'Pullover (Barbell)', keywords: ['pullover', 'barbell pullover', 'lat pullover'], cat: 'Back' },
+      { id: '0347', original: 'dumbbell pullover', display: 'Pullover (Dumbbell)', keywords: ['dumbbell pullover', 'db pullover', 'pullover', 'lat pullover'], cat: 'Back' },
+      { id: '1431', original: 'assisted standing chin-up', display: 'Assisted Chin Up', keywords: ['chin up', 'chin ups', 'chinup', 'chinups', 'assisted chin up', 'underhand pull up'], cat: 'Back' },
+      { id: '1432', original: 'assisted standing pull-up', display: 'Assisted Pull Up (Standing)', keywords: ['pull up', 'pullup', 'assisted pull up', 'pull ups'], cat: 'Back' },
+      { id: '0076', original: 'barbell rear delt row', display: 'Rear Delt Row (Barbell)', keywords: ['rear delt row', 'barbell rear delt row', 'face pull', 'rear row'], cat: 'Back' },
+      { id: '1022', original: 'band standing rear delt row', display: 'Standing Rear Delt Row (Band)', keywords: ['band rear delt row', 'banded row', 'rear delt row', 'band face pull'], cat: 'Back' },
+      { id: '1017', original: 'band y-raise', display: 'Y-Raise (Band)', keywords: ['y raise', 'band y raise', 'y raises', 'shoulder y raise'], cat: 'Back' },
+
+      // Chest
+      { id: '0025', original: 'barbell bench press', display: 'Bench Press (Barbell)', keywords: ['bench press', 'barbell bench press', 'flat bench', 'chest press', 'bench'], cat: 'Chest' },
+      { id: '0033', original: 'barbell decline bench press', display: 'Decline Bench Press (Barbell)', keywords: ['decline bench', 'decline bench press', 'decline press'], cat: 'Chest' },
+      { id: '0047', original: 'barbell incline bench press', display: 'Incline Bench Press (Barbell)', keywords: ['incline bench', 'incline bench press', 'incline press', 'incline barbell press'], cat: 'Chest' },
+      { id: '0030', original: 'barbell close-grip bench press', display: 'Close Grip Bench Press (Barbell)', keywords: ['close grip bench', 'close grip bench press', 'narrow grip bench', 'cgbp'], cat: 'Chest' },
+      { id: '0289', original: 'dumbbell bench press', display: 'Bench Press (Dumbbell)', keywords: ['dumbbell bench press', 'db bench press', 'dumbbell chest press', 'bench press'], cat: 'Chest' },
+      { id: '0314', original: 'dumbbell incline bench press', display: 'Incline Bench Press (Dumbbell)', keywords: ['dumbbell incline press', 'incline dumbbell press', 'incline bench', 'incline press'], cat: 'Chest' },
+      { id: '0311', original: 'dumbbell full can lateral raise', display: 'Dumbbell Fly', keywords: ['dumbbell fly', 'chest fly', 'db fly', 'flyes', 'pec fly'], cat: 'Chest' },
+      { id: '0315', original: 'dumbbell incline fly', display: 'Incline Fly (Dumbbell)', keywords: ['incline fly', 'incline dumbbell fly', 'incline flyes', 'incline chest fly'], cat: 'Chest' },
+      { id: '0159', original: 'cable low fly', display: 'Cable Fly (Low to High)', keywords: ['cable fly', 'low cable fly', 'cable chest fly', 'cable crossover', 'low to high fly'], cat: 'Chest' },
+      { id: '0176', original: 'cable cross-over', display: 'Cable Crossover', keywords: ['cable crossover', 'cable fly', 'cable chest fly', 'crossover'], cat: 'Chest' },
+      { id: '1254', original: 'band bench press', display: 'Bench Press (Band)', keywords: ['band bench press', 'banded bench press', 'resistance band chest press'], cat: 'Chest' },
+      { id: '3294', original: 'archer push up', display: 'Archer Push Up', keywords: ['archer push up', 'push up', 'pushup', 'advanced push up'], cat: 'Chest' },
+      { id: '0662', original: 'push-up', display: 'Push Up', keywords: ['push up', 'pushup', 'push ups', 'pushups', 'press up'], cat: 'Chest' },
+      { id: '0671', original: 'wide hand push up', display: 'Wide Grip Push Up', keywords: ['wide push up', 'wide grip push up', 'push up', 'pushup'], cat: 'Chest' },
+      { id: '0572', original: 'lever chest press', display: 'Chest Press (Machine)', keywords: ['chest press', 'machine chest press', 'lever chest press', 'machine press'], cat: 'Chest' },
+      { id: '0577', original: 'lever incline chest press', display: 'Incline Chest Press (Machine)', keywords: ['incline chest press', 'machine incline press', 'lever incline press', 'incline press'], cat: 'Chest' },
+      { id: '0171', original: 'cable incline fly', display: 'Incline Cable Fly', keywords: ['incline cable fly', 'cable incline fly', 'incline fly', 'incline chest fly'], cat: 'Chest' },
+      { id: '0185', original: 'cable lying fly', display: 'Lying Cable Fly', keywords: ['lying cable fly', 'flat cable fly', 'cable fly', 'cable chest fly'], cat: 'Chest' },
+      { id: '2364', original: 'assisted wide-grip chest dip (kneeling)', display: 'Assisted Chest Dip (Wide Grip)', keywords: ['wide dip', 'chest dip', 'assisted chest dip', 'wide grip dip'], cat: 'Chest' },
+      { id: '0975', original: 'band close-grip push-up', display: 'Close Grip Push Up (Band)', keywords: ['close grip push up', 'diamond push up', 'narrow push up', 'band push up'], cat: 'Chest' },
+
+      // Shoulders
+      { id: '0091', original: 'barbell seated overhead press', display: 'Overhead Press (Barbell, Seated)', keywords: ['overhead press', 'ohp', 'shoulder press', 'barbell shoulder press', 'seated press', 'military press'], cat: 'Shoulders' },
+      { id: '0361', original: 'dumbbell one arm shoulder press', display: 'Shoulder Press (Dumbbell)', keywords: ['shoulder press', 'dumbbell shoulder press', 'db shoulder press', 'overhead press', 'dumbbell ohp'], cat: 'Shoulders' },
+      { id: '0997', original: 'band shoulder press', display: 'Shoulder Press (Band)', keywords: ['band shoulder press', 'banded shoulder press', 'shoulder press', 'overhead press'], cat: 'Shoulders' },
+      { id: '0219', original: 'cable shoulder press', display: 'Shoulder Press (Cable)', keywords: ['cable shoulder press', 'cable overhead press', 'shoulder press'], cat: 'Shoulders' },
+      { id: '0178', original: 'cable lateral raise', display: 'Lateral Raise (Cable)', keywords: ['lateral raise', 'cable lateral raise', 'side raise', 'side lateral raise'], cat: 'Shoulders' },
+      { id: '0310', original: 'dumbbell lateral raise', display: 'Lateral Raise (Dumbbell)', keywords: ['lateral raise', 'dumbbell lateral raise', 'side raise', 'side lateral raise', 'db lateral raise'], cat: 'Shoulders' },
+      { id: '0041', original: 'barbell front raise', display: 'Front Raise (Barbell)', keywords: ['front raise', 'barbell front raise', 'front delt raise'], cat: 'Shoulders' },
+      { id: '0312', original: 'dumbbell front raise', display: 'Front Raise (Dumbbell)', keywords: ['front raise', 'dumbbell front raise', 'db front raise', 'front delt raise'], cat: 'Shoulders' },
+      { id: '0977', original: 'band front lateral raise', display: 'Front Lateral Raise (Band)', keywords: ['front raise', 'band front raise', 'lateral raise', 'band raise'], cat: 'Shoulders' },
+      { id: '0075', original: 'barbell rear delt raise', display: 'Rear Delt Raise (Barbell)', keywords: ['rear delt raise', 'barbell rear delt', 'rear raise', 'reverse raise'], cat: 'Shoulders' },
+      { id: '0308', original: 'dumbbell rear lateral raise', display: 'Rear Delt Fly (Dumbbell)', keywords: ['rear delt fly', 'reverse fly', 'dumbbell reverse fly', 'rear fly', 'bent over fly'], cat: 'Shoulders' },
+      { id: '0993', original: 'band reverse fly', display: 'Reverse Fly (Band)', keywords: ['band reverse fly', 'banded reverse fly', 'rear delt fly', 'reverse fly'], cat: 'Shoulders' },
+      { id: '0209', original: 'cable shrug', display: 'Cable Shrug', keywords: ['cable shrug', 'shrug', 'shrugs', 'trap shrug'], cat: 'Shoulders' },
+      { id: '0095', original: 'barbell shrug', display: 'Barbell Shrug', keywords: ['barbell shrug', 'shrug', 'shrugs', 'trap shrug', 'bb shrug'], cat: 'Shoulders' },
+      { id: '0086', original: 'barbell seated behind head military press', display: 'Behind the Neck Press (Barbell, Seated)', keywords: ['behind the neck press', 'btnp', 'military press', 'behind neck press'], cat: 'Shoulders' },
+      { id: '1012', original: 'band twisting overhead press', display: 'Twisting Overhead Press (Band)', keywords: ['band overhead press', 'twisting press', 'band shoulder press', 'overhead press'], cat: 'Shoulders' },
+      { id: '0978', original: 'band front raise', display: 'Front Raise (Band)', keywords: ['band front raise', 'banded front raise', 'front raise'], cat: 'Shoulders' },
+
+      // Biceps
+      { id: '0031', original: 'barbell curl', display: 'Barbell Curl', keywords: ['barbell curl', 'bb curl', 'bicep curl', 'biceps curl', 'standing curl'], cat: 'Biceps' },
+      { id: '0038', original: 'barbell drag curl', display: 'Drag Curl (Barbell)', keywords: ['drag curl', 'barbell drag curl', 'body drag curl'], cat: 'Biceps' },
+      { id: '0070', original: 'barbell preacher curl', display: 'Preacher Curl (Barbell)', keywords: ['preacher curl', 'barbell preacher curl', 'scott curl'], cat: 'Biceps' },
+      { id: '0298', original: 'dumbbell bicep curl', display: 'Bicep Curl (Dumbbell)', keywords: ['dumbbell curl', 'bicep curl', 'db curl', 'biceps curl', 'dumbbell bicep curl'], cat: 'Biceps' },
+      { id: '0306', original: 'dumbbell hammer curl', display: 'Hammer Curl (Dumbbell)', keywords: ['hammer curl', 'dumbbell hammer curl', 'db hammer curl', 'neutral grip curl'], cat: 'Biceps' },
+      { id: '0313', original: 'dumbbell incline curl', display: 'Incline Curl (Dumbbell)', keywords: ['incline curl', 'dumbbell incline curl', 'incline bicep curl', 'incline db curl'], cat: 'Biceps' },
+      { id: '0285', original: 'dumbbell alternate biceps curl', display: 'Alternating Curl (Dumbbell)', keywords: ['alternating curl', 'dumbbell alternating curl', 'alternate curl', 'bicep curl'], cat: 'Biceps' },
+      { id: '0294', original: 'dumbbell concentration curl', display: 'Concentration Curl (Dumbbell)', keywords: ['concentration curl', 'dumbbell concentration curl', 'seated curl'], cat: 'Biceps' },
+      { id: '0968', original: 'band alternating biceps curl', display: 'Alternating Curl (Band)', keywords: ['band curl', 'banded curl', 'band bicep curl', 'resistance band curl'], cat: 'Biceps' },
+      { id: '0976', original: 'band concentration curl', display: 'Concentration Curl (Band)', keywords: ['band concentration curl', 'banded curl', 'concentration curl'], cat: 'Biceps' },
+      { id: '0148', original: 'cable alternate shoulder press', display: 'Cable Curl (Alternating)', keywords: ['cable curl', 'cable bicep curl', 'alternating cable curl'], cat: 'Biceps' },
+      { id: '0161', original: 'cable curl', display: 'Cable Curl (EZ Bar)', keywords: ['cable curl', 'ez bar cable curl', 'cable bicep curl', 'ez curl'], cat: 'Biceps' },
+      { id: '0080', original: 'barbell reverse curl', display: 'Reverse Curl (Barbell)', keywords: ['reverse curl', 'barbell reverse curl', 'forearm curl', 'reverse bicep curl'], cat: 'Biceps' },
+      { id: '0023', original: 'barbell alternate biceps curl', display: 'Alternating Curl (Barbell)', keywords: ['alternating curl', 'barbell alternating curl', 'alternate bicep curl'], cat: 'Biceps' },
+      { id: '0072', original: 'barbell prone incline curl', display: 'Prone Incline Curl (Barbell)', keywords: ['prone incline curl', 'spider curl', 'incline curl', 'barbell spider curl'], cat: 'Biceps' },
+
+      // Triceps
+      { id: '0056', original: 'barbell lying close-grip triceps extension', display: 'Lying Tricep Extension (Barbell)', keywords: ['lying tricep extension', 'skull crusher', 'skullcrusher', 'barbell skull crusher', 'lying extension'], cat: 'Triceps' },
+      { id: '0092', original: 'barbell seated overhead triceps extension', display: 'Overhead Tricep Extension (Barbell, Seated)', keywords: ['overhead tricep extension', 'barbell overhead extension', 'seated tricep extension', 'french press'], cat: 'Triceps' },
+      { id: '0061', original: 'barbell lying triceps extension', display: 'Lying Tricep Extension (Barbell)', keywords: ['skull crusher', 'skullcrusher', 'lying tricep extension', 'nose breaker'], cat: 'Triceps' },
+      { id: '0337', original: 'dumbbell kickback', display: 'Kickback (Dumbbell)', keywords: ['tricep kickback', 'dumbbell kickback', 'db kickback', 'kickback'], cat: 'Triceps' },
+      { id: '0364', original: 'dumbbell seated triceps extension', display: 'Tricep Extension (Dumbbell, Seated)', keywords: ['tricep extension', 'dumbbell tricep extension', 'overhead extension', 'db tricep extension'], cat: 'Triceps' },
+      { id: '0210', original: 'cable tricep pushdown', display: 'Tricep Pushdown (Cable)', keywords: ['tricep pushdown', 'cable pushdown', 'pushdown', 'tricep press down', 'rope pushdown'], cat: 'Triceps' },
+      { id: '0191', original: 'cable overhead tricep extension', display: 'Overhead Tricep Extension (Cable)', keywords: ['cable overhead extension', 'overhead tricep extension', 'cable french press'], cat: 'Triceps' },
+      { id: '0998', original: 'band side triceps extension', display: 'Tricep Extension (Band)', keywords: ['band tricep extension', 'banded tricep extension', 'resistance band tricep'], cat: 'Triceps' },
+      { id: '0009', original: 'assisted chest dip (kneeling)', display: 'Assisted Chest Dip', keywords: ['dip', 'dips', 'chest dip', 'assisted dip', 'dip machine'], cat: 'Triceps' },
+      { id: '0019', original: 'assisted triceps dip (kneeling)', display: 'Assisted Tricep Dip', keywords: ['dip', 'dips', 'tricep dip', 'assisted dip', 'assisted tricep dip'], cat: 'Triceps' },
+      { id: '1720', original: 'barbell lying back of the head tricep extension', display: 'Overhead Tricep Extension (Barbell, Lying)', keywords: ['lying overhead extension', 'skull crusher', 'behind head extension', 'tricep extension'], cat: 'Triceps' },
+      { id: '0035', original: 'barbell decline close grip to skull press', display: 'Decline Skull Crusher (Barbell)', keywords: ['decline skull crusher', 'decline tricep extension', 'skull crusher', 'decline close grip press'], cat: 'Triceps' },
+      { id: '0055', original: 'barbell lying close-grip press', display: 'Lying Close Grip Press (Barbell)', keywords: ['close grip press', 'lying close grip press', 'tricep press', 'close grip bench'], cat: 'Triceps' },
+
+      // Core
+      { id: '0003', original: 'air bike', display: 'Air Bike (Bicycle Crunch)', keywords: ['bicycle crunch', 'air bike', 'bicycle crunches', 'cycling crunch'], cat: 'Core' },
+      { id: '0274', original: 'crunch', display: 'Crunch', keywords: ['crunch', 'crunches', 'ab crunch', 'abdominal crunch'], cat: 'Core' },
+      { id: '0464', original: 'exercise ball crunch', display: 'Crunch (Stability Ball)', keywords: ['ball crunch', 'swiss ball crunch', 'stability ball crunch', 'exercise ball crunch'], cat: 'Core' },
+      { id: '2333', original: 'arm slingers hanging straight legs', display: 'Hanging Leg Raise (Straight Legs)', keywords: ['hanging leg raise', 'leg raise', 'hanging raise', 'ab raise'], cat: 'Core' },
+      { id: '0011', original: 'assisted hanging knee raise', display: 'Hanging Knee Raise (Assisted)', keywords: ['hanging knee raise', 'knee raise', 'captain chair', 'leg raise'], cat: 'Core' },
+      { id: '0001', original: '3/4 sit-up', display: '3/4 Sit Up', keywords: ['sit up', 'situp', 'sit ups', 'situps', 'crunch'], cat: 'Core' },
+      { id: '0006', original: 'alternate heel touchers', display: 'Heel Touchers (Alternating)', keywords: ['heel touchers', 'heel touches', 'alternate heel touches', 'oblique crunch'], cat: 'Core' },
+      { id: '0002', original: '45\u00b0 side bend', display: '45 Degree Side Bend', keywords: ['side bend', 'oblique bend', 'side crunch', 'oblique'], cat: 'Core' },
+      { id: '0014', original: 'assisted motion russian twist', display: 'Russian Twist (Assisted)', keywords: ['russian twist', 'russian twists', 'seated twist', 'oblique twist'], cat: 'Core' },
+      { id: '0650', original: 'plank', display: 'Plank', keywords: ['plank', 'front plank', 'forearm plank', 'planks'], cat: 'Core' },
+      { id: '0653', original: 'side plank', display: 'Side Plank', keywords: ['side plank', 'lateral plank', 'oblique plank'], cat: 'Core' },
+      { id: '1005', original: 'band standing crunch', display: 'Standing Crunch (Band)', keywords: ['band crunch', 'standing crunch', 'cable crunch', 'banded crunch'], cat: 'Core' },
+      { id: '0971', original: 'band assisted wheel rollerout', display: 'Ab Wheel Rollout (Band Assisted)', keywords: ['ab wheel', 'ab rollout', 'wheel rollout', 'ab roller', 'rollout'], cat: 'Core' },
+      { id: '0084', original: 'barbell rollerout', display: 'Ab Wheel Rollout (Barbell)', keywords: ['barbell rollout', 'ab rollout', 'rollout', 'ab wheel'], cat: 'Core' },
+      { id: '0071', original: 'barbell press sit-up', display: 'Press Sit Up (Barbell)', keywords: ['press sit up', 'barbell sit up', 'weighted sit up'], cat: 'Core' },
+      { id: '0981', original: 'band jack knife sit-up', display: 'Jackknife Sit Up (Band)', keywords: ['jackknife', 'jack knife', 'v up', 'band jackknife', 'band v up'], cat: 'Core' },
+      { id: '0969', original: 'band alternating v-up', display: 'Alternating V-Up (Band)', keywords: ['v up', 'v ups', 'band v up', 'alternating v up'], cat: 'Core' },
+      { id: '1014', original: 'band v-up', display: 'V-Up (Band)', keywords: ['v up', 'v ups', 'band v up', 'v sit up'], cat: 'Core' },
+      { id: '0972', original: 'band bicycle crunch', display: 'Bicycle Crunch (Band)', keywords: ['bicycle crunch', 'band bicycle crunch', 'banded bicycle crunch', 'cycling crunch'], cat: 'Core' },
+      { id: '0992', original: 'band push sit-up', display: 'Push Sit Up (Band)', keywords: ['push sit up', 'band sit up', 'banded sit up', 'sit up'], cat: 'Core' },
+      { id: '0013', original: 'assisted lying leg raise with throw down', display: 'Lying Leg Raise (Throw Down)', keywords: ['lying leg raise', 'leg raise', 'throw down', 'leg raises'], cat: 'Core' },
+      { id: '0012', original: 'assisted lying leg raise with lateral throw down', display: 'Lying Leg Raise (Lateral Throw Down)', keywords: ['lateral leg raise', 'oblique leg raise', 'lateral throw down', 'leg raise'], cat: 'Core' },
+      { id: '0010', original: 'assisted hanging knee raise with throw down', display: 'Hanging Knee Raise (Throw Down)', keywords: ['hanging knee raise', 'knee raise', 'captain chair', 'throw down'], cat: 'Core' },
+      { id: '3204', original: 'arms overhead full sit-up', display: 'Full Sit Up (Arms Overhead)', keywords: ['sit up', 'full sit up', 'overhead sit up', 'sit ups'], cat: 'Core' },
+
+      // Other
+      { id: '0028', original: 'barbell clean and press', display: 'Clean and Press (Barbell)', keywords: ['clean and press', 'barbell clean and press', 'clean press', 'power clean and press'], cat: 'Other' },
+      { id: '0067', original: 'barbell one arm snatch', display: 'One Arm Snatch (Barbell)', keywords: ['snatch', 'barbell snatch', 'one arm snatch', 'power snatch'], cat: 'Other' },
+      { id: '1473', original: 'backward jump', display: 'Backward Jump', keywords: ['backward jump', 'reverse jump', 'back jump'], cat: 'Other' },
+      { id: '3672', original: 'back and forth step', display: 'Back and Forth Step', keywords: ['stepping', 'step exercise', 'cardio step', 'back and forth'], cat: 'Other' },
+      { id: '3543', original: 'bodyweight drop jump squat', display: 'Drop Jump Squat', keywords: ['drop jump squat', 'jump squat', 'plyometric squat', 'drop squat'], cat: 'Other' },
+      { id: '0020', original: 'balance board', display: 'Balance Board', keywords: ['balance board', 'wobble board', 'balance training'], cat: 'Other' },
+      { id: '0082', original: 'barbell reverse wrist curl', display: 'Wrist Curl (Barbell)', keywords: ['wrist curl', 'barbell wrist curl', 'forearm curl'], cat: 'Other' },
+      { id: '0079', original: 'barbell reverse wrist curl v. 2', display: 'Reverse Wrist Curl (Barbell)', keywords: ['reverse wrist curl', 'barbell reverse wrist curl', 'forearm extension'], cat: 'Other' },
+      { id: '1016', original: 'band wrist curl', display: 'Wrist Curl (Band)', keywords: ['band wrist curl', 'banded wrist curl', 'wrist curl'], cat: 'Other' },
+      { id: '0994', original: 'band reverse wrist curl', display: 'Reverse Wrist Curl (Band)', keywords: ['band reverse wrist curl', 'banded reverse wrist curl', 'reverse wrist curl'], cat: 'Other' },
+
+      // Stretching
+      { id: '1709', original: 'assisted lying glutes stretch', display: 'Lying Glute Stretch', keywords: ['glute stretch', 'lying glute stretch', 'piriformis stretch', 'glute stretching'], cat: 'Stretching' },
+      { id: '1710', original: 'assisted lying gluteus and piriformis stretch', display: 'Lying Piriformis Stretch', keywords: ['piriformis stretch', 'glute stretch', 'hip stretch', 'deep glute stretch'], cat: 'Stretching' },
+      { id: '1708', original: 'assisted lying calves stretch', display: 'Lying Calf Stretch', keywords: ['calf stretch', 'lying calf stretch', 'calf stretching', 'soleus stretch'], cat: 'Stretching' },
+      { id: '1713', original: 'assisted prone lying quads stretch', display: 'Lying Quad Stretch', keywords: ['quad stretch', 'quadricep stretch', 'lying quad stretch', 'thigh stretch'], cat: 'Stretching' },
+      { id: '1512', original: 'all fours squad stretch', display: 'All Fours Quad Stretch', keywords: ['quad stretch', 'all fours stretch', 'kneeling quad stretch', 'thigh stretch'], cat: 'Stretching' },
+      { id: '1368', original: 'ankle circles', display: 'Ankle Circles', keywords: ['ankle circles', 'ankle mobility', 'ankle warmup', 'ankle rotation'], cat: 'Stretching' },
+      { id: '1405', original: 'back pec stretch', display: 'Back Pec Stretch', keywords: ['pec stretch', 'chest stretch', 'back stretch', 'pectoral stretch'], cat: 'Stretching' },
+      { id: '1714', original: 'assisted prone rectus femoris stretch', display: 'Lying Rectus Femoris Stretch', keywords: ['rectus femoris stretch', 'quad stretch', 'hip flexor stretch', 'thigh stretch'], cat: 'Stretching' },
+    ];
+
+    const categories = [...new Set(exercises.map(e => e.cat))];
+    const filtersDiv = document.getElementById('filters');
+    const allBtn = document.createElement('button');
+    allBtn.className = 'filter-btn active';
+    allBtn.textContent = `All (${exercises.length})`;
+    allBtn.onclick = () => filterByCategory('All');
+    filtersDiv.appendChild(allBtn);
+
+    categories.forEach(cat => {
+      const count = exercises.filter(e => e.cat === cat).length;
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn';
+      btn.textContent = `${cat} (${count})`;
+      btn.onclick = () => filterByCategory(cat);
+      filtersDiv.appendChild(btn);
+    });
+
+    let activeCategory = 'All';
+
+    function getCatClass(cat) {
+      const map = { 'Glutes/Legs': 'cat-glutes', 'Back': 'cat-back', 'Chest': 'cat-chest', 'Shoulders': 'cat-shoulders', 'Biceps': 'cat-biceps', 'Triceps': 'cat-triceps', 'Core': 'cat-core' };
+      return map[cat] || 'cat-other';
+    }
+
+    function render(filtered) {
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML = '';
+      filtered.forEach((e, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="id">${i + 1}</td>
+          <td class="id">${e.id}</td>
+          <td><span class="category-badge ${getCatClass(e.cat)}">${e.cat}</span></td>
+          <td class="original">${e.original}</td>
+          <td class="display-name">${e.display}</td>
+          <td><div class="keywords">${e.keywords.map(k => `<span class="keyword">${k}</span>`).join('')}</div></td>
+        `;
+        tbody.appendChild(row);
+      });
+      document.getElementById('count').textContent = `Showing ${filtered.length} of ${exercises.length}`;
+    }
+
+    function filterByCategory(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const search = document.getElementById('search').value.toLowerCase().trim();
+      let filtered = exercises;
+      if (activeCategory !== 'All') filtered = filtered.filter(e => e.cat === activeCategory);
+      if (search) {
+        filtered = filtered.filter(e =>
+          e.original.toLowerCase().includes(search) ||
+          e.display.toLowerCase().includes(search) ||
+          e.keywords.some(k => k.toLowerCase().includes(search))
+        );
+      }
+      render(filtered);
+    }
+
+    document.getElementById('search').addEventListener('input', applyFilters);
+    render(exercises);
+  </script>
+</body>
+</html>

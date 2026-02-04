@@ -2,6 +2,12 @@ import { Alert } from 'react-native';
 import { supabase } from '../supabase';
 import { searchAndRankExercises } from '@/utils/exerciseSearch';
 import { searchAscendExercises, AscendExercise } from './ascendExercises';
+import { logger } from '@/utils/logger';
+
+// Sanitize input for PostgREST filter strings to prevent filter injection
+function sanitizePostgrestFilter(input: string): string {
+  return input.replace(/[%_,().]/g, '');
+}
 
 // Extended exercise detail from Ascend API
 export interface ExerciseDetail {
@@ -19,6 +25,7 @@ export interface ExerciseDetail {
 export interface Exercise {
   id: string;
   name: string;
+  display_name?: string; // Human-friendly name for UI (falls back to name if not set)
   muscle_group: string;
   equipment?: string[];
   instructions?: string;
@@ -31,6 +38,8 @@ export interface Exercise {
   body_parts?: string[];
   instructions_array?: string[];
   exercise_type?: string;
+  keywords?: string[]; // Search aliases (e.g., "lat pulldown" for "cable pulldown (pro lat bar)")
+  popularity?: number; // 0 = default, 1-5 = popular (used as search ranking tiebreaker)
   // Computed property for backward compatibility
   muscle?: string;
 }
@@ -52,12 +61,59 @@ export interface ExercisePersonalRecords {
   bestSessionVolume: { volume: number; date: string } | null;
 }
 
+// Translation data for a single exercise
+export interface ExerciseTranslation {
+  exercise_id: string;
+  name: string;
+  display_name: string | null;
+  instructions_array: string[] | null;
+  keywords: string[] | null;
+}
+
+// Fetch all exercise translations for a given language
+// Returns a Map keyed by exercise_id for O(1) lookup
+export async function fetchExerciseTranslations(
+  language: string
+): Promise<Map<string, ExerciseTranslation>> {
+  // English is the source language, no translations needed
+  if (language === 'en') return new Map();
+
+  // Fetch all translations - need to paginate since Supabase defaults to 1000 rows
+  const allRows: ExerciseTranslation[] = [];
+  const PAGE_SIZE = 1000;
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('exercise_translations')
+      .select('exercise_id, name, display_name, instructions_array, keywords')
+      .eq('language', language)
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (error) {
+      logger.warn('Error fetching exercise translations', { error, language });
+      break;
+    }
+
+    if (!data || data.length === 0) break;
+    allRows.push(...data);
+    if (data.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+
+  const map = new Map<string, ExerciseTranslation>();
+  for (const row of allRows) {
+    map.set(row.exercise_id, row);
+  }
+  return map;
+}
+
 // Fetch all exercises from Supabase
 export async function fetchExercises(): Promise<Exercise[]> {
   const { data, error } = await supabase.from('exercises').select('*').order('name');
 
   if (error) {
-    console.error('Error fetching exercises:', error);
+    logger.warn('Error fetching exercises', { error });
     Alert.alert(
       'Connection Error',
       'Unable to load exercises. Please check your connection and try again.'
@@ -74,14 +130,18 @@ export async function fetchExercises(): Promise<Exercise[]> {
 
 // Search exercises by name or muscle group
 export async function searchExercises(query: string): Promise<Exercise[]> {
+  const sanitized = sanitizePostgrestFilter(query.trim());
+  if (!sanitized) return [];
+
   const { data, error } = await supabase
     .from('exercises')
     .select('*')
-    .or(`name.ilike.%${query}%,muscle_group.ilike.%${query}%`)
-    .order('name');
+    .or(`name.ilike.%${sanitized}%,muscle_group.ilike.%${sanitized}%`)
+    .order('name')
+    .limit(50);
 
   if (error) {
-    console.error('Error searching exercises:', error);
+    logger.warn('Error searching exercises', { error });
     return [];
   }
 
@@ -91,21 +151,37 @@ export async function searchExercises(query: string): Promise<Exercise[]> {
   }));
 }
 
-// Get a single exercise by ID (supports both UUID and slug-style IDs like "plank")
+// Get a single exercise by ID (supports UUID, exercise_db_id, and slug-style IDs)
 export async function getExerciseById(id: string): Promise<Exercise | null> {
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
   if (isUuid) {
     const { data, error } = await supabase.from('exercises').select('*').eq('id', id).single();
     if (error) {
-      console.error('Error fetching exercise:', error);
+      logger.warn('Error fetching exercise', { error });
       return null;
     }
     return data ? { ...data, muscle: data.muscle_group } : null;
   }
 
-  // Slug-based lookup: "plank" → "%plank%", "cable-crunches-kneeling" → "%cable%crunches%kneeling%"
-  const namePattern = `%${id.replace(/-/g, '%')}%`;
+  // Try exercise_db_id lookup (numeric ExerciseDB IDs like "0085", "3236")
+  const isExerciseDbId = /^\d{4}$/.test(id);
+  if (isExerciseDbId) {
+    const { data: dbIdResults, error: dbIdError } = await supabase
+      .from('exercises')
+      .select('*')
+      .eq('exercise_db_id', id)
+      .limit(1);
+
+    if (!dbIdError && dbIdResults && dbIdResults.length > 0) {
+      return { ...dbIdResults[0], muscle: dbIdResults[0].muscle_group };
+    }
+  }
+
+  // Strategy 1: Slug-based ILIKE (ordered words)
+  // "cable-crunches-kneeling" → "%cable%crunches%kneeling%"
+  const sanitizedSlug = sanitizePostgrestFilter(id.replace(/-/g, ' ')).trim();
+  const namePattern = `%${sanitizedSlug.replace(/\s+/g, '%')}%`;
   const { data: results, error } = await supabase
     .from('exercises')
     .select('*')
@@ -113,12 +189,38 @@ export async function getExerciseById(id: string): Promise<Exercise | null> {
     .limit(1);
 
   if (error) {
-    console.error('Error fetching exercise by slug:', error);
-    return null;
+    logger.warn('Error fetching exercise by slug', { error });
   }
 
-  const match = results?.[0] || null;
-  return match ? { ...match, muscle: match.muscle_group } : null;
+  if (results && results.length > 0) {
+    return { ...results[0], muscle: results[0].muscle_group };
+  }
+
+  // Strategy 2: Word-order-independent matching (handles reordered words)
+  // "hip-thrust-barbell" → name ILIKE '%hip%' AND name ILIKE '%thrust%' AND name ILIKE '%barbell%'
+  const words = id
+    .split('-')
+    .map((w) => sanitizePostgrestFilter(w))
+    .filter((w) => w.length > 2);
+  if (words.length > 0) {
+    let query = supabase.from('exercises').select('*');
+    for (const word of words) {
+      query = query.ilike('name', `%${word}%`);
+    }
+    const { data: wordResults, error: wordError } = await query.limit(5);
+
+    if (!wordError && wordResults && wordResults.length > 0) {
+      // Prefer exact word count match to avoid false positives
+      const bestMatch =
+        wordResults.find((e) => {
+          const nameWords = e.name.toLowerCase().split(/\s+/);
+          return words.every((w) => nameWords.some((nw) => nw.includes(w)));
+        }) || wordResults[0];
+      return { ...bestMatch, muscle: bestMatch.muscle_group };
+    }
+  }
+
+  return null;
 }
 
 // Filter exercises by muscle group
@@ -130,7 +232,7 @@ export async function getExercisesByMuscle(muscle: string): Promise<Exercise[]> 
     .order('name');
 
   if (error) {
-    console.error('Error fetching exercises by muscle:', error);
+    logger.warn('Error fetching exercises by muscle', { error });
     return [];
   }
 
@@ -149,7 +251,7 @@ export async function getExercisesByEquipment(equipment: string): Promise<Exerci
     .order('name');
 
   if (error) {
-    console.error('Error fetching exercises by equipment:', error);
+    logger.warn('Error fetching exercises by equipment', { error });
     return [];
   }
 
@@ -238,7 +340,7 @@ async function filterByMuscles(exerciseIds: string[], muscles: string[]): Promis
     .in('exercise_id', exerciseIds);
 
   if (error) {
-    console.error('Error fetching exercise muscles:', error);
+    logger.warn('Error fetching exercise muscles', { error });
     return new Set(exerciseIds); // Return all if error
   }
 
@@ -276,7 +378,7 @@ export async function filterExercises(options: FilterOptions): Promise<Exercise[
   const { data, error } = await supabase.from('exercises').select('*').order('name');
 
   if (error) {
-    console.error('Error filtering exercises:', error);
+    logger.warn('Error filtering exercises', { error });
     return [];
   }
 
@@ -339,7 +441,7 @@ export async function getExerciseHistory(
 
   if (weError || !workoutExercises || workoutExercises.length === 0) {
     if (weError) {
-      console.error('Error fetching workout exercises:', weError);
+      logger.warn('Error fetching workout exercises', { error: weError });
       Alert.alert('Connection Error', 'Unable to load exercise history. Please try again.');
     }
     return [];
@@ -358,7 +460,7 @@ export async function getExerciseHistory(
 
   if (wError || !workouts) {
     if (wError) {
-      console.error('Error fetching workouts:', wError);
+      logger.warn('Error fetching workouts', { error: wError });
       Alert.alert('Connection Error', 'Unable to load exercise history. Please try again.');
     }
     return [];
@@ -377,7 +479,7 @@ export async function getExerciseHistory(
     .in('workout_exercise_id', workoutExerciseIds);
 
   if (sError) {
-    console.error('Error fetching workout sets:', sError);
+    logger.warn('Error fetching workout sets', { error: sError });
   }
 
   // Build the history entries
@@ -428,7 +530,7 @@ export async function getExercisePersonalRecords(
     .eq('exercise_id', exerciseId);
 
   if (weError || !workoutExercises || workoutExercises.length === 0) {
-    if (weError) console.error('Error fetching workout exercises:', weError);
+    if (weError) logger.warn('Error fetching workout exercises', { error: weError });
     return emptyResult;
   }
 
@@ -442,7 +544,7 @@ export async function getExercisePersonalRecords(
     .in('id', workoutIds);
 
   if (wError || !workouts || workouts.length === 0) {
-    if (wError) console.error('Error fetching workouts:', wError);
+    if (wError) logger.warn('Error fetching workouts', { error: wError });
     return emptyResult;
   }
 
@@ -462,7 +564,7 @@ export async function getExercisePersonalRecords(
     .in('workout_exercise_id', workoutExerciseIds);
 
   if (sError || !sets || sets.length === 0) {
-    if (sError) console.error('Error fetching workout sets:', sError);
+    if (sError) logger.warn('Error fetching workout sets', { error: sError });
     return emptyResult;
   }
 
@@ -550,7 +652,7 @@ export async function getExerciseDetailFromAscend(
     const results = await searchAscendExercises(exerciseName, 10);
 
     if (!results || results.length === 0) {
-      console.warn('No Ascend results for:', exerciseName);
+      logger.warn('No Ascend results for exercise', { exerciseName });
       return null;
     }
 
@@ -578,7 +680,7 @@ export async function getExerciseDetailFromAscend(
       secondaryMuscles: match.secondaryMuscles || [],
     };
   } catch (error) {
-    console.error('Error fetching from Ascend API:', error);
+    logger.warn('Error fetching from Ascend API', { error });
     return null;
   }
 }

@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect, memo } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 import {
   generateMonthData,
   generateMonths,
-  MONTH_NAMES,
-  DAYS,
+  getMonthNames,
+  getDayAbbreviations,
   type MonthData,
 } from '@/utils/calendar';
 import {
@@ -28,16 +30,26 @@ import {
   type CachedCompletedWorkout,
 } from '@/stores/workoutStore';
 import { getWorkoutsByDateRange } from '@/services/api/workouts';
-import { getCurrentUser } from '@/services/api/user';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserProfileStore } from '@/stores/userProfileStore';
+import { consumeListViewRequest } from '@/utils/calendarSignals';
+import { getTemplateImageById } from '@/constants/templateImages';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DAY_WIDTH = (SCREEN_WIDTH - spacing.lg * 2) / 7;
 
 const FOUNDER_BANNER_KEY = 'founder-banner-dismissed';
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+// DAY_NAMES keys for translating full day names (Sunday=0 index to match Date.getDay())
+const DAY_NAME_KEYS = [
+  'sunday',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+] as const;
 
 // Type for displaying workouts in the calendar (both scheduled and completed)
 interface CalendarWorkoutItem {
@@ -51,6 +63,7 @@ interface CalendarWorkoutItem {
   scheduledWorkoutId?: string; // For toggling completion on scheduled workouts
   dbWorkoutId?: string; // For toggling DB completed workouts
   imageUri?: string | null; // Workout photo URI
+  imageTemplateId?: string | null; // Template image ID for bundled assets
 }
 
 // Icons
@@ -119,8 +132,126 @@ function CheckboxChecked({ color }: { color: string }) {
   );
 }
 
+// Memoized workout row - reads its own completion state from the store
+// so toggling one checkbox doesn't re-render every other row
+interface WorkoutListRowProps {
+  scheduledWorkoutId?: string;
+  dbWorkoutId?: string;
+  dateKey: string;
+  name: string;
+  tagColor: string;
+  templateName: string | null;
+  timeHour?: number;
+  timeMinute?: number;
+  imageUri?: string | null;
+  imageTemplateId?: string | null;
+  isFromDatabase: boolean;
+  isDbCompleted: boolean;
+  onDbToggle: (dbWorkoutId: string) => void;
+}
+
+function formatTimeDisplay(hour: number, minute: number) {
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  const displayMinute = minute.toString().padStart(2, '0');
+  return `${displayHour}:${displayMinute} ${period}`;
+}
+
+const WorkoutListRow = memo(function WorkoutListRow(props: WorkoutListRowProps) {
+  const { withLock } = useNavigationLock();
+
+  // For scheduled workouts, read completion state directly from the store
+  const isScheduledCompleted = useWorkoutStore(
+    useCallback(
+      (state) => {
+        if (!props.scheduledWorkoutId) return false;
+        const workout = state.scheduledWorkouts.find((w) => w.id === props.scheduledWorkoutId);
+        return workout?.completedDates.includes(props.dateKey) ?? false;
+      },
+      [props.scheduledWorkoutId, props.dateKey]
+    )
+  );
+  const toggleWorkoutCompletion = useWorkoutStore((state) => state.toggleWorkoutCompletion);
+
+  const isCompleted = props.scheduledWorkoutId ? isScheduledCompleted : props.isDbCompleted;
+
+  const handleCheckboxPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (props.scheduledWorkoutId) {
+      toggleWorkoutCompletion(props.scheduledWorkoutId, props.dateKey);
+    } else if (props.dbWorkoutId) {
+      props.onDbToggle(props.dbWorkoutId);
+    }
+  }, [
+    props.scheduledWorkoutId,
+    props.dbWorkoutId,
+    props.dateKey,
+    toggleWorkoutCompletion,
+    props.onDbToggle,
+  ]);
+
+  const handleRowPress = useCallback(() => {
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (props.scheduledWorkoutId) {
+        router.push({
+          pathname: '/workout-preview',
+          params: { workoutId: props.scheduledWorkoutId, dateKey: props.dateKey },
+        });
+      } else if (props.isFromDatabase && props.dbWorkoutId) {
+        router.push({
+          pathname: '/workout-details',
+          params: { workoutId: props.dbWorkoutId },
+        });
+      }
+    });
+  }, [props.scheduledWorkoutId, props.dbWorkoutId, props.dateKey, props.isFromDatabase, withLock]);
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.workoutRow, pressed && { opacity: 0.7 }]}
+      onPress={handleRowPress}
+    >
+      <Pressable onPress={handleCheckboxPress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        {isCompleted ? (
+          <CheckboxChecked color={props.tagColor} />
+        ) : (
+          <CheckboxUnchecked color={props.tagColor} />
+        )}
+      </Pressable>
+      <View style={styles.workoutInfoPressable}>
+        {props.imageUri ? (
+          <Image source={{ uri: props.imageUri }} style={styles.workoutThumbnail} />
+        ) : props.imageTemplateId ? (
+          (() => {
+            const src = getTemplateImageById(props.imageTemplateId);
+            return src ? <Image source={src} style={styles.workoutThumbnail} /> : null;
+          })()
+        ) : null}
+        <View style={styles.workoutInfo}>
+          {props.templateName && props.templateName !== 'Default Workout' && (
+            <Text style={[styles.workoutTemplateLabel, { color: props.tagColor }]}>
+              {props.templateName.toUpperCase()}
+            </Text>
+          )}
+          <Text style={styles.workoutName} numberOfLines={1}>
+            {props.name}
+          </Text>
+        </View>
+        {props.timeHour !== undefined && props.timeMinute !== undefined && (
+          <Text style={styles.workoutTimeRight}>
+            {formatTimeDisplay(props.timeHour, props.timeMinute)}
+          </Text>
+        )}
+        <ChevronRight />
+      </View>
+    </Pressable>
+  );
+});
+
 // Generate list of days for the list view (supports negative offset for past days)
 function generateDays(baseDate: Date, startOffset: number, count: number) {
+  const monthNames = getMonthNames();
   const days = [];
   for (let i = 0; i < count; i++) {
     const date = new Date(baseDate);
@@ -129,9 +260,8 @@ function generateDays(baseDate: Date, startOffset: number, count: number) {
     days.push({
       id: `day_${dayOffset}`,
       date,
-      dayName: DAY_NAMES[date.getDay()],
       dayNum: date.getDate(),
-      month: MONTH_NAMES[date.getMonth()],
+      month: monthNames[date.getMonth()],
       isToday: dayOffset === 0,
       offset: dayOffset,
     });
@@ -145,10 +275,18 @@ const INITIAL_FUTURE_DAYS = 30;
 const DAYS_TO_LOAD = 15;
 
 export default function CalendarScreen() {
+  const { t } = useTranslation();
   const today = useMemo(() => new Date(), []);
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
   const currentDate = today.getDate();
+
+  // Translated day/month names (re-computed when language changes)
+  const DAY_NAMES = useMemo(() => DAY_NAME_KEYS.map((key) => t(`calendar.days.${key}`)), [t]);
+  const MONTH_NAMES = useMemo(() => getMonthNames(), [t]);
+  const DAYS = useMemo(() => getDayAbbreviations(), [t]);
+
+  const { isNavigating, withLock } = useNavigationLock();
 
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [months, setMonths] = useState(() => generateMonths(currentYear, currentMonth, 12));
@@ -159,10 +297,24 @@ export default function CalendarScreen() {
   const flatListRef = useRef<FlatList>(null);
   const listFlatListRef = useRef<FlatList>(null);
 
-  // User state
-  const [userId, setUserId] = useState<string | null>(null);
+  // User state - use profile store as single source of truth (same as schedule-workout screen)
+  const userId = useUserProfileStore((state) => state.userId);
+  const fetchProfile = useUserProfileStore((state) => state.fetchProfile);
   // Track manually unchecked DB workouts (key: workout id, value: true if unchecked)
   const [uncheckedDbWorkouts, setUncheckedDbWorkouts] = useState<Set<string>>(new Set());
+
+  // Stable callback for toggling DB workout checkboxes (used by memoized WorkoutListRow)
+  const handleDbToggle = useCallback((dbWorkoutId: string) => {
+    setUncheckedDbWorkouts((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(dbWorkoutId)) {
+        newSet.delete(dbWorkoutId);
+      } else {
+        newSet.add(dbWorkoutId);
+      }
+      return newSet;
+    });
+  }, []);
 
   // Founder welcome banner
   const [showFounderBanner, setShowFounderBanner] = useState(false);
@@ -171,11 +323,14 @@ export default function CalendarScreen() {
   const userName = profile?.name?.split(' ')[0] || 'there';
 
   // Get workouts from store (both scheduled and cached completed)
-  const scheduledWorkouts = useWorkoutStore((state) => state.scheduledWorkouts);
   const getWorkoutsForMonth = useWorkoutStore((state) => state.getWorkoutsForMonth);
   const getWorkoutsForDate = useWorkoutStore((state) => state.getWorkoutsForDate);
-  const toggleWorkoutCompletion = useWorkoutStore((state) => state.toggleWorkoutCompletion);
   const isWorkoutCompleted = useWorkoutStore((state) => state.isWorkoutCompleted);
+
+  // Structural selector - only changes when workouts are added/removed, NOT on completion toggles
+  const scheduledWorkoutIds = useWorkoutStore(
+    useCallback((state) => state.scheduledWorkouts.map((w) => w.id).join(','), [])
+  );
 
   // Cached completed workouts from store (loads instantly from AsyncStorage)
   const cachedCompletedWorkouts = useWorkoutStore((state) => state.cachedCompletedWorkouts);
@@ -204,18 +359,18 @@ export default function CalendarScreen() {
     [setCachedCompletedWorkouts]
   );
 
-  // Fetch user on mount - don't block rendering
+  // Ensure profile (and userId) is loaded on cold start
+  // fetchProfile has internal 5-min caching, so no redundant API calls
   useEffect(() => {
-    async function loadUser() {
-      const user = await getCurrentUser();
-      if (user) {
-        setUserId(user.id);
-        // Fetch in background - cached data already shows instantly
-        fetchCompletedWorkouts(user.id);
-      }
+    fetchProfile();
+  }, [fetchProfile]);
+
+  // Fetch completed workouts when userId becomes available
+  useEffect(() => {
+    if (userId) {
+      fetchCompletedWorkouts(userId);
     }
-    loadUser();
-  }, [fetchCompletedWorkouts]);
+  }, [userId, fetchCompletedWorkouts]);
 
   // Check if founder banner was previously dismissed
   useEffect(() => {
@@ -311,6 +466,7 @@ export default function CalendarScreen() {
             isFromDatabase: true,
             dbWorkoutId: cw.id, // For toggling DB workouts
             imageUri: cw.imageUri,
+            imageTemplateId: cw.imageTemplateId,
           });
         }
       });
@@ -322,9 +478,17 @@ export default function CalendarScreen() {
       getCompletedWorkoutsForDate,
       isWorkoutCompleted,
       uncheckedDbWorkouts,
-      scheduledWorkouts,
-      cachedCompletedWorkouts, // Re-render when cached workouts update
+      scheduledWorkoutIds,
+      cachedCompletedWorkouts,
+      userId,
     ]
+  );
+
+  // Memoized extraData - uses scheduledWorkoutIds (structural only) so completion toggles
+  // don't trigger full FlatList re-renders. Each WorkoutListRow reads its own completion state.
+  const flatListExtraData = useMemo(
+    () => ({ scheduledWorkoutIds, cachedCompletedWorkouts, uncheckedDbWorkouts, userId }),
+    [scheduledWorkoutIds, cachedCompletedWorkouts, uncheckedDbWorkouts, userId]
   );
 
   // Handle view mode switch - reset to current date
@@ -380,6 +544,17 @@ export default function CalendarScreen() {
       }, 100);
     },
     [today]
+  );
+
+  // After scheduling a workout, switch to list view scrolled to the scheduled date
+  useFocusEffect(
+    useCallback(() => {
+      const dateKey = consumeListViewRequest();
+      if (dateKey) {
+        const [y, m, d] = dateKey.split('-').map(Number);
+        handleDatePress(new Date(y, m - 1, d));
+      }
+    }, [handleDatePress])
   );
 
   const loadMorePast = useCallback(() => {
@@ -506,9 +681,9 @@ export default function CalendarScreen() {
     const monthName = MONTH_NAMES[date.getMonth()].slice(0, 3);
     const dayNum = date.getDate();
     if (isToday) {
-      return `Today - ${dayName}, ${monthName} ${dayNum}`;
+      return t('planner.dateHeaderToday', { dayName, month: monthName, day: dayNum });
     }
-    return `${dayName}, ${monthName} ${dayNum}`;
+    return t('planner.dateHeader', { dayName, month: monthName, day: dayNum });
   };
 
   // Calendar View
@@ -529,6 +704,7 @@ export default function CalendarScreen() {
         data={months}
         renderItem={renderMonth}
         keyExtractor={(item) => item.id}
+        extraData={flatListExtraData}
         onStartReached={loadMorePast}
         onStartReachedThreshold={0.5}
         onEndReached={loadMoreFuture}
@@ -543,6 +719,9 @@ export default function CalendarScreen() {
         maintainVisibleContentPosition={{
           minIndexForVisible: 0,
         }}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={3}
+        windowSize={5}
       />
     </>
   );
@@ -550,14 +729,6 @@ export default function CalendarScreen() {
   // Format date key for lookup
   const formatDateKey = (date: Date) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  };
-
-  // Format time for display
-  const formatTime = (hour: number, minute: number) => {
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    const displayMinute = minute.toString().padStart(2, '0');
-    return `${displayHour}:${displayMinute} ${period}`;
   };
 
   // Render a single day item for the list view
@@ -576,94 +747,34 @@ export default function CalendarScreen() {
           </View>
 
           {workouts.length === 0 ? (
-            /* No workouts row */
             <View style={styles.noWorkoutRow}>
               <NoWorkoutIcon />
-              <Text style={styles.noWorkoutText}>No Workouts</Text>
+              <Text style={styles.noWorkoutText}>{t('planner.noWorkouts')}</Text>
             </View>
           ) : (
-            /* Show scheduled and completed workouts */
-            workouts.map((workout) => {
-              // Determine if this is a completed workout from DB (viewing details)
-              // or a scheduled workout (viewing preview)
-              const handleWorkoutPress = () => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (workout.scheduledWorkoutId) {
-                  // Always show the editable preview for scheduled workouts (completed or not)
-                  router.push({
-                    pathname: '/workout-preview',
-                    params: { workoutId: workout.scheduledWorkoutId, dateKey },
-                  });
-                } else if (workout.isFromDatabase && workout.dbWorkoutId) {
-                  // Standalone completed workout (not from a schedule) - show details
-                  router.push({
-                    pathname: '/workout-details',
-                    params: { workoutId: workout.dbWorkoutId },
-                  });
-                }
-              };
-
-              return (
-                <Pressable key={workout.id} style={styles.workoutRow} onPress={handleWorkoutPress}>
-                  <Pressable
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                      // Toggle completion for scheduled workouts
-                      if (workout.scheduledWorkoutId) {
-                        toggleWorkoutCompletion(workout.scheduledWorkoutId, dateKey);
-                      } else if (workout.dbWorkoutId) {
-                        // Toggle DB workout completion state
-                        setUncheckedDbWorkouts((prev) => {
-                          const newSet = new Set(prev);
-                          if (newSet.has(workout.dbWorkoutId!)) {
-                            newSet.delete(workout.dbWorkoutId!);
-                          } else {
-                            newSet.add(workout.dbWorkoutId!);
-                          }
-                          return newSet;
-                        });
-                      }
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    {workout.isCompleted ? (
-                      <CheckboxChecked color={workout.tagColor} />
-                    ) : (
-                      <CheckboxUnchecked color={workout.tagColor} />
-                    )}
-                  </Pressable>
-                  <View style={styles.workoutInfoPressable}>
-                    {workout.imageUri && (
-                      <Image source={{ uri: workout.imageUri }} style={styles.workoutThumbnail} />
-                    )}
-                    <View style={styles.workoutInfo}>
-                      {workout.templateName && (
-                        <Text style={[styles.workoutTemplateLabel, { color: workout.tagColor }]}>
-                          {workout.templateName.toUpperCase()}
-                        </Text>
-                      )}
-                      <Text style={styles.workoutName}>{workout.name}</Text>
-                    </View>
-                    {workout.time && (
-                      <Text style={styles.workoutTimeRight}>
-                        {formatTime(workout.time.hour, workout.time.minute)}
-                      </Text>
-                    )}
-                    <ChevronRight />
-                  </View>
-                </Pressable>
-              );
-            })
+            workouts.map((workout) => (
+              <WorkoutListRow
+                key={workout.id}
+                scheduledWorkoutId={workout.scheduledWorkoutId}
+                dbWorkoutId={workout.dbWorkoutId}
+                dateKey={dateKey}
+                name={workout.name}
+                tagColor={workout.tagColor}
+                templateName={workout.templateName}
+                timeHour={workout.time?.hour}
+                timeMinute={workout.time?.minute}
+                imageUri={workout.imageUri}
+                imageTemplateId={workout.imageTemplateId}
+                isFromDatabase={workout.isFromDatabase}
+                isDbCompleted={workout.isCompleted}
+                onDbToggle={handleDbToggle}
+              />
+            ))
           )}
         </View>
       );
     },
-    [
-      getCombinedWorkoutsForDate,
-      toggleWorkoutCompletion,
-      isWorkoutCompleted,
-      cachedCompletedWorkouts,
-    ]
+    [getCombinedWorkoutsForDate, handleDbToggle]
   );
 
   // List View
@@ -673,6 +784,7 @@ export default function CalendarScreen() {
       data={listDays}
       renderItem={renderListDayItem}
       keyExtractor={(item) => item.id}
+      extraData={flatListExtraData}
       onStartReached={loadMorePastDays}
       onStartReachedThreshold={0.5}
       onEndReached={loadMoreFutureDays}
@@ -687,6 +799,9 @@ export default function CalendarScreen() {
       maintainVisibleContentPosition={{
         minIndexForVisible: 0,
       }}
+      windowSize={7}
+      maxToRenderPerBatch={5}
+      removeClippedSubviews={true}
     />
   );
 
@@ -694,7 +809,7 @@ export default function CalendarScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Planner</Text>
+        <Text style={styles.headerTitle}>{t('planner.title')}</Text>
         <View style={styles.headerIcons}>
           <Pressable style={styles.iconButton} onPress={handleViewModeSwitch}>
             {viewMode === 'calendar' ? (
@@ -705,9 +820,12 @@ export default function CalendarScreen() {
           </Pressable>
           <Pressable
             style={styles.iconButton}
+            disabled={isNavigating}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/schedule-workout');
+              withLock(() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/schedule-workout');
+              });
             }}
           >
             <Text style={styles.iconText}>+</Text>
@@ -722,32 +840,27 @@ export default function CalendarScreen() {
             <Text style={styles.founderDismissX}>✕</Text>
           </Pressable>
 
-          <View style={styles.founderPhotos}>
-            <Image
-              source={require('../../assets/images/Caleb.png')}
-              style={[styles.founderAvatar, styles.founderAvatarCaleb]}
-            />
-            <Image
-              source={require('../../assets/images/Cass.png')}
-              style={[styles.founderAvatar, styles.founderAvatarOverlap]}
-            />
-          </View>
+          <Image
+            source={require('../../assets/images/CalebCass1.png')}
+            style={styles.founderPhoto}
+          />
 
-          <Text style={styles.founderGreeting}>Hey {userName}!</Text>
+          <Text
+            style={styles.founderGreeting}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.5}
+          >
+            {t('planner.founderGreeting', { name: userName })}
+          </Text>
 
           <Text style={[styles.founderBody, styles.founderBodyFirst]}>
-            We're Caleb & Cass, and we built Align. Thank you so much for trying our app!
+            {t('planner.founderBody1')}
           </Text>
 
-          <Text style={styles.founderBody}>
-            Our mission is to build the{' '}
-            <Text style={styles.founderBodyBold}>best women's workout tracker</Text> in the world,
-            so any feedback you have would be greatly appreciated!
-          </Text>
+          <Text style={styles.founderBody}>{t('planner.founderBody2')}</Text>
 
-          <Text style={[styles.founderBody, { marginBottom: 0 }]}>
-            You can email us at <Text style={styles.founderEmail}>aligntracker@gmail.com</Text>
-          </Text>
+          <Text style={[styles.founderBody, { marginBottom: 0 }]}>{t('planner.founderBody3')}</Text>
         </Animated.View>
       )}
 
@@ -797,53 +910,40 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    padding: 12,
   },
   founderDismiss: {
     position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    top: 12,
+    right: 12,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: 'rgba(0, 0, 0, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
   },
   founderDismissX: {
-    fontSize: fontSize.sm,
+    fontSize: 9,
     color: colors.textSecondary,
     fontFamily: fonts.medium,
   },
-  founderPhotos: {
+  founderPhoto: {
     position: 'absolute',
-    top: 20,
-    right: 16,
-    flexDirection: 'row',
+    top: 12,
+    right: 20,
+    width: 125,
+    height: 118,
+    resizeMode: 'contain',
     zIndex: 1,
-  },
-  founderAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  founderAvatarCaleb: {
-    transform: [{ rotate: '-5deg' }],
-  },
-  founderAvatarOverlap: {
-    marginLeft: -16,
-    transform: [{ rotate: '3deg' }],
   },
   founderGreeting: {
     fontFamily: fonts.bold,
     fontSize: 28,
     color: colors.primary,
-    marginBottom: 4,
+    marginBottom: 9,
+    paddingRight: 145,
   },
   founderBody: {
     fontFamily: fonts.regular,
@@ -853,11 +953,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   founderBodyFirst: {
-    paddingRight: 120,
+    paddingRight: 140,
   },
   founderBodyBold: {
     fontFamily: fonts.bold,
-    color: colors.text,
+    color: colors.primary,
   },
   founderEmail: {
     fontFamily: fonts.medium,
@@ -925,9 +1025,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   workoutDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 6.6,
+    height: 6.6,
+    borderRadius: 3.3,
   },
   // List view styles
   dateHeader: {

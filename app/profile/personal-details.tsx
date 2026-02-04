@@ -8,11 +8,14 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useUserProfileStore, UserProfile } from '@/stores/userProfileStore';
 import { filterNumericInput } from '@/utils/units';
@@ -41,48 +44,57 @@ function DetailRow({ label, value, onEdit, showDivider = true }: DetailRowProps)
 
 export default function PersonalDetailsScreen() {
   const { profile, userId, updateProfile } = useUserProfileStore();
+  const { t } = useTranslation();
 
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editField, setEditField] = useState<'weight' | 'height' | 'dob' | null>(null);
+  const [editField, setEditField] = useState<'weight' | 'height' | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  function openEditModal(field: 'weight' | 'height' | 'dob') {
+  function openEditModal(field: 'weight' | 'height') {
     setEditField(field);
     if (field === 'weight') {
       setEditValue(profile?.weight?.toString() || '');
     } else if (field === 'height') {
       setEditValue(profile?.height?.toString() || '');
-    } else if (field === 'dob') {
-      setEditValue(profile?.date_of_birth || '');
     }
     setShowEditModal(true);
   }
 
   async function handleEditSave() {
-    if (!userId || !editField) return;
+    if (!userId || !editField || isSaving) return;
 
     let updates: Partial<UserProfile> = {};
 
     if (editField === 'weight') {
       const weightNum = parseFloat(editValue);
       if (isNaN(weightNum)) {
-        Alert.alert('Invalid Input', 'Please enter a valid number');
+        Alert.alert(i18n.t('errors.invalidInput'), i18n.t('errors.pleaseEnterValidNumber'));
         return;
       }
       updates.weight = weightNum;
     } else if (editField === 'height') {
       const heightNum = parseFloat(editValue);
       if (isNaN(heightNum)) {
-        Alert.alert('Invalid Input', 'Please enter a valid number');
+        Alert.alert(i18n.t('errors.invalidInput'), i18n.t('errors.pleaseEnterValidNumber'));
         return;
       }
       updates.height = heightNum;
-    } else if (editField === 'dob') {
-      updates.date_of_birth = editValue;
     }
 
-    await updateProfile(updates);
-    setShowEditModal(false);
+    setIsSaving(true);
+    try {
+      const success = await updateProfile(updates);
+      setIsSaving(false);
+      if (success) {
+        setShowEditModal(false);
+      } else {
+        Alert.alert(i18n.t('common.error'), i18n.t('errors.failedToSave'));
+      }
+    } catch (error) {
+      setIsSaving(false);
+      Alert.alert(i18n.t('common.error'), i18n.t('errors.failedToSave'));
+    }
   }
 
   function formatWeight(weight?: number): string {
@@ -97,24 +109,12 @@ export default function PersonalDetailsScreen() {
     return `${height} ${unit}`;
   }
 
-  function formatDob(dob?: string): string {
-    if (!dob) return '-';
-    const date = new Date(dob);
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  }
-
   function getEditLabel(): string {
     switch (editField) {
       case 'weight':
-        return 'Current Weight';
+        return t('profile.currentWeight');
       case 'height':
-        return 'Height';
-      case 'dob':
-        return 'Date of Birth';
+        return t('profile.height');
       default:
         return '';
     }
@@ -123,11 +123,9 @@ export default function PersonalDetailsScreen() {
   function getEditPlaceholder(): string {
     switch (editField) {
       case 'weight':
-        return 'Enter weight (e.g., 64)';
+        return t('profile.enterWeight');
       case 'height':
-        return 'Enter height (e.g., 170)';
-      case 'dob':
-        return 'YYYY-MM-DD';
+        return t('profile.enterHeight');
       default:
         return '';
     }
@@ -146,7 +144,7 @@ export default function PersonalDetailsScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Personal Details</Text>
+        <Text style={styles.headerTitle}>{t('profile.personalDetails')}</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -154,19 +152,14 @@ export default function PersonalDetailsScreen() {
         {/* Details Card */}
         <View style={styles.detailsCard}>
           <DetailRow
-            label="Current Weight"
+            label={t('profile.currentWeight')}
             value={formatWeight(profile?.weight)}
             onEdit={() => openEditModal('weight')}
           />
           <DetailRow
-            label="Height"
+            label={t('profile.height')}
             value={formatHeight(profile?.height)}
             onEdit={() => openEditModal('height')}
-          />
-          <DetailRow
-            label="Date of birth"
-            value={formatDob(profile?.date_of_birth)}
-            onEdit={() => openEditModal('dob')}
             showDivider={false}
           />
         </View>
@@ -180,31 +173,29 @@ export default function PersonalDetailsScreen() {
             <TextInput
               style={styles.editInput}
               value={editValue}
-              onChangeText={(value) => {
-                // Only filter numeric for weight/height, not for date of birth
-                if (editField === 'dob') {
-                  setEditValue(value);
-                } else {
-                  setEditValue(filterNumericInput(value));
-                }
-              }}
+              onChangeText={(value) => setEditValue(filterNumericInput(value))}
               placeholder={getEditPlaceholder()}
               placeholderTextColor={colors.textSecondary}
-              keyboardType={editField === 'dob' ? 'default' : 'numeric'}
+              keyboardType="numeric"
               autoFocus
             />
             <View style={styles.modalButtons}>
               <Pressable style={styles.modalButtonCancel} onPress={() => setShowEditModal(false)}>
-                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                <Text style={styles.modalButtonCancelText}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable
-                style={styles.modalButtonSave}
+                style={[styles.modalButtonSave, isSaving && { opacity: 0.7 }]}
+                disabled={isSaving}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   handleEditSave();
                 }}
               >
-                <Text style={styles.modalButtonSaveText}>Save</Text>
+                {isSaving ? (
+                  <ActivityIndicator size="small" color={colors.textInverse} />
+                ) : (
+                  <Text style={styles.modalButtonSaveText}>{t('common.save')}</Text>
+                )}
               </Pressable>
             </View>
           </View>

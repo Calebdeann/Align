@@ -13,6 +13,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StateStorage } from 'zustand/middleware';
 import { authStateManager } from '@/services/authState';
+import { logger } from '@/utils/logger';
 
 // Legacy keys that may contain data needing migration
 const LEGACY_KEYS = ['workout-store', 'template-store'];
@@ -51,7 +52,7 @@ export function createUserNamespacedStorage(baseKey: string): StateStorage {
 
       // Don't persist if no user is logged in
       if (!userId) {
-        console.warn(`[${baseKey}] Skipping persist - no user logged in`);
+        logger.warn(`[${baseKey}] Skipping persist - no user logged in`);
         return;
       }
 
@@ -100,14 +101,14 @@ async function migrateLegacyData(baseKey: string, userId: string): Promise<strin
     const migratedData = JSON.stringify({ state: migratedState, version: parsed.version });
     await AsyncStorage.setItem(namespacedKey, migratedData);
 
-    console.log(`[${baseKey}] Migrated legacy data for user ${userId.slice(0, 8)}...`);
+    logger.info(`[${baseKey}] Migrated legacy data for user ${userId.slice(0, 8)}...`);
 
     // Note: We don't delete legacy data here in case another user needs it.
     // Legacy cleanup can be done separately after confirming all users migrated.
 
     return migratedData;
   } catch (error) {
-    console.error(`[${baseKey}] Migration error:`, error);
+    logger.error(`[${baseKey}] Migration error`, { error });
     return null;
   }
 }

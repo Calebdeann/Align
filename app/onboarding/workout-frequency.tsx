@@ -1,37 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 import { useOnboardingStore } from '@/stores/onboardingStore';
-
-const daysPerWeekOptions = [
-  '1 day / week',
-  '2 days / week',
-  '3 days / week',
-  '4 days / week',
-  '5 days / week',
-  '6 days / week',
-  'Every day',
-];
-
-const specificDaysOptions = [
-  { id: 'monday', label: 'Monday' },
-  { id: 'tuesday', label: 'Tuesday' },
-  { id: 'wednesday', label: 'Wednesday' },
-  { id: 'thursday', label: 'Thursday' },
-  { id: 'friday', label: 'Friday' },
-  { id: 'saturday', label: 'Saturday' },
-  { id: 'sunday', label: 'Sunday' },
-];
 
 type TabType = 'days-per-week' | 'specific-days';
 
 export default function WorkoutFrequencyScreen() {
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
   const [activeTab, setActiveTab] = useState<TabType>('days-per-week');
   const [selectedDaysPerWeek, setSelectedDaysPerWeek] = useState<string | null>(null);
   const [selectedSpecificDays, setSelectedSpecificDays] = useState<string[]>([]);
+
+  const daysPerWeekOptions = useMemo(
+    () => [
+      t('onboarding.workoutFrequency.1day'),
+      t('onboarding.workoutFrequency.2days'),
+      t('onboarding.workoutFrequency.3days'),
+      t('onboarding.workoutFrequency.4days'),
+      t('onboarding.workoutFrequency.5days'),
+      t('onboarding.workoutFrequency.6days'),
+      t('onboarding.workoutFrequency.everyDay'),
+    ],
+    [t]
+  );
+
+  const specificDaysOptions = useMemo(
+    () => [
+      { id: 'monday', label: t('calendar.days.monday') },
+      { id: 'tuesday', label: t('calendar.days.tuesday') },
+      { id: 'wednesday', label: t('calendar.days.wednesday') },
+      { id: 'thursday', label: t('calendar.days.thursday') },
+      { id: 'friday', label: t('calendar.days.friday') },
+      { id: 'saturday', label: t('calendar.days.saturday') },
+      { id: 'sunday', label: t('calendar.days.sunday') },
+    ],
+    [t]
+  );
 
   const toggleSpecificDay = (dayId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -50,7 +60,7 @@ export default function WorkoutFrequencyScreen() {
     } else if (activeTab === 'specific-days' && selectedSpecificDays.length > 0) {
       useOnboardingStore.getState().setAndSave('workoutDays', selectedSpecificDays);
     }
-    router.push('/onboarding/reminder');
+    router.push('/onboarding/obstacles');
   };
 
   return (
@@ -58,10 +68,13 @@ export default function WorkoutFrequencyScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            })
+          }
           style={styles.backButton}
         >
           <Text style={styles.backArrow}>←</Text>
@@ -73,19 +86,22 @@ export default function WorkoutFrequencyScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            useOnboardingStore.getState().skipField('workoutFrequency');
-            router.push('/onboarding/reminder');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              useOnboardingStore.getState().skipField('workoutFrequency');
+              router.push('/onboarding/obstacles');
+            })
+          }
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
       {/* Question */}
       <View style={styles.questionContainer}>
-        <Text style={styles.questionText}>How many times a week do you want to workout?</Text>
+        <Text style={styles.questionText}>{t('onboarding.workoutFrequency.question')}</Text>
       </View>
 
       {/* Tab Toggle */}
@@ -99,7 +115,7 @@ export default function WorkoutFrequencyScreen() {
             }}
           >
             <Text style={[styles.tabText, activeTab === 'days-per-week' && styles.tabTextActive]}>
-              Days per week
+              {t('onboarding.workoutFrequency.daysPerWeek')}
             </Text>
           </Pressable>
           <Pressable
@@ -110,7 +126,7 @@ export default function WorkoutFrequencyScreen() {
             }}
           >
             <Text style={[styles.tabText, activeTab === 'specific-days' && styles.tabTextActive]}>
-              Specific days
+              {t('onboarding.workoutFrequency.specificDays')}
             </Text>
           </Pressable>
         </View>
@@ -162,14 +178,16 @@ export default function WorkoutFrequencyScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            handleContinue();
-          }}
-          disabled={!canContinue}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleContinue();
+            })
+          }
+          disabled={!canContinue || isNavigating}
         >
           <Text style={[styles.continueText, !canContinue && styles.continueTextDisabled]}>
-            Continue
+            {t('common.continue')}
           </Text>
         </Pressable>
       </View>

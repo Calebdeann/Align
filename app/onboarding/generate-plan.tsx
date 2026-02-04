@@ -2,15 +2,21 @@ import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const PurpleCheckCircle = require('../../assets/images/PurpleCheckCircle.png');
 
 export default function GeneratePlanScreen() {
-  const handleSkip = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/onboarding/generating-plan');
-  };
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
+
+  const handleSkip = () =>
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push('/onboarding/generating-plan');
+    });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -31,8 +37,8 @@ export default function GeneratePlanScreen() {
           <View style={[styles.progressBarFill, { width: '96%' }]} />
         </View>
 
-        <Pressable onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip</Text>
+        <Pressable onPress={handleSkip} disabled={isNavigating}>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
@@ -46,11 +52,12 @@ export default function GeneratePlanScreen() {
         <View style={styles.badge}>
           <Text style={styles.checkmark}>✓</Text>
         </View>
-        <Text style={styles.badgeText}>All done!</Text>
+        <Text style={styles.badgeText}>{t('onboarding.generatingPlan.badge')}</Text>
       </View>
 
       {/* Title */}
-      <Text style={styles.titleText}>Time to generate{'\n'}your custom plan!</Text>
+      <Text style={styles.titleText}>{t('onboarding.generatingPlan.title')}</Text>
+      <Text style={styles.subtitleText}>{t('onboarding.generatingPlan.subtitle')}</Text>
 
       {/* Spacer */}
       <View style={styles.spacer} />
@@ -59,12 +66,15 @@ export default function GeneratePlanScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push('/onboarding/generating-plan');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.push('/onboarding/generating-plan');
+            })
+          }
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -153,6 +163,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.md,
     lineHeight: 36,
+  },
+  subtitleText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    lineHeight: 22,
   },
   spacer: {
     flex: 1,

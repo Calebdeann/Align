@@ -62,7 +62,7 @@ async function safeFetch<T>(url: string, retries: number = 2): Promise<AscendRes
         await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
         continue;
       }
-      console.error('Ascend API error:', err);
+      console.warn('Ascend API error:', err);
       return { success: false, data: [] as T };
     }
   }

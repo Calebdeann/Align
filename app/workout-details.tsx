@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/constants/theme';
 import {
   getWorkoutById,
@@ -22,6 +24,7 @@ import {
   type DbWorkoutExercise,
   type DbWorkoutSet,
   type WorkoutMuscleData,
+  type SetType,
 } from '@/services/api/workouts';
 import * as Haptics from 'expo-haptics';
 import { UnitSystem, kgToLbs, getWeightUnit, fromKgForDisplay } from '@/utils/units';
@@ -29,6 +32,9 @@ import { formatExerciseNameString } from '@/utils/textFormatters';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { prefetchExerciseGif } from '@/stores/exerciseStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { getTemplateImageById } from '@/constants/templateImages';
 
 // Icons
 function BackIcon() {
@@ -51,9 +57,9 @@ function formatDuration(seconds: number): string {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   if (hours > 0) {
-    return `${hours} hour, ${minutes} minutes`;
+    return i18n.t('saveWorkout.hourMinutes', { hours, minutes });
   }
-  return `${minutes} minutes`;
+  return i18n.t('saveWorkout.minutes', { minutes });
 }
 
 // Format volume with units
@@ -93,10 +99,32 @@ function getMuscleColor(muscle: string): string {
   return muscleColors[muscle] || colors.primary;
 }
 
+// Superset colors matching active-workout
+const SUPERSET_COLORS = ['#64B5F6', '#7AC29A', '#FF8A65', '#E53935', '#BA68C8'];
+
+const getSupersetColor = (supersetId: number): string => {
+  return SUPERSET_COLORS[(supersetId - 1) % SUPERSET_COLORS.length];
+};
+
+const getSetTypeLabel = (setType: SetType | undefined | null, setIndex: number): string => {
+  switch (setType) {
+    case 'warmup':
+      return 'W';
+    case 'failure':
+      return 'F';
+    case 'dropset':
+      return 'D';
+    default:
+      return (setIndex + 1).toString();
+  }
+};
+
 export default function WorkoutDetailsScreen() {
   const params = useLocalSearchParams();
   const workoutId = params.workoutId as string;
+  const { t } = useTranslation();
 
+  const { isNavigating, withLock } = useNavigationLock();
   const { getUnitSystem } = useUserPreferencesStore();
   const units = getUnitSystem();
   const setCachedCompletedWorkouts = useWorkoutStore((s) => s.setCachedCompletedWorkouts);
@@ -229,76 +257,74 @@ export default function WorkoutDetailsScreen() {
   const handleEditWorkout = () => {
     if (!workout || !exercises.length) return;
 
-    // Convert DB format to WorkoutData format for save-workout screen
-    const workoutExercises = exercises.map((ex) => ({
-      exercise: {
-        id: ex.exercise_id,
-        name: ex.exercise_name,
-        muscle: ex.exercise_muscle || '',
-        gifUrl: ex.image_url || undefined,
-        thumbnailUrl: ex.thumbnail_url || undefined,
-      },
-      notes: ex.notes || '',
-      sets: ex.sets
-        .filter((s) => s.completed)
-        .map((s, index) => ({
-          id: `edit_${s.id}`,
-          previous: '-',
-          // Convert stored kg to display units for the input fields
-          kg: s.weight != null ? fromKgForDisplay(s.weight, units).toString() : '',
-          reps: s.reps != null ? s.reps.toString() : '',
-          completed: true,
-          setType: (s.set_type || 'normal') as 'normal' | 'warmup' | 'failure' | 'dropset',
-          rpe: s.rpe ?? null,
-        })),
-      supersetId: ex.superset_id ?? null,
-      restTimerSeconds: ex.rest_timer_seconds ?? 90,
-    }));
+    withLock(() => {
+      // Convert DB format to WorkoutData format for save-workout screen
+      const workoutExercises = exercises.map((ex) => ({
+        exercise: {
+          id: ex.exercise_id,
+          name: ex.exercise_name,
+          muscle: ex.exercise_muscle || '',
+          gifUrl: ex.image_url || undefined,
+          thumbnailUrl: ex.thumbnail_url || undefined,
+        },
+        notes: ex.notes || '',
+        sets: ex.sets
+          .filter((s) => s.completed)
+          .map((s, index) => ({
+            id: `edit_${s.id}`,
+            previous: '-',
+            // Convert stored kg to display units for the input fields
+            kg: s.weight != null ? fromKgForDisplay(s.weight, units).toString() : '',
+            reps: s.reps != null ? s.reps.toString() : '',
+            completed: true,
+            setType: (s.set_type || 'normal') as 'normal' | 'warmup' | 'failure' | 'dropset',
+            rpe: s.rpe ?? null,
+          })),
+        supersetId: ex.superset_id ?? null,
+        restTimerSeconds: ex.rest_timer_seconds ?? 90,
+      }));
 
-    const workoutData = {
-      exercises: workoutExercises,
-      durationSeconds: workout.duration_seconds,
-      startedAt: workout.started_at,
-      userId: workout.user_id,
-      sourceTemplateId: workout.source_template_id || undefined,
-    };
+      const workoutData = {
+        exercises: workoutExercises,
+        durationSeconds: workout.duration_seconds,
+        startedAt: workout.started_at,
+        userId: workout.user_id,
+        sourceTemplateId: workout.source_template_id || undefined,
+      };
 
-    router.push({
-      pathname: '/save-workout',
-      params: {
-        workoutData: JSON.stringify(workoutData),
-        editWorkoutId: workoutId,
-        editTitle: workout.name || '',
-        editNotes: workout.notes || '',
-        editImageType: workout.image_type || '',
-        editImageUri: workout.image_uri || '',
-        editImageTemplateId: workout.image_template_id || '',
-      },
+      router.push({
+        pathname: '/save-workout',
+        params: {
+          workoutData: JSON.stringify(workoutData),
+          editWorkoutId: workoutId,
+          editTitle: workout.name || '',
+          editNotes: workout.notes || '',
+          editImageType: workout.image_type || '',
+          editImageUri: workout.image_uri || '',
+          editImageTemplateId: workout.image_template_id || '',
+        },
+      });
     });
   };
 
   const handleDeleteWorkout = () => {
-    Alert.alert(
-      'Delete Workout',
-      'Are you sure you want to delete this workout? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const success = await deleteWorkout(workoutId);
-            if (success) {
-              // Remove from cached completed workouts
-              setCachedCompletedWorkouts(cachedCompletedWorkouts.filter((w) => w.id !== workoutId));
-              router.back();
-            } else {
-              Alert.alert('Error', 'Failed to delete workout. Please try again.');
-            }
-          },
+    Alert.alert(t('workoutDetails.deleteWorkout'), t('workoutDetails.deleteWorkoutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          const success = await deleteWorkout(workoutId);
+          if (success) {
+            // Remove from cached completed workouts
+            setCachedCompletedWorkouts(cachedCompletedWorkouts.filter((w) => w.id !== workoutId));
+            router.back();
+          } else {
+            Alert.alert(t('common.error'), t('workoutDetails.deleteWorkoutFailed'));
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (isLoading) {
@@ -314,7 +340,7 @@ export default function WorkoutDetailsScreen() {
           >
             <BackIcon />
           </Pressable>
-          <Text style={styles.headerTitle}>Workout Details</Text>
+          <Text style={styles.headerTitle}>{t('workoutDetails.title')}</Text>
           <View style={styles.backButton} />
         </View>
         <View style={styles.loadingContainer}>
@@ -337,11 +363,11 @@ export default function WorkoutDetailsScreen() {
           >
             <BackIcon />
           </Pressable>
-          <Text style={styles.headerTitle}>Workout Details</Text>
+          <Text style={styles.headerTitle}>{t('workoutDetails.title')}</Text>
           <View style={styles.backButton} />
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.emptyText}>Workout not found</Text>
+          <Text style={styles.emptyText}>{t('workoutDetails.workoutNotFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -360,7 +386,7 @@ export default function WorkoutDetailsScreen() {
         >
           <BackIcon />
         </Pressable>
-        <Text style={styles.headerTitle}>Workout Details</Text>
+        <Text style={styles.headerTitle}>{t('workoutDetails.title')}</Text>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -374,13 +400,20 @@ export default function WorkoutDetailsScreen() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Workout Photo */}
-        {workout.image_uri && (
+        {workout.image_uri ? (
           <Image source={{ uri: workout.image_uri }} style={styles.workoutPhoto} />
-        )}
+        ) : workout.image_template_id ? (
+          (() => {
+            const templateSource = getTemplateImageById(workout.image_template_id);
+            return templateSource ? (
+              <Image source={templateSource} style={styles.workoutPhoto} />
+            ) : null;
+          })()
+        ) : null}
 
         {/* Workout Info Card */}
         <View style={[styles.card, styles.workoutInfoCard]}>
-          <Text style={styles.workoutTitle}>{workout.name || 'Workout'}</Text>
+          <Text style={styles.workoutTitle}>{workout.name || t('workout.title')}</Text>
           <Text style={styles.workoutDate}>{formatDate(workout.completed_at)}</Text>
 
           {workout.notes && (
@@ -392,13 +425,13 @@ export default function WorkoutDetailsScreen() {
         </View>
 
         {/* Stats Section */}
-        <Text style={styles.sectionTitle}>Summary</Text>
+        <Text style={styles.sectionTitle}>{t('workoutDetails.summary')}</Text>
         <View style={styles.card}>
           <View style={styles.statRow}>
             <View style={styles.statIconContainer}>
               <Ionicons name="time-outline" size={18} color={colors.text} />
             </View>
-            <Text style={styles.statLabel}>Duration</Text>
+            <Text style={styles.statLabel}>{t('workoutDetails.duration')}</Text>
             <Text style={styles.statValue}>{formatDuration(workout.duration_seconds)}</Text>
           </View>
 
@@ -408,7 +441,7 @@ export default function WorkoutDetailsScreen() {
             <View style={styles.statIconContainer}>
               <Ionicons name="barbell-outline" size={18} color={colors.text} />
             </View>
-            <Text style={styles.statLabel}>Volume</Text>
+            <Text style={styles.statLabel}>{t('workoutDetails.volume')}</Text>
             <Text style={styles.statValue}>{formatVolume(stats.totalVolume, units)}</Text>
           </View>
 
@@ -418,7 +451,7 @@ export default function WorkoutDetailsScreen() {
             <View style={styles.statIconContainer}>
               <Ionicons name="layers-outline" size={18} color={colors.text} />
             </View>
-            <Text style={styles.statLabel}>Sets</Text>
+            <Text style={styles.statLabel}>{t('workoutDetails.sets')}</Text>
             <Text style={styles.statValue}>{stats.totalSets}</Text>
           </View>
 
@@ -428,7 +461,7 @@ export default function WorkoutDetailsScreen() {
             <View style={styles.statIconContainer}>
               <Ionicons name="fitness-outline" size={18} color={colors.text} />
             </View>
-            <Text style={styles.statLabel}>Exercises</Text>
+            <Text style={styles.statLabel}>{t('workoutDetails.exercises')}</Text>
             <Text style={styles.statValue}>{exercises.length}</Text>
           </View>
         </View>
@@ -436,16 +469,18 @@ export default function WorkoutDetailsScreen() {
         {/* Muscles Worked Section - Detailed view with Primary/Secondary */}
         {detailedMuscleSplit.hasDetailedData ? (
           <>
-            <Text style={styles.sectionTitle}>Muscles Worked</Text>
+            <Text style={styles.sectionTitle}>{t('workoutDetails.musclesWorked')}</Text>
             <View style={styles.card}>
               {/* Primary Muscles */}
               {detailedMuscleSplit.primary.length > 0 && (
                 <View style={styles.muscleSection}>
-                  <Text style={styles.muscleSectionLabel}>Primary</Text>
+                  <Text style={styles.muscleSectionLabel}>{t('workoutDetails.primary')}</Text>
                   <View style={styles.muscleList}>
                     {detailedMuscleSplit.primary.map((muscle) => (
                       <View key={muscle.name} style={styles.muscleRow}>
-                        <Text style={styles.muscleName}>{muscle.name}</Text>
+                        <Text style={styles.muscleName}>
+                          {muscle.name.charAt(0).toUpperCase() + muscle.name.slice(1)}
+                        </Text>
                         <View style={styles.progressBarContainer}>
                           <View
                             style={[
@@ -457,7 +492,9 @@ export default function WorkoutDetailsScreen() {
                             ]}
                           />
                         </View>
-                        <Text style={styles.muscleSetCount}>{muscle.sets} sets</Text>
+                        <Text style={styles.muscleSetCount}>
+                          {t('workoutDetails.setsCount', { count: muscle.sets })}
+                        </Text>
                       </View>
                     ))}
                   </View>
@@ -467,11 +504,13 @@ export default function WorkoutDetailsScreen() {
               {/* Secondary Muscles */}
               {detailedMuscleSplit.secondary.length > 0 && (
                 <View style={styles.muscleSection}>
-                  <Text style={styles.muscleSectionLabel}>Secondary</Text>
+                  <Text style={styles.muscleSectionLabel}>{t('workoutDetails.secondary')}</Text>
                   <View style={styles.secondaryMuscleList}>
                     {detailedMuscleSplit.secondary.map((muscle) => (
                       <View key={muscle.name} style={styles.secondaryMusclePill}>
-                        <Text style={styles.secondaryMuscleText}>{muscle.name}</Text>
+                        <Text style={styles.secondaryMuscleText}>
+                          {muscle.name.charAt(0).toUpperCase() + muscle.name.slice(1)}
+                        </Text>
                         <Text style={styles.secondaryMuscleSets}>{muscle.sets}</Text>
                       </View>
                     ))}
@@ -483,12 +522,14 @@ export default function WorkoutDetailsScreen() {
         ) : sortedMuscles.length > 0 ? (
           // Fallback to basic muscle split if no detailed data
           <>
-            <Text style={styles.sectionTitle}>Muscle Split</Text>
+            <Text style={styles.sectionTitle}>{t('workoutDetails.muscleSplit')}</Text>
             <View style={styles.card}>
               <View style={styles.muscleList}>
                 {sortedMuscles.map((muscle) => (
                   <View key={muscle.name} style={styles.muscleRow}>
-                    <Text style={styles.muscleName}>{muscle.name}</Text>
+                    <Text style={styles.muscleName}>
+                      {muscle.name.charAt(0).toUpperCase() + muscle.name.slice(1)}
+                    </Text>
                     <View style={styles.progressBarContainer}>
                       <View
                         style={[
@@ -509,7 +550,7 @@ export default function WorkoutDetailsScreen() {
         ) : null}
 
         {/* Exercises Section */}
-        <Text style={styles.sectionTitle}>Exercises</Text>
+        <Text style={styles.sectionTitle}>{t('workoutDetails.exercises')}</Text>
         <View style={styles.card}>
           {exercises.map((ex, index) => {
             const completedSets = ex.sets.filter((s) => s.completed);
@@ -517,6 +558,16 @@ export default function WorkoutDetailsScreen() {
 
             return (
               <View key={ex.id}>
+                {ex.superset_id != null && (
+                  <View
+                    style={[
+                      styles.supersetBadge,
+                      { backgroundColor: getSupersetColor(ex.superset_id) },
+                    ]}
+                  >
+                    <Text style={styles.supersetBadgeText}>Superset {ex.superset_id}</Text>
+                  </View>
+                )}
                 <Pressable
                   style={styles.exerciseRow}
                   onPress={() => {
@@ -526,8 +577,11 @@ export default function WorkoutDetailsScreen() {
                 >
                   <Pressable
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/exercise/${ex.exercise_id}`);
+                      withLock(() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        prefetchExerciseGif(ex.exercise_id);
+                        router.push(`/exercise/${ex.exercise_id}`);
+                      });
                     }}
                   >
                     <ExerciseImage
@@ -537,17 +591,20 @@ export default function WorkoutDetailsScreen() {
                       borderRadius={8}
                     />
                   </Pressable>
-                  <Pressable
-                    style={{ flex: 1, justifyContent: 'center' }}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/exercise/${ex.exercise_id}`);
-                    }}
-                  >
-                    <Text style={styles.exerciseName}>
+                  <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
+                    <Text
+                      style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
+                      onPress={() => {
+                        withLock(() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          prefetchExerciseGif(ex.exercise_id);
+                          router.push(`/exercise/${ex.exercise_id}`);
+                        });
+                      }}
+                    >
                       {formatExerciseNameString(ex.exercise_name)}
                     </Text>
-                  </Pressable>
+                  </View>
                   <Ionicons
                     name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                     size={20}
@@ -559,12 +616,24 @@ export default function WorkoutDetailsScreen() {
                 {isExpanded && completedSets.length > 0 && (
                   <View style={styles.setsContainer}>
                     <View style={styles.setsHeader}>
-                      <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-                      <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
+                      <Text style={[styles.setHeaderText, styles.setColumn]}>
+                        {t('template.set')}
+                      </Text>
+                      <Text style={styles.setHeaderText}>{t('template.weightAndReps')}</Text>
                     </View>
                     {completedSets.map((set, setIndex) => (
                       <View key={set.id} style={styles.setRow}>
-                        <Text style={[styles.setNumber, styles.setColumn]}>{setIndex + 1}</Text>
+                        <Text
+                          style={[
+                            styles.setNumber,
+                            styles.setColumn,
+                            set.set_type === 'warmup' && styles.setTypeWarmup,
+                            set.set_type === 'failure' && styles.setTypeFailure,
+                            set.set_type === 'dropset' && styles.setTypeDropset,
+                          ]}
+                        >
+                          {getSetTypeLabel(set.set_type, setIndex)}
+                        </Text>
                         <Text style={styles.setText}>
                           {set.weight && set.reps
                             ? `${units === 'imperial' ? Math.round(kgToLbs(set.weight)) : set.weight} ${weightLabel} x ${set.reps} reps${set.rpe ? ` @ RPE ${set.rpe}` : ''}`
@@ -584,7 +653,9 @@ export default function WorkoutDetailsScreen() {
             );
           })}
 
-          {exercises.length === 0 && <Text style={styles.emptyText}>No exercises recorded</Text>}
+          {exercises.length === 0 && (
+            <Text style={styles.emptyText}>{t('workoutDetails.noExercisesRecorded')}</Text>
+          )}
         </View>
 
         {/* Delete Workout (text button at bottom) */}
@@ -595,7 +666,7 @@ export default function WorkoutDetailsScreen() {
           }}
           style={styles.deleteTextButton}
         >
-          <Text style={styles.deleteText}>Delete Workout</Text>
+          <Text style={styles.deleteText}>{t('workoutDetails.deleteWorkout')}</Text>
         </Pressable>
 
         <View style={styles.bottomSpacer} />
@@ -831,6 +902,28 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
     color: colors.text,
+  },
+  setTypeWarmup: {
+    color: '#F5A623',
+  },
+  setTypeFailure: {
+    color: colors.danger,
+  },
+  setTypeDropset: {
+    color: '#2196F3',
+  },
+  supersetBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginBottom: spacing.xs,
+  },
+  supersetBadgeText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: colors.textInverse,
+    letterSpacing: 0.2,
   },
   emptyText: {
     fontFamily: fonts.regular,

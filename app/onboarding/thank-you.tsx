@@ -3,20 +3,28 @@ import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
-const GirlsInCircle = require('../../assets/images/GirlsInCircle.png');
+const MultipleGirls = require('../../assets/images/MultipleGirls.png');
 
 export default function ThankYouScreen() {
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.back();
+            })
+          }
+          disabled={isNavigating}
           style={styles.backButton}
         >
           <Text style={styles.backArrow}>←</Text>
@@ -28,36 +36,34 @@ export default function ThankYouScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/onboarding/reviews');
-          }}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/onboarding/reviews');
+            })
+          }
+          disabled={isNavigating}
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
       {/* Title */}
       <View style={styles.titleContainer}>
-        <Text style={styles.titleText}>Thank you{'\n'}for trusting us!</Text>
+        <Text style={styles.titleText}>{t('onboarding.thankYou.title')}</Text>
       </View>
 
       {/* Girls in Circle Image */}
       <View style={styles.imageContainer}>
-        <Image source={GirlsInCircle} style={styles.girlsImage} resizeMode="contain" />
+        <Image source={MultipleGirls} style={styles.girlsImage} resizeMode="contain" />
       </View>
-
-      {/* Stats */}
-      <Text style={styles.usersText}>20,000+ happy users</Text>
 
       {/* Percentage highlight */}
       <View style={styles.statsContainer}>
         <Text style={styles.percentageText}>
-          <Text style={styles.percentageHighlight}>84%</Text> of our users
+          <Text style={styles.percentageHighlight}>{t('onboarding.thankYou.percentage')}</Text>
         </Text>
-        <Text style={styles.statsDescription}>
-          claim that using align is easy to use{'\n'}and makes it simple to stay on track
-        </Text>
+        <Text style={styles.statsDescription}>{t('onboarding.thankYou.description')}</Text>
       </View>
 
       {/* Spacer */}
@@ -67,12 +73,15 @@ export default function ThankYouScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push('/onboarding/reviews');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.push('/onboarding/reviews');
+            })
+          }
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -140,13 +149,6 @@ const styles = StyleSheet.create({
   girlsImage: {
     width: 280,
     height: 200,
-  },
-  usersText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.primary,
-    textAlign: 'center',
-    marginTop: spacing.lg,
   },
   statsContainer: {
     alignItems: 'center',

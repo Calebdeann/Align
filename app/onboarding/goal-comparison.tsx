@@ -3,18 +3,24 @@ import { View, Text, StyleSheet, Pressable, Animated, Easing } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const BAR_HEIGHT = 180;
 const GRAY_BAR_PERCENT = 0.2;
 const PURPLE_BAR_PERCENT = 0.6;
 
 export default function GoalComparisonScreen() {
+  const { t } = useTranslation();
   const { targetWeight, currentWeight } = useOnboardingStore();
+  const { isNavigating, withLock } = useNavigationLock();
 
   const isLosing = targetWeight < currentWeight;
-  const actionWord = isLosing ? 'Lose' : 'Gain';
+  const actionWord = isLosing
+    ? t('onboarding.goalComparison.lose')
+    : t('onboarding.goalComparison.gain');
 
   // Animation values
   const grayBarHeight = useRef(new Animated.Value(0)).current;
@@ -89,19 +95,22 @@ export default function GoalComparisonScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/onboarding/health-situations');
-          }}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/onboarding/training-location');
+            })
+          }
+          disabled={isNavigating}
         >
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
         </Pressable>
       </View>
 
       {/* Title */}
       <View style={styles.titleContainer}>
         <Text style={styles.titleText}>
-          {actionWord} twice as much{'\n'}weight with Align{'\n'}vs on your own
+          {t('onboarding.goalComparison.title', { action: actionWord })}
         </Text>
       </View>
 
@@ -110,7 +119,7 @@ export default function GoalComparisonScreen() {
         <View style={styles.barsContainer}>
           {/* Without Align */}
           <View style={styles.barColumn}>
-            <Text style={styles.barLabel}>Without{'\n'}Align</Text>
+            <Text style={styles.barLabel}>{t('onboarding.goalComparison.withoutAlign')}</Text>
             <View style={styles.barWrapper}>
               <Animated.View style={[styles.barGray, { height: grayBarHeight }]} />
               <Animated.Text style={[styles.barValue, { opacity: grayTextOpacity }]}>
@@ -121,7 +130,7 @@ export default function GoalComparisonScreen() {
 
           {/* With Align */}
           <View style={styles.barColumn}>
-            <Text style={styles.barLabel}>With{'\n'}Align</Text>
+            <Text style={styles.barLabel}>{t('onboarding.goalComparison.withAlign')}</Text>
             <View style={styles.barWrapper}>
               <Animated.View style={[styles.barPurple, { height: purpleBarHeight }]} />
               <Animated.Text style={[styles.barValuePurple, { opacity: purpleTextOpacity }]}>
@@ -132,7 +141,7 @@ export default function GoalComparisonScreen() {
         </View>
 
         <Animated.Text style={[styles.comparisonSubtext, { opacity: subtextOpacity }]}>
-          Align makes it easy and holds{'\n'}you accountable
+          {t('onboarding.goalComparison.comparisonText')}
         </Animated.Text>
       </View>
 
@@ -143,12 +152,15 @@ export default function GoalComparisonScreen() {
       <View style={styles.bottomSection}>
         <Pressable
           style={styles.continueButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push('/onboarding/health-situations');
-          }}
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.push('/onboarding/training-location');
+            })
+          }
         >
-          <Text style={styles.continueText}>Continue</Text>
+          <Text style={styles.continueText}>{t('common.continue')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

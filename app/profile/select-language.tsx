@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 
@@ -11,33 +13,36 @@ interface Language {
   code: string;
   name: string;
   flag: string;
-  available: boolean;
 }
 
 const LANGUAGES: Language[] = [
-  { code: 'en', name: 'English', flag: '🇺🇸', available: true },
-  { code: 'zh', name: '中国人', flag: '🇨🇳', available: false },
-  { code: 'hi', name: 'हिंदी', flag: '🇮🇳', available: false },
-  { code: 'es', name: 'Español', flag: '🇪🇸', available: false },
-  { code: 'fr', name: 'Français', flag: '🇫🇷', available: false },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪', available: false },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺', available: false },
-  { code: 'pt', name: 'Português', flag: '🇧🇷', available: false },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹', available: false },
-  { code: 'ro', name: 'Română', flag: '🇷🇴', available: false },
-  { code: 'az', name: 'Azərbaycanca', flag: '🇦🇿', available: false },
-  { code: 'nl', name: 'Nederlands', flag: '🇳🇱', available: false },
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'pt', name: 'Português', flag: '🇧🇷' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'ro', name: 'Română', flag: '🇷🇴' },
+  { code: 'az', name: 'Azərbaycan', flag: '🇦🇿' },
+  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
 ];
 
 export default function SelectLanguageScreen() {
+  const { t } = useTranslation();
   const { profile, userId, updateProfile } = useUserProfileStore();
-  const [selectedLanguage, setSelectedLanguage] = useState(profile?.language || 'en');
+  const [selectedLanguage, setSelectedLanguage] = useState(
+    profile?.language || i18n.language || 'en'
+  );
 
-  async function handleSelectLanguage(code: string, available: boolean) {
-    if (!available || !userId) return;
-
+  async function handleSelectLanguage(code: string) {
     setSelectedLanguage(code);
-    await updateProfile({ language: code });
+    i18n.changeLanguage(code);
+    if (userId) {
+      await updateProfile({ language: code });
+    }
   }
 
   return (
@@ -53,7 +58,7 @@ export default function SelectLanguageScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Select Language</Text>
+        <Text style={styles.headerTitle}>{t('profile.selectLanguage')}</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -64,21 +69,17 @@ export default function SelectLanguageScreen() {
               style={styles.languageRow}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                handleSelectLanguage(language.code, language.available);
+                handleSelectLanguage(language.code);
               }}
             >
               <View style={styles.languageLeft}>
                 <Text style={styles.flag}>{language.flag}</Text>
                 <Text style={styles.languageName}>{language.name}</Text>
               </View>
-              {language.available ? (
-                selectedLanguage === language.code && (
-                  <View style={styles.checkmark}>
-                    <Ionicons name="checkmark" size={16} color={colors.textInverse} />
-                  </View>
-                )
-              ) : (
-                <Text style={styles.comingSoon}>Coming Soon</Text>
+              {selectedLanguage === language.code && (
+                <View style={styles.checkmark}>
+                  <Ionicons name="checkmark" size={16} color={colors.textInverse} />
+                </View>
               )}
             </Pressable>
             {index < LANGUAGES.length - 1 && <View style={styles.divider} />}
@@ -142,12 +143,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  comingSoon: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
   },
   divider: {
     height: 1,

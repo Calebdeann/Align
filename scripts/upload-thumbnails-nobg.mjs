@@ -6,7 +6,9 @@
  *      in the Supabase SQL Editor to create the storage bucket + policies
  *   2. Ensure .env has SUPABASE_SERVICE_ROLE_KEY set
  *
- * Usage: node scripts/upload-thumbnails-nobg.mjs
+ * Usage:
+ *   node scripts/upload-thumbnails-nobg.mjs                          (default: data/thumbs-nobg)
+ *   node scripts/upload-thumbnails-nobg.mjs --dir data/thumbs-hires  (custom directory)
  */
 
 import { readFileSync, readdirSync } from 'fs';
@@ -36,9 +38,15 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
-const thumbsDir = resolve(__dirname, '..', 'data', 'thumbs-nobg');
+// Support custom directory via --dir flag
+const dirArgIdx = process.argv.indexOf('--dir');
+const customDir = dirArgIdx !== -1 ? process.argv[dirArgIdx + 1] : null;
+const thumbsDir = customDir
+  ? resolve(__dirname, '..', customDir)
+  : resolve(__dirname, '..', 'data', 'thumbs-nobg');
 const files = readdirSync(thumbsDir).filter((f) => f.endsWith('.png')).sort();
 
+console.log(`Source: ${thumbsDir}`);
 console.log(`Found ${files.length} thumbnails to upload`);
 console.log(`Bucket: ${BUCKET}`);
 console.log(`Supabase: ${SUPABASE_URL}\n`);

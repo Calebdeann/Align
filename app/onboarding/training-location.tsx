@@ -1,50 +1,60 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Image, ImageSourcePropType } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import QuestionLayout, { optionStyles } from '@/components/QuestionLayout';
 import { useOnboardingStore } from '@/stores/onboardingStore';
-
-const locations: { id: string; label: string; icon: ImageSourcePropType }[] = [
-  {
-    id: 'commercial',
-    label: 'Commercial Gym',
-    icon: require('../../assets/images/Onboarding Icons/5. Where Train/fe_building.png'),
-  },
-  {
-    id: 'small',
-    label: 'Small Gym',
-    icon: require('../../assets/images/Onboarding Icons/5. Where Train/icon-park-outline_building-four.png'),
-  },
-  {
-    id: 'home',
-    label: 'Home Gym',
-    icon: require('../../assets/images/Onboarding Icons/5. Where Train/mdi_gym.png'),
-  },
-  {
-    id: 'bodyweight',
-    label: 'Body Weight',
-    icon: require('../../assets/images/Onboarding Icons/5. Where Train/Vector.png'),
-  },
-];
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 export default function TrainingLocationScreen() {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
   const { setAndSave, skipField } = useOnboardingStore();
+  const { isNavigating, withLock } = useNavigationLock();
+
+  const locations: { id: string; label: string; icon: ImageSourcePropType }[] = useMemo(
+    () => [
+      {
+        id: 'commercial',
+        label: t('onboarding.trainingLocation.commercialGym'),
+        icon: require('../../assets/images/Onboarding Icons/5. Where Train/fe_building.png'),
+      },
+      {
+        id: 'small',
+        label: t('onboarding.trainingLocation.smallGym'),
+        icon: require('../../assets/images/Onboarding Icons/5. Where Train/icon-park-outline_building-four.png'),
+      },
+      {
+        id: 'home',
+        label: t('onboarding.trainingLocation.homeGym'),
+        icon: require('../../assets/images/Onboarding Icons/5. Where Train/mdi_gym.png'),
+      },
+      {
+        id: 'bodyweight',
+        label: t('onboarding.trainingLocation.bodyWeight'),
+        icon: require('../../assets/images/Onboarding Icons/5. Where Train/Vector.png'),
+      },
+    ],
+    [t]
+  );
 
   const handleSelect = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSelected(id);
-    setAndSave('trainingLocation', id);
-    setTimeout(() => {
-      router.push('/onboarding/workout-frequency');
-    }, 300);
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setSelected(id);
+      setAndSave('trainingLocation', id);
+      setTimeout(() => {
+        router.push('/onboarding/workout-frequency');
+      }, 300);
+    });
   };
 
   return (
     <QuestionLayout
-      question="Where do you train?"
+      navigationDisabled={isNavigating}
+      question={t('onboarding.trainingLocation.question')}
       progress={60}
       onSkip={() => {
         skipField('trainingLocation');

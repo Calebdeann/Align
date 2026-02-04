@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,18 +11,20 @@ import {
   Animated,
   Dimensions,
   PanResponder,
-  GestureResponderEvent,
-  PanResponderGestureState,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Swipeable } from 'react-native-gesture-handler';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Line } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { useWorkoutStore, PendingExercise } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { prefetchExerciseGif } from '@/stores/exerciseStore';
 import { getWeightUnit, UnitSystem, filterNumericInput, fromKgForDisplay } from '@/utils/units';
 import { formatExerciseNameString } from '@/utils/textFormatters';
 import {
@@ -32,12 +34,16 @@ import {
 } from '@/services/api/workouts';
 import { getCurrentUser } from '@/services/api/user';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Rest timer options in seconds
+// Rest timer options in seconds (matches active-workout)
 const REST_TIMER_OPTIONS = [
   { value: 0, label: 'Off' },
+  { value: 5, label: '5s' },
+  { value: 10, label: '10s' },
+  { value: 15, label: '15s' },
   { value: 30, label: '30s' },
   { value: 45, label: '45s' },
   { value: 60, label: '1:00' },
@@ -45,6 +51,10 @@ const REST_TIMER_OPTIONS = [
   { value: 120, label: '2:00' },
   { value: 150, label: '2:30' },
   { value: 180, label: '3:00' },
+  { value: 210, label: '3:30' },
+  { value: 240, label: '4:00' },
+  { value: 270, label: '4:30' },
+  { value: 300, label: '5:00' },
 ];
 
 // Generate a simple unique ID
@@ -122,7 +132,15 @@ function MinusCircleIcon() {
         d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
         fill="#C75050"
       />
-      <Line x1={8} y1={12} x2={16} y2={12} stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" />
+      <Line
+        x1={8}
+        y1={12}
+        x2={16}
+        y2={12}
+        stroke={colors.textInverse}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
@@ -142,7 +160,7 @@ function CheckIconSmall() {
 }
 
 function formatRestTimerDisplay(seconds: number): string {
-  if (seconds === 0) return 'OFF';
+  if (seconds === 0) return i18n.t('workout.restTimerOff');
   const option = REST_TIMER_OPTIONS.find((o) => o.value === seconds);
   return (
     option?.label || `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`
@@ -177,100 +195,36 @@ function SwipeableSetRow({
   previousWeight,
   previousReps,
 }: SwipeableSetRowProps) {
-  const translateX = useRef(new Animated.Value(0)).current;
-  const isSwipedOpen = useRef(false);
+  const swipeableRef = useRef<Swipeable>(null);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (
-        _: GestureResponderEvent,
-        gestureState: PanResponderGestureState
-      ) => {
-        // Capture horizontal swipes with lower threshold
-        return (
-          Math.abs(gestureState.dx) > 5 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy)
-        );
-      },
-      onPanResponderGrant: () => {
-        // Stop any ongoing animations
-      },
-      onPanResponderMove: (_, gestureState) => {
-        // Swipe left (negative dx) to reveal delete on right
-        if (gestureState.dx < 0 && !isSwipedOpen.current) {
-          const newValue = Math.max(gestureState.dx, -DELETE_BUTTON_WIDTH);
-          translateX.setValue(newValue);
-        } else if (isSwipedOpen.current) {
-          // Already open, allow closing by swiping right
-          const newValue = Math.min(
-            Math.max(-DELETE_BUTTON_WIDTH + gestureState.dx, -DELETE_BUTTON_WIDTH),
-            0
-          );
-          translateX.setValue(newValue);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        // Opening: swipe left past threshold
-        if (gestureState.dx < -DELETE_BUTTON_WIDTH / 3 && !isSwipedOpen.current) {
-          Animated.spring(translateX, {
-            toValue: -DELETE_BUTTON_WIDTH,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 10,
-          }).start();
-          isSwipedOpen.current = true;
-        } else if (gestureState.dx > 20 && isSwipedOpen.current) {
-          // Closing: swipe right when open
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 10,
-          }).start();
-          isSwipedOpen.current = false;
-        } else {
-          // Snap back to current state
-          Animated.spring(translateX, {
-            toValue: isSwipedOpen.current ? -DELETE_BUTTON_WIDTH : 0,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 10,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  const handleDelete = useCallback(() => {
+    swipeableRef.current?.close();
+    onDelete(exerciseIndex, setIndex);
+  }, [exerciseIndex, setIndex, onDelete]);
 
-  const handleDelete = () => {
-    Animated.timing(translateX, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      onDelete(exerciseIndex, setIndex);
-    });
-  };
+  const renderRightActions = useCallback(() => {
+    return (
+      <Pressable
+        style={swipeStyles.deleteButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          handleDelete();
+        }}
+      >
+        <Ionicons name="trash-outline" size={20} color={colors.textInverse} />
+      </Pressable>
+    );
+  }, [handleDelete]);
 
   return (
-    <View style={swipeStyles.container}>
-      {/* Delete button revealed on right side when swiping left */}
-      <View style={swipeStyles.deleteButtonContainer}>
-        <Pressable
-          style={swipeStyles.deleteButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            handleDelete();
-          }}
-        >
-          <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
-        </Pressable>
-      </View>
-
-      {/* Swipeable row */}
-      <Animated.View
-        style={[styles.setRow, swipeStyles.swipeableRow, { transform: [{ translateX }] }]}
-        {...panResponder.panHandlers}
-      >
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      rightThreshold={40}
+      overshootRight={false}
+      containerStyle={swipeStyles.container}
+    >
+      <View style={[styles.setRow, { marginHorizontal: 0, backgroundColor: colors.background }]}>
         {/* Set number */}
         <View style={[styles.setColumn, styles.setNumberButton]}>
           <Text style={[styles.setText, styles.setNumber]}>{set.setNumber}</Text>
@@ -304,43 +258,200 @@ function SwipeableSetRow({
           placeholder={previousReps || '0'}
           placeholderTextColor={colors.textTertiary}
         />
-      </Animated.View>
-    </View>
+      </View>
+    </Swipeable>
   );
 }
 
 const swipeStyles = StyleSheet.create({
   container: {
-    position: 'relative',
     overflow: 'hidden',
-  },
-  deleteButtonContainer: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: DELETE_BUTTON_WIDTH,
-    justifyContent: 'center',
-  },
-  deleteButton: {
-    backgroundColor: 'rgba(229, 57, 53, 0.5)',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
     borderRadius: 8,
   },
-  swipeableRow: {
-    backgroundColor: colors.background,
+  deleteButton: {
+    width: DELETE_BUTTON_WIDTH,
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
+// Superset colors - each superset group gets a different color
+const SUPERSET_COLORS = [
+  '#64B5F6', // Blue
+  '#7AC29A', // Green
+  '#FF8A65', // Orange
+  '#E53935', // Red
+  '#BA68C8', // Purple
+];
+
+// Draggable row for exercises - drag-based reorder with free-flowing movement
+const REORDER_ROW_HEIGHT = 72;
+
+interface DraggableExerciseRowProps {
+  exercise: TemplateExercise;
+  index: number;
+  onRemove: () => void;
+  isDragging: boolean;
+  anyDragging: boolean;
+  translateY: Animated.Value;
+  onDragStart: (index: number, screenY: number) => void;
+  onDragMove: (moveY: number, dy: number) => void;
+  onDragEnd: () => void;
+}
+
+function DraggableExerciseRow({
+  exercise,
+  index,
+  onRemove,
+  isDragging,
+  anyDragging,
+  translateY,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+}: DraggableExerciseRowProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  const onDragStartRef = useRef(onDragStart);
+  onDragStartRef.current = onDragStart;
+  const onDragMoveRef = useRef(onDragMove);
+  onDragMoveRef.current = onDragMove;
+  const onDragEndRef = useRef(onDragEnd);
+  onDragEndRef.current = onDragEnd;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 5,
+      onPanResponderGrant: (evt) => {
+        onDragStartRef.current(indexRef.current, evt.nativeEvent.pageY);
+        Animated.spring(scale, { toValue: 1.03, useNativeDriver: true }).start();
+      },
+      onPanResponderMove: (_, gestureState) => {
+        onDragMoveRef.current(gestureState.moveY, gestureState.dy);
+      },
+      onPanResponderRelease: () => {
+        Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+        onDragEndRef.current();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+        onDragEndRef.current();
+      },
+    })
+  ).current;
+
+  const opacity = anyDragging && !isDragging ? 0.5 : 1;
+
+  return (
+    <Animated.View
+      style={[
+        styles.reorderItem,
+        {
+          transform: [{ translateY }, { scale }],
+          opacity,
+          zIndex: isDragging ? 100 : 1,
+          elevation: isDragging ? 5 : 0,
+          ...(isDragging
+            ? {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+              }
+            : {}),
+        },
+      ]}
+    >
+      <Pressable
+        style={styles.removeButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onRemove();
+        }}
+      >
+        <MinusCircleIcon />
+      </Pressable>
+      <ExerciseImage
+        gifUrl={exercise.gifUrl}
+        thumbnailUrl={exercise.thumbnailUrl}
+        size={48}
+        borderRadius={8}
+      />
+      <Text style={styles.reorderExerciseName}>
+        {formatExerciseNameString(exercise.exerciseName)}
+      </Text>
+      <View style={styles.dragHandle} {...panResponder.panHandlers}>
+        <DragHandleIcon />
+      </View>
+    </Animated.View>
+  );
+}
+
+// Icon for "Add to Superset" menu item
+function PlusIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Line
+        x1={12}
+        y1={5}
+        x2={12}
+        y2={19}
+        stroke={colors.text}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+      <Line
+        x1={5}
+        y1={12}
+        x2={19}
+        y2={12}
+        stroke={colors.text}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+// Icon for "Remove from Superset" menu item
+function CloseIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Line
+        x1={18}
+        y1={6}
+        x2={6}
+        y2={18}
+        stroke={colors.text}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+      <Line
+        x1={6}
+        y1={6}
+        x2={18}
+        y2={18}
+        stroke={colors.text}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 export default function CreateTemplateScreen() {
+  const { t } = useTranslation();
   const { templateId, folderId } = useLocalSearchParams<{
     templateId?: string;
     folderId?: string;
   }>();
   const isEditMode = !!templateId;
 
+  const { isNavigating, withLock } = useNavigationLock();
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
 
   const pendingExercises = useWorkoutStore((state) => state.pendingExercises);
@@ -363,6 +474,20 @@ export default function CreateTemplateScreen() {
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [reorderExercises, setReorderExercises] = useState<TemplateExercise[]>([]);
 
+  // Drag reorder state
+  const draggedIndexRef = useRef<number>(-1);
+  const exerciseOrderRef = useRef<TemplateExercise[]>([]);
+  const rowTranslateY = useRef<Animated.Value[]>([]);
+  const dragTranslateY = useRef(new Animated.Value(0)).current;
+  const dragAdjustmentRef = useRef<number>(0);
+  const [activeDragIndex, setActiveDragIndex] = useState<number>(-1);
+  const reorderKeysRef = useRef<string[]>([]);
+
+  // Superset modal state
+  const [showSupersetModal, setShowSupersetModal] = useState(false);
+  const [supersetSelectedIndices, setSupersetSelectedIndices] = useState<number[]>([]);
+  const supersetModalSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
   // Rest timer modal state
   const [showRestTimerModal, setShowRestTimerModal] = useState(false);
   const [restTimerModalExerciseIndex, setRestTimerModalExerciseIndex] = useState<number | null>(
@@ -378,6 +503,15 @@ export default function CreateTemplateScreen() {
     }
     loadUser();
   }, []);
+
+  // Sync exerciseOrderRef and rowTranslateY when reorderExercises changes
+  useEffect(() => {
+    exerciseOrderRef.current = reorderExercises;
+    while (rowTranslateY.current.length < reorderExercises.length) {
+      rowTranslateY.current.push(new Animated.Value(0));
+    }
+    rowTranslateY.current.length = reorderExercises.length;
+  }, [reorderExercises]);
 
   // Fetch previous sets for a list of exercise IDs and merge into state
   const fetchPreviousSets = async (exerciseIds: string[]) => {
@@ -425,7 +559,22 @@ export default function CreateTemplateScreen() {
   const handlePendingExercisesAsync = async (exercisesToAdd: PendingExercise[]) => {
     const exerciseIds = exercisesToAdd.map((e) => e.id);
 
-    // If userId isn't loaded yet, fetch it now
+    // Phase 1: Add exercises immediately with defaults for instant UI
+    const tempIds = exercisesToAdd.map(() => generateExerciseId());
+    const newExercises: TemplateExercise[] = exercisesToAdd.map((pe, i) => ({
+      id: tempIds[i],
+      exerciseId: pe.id,
+      exerciseName: pe.name,
+      muscle: pe.muscle,
+      gifUrl: pe.gifUrl,
+      thumbnailUrl: pe.thumbnailUrl,
+      sets: [{ setNumber: 1, targetWeight: undefined, targetReps: undefined }],
+      restTimerSeconds: 0,
+      supersetId: null,
+    }));
+    setExercises((prev) => [...prev, ...newExercises]);
+
+    // Phase 2: Fetch history and preferences in background, then patch
     let currentUserId = userId;
     if (!currentUserId) {
       const user = await getCurrentUser();
@@ -434,15 +583,11 @@ export default function CreateTemplateScreen() {
         setUserId(user.id);
       }
     }
+    if (!currentUserId) return;
 
-    // Fetch previous sets and rest timer preferences in parallel
     const [prevSetsMap, preferencesMap] = await Promise.all([
-      currentUserId
-        ? getBatchExercisePreviousSets(currentUserId, exerciseIds)
-        : Promise.resolve(new Map<string, PreviousSetData[]>()),
-      currentUserId
-        ? getUserExercisePreferences(currentUserId, exerciseIds)
-        : Promise.resolve(new Map()),
+      getBatchExercisePreviousSets(currentUserId, exerciseIds),
+      getUserExercisePreferences(currentUserId, exerciseIds),
     ]);
 
     // Merge previous sets into state
@@ -452,32 +597,22 @@ export default function CreateTemplateScreen() {
       return updated;
     });
 
-    const newExercises: TemplateExercise[] = exercisesToAdd.map((pe) => {
-      const previousSets = prevSetsMap.get(pe.id);
-      const preference = preferencesMap.get(pe.id);
-      const restTimerSeconds = preference?.restTimerSeconds || 0;
-
-      // Create sets matching previous workout count, or default to 1
-      const setCount = previousSets && previousSets.length > 0 ? previousSets.length : 1;
-      const sets: TemplateSet[] = Array.from({ length: setCount }, (_, i) => ({
-        setNumber: i + 1,
-        targetWeight: undefined,
-        targetReps: undefined,
-      }));
-
-      return {
-        id: generateExerciseId(),
-        exerciseId: pe.id,
-        exerciseName: pe.name,
-        muscle: pe.muscle,
-        gifUrl: pe.gifUrl,
-        thumbnailUrl: pe.thumbnailUrl,
-        sets,
-        restTimerSeconds,
-      };
-    });
-
-    setExercises((prev) => [...prev, ...newExercises]);
+    // Patch exercises in-place with fetched data
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (!exerciseIds.includes(ex.exerciseId)) return ex;
+        const previousSets = prevSetsMap.get(ex.exerciseId);
+        const preference = preferencesMap.get(ex.exerciseId);
+        const restTimerSeconds = preference?.restTimerSeconds || ex.restTimerSeconds;
+        const setCount = previousSets && previousSets.length > 0 ? previousSets.length : 1;
+        const sets: TemplateSet[] = Array.from({ length: setCount }, (_, i) => ({
+          setNumber: i + 1,
+          targetWeight: undefined,
+          targetReps: undefined,
+        }));
+        return { ...ex, sets, restTimerSeconds };
+      })
+    );
   };
 
   // Exercise menu functions
@@ -506,7 +641,15 @@ export default function CreateTemplateScreen() {
   const handleReorderExercises = () => {
     closeExerciseMenu();
     setTimeout(() => {
-      setReorderExercises([...exercises]);
+      const currentExercises = [...exercises];
+      const ts = Date.now();
+      reorderKeysRef.current = currentExercises.map((ex, i) => `${ex.exerciseId}-${i}-${ts}`);
+      setReorderExercises(currentExercises);
+      exerciseOrderRef.current = currentExercises;
+      draggedIndexRef.current = -1;
+      setActiveDragIndex(-1);
+      dragTranslateY.setValue(0);
+      rowTranslateY.current = currentExercises.map(() => new Animated.Value(0));
       setShowReorderModal(true);
     }, 300);
   };
@@ -515,6 +658,9 @@ export default function CreateTemplateScreen() {
     if (selectedExerciseIndex !== null) {
       setExercises((prev) => prev.filter((_, index) => index !== selectedExerciseIndex));
     }
+    // Reset modal index states to prevent stale references after removal
+    setRestTimerModalExerciseIndex(null);
+    setShowRestTimerModal(false);
     closeExerciseMenu();
   };
 
@@ -551,12 +697,190 @@ export default function CreateTemplateScreen() {
 
   // Reorder functions
   const removeExerciseFromReorder = (index: number) => {
+    if (draggedIndexRef.current !== -1) {
+      draggedIndexRef.current = -1;
+      setActiveDragIndex(-1);
+      dragTranslateY.setValue(0);
+      rowTranslateY.current.forEach((val) => val.setValue(0));
+    }
+    reorderKeysRef.current = reorderKeysRef.current.filter((_, i) => i !== index);
     setReorderExercises((prev) => prev.filter((_, i) => i !== index));
   };
 
   const saveReorder = () => {
+    // Reset modal indices to prevent stale references after reorder
+    setRestTimerModalExerciseIndex(null);
+    setShowRestTimerModal(false);
     setExercises(reorderExercises);
     setShowReorderModal(false);
+  };
+
+  // Drag handler functions
+  const handleDragStart = useCallback(
+    (index: number, _screenY: number) => {
+      draggedIndexRef.current = index;
+      dragAdjustmentRef.current = 0;
+      dragTranslateY.setValue(0);
+      rowTranslateY.current.forEach((val) => val.setValue(0));
+      setActiveDragIndex(index);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    },
+    [dragTranslateY]
+  );
+
+  const handleDragMove = useCallback(
+    (_moveY: number, dy: number) => {
+      const currentIndex = draggedIndexRef.current;
+      if (currentIndex === -1) return;
+
+      const adjustedDy = dy - dragAdjustmentRef.current;
+      dragTranslateY.setValue(adjustedDy);
+
+      const rowsCrossed = Math.round(adjustedDy / REORDER_ROW_HEIGHT);
+      const targetIndex = Math.max(
+        0,
+        Math.min(currentIndex + rowsCrossed, exerciseOrderRef.current.length - 1)
+      );
+
+      if (targetIndex !== currentIndex) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+        const updated = [...exerciseOrderRef.current];
+        const [draggedItem] = updated.splice(currentIndex, 1);
+        updated.splice(targetIndex, 0, draggedItem);
+        exerciseOrderRef.current = updated;
+
+        const updatedKeys = [...reorderKeysRef.current];
+        const [draggedKey] = updatedKeys.splice(currentIndex, 1);
+        updatedKeys.splice(targetIndex, 0, draggedKey);
+        reorderKeysRef.current = updatedKeys;
+
+        dragAdjustmentRef.current += (targetIndex - currentIndex) * REORDER_ROW_HEIGHT;
+        dragTranslateY.setValue(dy - dragAdjustmentRef.current);
+
+        draggedIndexRef.current = targetIndex;
+        setReorderExercises(updated);
+        setActiveDragIndex(targetIndex);
+      }
+    },
+    [dragTranslateY]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (draggedIndexRef.current === -1) return;
+    draggedIndexRef.current = -1;
+
+    Animated.spring(dragTranslateY, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 200,
+      friction: 20,
+    }).start(() => {
+      setActiveDragIndex(-1);
+      rowTranslateY.current.forEach((val) => val.setValue(0));
+    });
+  }, [dragTranslateY]);
+
+  // Superset functions
+  const getNextSupersetId = (): number => {
+    const existingIds = exercises
+      .map((e) => e.supersetId)
+      .filter((id): id is number => id !== null && id !== undefined);
+    if (existingIds.length === 0) return 1;
+    return Math.max(...existingIds) + 1;
+  };
+
+  const getSupersetColor = (supersetId: number): string => {
+    return SUPERSET_COLORS[(supersetId - 1) % SUPERSET_COLORS.length];
+  };
+
+  const openSupersetModal = () => {
+    const initialSelected = selectedExerciseIndex !== null ? [selectedExerciseIndex] : [];
+    setSupersetSelectedIndices(initialSelected);
+    setShowSupersetModal(true);
+    Animated.spring(supersetModalSlideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeSupersetModal = () => {
+    Animated.timing(supersetModalSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowSupersetModal(false);
+      setSupersetSelectedIndices([]);
+    });
+  };
+
+  const toggleSupersetExercise = (index: number) => {
+    setSupersetSelectedIndices((prev) => {
+      if (prev.includes(index)) return prev.filter((i) => i !== index);
+      return [...prev, index];
+    });
+  };
+
+  const confirmSuperset = () => {
+    if (supersetSelectedIndices.length < 2) {
+      Alert.alert('Select Exercises', 'Please select at least 2 exercises for a superset.');
+      return;
+    }
+
+    const newSupersetId = getNextSupersetId();
+
+    setExercises((prev) => {
+      const updated = [...prev];
+      supersetSelectedIndices.forEach((index) => {
+        updated[index] = { ...updated[index], supersetId: newSupersetId };
+      });
+      return updated;
+    });
+
+    closeSupersetModal();
+  };
+
+  const handleAddToSuperset = () => {
+    closeExerciseMenu();
+    setTimeout(() => {
+      openSupersetModal();
+    }, 300);
+  };
+
+  const handleRemoveFromSuperset = () => {
+    if (selectedExerciseIndex === null) return;
+
+    const exercise = exercises[selectedExerciseIndex];
+    if (!exercise.supersetId) return;
+
+    const supersetIdToRemove = exercise.supersetId;
+
+    setExercises((prev) => {
+      const updated = prev.map((e, index) => {
+        if (index === selectedExerciseIndex) {
+          return { ...e, supersetId: null };
+        }
+        return e;
+      });
+
+      const remainingInSuperset = updated.filter((e) => e.supersetId === supersetIdToRemove).length;
+
+      if (remainingInSuperset === 1) {
+        return updated.map((e) => {
+          if (e.supersetId === supersetIdToRemove) {
+            return { ...e, supersetId: null };
+          }
+          return e;
+        });
+      }
+
+      return updated;
+    });
+
+    closeExerciseMenu();
   };
 
   // Set management
@@ -615,27 +939,31 @@ export default function CreateTemplateScreen() {
   };
 
   const handleAddExercise = () => {
-    const existingIds = exercises.map((e) => e.exerciseId);
-    router.push({
-      pathname: '/add-exercise',
-      params: { existingExerciseIds: JSON.stringify(existingIds) },
+    withLock(() => {
+      const existingIds = exercises.map((e) => e.exerciseId);
+      router.push({
+        pathname: '/add-exercise',
+        params: { existingExerciseIds: JSON.stringify(existingIds) },
+      });
     });
   };
 
   const handleSave = () => {
     if (exercises.length === 0) {
-      Alert.alert('No Exercises', 'Please add at least one exercise');
+      Alert.alert(i18n.t('template.noExercises'), i18n.t('template.pleaseAddExercise'));
       return;
     }
 
     // Navigate to save-template page with exercise data
-    router.push({
-      pathname: '/save-template',
-      params: {
-        exercises: JSON.stringify(exercises),
-        ...(templateId ? { templateId } : {}),
-        ...(folderId ? { folderId } : {}),
-      },
+    withLock(() => {
+      router.push({
+        pathname: '/save-template',
+        params: {
+          exercises: JSON.stringify(exercises),
+          ...(templateId ? { templateId } : {}),
+          ...(folderId ? { folderId } : {}),
+        },
+      });
     });
   };
 
@@ -697,7 +1025,7 @@ export default function CreateTemplateScreen() {
               handleSave();
             }}
           >
-            <Text style={styles.saveText}>SAVE</Text>
+            <Text style={styles.saveText}>{t('saveWorkout.save')}</Text>
           </Pressable>
         </View>
       </View>
@@ -720,7 +1048,7 @@ export default function CreateTemplateScreen() {
               handleAddExercise();
             }}
           >
-            <Ionicons name="add" size={24} color="#FFFFFF" />
+            <Ionicons name="add" size={24} color={colors.textInverse} />
             <Text style={styles.addExerciseText}>Add Exercise</Text>
           </Pressable>
           <Pressable
@@ -735,15 +1063,24 @@ export default function CreateTemplateScreen() {
         </View>
       ) : (
         // Filled State with Exercises - Matching active-workout UI
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
           {exercises.map((exercise, exerciseIndex) => (
             <View key={exercise.id} style={styles.exerciseCard}>
               {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
                 <Pressable
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/exercise/${exercise.exerciseId}`);
+                    withLock(() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      prefetchExerciseGif(exercise.exerciseId);
+                      router.push(`/exercise/${exercise.exerciseId}`);
+                    });
                   }}
                 >
                   <ExerciseImage
@@ -753,17 +1090,20 @@ export default function CreateTemplateScreen() {
                     borderRadius={8}
                   />
                 </Pressable>
-                <Pressable
-                  style={{ flex: 1, justifyContent: 'center' }}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/exercise/${exercise.exerciseId}`);
-                  }}
-                >
-                  <Text style={styles.exerciseTitle}>
+                <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
+                  <Text
+                    style={[styles.exerciseTitle, { alignSelf: 'flex-start' }]}
+                    onPress={() => {
+                      withLock(() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        prefetchExerciseGif(exercise.exerciseId);
+                        router.push(`/exercise/${exercise.exerciseId}`);
+                      });
+                    }}
+                  >
                     {formatExerciseNameString(exercise.exerciseName)}
                   </Text>
-                </Pressable>
+                </View>
                 <Pressable
                   style={styles.moreButton}
                   onPress={() => {
@@ -774,6 +1114,18 @@ export default function CreateTemplateScreen() {
                   <Ionicons name="ellipsis-vertical" size={20} color={colors.text} />
                 </Pressable>
               </View>
+
+              {/* Superset Badge */}
+              {exercise.supersetId != null && (
+                <View
+                  style={[
+                    styles.supersetBadge,
+                    { backgroundColor: getSupersetColor(exercise.supersetId) },
+                  ]}
+                >
+                  <Text style={styles.supersetBadgeText}>Superset</Text>
+                </View>
+              )}
 
               {/* Notes Input */}
               <TextInput
@@ -851,7 +1203,7 @@ export default function CreateTemplateScreen() {
               handleAddExercise();
             }}
           >
-            <Ionicons name="add" size={24} color="#FFFFFF" />
+            <Ionicons name="add" size={24} color={colors.textInverse} />
             <Text style={styles.addExerciseText}>Add Exercise</Text>
           </Pressable>
 
@@ -901,6 +1253,31 @@ export default function CreateTemplateScreen() {
                   <Text style={styles.menuItemText}>Reorder Exercises</Text>
                 </Pressable>
 
+                {selectedExerciseIndex !== null &&
+                exercises[selectedExerciseIndex]?.supersetId != null ? (
+                  <Pressable
+                    style={styles.menuItem}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      handleRemoveFromSuperset();
+                    }}
+                  >
+                    <CloseIcon />
+                    <Text style={styles.menuItemText}>Remove from Superset</Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    style={styles.menuItem}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      handleAddToSuperset();
+                    }}
+                  >
+                    <PlusIcon />
+                    <Text style={styles.menuItemText}>Add to Superset</Text>
+                  </Pressable>
+                )}
+
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
@@ -925,37 +1302,30 @@ export default function CreateTemplateScreen() {
       >
         <SafeAreaView style={styles.reorderContainer} edges={['top']}>
           <View style={styles.reorderHeader}>
-            <Text style={styles.reorderTitle}>Reorder</Text>
+            <Text style={styles.reorderTitle}>{t('common.reorder')}</Text>
           </View>
           <View style={styles.divider} />
 
-          <ScrollView style={styles.reorderList}>
+          <View style={styles.reorderList}>
             {reorderExercises.map((exercise, index) => (
-              <View key={exercise.id} style={styles.reorderItem}>
-                <Pressable
-                  style={styles.removeButton}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    removeExerciseFromReorder(index);
-                  }}
-                >
-                  <MinusCircleIcon />
-                </Pressable>
-                <ExerciseImage
-                  gifUrl={exercise.gifUrl}
-                  thumbnailUrl={exercise.thumbnailUrl}
-                  size={48}
-                  borderRadius={8}
-                />
-                <Text style={styles.reorderExerciseName}>
-                  {formatExerciseNameString(exercise.exerciseName)}
-                </Text>
-                <View style={styles.dragHandle}>
-                  <DragHandleIcon />
-                </View>
-              </View>
+              <DraggableExerciseRow
+                key={reorderKeysRef.current[index] || `reorder-${index}`}
+                exercise={exercise}
+                index={index}
+                onRemove={() => removeExerciseFromReorder(index)}
+                isDragging={activeDragIndex === index}
+                anyDragging={activeDragIndex !== -1}
+                translateY={
+                  activeDragIndex === index
+                    ? dragTranslateY
+                    : rowTranslateY.current[index] || new Animated.Value(0)
+                }
+                onDragStart={handleDragStart}
+                onDragMove={handleDragMove}
+                onDragEnd={handleDragEnd}
+              />
             ))}
-          </ScrollView>
+          </View>
 
           <View style={styles.reorderBottom}>
             <Pressable
@@ -965,7 +1335,7 @@ export default function CreateTemplateScreen() {
                 saveReorder();
               }}
             >
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={styles.doneButtonText}>{t('common.done')}</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -1043,7 +1413,123 @@ export default function CreateTemplateScreen() {
                     closeRestTimerModal();
                   }}
                 >
-                  <Text style={styles.doneButtonText}>Done</Text>
+                  <Text style={styles.doneButtonText}>{t('common.done')}</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      {/* Superset Modal */}
+      <Modal
+        visible={showSupersetModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeSupersetModal}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeSupersetModal();
+          }}
+        >
+          <Animated.View
+            style={[
+              styles.supersetModalContent,
+              { transform: [{ translateY: supersetModalSlideAnim }] },
+            ]}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalHandle} />
+
+              <View style={styles.supersetModalHeader}>
+                <Text style={styles.supersetModalTitle}>Super Set</Text>
+              </View>
+
+              <ScrollView style={styles.supersetExerciseList} showsVerticalScrollIndicator={false}>
+                {exercises.map((exercise, index) => {
+                  const isSelected = supersetSelectedIndices.includes(index);
+                  const existingSuperset = exercise.supersetId;
+
+                  return (
+                    <Pressable
+                      key={`${exercise.exerciseId}-${index}`}
+                      style={styles.supersetExerciseRow}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        toggleSupersetExercise(index);
+                      }}
+                    >
+                      {/* Color indicator bar */}
+                      <View
+                        style={[
+                          styles.supersetColorBar,
+                          existingSuperset != null
+                            ? { backgroundColor: getSupersetColor(existingSuperset) }
+                            : { backgroundColor: 'transparent' },
+                        ]}
+                      />
+
+                      <ExerciseImage
+                        gifUrl={exercise.gifUrl}
+                        thumbnailUrl={exercise.thumbnailUrl}
+                        size={40}
+                        borderRadius={8}
+                      />
+
+                      <View style={styles.supersetExerciseInfo}>
+                        <Text style={styles.supersetExerciseName}>
+                          {formatExerciseNameString(exercise.exerciseName)}
+                        </Text>
+                        <View style={styles.supersetExerciseSubRow}>
+                          <Text style={styles.supersetExerciseMuscle}>{exercise.muscle}</Text>
+                          {existingSuperset != null && (
+                            <View
+                              style={[
+                                styles.supersetExistingBadge,
+                                { backgroundColor: getSupersetColor(existingSuperset) },
+                              ]}
+                            >
+                              <Text style={styles.supersetExistingBadgeText}>
+                                Superset {existingSuperset}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Selection checkbox */}
+                      <View
+                        style={[
+                          styles.supersetCheckbox,
+                          isSelected && styles.supersetCheckboxSelected,
+                        ]}
+                      >
+                        {isSelected && (
+                          <Ionicons name="checkmark" size={16} color={colors.textInverse} />
+                        )}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <View style={styles.supersetModalBottom}>
+                <Pressable
+                  style={[
+                    styles.supersetConfirmButton,
+                    supersetSelectedIndices.length < 2 && styles.supersetConfirmButtonDisabled,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    confirmSuperset();
+                  }}
+                >
+                  <Text style={styles.supersetConfirmButtonText}>
+                    Add to Superset {getNextSupersetId()}
+                  </Text>
                 </Pressable>
               </View>
             </Pressable>
@@ -1127,15 +1613,15 @@ const styles = StyleSheet.create({
   addExerciseText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   discardButtonFull: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    backgroundColor: '#F5F4FA',
+    backgroundColor: colors.card,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: colors.cardStroke,
     borderRadius: 16,
     marginTop: spacing.md,
     width: '100%',
@@ -1143,7 +1629,7 @@ const styles = StyleSheet.create({
   discardButtonText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
-    color: '#E53935',
+    color: colors.danger,
   },
   scrollView: {
     flex: 1,
@@ -1270,9 +1756,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    backgroundColor: '#F5F4FA',
+    backgroundColor: colors.card,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: colors.cardStroke,
     borderRadius: 16,
     marginTop: spacing.md,
     marginHorizontal: spacing.lg,
@@ -1380,7 +1866,7 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
 
   // Rest Timer Modal Styles
@@ -1435,5 +1921,116 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
+  },
+
+  // Superset Styles
+  supersetBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: spacing.xs,
+    marginLeft: 48,
+  },
+  supersetBadgeText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.xs,
+    color: colors.textInverse,
+    letterSpacing: 0.2,
+  },
+  supersetModalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: SCREEN_HEIGHT * 0.8,
+    paddingBottom: 40,
+  },
+  supersetModalHeader: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  supersetModalTitle: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xl,
+    color: colors.text,
+  },
+  supersetExerciseList: {
+    maxHeight: SCREEN_HEIGHT * 0.55,
+  },
+  supersetExerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingRight: spacing.lg,
+  },
+  supersetColorBar: {
+    width: 4,
+    height: 52,
+    borderRadius: 2,
+    marginRight: spacing.sm,
+  },
+  supersetExerciseInfo: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  supersetExerciseName: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  supersetExerciseSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    gap: 8,
+  },
+  supersetExerciseMuscle: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  supersetExistingBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  supersetExistingBadgeText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: colors.textInverse,
+    letterSpacing: 0.2,
+  },
+  supersetCheckbox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supersetCheckboxSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  supersetModalBottom: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  supersetConfirmButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: 'center',
+  },
+  supersetConfirmButtonDisabled: {
+    opacity: 0.5,
+  },
+  supersetConfirmButtonText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.lg,
+    color: colors.textInverse,
   },
 });

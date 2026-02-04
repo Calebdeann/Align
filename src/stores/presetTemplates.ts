@@ -131,12 +131,12 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'cable-crunches-kneeling',
+        exerciseId: '0175',
         exerciseName: 'Cable Crunches (Kneeling)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0175.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0175.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0175.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(15, 12, 12, 20, 25, 25),
         restTimerSeconds: 60,
@@ -155,24 +155,24 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       },
       {
         id: '3',
-        exerciseId: 'cable-rotations',
+        exerciseId: '0243',
         exerciseName: 'Cable Rotations',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0243.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0243.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0243.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'decline-sit-ups',
+        exerciseId: '0277',
         exerciseName: 'Decline Sit Ups',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0282.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0277.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0282.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0277.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 60,
@@ -196,24 +196,24 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'dumbbell-side-bend',
-        exerciseName: 'DB Side Flexion',
+        exerciseId: '0407',
+        exerciseName: 'Dumbbell Side Bend',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0407.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0407.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0407.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 12, 10, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'dead-bug',
+        exerciseId: '0276',
         exerciseName: 'Isometric Hold with Heel Taps',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 60,
@@ -261,12 +261,12 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'dead-bug',
+        exerciseId: '0276',
         exerciseName: 'Dead Bugs',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 12, 10),
         restTimerSeconds: 30,
@@ -285,24 +285,24 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       },
       {
         id: '3',
-        exerciseId: 'leg-raise',
+        exerciseId: '0872',
         exerciseName: 'Reverse Crunches',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0872.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0872.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'leg-raise',
+        exerciseId: '0620',
         exerciseName: 'Leg Raises',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -326,48 +326,48 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'hanging-leg-raise',
+        exerciseId: '0472',
         exerciseName: 'Hanging Knee Crunches',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0472.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0472.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0472.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'cable-crunches-kneeling',
+        exerciseId: '0175',
         exerciseName: 'Kneeling Cable Crunch',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0175.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0175.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0175.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(15, 12, 12, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'dead-bug',
+        exerciseId: '0276',
         exerciseName: 'Dead Bugs',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'ab-roller',
+        exerciseId: '0857',
         exerciseName: 'Ab Roller',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0857.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0857.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0857.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
@@ -391,24 +391,24 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'dead-bug',
+        exerciseId: '0276',
         exerciseName: 'Dead Bugs',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'russian-twist',
+        exerciseId: '0687',
         exerciseName: 'Russian Twists',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0687.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0687.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0687.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 45,
@@ -427,24 +427,24 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       },
       {
         id: '4',
-        exerciseId: 'dumbbell-side-bend',
+        exerciseId: '0407',
         exerciseName: 'Side Flexion with DB',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0407.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0407.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0407.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'crunch',
+        exerciseId: '0274',
         exerciseName: 'Crunches',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
@@ -468,72 +468,72 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'dead-bug',
+        exerciseId: '0276',
         exerciseName: 'Dead Bugs (Alternating)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'dead-bug',
+        exerciseId: '0276',
         exerciseName: 'Dead Bugs (Double Leg)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'leg-raise',
+        exerciseId: '0620',
         exerciseName: 'Alternating Leg Lifts',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'leg-raise',
+        exerciseId: '0620',
         exerciseName: 'Double Leg Lifts',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'leg-raise',
+        exerciseId: '0872',
         exerciseName: 'Leg Lifts into Reverse Crunch',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0872.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0872.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
       },
       {
         id: '6',
-        exerciseId: 'plank',
+        exerciseId: '0464',
         exerciseName: 'Plank',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(45, 45, 60),
         restTimerSeconds: 30,
@@ -557,72 +557,72 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'crunch',
+        exerciseId: '0274',
         exerciseName: 'Table Top Crunches',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'bicycle-crunch',
+        exerciseId: '0972',
         exerciseName: 'Bicycle Crunches',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0972.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0972.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0972.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'crunch',
+        exerciseId: '0274',
         exerciseName: 'Heel Taps',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'toe-touches',
+        exerciseId: '3212',
         exerciseName: 'Toe Crunches',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3212.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3212.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3212.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'toe-touches',
+        exerciseId: '3212',
         exerciseName: 'Alternating Toe Taps',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3212.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3212.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3212.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '6',
-        exerciseId: 'plank',
+        exerciseId: '0464',
         exerciseName: 'Plank',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
@@ -646,72 +646,72 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'plank',
+        exerciseId: '0464',
         exerciseName: 'Plank',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(45, 45, 60),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'plank',
+        exerciseId: '0464',
         exerciseName: 'Plank Twists',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'side-plank',
+        exerciseId: '1775',
         exerciseName: 'Side Plank',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1775.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1775.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 30, 30),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'side-plank',
+        exerciseId: '1775',
         exerciseName: 'Side Plank Dips',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1775.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1775.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'mountain-climber',
+        exerciseId: '0630',
         exerciseName: 'Mountain Climbers',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 25, 25),
         restTimerSeconds: 30,
       },
       {
         id: '6',
-        exerciseId: 'weighted-plank',
+        exerciseId: '2135',
         exerciseName: 'Weighted Plank',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2135.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2135.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2135.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
@@ -738,12 +738,12 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'hip-thrust-barbell',
+        exerciseId: '1409',
         exerciseName: 'Hip Thrusts',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1409.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 50),
         restTimerSeconds: 60,
@@ -753,45 +753,45 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'bulgarian-split-squat',
         exerciseName: 'Bulgarian Split Squats',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0410.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0410.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-61684449-ed56-43fb-8f57-0744766cf0c9.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'barbell-rdl',
-        exerciseName: 'Barbell RDL',
+        exerciseId: '0085',
+        exerciseName: 'Romanian Deadlift (Barbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0085.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0085.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0085.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 35),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'cable-kickback',
+        exerciseId: '0860',
         exerciseName: 'Cable Kickbacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0860.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'back-extension',
+        exerciseId: '0573',
         exerciseName: 'Back Extensions',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1314.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0573.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1314.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0573.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 60,
@@ -815,60 +815,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'hip-thrust-barbell',
+        exerciseId: '1409',
         exerciseName: 'Hip Thrusts',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1409.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 50),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'glute-bridge',
+        exerciseId: 'kas-glute-bridge',
         exerciseName: 'Kas Glute Bridge',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-6e006513-b111-4011-b9a6-d56034fe8954.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 35),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'stiff-leg-deadlift',
-        exerciseName: 'DB RDL',
+        exerciseId: '0432',
+        exerciseName: 'Stiff Leg Deadlift (Dumbbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0432.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0432.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0432.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'goblet-squat',
-        exerciseName: 'DB Goblet Squat',
+        exerciseId: '1760',
+        exerciseName: 'Goblet Squat (Dumbbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'hip-abduction-machine',
+        exerciseId: '0597',
         exerciseName: 'Hip Abduction',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0597.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0597.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0597.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12, 30, 35, 35),
         restTimerSeconds: 60,
@@ -892,60 +892,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'hip-thrust-machine',
+        exerciseId: 'machine-hip-thrust',
         exerciseName: 'Hip Thrust Machine',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2286.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-16c3e7ec-5282-49a3-a700-ba750b64d018.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 50),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'reverse-lunge',
+        exerciseId: '0381',
         exerciseName: 'Reverse Lunge (Smith)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'good-morning',
+        exerciseId: '0044',
         exerciseName: 'Good Mornings',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0044.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0044.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0044.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 15, 20, 20),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'hip-abduction-machine',
+        exerciseId: '0597',
         exerciseName: 'Hip Abductions',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0597.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0597.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0597.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12, 30, 35, 35),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'cable-kickback',
+        exerciseId: '0860',
         exerciseName: 'Cable Kickbacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0860.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -969,12 +969,12 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'glute-bridge',
+        exerciseId: 'kas-glute-bridge',
         exerciseName: 'Kas Glute Bridge',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-6e006513-b111-4011-b9a6-d56034fe8954.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 35),
         restTimerSeconds: 60,
@@ -984,45 +984,45 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'bulgarian-split-squat',
         exerciseName: 'Bulgarian Split Squats',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0410.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0410.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-61684449-ed56-43fb-8f57-0744766cf0c9.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'step-up',
+        exerciseId: '0431',
         exerciseName: 'Cable Step Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'cable-kickback',
+        exerciseId: '0860',
         exerciseName: 'Cable Kickbacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0860.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'goblet-squat',
-        exerciseName: 'Goblet Squats (DB)',
+        exerciseId: '1760',
+        exerciseName: 'Goblet Squat (Dumbbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1046,12 +1046,12 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'single-leg-glute-bridge',
+        exerciseId: '1409',
         exerciseName: 'Single Leg Hip Thrust',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1409.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 45,
@@ -1061,33 +1061,33 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'bulgarian-split-squat',
         exerciseName: 'Bulgarian Split Squats',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0410.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0410.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-61684449-ed56-43fb-8f57-0744766cf0c9.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'single-leg-rdl',
-        exerciseName: 'DB B Stance RDL',
+        exerciseId: '1757',
+        exerciseName: 'Single Leg Deadlift (Dumbbell)',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1756.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1757.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1756.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1757.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'goblet-squat',
-        exerciseName: 'DB Goblet Squat',
+        exerciseId: '1760',
+        exerciseName: 'Goblet Squat (Dumbbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1111,60 +1111,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'hip-thrust-barbell',
+        exerciseId: '1409',
         exerciseName: 'Hip Thrust',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1409.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 60),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'barbell-rdl',
-        exerciseName: 'RDLs',
+        exerciseId: '0085',
+        exerciseName: 'Romanian Deadlift',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0085.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0085.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0085.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 40),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'good-morning',
+        exerciseId: '0044',
         exerciseName: 'Good Mornings',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0044.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0044.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0044.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 15, 20, 20),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'step-up',
+        exerciseId: '0431',
         exerciseName: 'Step Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'barbell-squat',
+        exerciseId: '3533',
         exerciseName: 'Squats',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 40),
         restTimerSeconds: 60,
@@ -1188,60 +1188,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'step-up',
-        exerciseName: 'DB Step Ups',
+        exerciseId: '0431',
+        exerciseName: 'Dumbbell Step Up',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'single-leg-rdl',
-        exerciseName: 'Single Leg RDL',
+        exerciseId: '1757',
+        exerciseName: 'Single Leg Deadlift (Dumbbell)',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1756.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1757.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1756.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1757.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'pistol-squat',
+        exerciseId: '0544',
         exerciseName: 'Single Leg Box Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1759.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0544.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1759.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0544.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(8, 8, 6),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'cable-kickback',
+        exerciseId: '0860',
         exerciseName: 'Cable Kickbacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0860.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0860.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'single-leg-press',
+        exerciseId: '1425',
         exerciseName: 'Single Leg Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1425.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1425.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1425.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 35),
         restTimerSeconds: 60,
@@ -1265,60 +1265,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'hip-thrust-machine',
+        exerciseId: 'machine-hip-thrust',
         exerciseName: 'Hip Thrust Machine',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2286.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-16c3e7ec-5282-49a3-a700-ba750b64d018.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 60),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'barbell-rdl',
-        exerciseName: 'BB RDL',
+        exerciseId: '0085',
+        exerciseName: 'Romanian Deadlift (Barbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0085.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0085.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0085.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 30, 35, 40),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'hip-abduction-machine',
+        exerciseId: '0597',
         exerciseName: 'Hip Abduction',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0597.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0597.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0597.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12, 30, 35, 35),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'goblet-squat',
-        exerciseName: 'DB Squat',
+        exerciseId: '1760',
+        exerciseName: 'Goblet Squat (Dumbbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'back-extension',
+        exerciseId: '0573',
         exerciseName: 'Back Extensions',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1314.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0573.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1314.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0573.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 60,
@@ -1342,48 +1342,48 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'leg-press',
+        exerciseId: '0739',
         exerciseName: 'Leg Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0739.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0739.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0739.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 60, 70, 80),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'hip-thrust-barbell',
+        exerciseId: '1409',
         exerciseName: 'Hip Thrust',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1409.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 40, 50, 60),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'barbell-squat',
+        exerciseId: '0043',
         exerciseName: 'Squat',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 40),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'deadlift',
+        exerciseId: '0032',
         exerciseName: 'Deadlift',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0032.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0032.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0032.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(8, 8, 6, 40, 50, 50),
         restTimerSeconds: 60,
@@ -1410,60 +1410,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'barbell-squat',
+        exerciseId: '0043',
         exerciseName: 'Back Squat',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 40),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'deadlift',
+        exerciseId: '0032',
         exerciseName: 'Deadlift',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0032.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0032.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0032.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 8, 8, 40, 50, 50),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'lying-hamstring-curl',
+        exerciseId: '0586',
         exerciseName: 'Hamstring Curl (Lying)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0586.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0586.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0586.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'leg-extension',
+        exerciseId: '0585',
         exerciseName: 'Leg Extension',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0585.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0585.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0585.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'calf-raise-machine',
+        exerciseId: '0773',
         exerciseName: 'Calf Raise (Smith)',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0773.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0773.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 15, 12, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1487,72 +1487,72 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'leg-press',
+        exerciseId: '0739',
         exerciseName: 'Leg Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0739.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0739.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0739.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 60, 70, 80),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'walking-lunge',
+        exerciseId: '0336',
         exerciseName: 'Walking Lunges',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'goblet-squat',
+        exerciseId: '1760',
         exerciseName: 'Goblet Squat',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'step-up',
+        exerciseId: '0431',
         exerciseName: 'Step Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'calf-raise-machine',
+        exerciseId: '0605',
         exerciseName: 'Calf Raise Machine',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 15, 12, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '6',
-        exerciseId: 'stiff-leg-deadlift',
-        exerciseName: 'RDL (DB)',
+        exerciseId: '0432',
+        exerciseName: 'Stiff Leg Deadlift (Dumbbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0432.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0432.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0432.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1576,60 +1576,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'hack-squat',
+        exerciseId: '0743',
         exerciseName: 'Hack Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0046.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0743.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0046.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0743.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 30, 40, 40),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'single-leg-press',
+        exerciseId: '1425',
         exerciseName: 'Single Leg Leg Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1425.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1425.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1425.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 30, 35, 35),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'leg-extension',
+        exerciseId: '0585',
         exerciseName: 'Leg Extensions',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0585.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0585.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0585.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'reverse-lunge',
+        exerciseId: '0381',
         exerciseName: 'Reverse Lunge (Smith)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 15, 20, 20),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'calf-raise-machine',
+        exerciseId: '0605',
         exerciseName: 'Single Leg Calf Raises',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 15, 12),
         restTimerSeconds: 60,
@@ -1653,72 +1653,72 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'front-squat',
+        exerciseId: '1760',
         exerciseName: 'Heel Elevated Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0042.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0042.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 30),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'leg-press',
+        exerciseId: '0739',
         exerciseName: 'Leg Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0739.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0739.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0739.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 60, 70, 80),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'walking-lunge',
+        exerciseId: '0336',
         exerciseName: 'Lunge',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'leg-extension',
+        exerciseId: '0585',
         exerciseName: 'Knee Extension',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0585.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0585.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0585.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'calf-raise-machine',
-        exerciseName: 'Single Leg DB Calf Raises',
+        exerciseId: '0605',
+        exerciseName: 'Single Leg Calf Raises',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 15, 12),
         restTimerSeconds: 60,
       },
       {
         id: '6',
-        exerciseId: 'calf-raise-machine',
+        exerciseId: '0605',
         exerciseName: 'Calf Raise Machine',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 15, 12, 20, 25, 25),
         restTimerSeconds: 60,
@@ -1745,24 +1745,24 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'wide-grip-lat-pulldown',
+        exerciseId: '0150',
         exerciseName: 'Wide Grip Lat Pull Down',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'bent-over-dumbbell-row',
-        exerciseName: 'Bent Over DB Row',
+        exerciseId: '0293',
+        exerciseName: 'Dumbbell Bent Over Row',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0293.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1772,33 +1772,33 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'face-pull',
         exerciseName: 'Face Pull',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0203.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0233.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0203.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-0d404985-3387-415b-a8c2-af89bc83730e.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(15, 12, 12, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'ez-bar-bicep-curl',
-        exerciseName: 'BB Bicep Curl',
+        exerciseId: '0447',
+        exerciseName: 'EZ Barbell Curl',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0447.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0447.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'hammer-curl',
+        exerciseId: '0313',
         exerciseName: 'Hammer Curl',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0313.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0313.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0313.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
@@ -1822,60 +1822,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'pull-up',
+        exerciseId: '0017',
         exerciseName: 'Assisted Pull Ups',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0652.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0017.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0652.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0017.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'seated-cable-row',
+        exerciseId: '0861',
         exerciseName: 'Seated Cable Row',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0861.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0861.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0861.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'straight-arm-pulldown',
+        exerciseId: '0238',
         exerciseName: 'Straight Arm Pull Down',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0238.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0238.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0238.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 15, 20, 20),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'dumbbell-bicep-curl',
-        exerciseName: 'Bicep Curl (DB)',
+        exerciseId: '0294',
+        exerciseName: 'Dumbbell Bicep Curl',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0294.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0294.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'dumbbell-bicep-curl',
+        exerciseId: '0868',
         exerciseName: 'Cable Curls',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0868.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0868.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1899,60 +1899,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'lat-pulldown',
+        exerciseId: '0150',
         exerciseName: 'Close Grip Lat Pull Down',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'single-arm-dumbbell-row',
-        exerciseName: 'Single Arm Machine Row',
+        exerciseId: '0292',
+        exerciseName: 'Dumbbell One Arm Row',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0293.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0292.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0292.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(10, 10, 8, 12, 14, 14),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'bent-over-barbell-row',
-        exerciseName: 'Bent Over BB Row',
+        exerciseId: '0027',
+        exerciseName: 'Barbell Bent Over Row',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0027.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'ez-bar-bicep-curl',
+        exerciseId: '0447',
         exerciseName: 'EZ Bar Bicep Curl',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0447.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0447.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'dumbbell-bicep-curl',
+        exerciseId: '0868',
         exerciseName: 'Cable Curls',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0868.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0868.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -1976,60 +1976,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'pull-up',
+        exerciseId: '0970',
         exerciseName: 'Band Assisted Pull Ups',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0652.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0970.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0652.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0970.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'lat-pulldown',
+        exerciseId: '0150',
         exerciseName: 'Close Grip Pull Down',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'bent-over-dumbbell-row',
-        exerciseName: 'Bent Over DB Row',
+        exerciseId: '0293',
+        exerciseName: 'Dumbbell Bent Over Row',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0293.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'rear-delt-fly',
+        exerciseId: '2292',
         exerciseName: 'Rear Delt Fly',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2292.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2292.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(15, 12, 12, 4, 5, 5),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'dumbbell-bicep-curl',
+        exerciseId: '0285',
         exerciseName: 'Bicep Curls',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
@@ -2053,60 +2053,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'bent-over-barbell-row',
+        exerciseId: '0027',
         exerciseName: 'Bent Over Rows',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0027.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'cable-row',
+        exerciseId: '0861',
         exerciseName: 'Single Arm Cable Row',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0861.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0861.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0861.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(10, 10, 8, 15, 18, 18),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'rear-delt-fly',
+        exerciseId: '2292',
         exerciseName: 'Reverse Flies',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2292.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2292.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(15, 12, 12, 4, 5, 5),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'ez-bar-bicep-curl',
-        exerciseName: 'Bicep Curl (BB)',
+        exerciseId: '0447',
+        exerciseName: 'EZ Barbell Curl',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0447.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0447.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'ez-bar-bicep-curl',
+        exerciseId: '0070',
         exerciseName: 'Preacher Curl',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0070.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0070.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2130,24 +2130,24 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'chest-supported-row',
+        exerciseId: '1350',
         exerciseName: 'Machine Row',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0327.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1350.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0327.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1350.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'lat-pulldown',
+        exerciseId: '0150',
         exerciseName: 'Lat Pull Down',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -2157,45 +2157,45 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'face-pull',
         exerciseName: 'Face Pull',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0203.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0233.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0203.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-0d404985-3387-415b-a8c2-af89bc83730e.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(15, 12, 12, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'ez-bar-bicep-curl',
+        exerciseId: '0070',
         exerciseName: 'Preacher Curl',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0070.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0070.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'dumbbell-bicep-curl',
+        exerciseId: '0868',
         exerciseName: 'Cable Bicep Curl',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0868.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0868.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '6',
-        exerciseId: 'rear-delt-fly',
+        exerciseId: '2292',
         exerciseName: 'Reverse Fly (DB)',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2292.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2292.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(15, 12, 12, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2222,60 +2222,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'dumbbell-shoulder-press',
+        exerciseId: '0405',
         exerciseName: 'Shoulder Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'lateral-raise',
+        exerciseId: '0334',
         exerciseName: 'Lateral & Front Raise Superset',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 4, 5, 5),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'chest-fly',
+        exerciseId: '0308',
         exerciseName: 'Chest Flies',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0308.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0308.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0308.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'tricep-pushdown',
+        exerciseId: '0201',
         exerciseName: 'Tricep Cable Push Down',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0201.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 15, 18, 18),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'tricep-kickback',
+        exerciseId: '0333',
         exerciseName: 'Standing Tricep Kickbacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0333.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0333.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0333.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
@@ -2299,60 +2299,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'shoulder-press-machine',
+        exerciseId: '0603',
         exerciseName: 'Shoulder Press Machine',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0603.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0603.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0603.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 18, 18),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'lateral-raise',
-        exerciseName: 'Lateral Raise Machine',
+        exerciseId: '0584',
+        exerciseName: 'Lever Lateral Raise',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0584.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0584.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'front-raise',
+        exerciseId: '0310',
         exerciseName: 'Seated Incline Front Raises',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0310.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0310.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0310.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'tricep-cable-overhead',
+        exerciseId: '0194',
         exerciseName: 'Tricep Cable Overhead',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0194.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'tricep-pushdown',
+        exerciseId: '0201',
         exerciseName: 'Tricep Push Down Cable',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0201.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 15, 18, 18),
         restTimerSeconds: 60,
@@ -2376,60 +2376,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'cable-lateral-raise',
+        exerciseId: '0178',
         exerciseName: 'Cable Lateral Raise',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0178.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0178.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0178.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 5, 6, 6),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'barbell-overhead-press',
-        exerciseName: 'BB Overhead Press',
+        exerciseId: '0091',
+        exerciseName: 'Barbell Overhead Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0091.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0091.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0091.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 20, 20),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'lateral-raise',
+        exerciseId: '0396',
         exerciseName: 'Seated Incline Lateral Raise',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0396.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0396.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'chest-fly',
+        exerciseId: '0308',
         exerciseName: 'Chest Flies',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0308.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0308.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0308.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'tricep-dip',
+        exerciseId: '0814',
         exerciseName: 'Tricep Dips',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1755.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0814.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1755.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0814.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
@@ -2453,60 +2453,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'dumbbell-bench-press',
-        exerciseName: 'DB Chest Press',
+        exerciseId: '0289',
+        exerciseName: 'Dumbbell Bench Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0289.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0289.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0289.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'dumbbell-shoulder-press',
-        exerciseName: 'DB Shoulder Press',
+        exerciseId: '0405',
+        exerciseName: 'Dumbbell Shoulder Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 6, 8, 8),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'front-raise',
+        exerciseId: '0310',
         exerciseName: 'Front & Lateral Raise Superset',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0310.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0310.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0310.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'overhead-tricep-extension',
-        exerciseName: 'Tricep Overhead (DB)',
+        exerciseId: '0194',
+        exerciseName: 'Overhead Tricep Extension (Dumbbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0194.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'tricep-pushdown',
+        exerciseId: '0201',
         exerciseName: 'Tricep Single Arm Push Down',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0201.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2533,72 +2533,72 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'lat-pulldown',
+        exerciseId: '0150',
         exerciseName: 'Lat Pull Down',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'dumbbell-shoulder-press',
+        exerciseId: '0405',
         exerciseName: 'Shoulder Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'cable-lateral-raise',
+        exerciseId: '0178',
         exerciseName: 'Lat Raise (Cable)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0178.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0178.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0178.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 5, 6, 6),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'cable-row',
+        exerciseId: '0861',
         exerciseName: 'Cable Rows',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0861.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0861.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0861.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'dumbbell-bicep-curl',
+        exerciseId: '0285',
         exerciseName: 'Bicep Curl',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
       },
       {
         id: '6',
-        exerciseId: 'tricep-pushdown',
+        exerciseId: '0201',
         exerciseName: 'Tricep Pushdown',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0201.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0201.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 15, 18, 18),
         restTimerSeconds: 60,
@@ -2622,72 +2622,72 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'pull-up',
+        exerciseId: '0970',
         exerciseName: 'Pull Ups (Band Assisted)',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0652.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0970.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0652.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0970.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(10, 8, 8),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'bent-over-barbell-row',
-        exerciseName: 'Bent Over Row (BB)',
+        exerciseId: '0027',
+        exerciseName: 'Barbell Bent Over Row',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0027.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'rear-delt-fly',
+        exerciseId: '2292',
         exerciseName: 'Rear Delt Flies',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2292.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2292.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(15, 12, 12, 4, 5, 5),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'shoulder-press-machine',
+        exerciseId: '0603',
         exerciseName: 'Shoulder Press Machine',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0603.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0603.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0603.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 18, 18),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'dumbbell-bicep-curl',
-        exerciseName: 'Bicep Curl (Cable + DB)',
+        exerciseId: '0294',
+        exerciseName: 'Dumbbell Bicep Curl',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0294.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0294.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
       },
       {
         id: '6',
-        exerciseId: 'tricep-cable-overhead',
+        exerciseId: '0194',
         exerciseName: 'Tricep Overhead Cable',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0194.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 10, 12, 12),
         restTimerSeconds: 60,
@@ -2711,60 +2711,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'shoulder-press-machine',
+        exerciseId: '0603',
         exerciseName: 'Shoulder Press Machine',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0603.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0603.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0603.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 18, 18),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'chest-press-machine',
+        exerciseId: '0577',
         exerciseName: 'Chest Press Machine',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0576.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0577.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0576.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0577.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(10, 10, 8, 20, 25, 25),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'chest-supported-row',
+        exerciseId: '1350',
         exerciseName: 'Machine Row',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0327.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1350.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0327.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1350.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'lateral-raise',
-        exerciseName: 'Machine Lat Raise',
+        exerciseId: '0584',
+        exerciseName: 'Lever Lateral Raise',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0584.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0584.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 12, 10, 10, 12, 12),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'ez-bar-bicep-curl',
-        exerciseName: 'Machine Preacher Curl',
+        exerciseId: '1627',
+        exerciseName: 'EZ Barbell Preacher Curl',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2404.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1627.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2404.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1627.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2788,72 +2788,72 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'barbell-overhead-press',
+        exerciseId: '0086',
         exerciseName: 'Barbell Shoulder Press',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0091.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0086.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0091.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0086.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(10, 10, 8, 15, 20, 20),
         restTimerSeconds: 60,
       },
       {
         id: '2',
-        exerciseId: 'lat-pulldown',
+        exerciseId: '0150',
         exerciseName: 'Close Grip Lat Pull Down',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0150.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0150.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
       },
       {
         id: '3',
-        exerciseId: 'dumbbell-bench-press',
-        exerciseName: 'DB Bench Press',
+        exerciseId: '0289',
+        exerciseName: 'Dumbbell Bench Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0289.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0289.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0289.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(10, 10, 8, 8, 10, 10),
         restTimerSeconds: 60,
       },
       {
         id: '4',
-        exerciseId: 'lateral-raise',
+        exerciseId: '0334',
         exerciseName: 'Lat & Front Raise Superset',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 60,
       },
       {
         id: '5',
-        exerciseId: 'hammer-curl',
+        exerciseId: '0313',
         exerciseName: 'Hammer Curls',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0313.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0313.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0313.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 6, 8, 8),
         restTimerSeconds: 60,
       },
       {
         id: '6',
-        exerciseId: 'overhead-tricep-extension',
+        exerciseId: '0060',
         exerciseName: 'Skull Crushers',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0194.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0060.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0194.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0060.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 60,
@@ -2879,60 +2879,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'burpee',
+        exerciseId: '1160',
         exerciseName: 'Burpees',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1160.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png?v=1770098903217',
         muscle: 'Full Body',
         sets: s3(10, 10, 8),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'jump-squat',
+        exerciseId: '0514',
         exerciseName: 'Jump Squats',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0514.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'mountain-climber',
+        exerciseId: '0630',
         exerciseName: 'Mountain Climbers',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 25, 25),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'push-up',
+        exerciseId: '0662',
         exerciseName: 'Push-Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(15, 12, 10),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'high-knees',
+        exerciseId: '3636',
         exerciseName: 'High Knees',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(30, 30, 25),
         restTimerSeconds: 30,
@@ -2955,36 +2955,36 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'bodyweight-squat',
+        exerciseId: '3533',
         exerciseName: 'Bodyweight Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'glute-bridge',
+        exerciseId: '3013',
         exerciseName: 'Glute Bridge',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'reverse-lunge',
+        exerciseId: '0381',
         exerciseName: 'Reverse Lunges',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -2994,21 +2994,21 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'donkey-kick',
         exerciseName: 'Donkey Kicks',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0980.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-e4f7a9b0-db8d-476f-a23e-90a0c283f3d2.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'wall-sit',
+        exerciseId: '0624',
         exerciseName: 'Wall Sit',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0624.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0624.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0624.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
@@ -3031,60 +3031,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'push-up',
+        exerciseId: '0662',
         exerciseName: 'Push-Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'diamond-push-up',
+        exerciseId: '0283',
         exerciseName: 'Diamond Push-Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0283.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0283.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0283.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(10, 8, 8),
         restTimerSeconds: 45,
       },
       {
         id: '3',
-        exerciseId: 'pike-push-up',
+        exerciseId: '3662',
         exerciseName: 'Pike Push-Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3662.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(10, 8, 8),
         restTimerSeconds: 45,
       },
       {
         id: '4',
-        exerciseId: 'superman',
+        exerciseId: '0803',
         exerciseName: 'Superman',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 12, 10),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'tricep-dip-chair',
+        exerciseId: '0812',
         exerciseName: 'Tricep Dips (Chair)',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0129.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0812.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0129.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0812.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -3107,24 +3107,24 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'glute-bridge',
+        exerciseId: '3013',
         exerciseName: 'Glute Bridge',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'single-leg-glute-bridge',
+        exerciseId: '3645',
         exerciseName: 'Single-Leg Glute Bridge',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 30,
@@ -3134,9 +3134,9 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'fire-hydrant',
         exerciseName: 'Fire Hydrants',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0980.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-b5ecb214-f351-4d88-8759-11c0e93ca0f2.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3146,21 +3146,21 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'donkey-kick',
         exerciseName: 'Donkey Kicks',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0980.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-e4f7a9b0-db8d-476f-a23e-90a0c283f3d2.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'sumo-squat',
+        exerciseId: '3142',
         exerciseName: 'Sumo Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3142.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3142.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3183,60 +3183,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'plank',
+        exerciseId: '0464',
         exerciseName: 'Plank',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'crunch',
+        exerciseId: '0274',
         exerciseName: 'Crunches',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'bicycle-crunch',
+        exerciseId: '0972',
         exerciseName: 'Bicycle Crunches',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0972.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0972.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0972.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'leg-raise',
+        exerciseId: '0620',
         exerciseName: 'Leg Raises',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'dead-bug',
+        exerciseId: '0276',
         exerciseName: 'Dead Bugs',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0276.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0276.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 12, 10),
         restTimerSeconds: 30,
@@ -3263,48 +3263,48 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'bodyweight-squat',
+        exerciseId: '3533',
         exerciseName: 'Bodyweight Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'push-up',
+        exerciseId: '0662',
         exerciseName: 'Push-Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'plank',
+        exerciseId: '0464',
         exerciseName: 'Plank',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'glute-bridge',
+        exerciseId: '3013',
         exerciseName: 'Glute Bridge',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3561.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3561.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -3327,36 +3327,36 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'jumping-jack',
+        exerciseId: '3636',
         exerciseName: 'Jumping Jacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 20,
       },
       {
         id: '2',
-        exerciseId: 'bodyweight-squat',
+        exerciseId: '3533',
         exerciseName: 'Bodyweight Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 20,
       },
       {
         id: '3',
-        exerciseId: 'push-up',
+        exerciseId: '0662',
         exerciseName: 'Push-Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(10, 8, 8),
         restTimerSeconds: 20,
@@ -3391,19 +3391,19 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'cat-cow',
+        exerciseId: '1365',
         exerciseName: 'Cat-Cow Stretch',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1365.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1365.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1365.png?v=1770098903217',
         muscle: 'Full Body',
         sets: s3(10, 10, 10),
         restTimerSeconds: 15,
       },
       {
         id: '2',
-        exerciseId: 'world-greatest-stretch',
+        exerciseId: 'hip-flexor-stretch',
         exerciseName: "World's Greatest Stretch",
         muscle: 'Full Body',
         sets: s3(8, 8, 6),
@@ -3423,7 +3423,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       },
       {
         id: '4',
-        exerciseId: 'thoracic-rotation',
+        exerciseId: 'spine-stretch',
         exerciseName: 'Thoracic Rotation',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1365.gif',
@@ -3451,60 +3451,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'burpee',
+        exerciseId: '1160',
         exerciseName: 'Burpees',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1160.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png?v=1770098903217',
         muscle: 'Full Body',
         sets: s3(10, 8, 8),
         restTimerSeconds: 20,
       },
       {
         id: '2',
-        exerciseId: 'reverse-lunge',
+        exerciseId: '0381',
         exerciseName: 'Reverse Lunges',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0381.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0381.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 20,
       },
       {
         id: '3',
-        exerciseId: 'push-up',
+        exerciseId: '0662',
         exerciseName: 'Push-Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 20,
       },
       {
         id: '4',
-        exerciseId: 'mountain-climber',
+        exerciseId: '0630',
         exerciseName: 'Mountain Climbers',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 20, 16),
         restTimerSeconds: 20,
       },
       {
         id: '5',
-        exerciseId: 'superman',
+        exerciseId: '0803',
         exerciseName: 'Superman Hold',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10),
         restTimerSeconds: 20,
@@ -3527,48 +3527,48 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'plank',
+        exerciseId: '0464',
         exerciseName: 'Plank',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 30, 30),
         restTimerSeconds: 15,
       },
       {
         id: '2',
-        exerciseId: 'crunch',
+        exerciseId: '0274',
         exerciseName: 'Crunches',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0274.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0274.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(15, 12, 12),
         restTimerSeconds: 15,
       },
       {
         id: '3',
-        exerciseId: 'leg-raise',
+        exerciseId: '0620',
         exerciseName: 'Leg Raises',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0620.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0620.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 15,
       },
       {
         id: '4',
-        exerciseId: 'russian-twist',
+        exerciseId: '0687',
         exerciseName: 'Russian Twists',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0687.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0687.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0687.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(20, 16, 16),
         restTimerSeconds: 15,
@@ -3595,60 +3595,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'burpee',
+        exerciseId: '1160',
         exerciseName: 'Burpees',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1160.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png?v=1770098903217',
         muscle: 'Full Body',
         sets: s3(10, 10, 8),
         restTimerSeconds: 20,
       },
       {
         id: '2',
-        exerciseId: 'high-knees',
+        exerciseId: '3636',
         exerciseName: 'High Knees',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(30, 30, 25),
         restTimerSeconds: 20,
       },
       {
         id: '3',
-        exerciseId: 'jump-squat',
+        exerciseId: '0514',
         exerciseName: 'Jump Squats',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0514.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 20,
       },
       {
         id: '4',
-        exerciseId: 'mountain-climber',
+        exerciseId: '0630',
         exerciseName: 'Mountain Climbers',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0630.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0630.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 25, 25),
         restTimerSeconds: 20,
       },
       {
         id: '5',
-        exerciseId: 'tuck-jump',
+        exerciseId: '0514',
         exerciseName: 'Tuck Jumps',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0514.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
@@ -3671,7 +3671,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'marching-in-place',
+        exerciseId: 'run-on-spot',
         exerciseName: 'Marching in Place',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0624.gif',
@@ -3683,7 +3683,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       },
       {
         id: '2',
-        exerciseId: 'step-touch',
+        exerciseId: 'dumbbell-step-up',
         exerciseName: 'Step Touch',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
@@ -3695,24 +3695,24 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       },
       {
         id: '3',
-        exerciseId: 'walking-lunge',
+        exerciseId: '0336',
         exerciseName: 'Walking Lunges',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 15,
       },
       {
         id: '4',
-        exerciseId: 'jumping-jack',
+        exerciseId: '3636',
         exerciseName: 'Jumping Jacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 15,
@@ -3735,48 +3735,48 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'burpee',
+        exerciseId: '1160',
         exerciseName: 'Burpees (20s on/10s off)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1160.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1160.png?v=1770098903217',
         muscle: 'Full Body',
         sets: s3(8, 8, 8),
         restTimerSeconds: 10,
       },
       {
         id: '2',
-        exerciseId: 'high-knees',
+        exerciseId: '3636',
         exerciseName: 'High Knees (20s on/10s off)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(20, 20, 20),
         restTimerSeconds: 10,
       },
       {
         id: '3',
-        exerciseId: 'jump-squat',
+        exerciseId: '0514',
         exerciseName: 'Jump Squats (20s on/10s off)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0514.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0514.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 10),
         restTimerSeconds: 10,
       },
       {
         id: '4',
-        exerciseId: 'push-up',
+        exerciseId: '0662',
         exerciseName: 'Push-Ups (20s on/10s off)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(8, 8, 8),
         restTimerSeconds: 10,
@@ -3799,19 +3799,19 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'jumping-jack',
+        exerciseId: '3636',
         exerciseName: 'Jumping Jacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 15,
       },
       {
         id: '2',
-        exerciseId: 'lateral-shuffle',
+        exerciseId: 'high-knees',
         exerciseName: 'Lateral Shuffles',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
@@ -3823,31 +3823,31 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       },
       {
         id: '3',
-        exerciseId: 'high-knees',
+        exerciseId: '3636',
         exerciseName: 'High Knees',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3636.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 15,
       },
       {
         id: '4',
-        exerciseId: 'skater-hops',
+        exerciseId: '3361',
         exerciseName: 'Skater Hops',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3361.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3361.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3361.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(16, 14, 14),
         restTimerSeconds: 15,
       },
       {
         id: '5',
-        exerciseId: 'grapevine',
+        exerciseId: 'high-knees',
         exerciseName: 'Grapevine',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3636.gif',
@@ -3875,48 +3875,48 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'jump-rope',
+        exerciseId: '2612',
         exerciseName: 'Jump Rope (Basic)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2612.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2612.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2612.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(60, 60, 45),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'jump-rope-high-knees',
+        exerciseId: '2612',
         exerciseName: 'Jump Rope (High Knees)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2612.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2612.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2612.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(30, 25, 25),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'jump-rope-double-under',
+        exerciseId: '2612',
         exerciseName: 'Double Unders',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2612.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2612.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2612.png?v=1770098903217',
         muscle: 'Cardio',
         sets: s3(15, 12, 10),
         restTimerSeconds: 45,
       },
       {
         id: '4',
-        exerciseId: 'bodyweight-squat',
+        exerciseId: '3533',
         exerciseName: 'Bodyweight Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 20,
@@ -3944,84 +3944,84 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'bodyweight-squat',
+        exerciseId: '3533',
         exerciseName: 'Squats',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'wall-sit',
+        exerciseId: '0624',
         exerciseName: 'Wall Sits',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0624.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0624.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0624.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(30, 30, 45),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'walking-lunge',
+        exerciseId: '0336',
         exerciseName: 'Lunges',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'push-up',
+        exerciseId: '0662',
         exerciseName: 'Push Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'tricep-dip-chair',
+        exerciseId: '0814',
         exerciseName: 'Tricep Dips',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0129.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0814.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0129.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0814.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '6',
-        exerciseId: 'plank',
+        exerciseId: '3239',
         exerciseName: 'Kneeling Plank Tap Shoulders',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0464.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3239.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0464.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3239.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '7',
-        exerciseId: 'side-plank',
+        exerciseId: '1775',
         exerciseName: 'Side Plank',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1775.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1775.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 30, 30),
         restTimerSeconds: 30,
@@ -4045,72 +4045,72 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'bodyweight-squat',
+        exerciseId: '3533',
         exerciseName: 'Squats',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'bodyweight-squat',
+        exerciseId: '3533',
         exerciseName: 'Pulse Squats',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(20, 15, 15),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'walking-lunge',
+        exerciseId: '0336',
         exerciseName: 'Lunges',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'calf-raise-machine',
+        exerciseId: '0605',
         exerciseName: 'Single Leg Calf Raises',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 15, 12),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'single-leg-glute-bridge',
+        exerciseId: '3645',
         exerciseName: 'Single Leg Bridges',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 30,
       },
       {
         id: '6',
-        exerciseId: 'side-plank',
+        exerciseId: '1775',
         exerciseName: 'Side Plank',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1775.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1775.png?v=1770098903217',
         muscle: 'Core',
         sets: s3(30, 30, 30),
         restTimerSeconds: 30,
@@ -4120,9 +4120,9 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'fire-hydrant',
         exerciseName: 'Fire Hydrants',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0980.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-b5ecb214-f351-4d88-8759-11c0e93ca0f2.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -4170,43 +4170,43 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       },
       {
         id: '3',
-        exerciseId: 'superman',
+        exerciseId: '0803',
         exerciseName: 'Superman',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0803.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0803.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'tricep-dip-chair',
+        exerciseId: '0814',
         exerciseName: 'Tricep Dips',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0129.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0814.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0129.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0814.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'push-up',
+        exerciseId: '0662',
         exerciseName: 'Push Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '6',
-        exerciseId: 'lateral-raise',
+        exerciseId: 'dumbbell-lateral-raise',
         exerciseName: 'Arm Circles',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
@@ -4235,84 +4235,84 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'dumbbell-shoulder-press',
+        exerciseId: '0405',
         exerciseName: 'Shoulder Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 45,
       },
       {
         id: '2',
-        exerciseId: 'tricep-kickback',
+        exerciseId: '0333',
         exerciseName: 'Tricep Kickback',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0333.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0333.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0333.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 3, 4, 4),
         restTimerSeconds: 45,
       },
       {
         id: '3',
-        exerciseId: 'front-raise',
+        exerciseId: '0310',
         exerciseName: 'Front Raise',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0310.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0310.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0310.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 3, 4, 4),
         restTimerSeconds: 45,
       },
       {
         id: '4',
-        exerciseId: 'lateral-raise',
+        exerciseId: '0334',
         exerciseName: 'Lateral Raise',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10, 3, 4, 4),
         restTimerSeconds: 45,
       },
       {
         id: '5',
-        exerciseId: 'bent-over-dumbbell-row',
+        exerciseId: '0027',
         exerciseName: 'Bent Over Row',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0293.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0027.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0293.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0027.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 5, 6, 6),
         restTimerSeconds: 45,
       },
       {
         id: '6',
-        exerciseId: 'rear-delt-fly',
+        exerciseId: '2292',
         exerciseName: 'Bent Over Reverse Flies',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0378.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2292.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0378.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/2292.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 3, 4, 4),
         restTimerSeconds: 45,
       },
       {
         id: '7',
-        exerciseId: 'dumbbell-bicep-curl',
+        exerciseId: '0285',
         exerciseName: 'Bicep Curl',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10, 4, 5, 5),
         restTimerSeconds: 45,
@@ -4336,60 +4336,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'goblet-squat',
+        exerciseId: '3533',
         exerciseName: 'Squats',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1760.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1760.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 45,
       },
       {
         id: '2',
-        exerciseId: 'single-leg-glute-bridge',
+        exerciseId: '1409',
         exerciseName: 'Single Leg Hip Thrust',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1409.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 45,
       },
       {
         id: '3',
-        exerciseId: 'step-up',
+        exerciseId: '0431',
         exerciseName: 'Step Ups',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0431.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0431.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 6, 8, 8),
         restTimerSeconds: 45,
       },
       {
         id: '4',
-        exerciseId: 'calf-raise-machine',
+        exerciseId: '0605',
         exerciseName: 'Single Leg Calf Raise',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0605.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0605.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 15, 12),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'lying-hamstring-curl',
+        exerciseId: '0586',
         exerciseName: 'Hamstring Curl',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0586.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0586.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0586.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(12, 10, 10),
         restTimerSeconds: 45,
@@ -4413,36 +4413,36 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'bodyweight-squat',
+        exerciseId: '3533',
         exerciseName: 'Banded Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3543.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3533.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3543.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3533.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'banded-hip-thrust',
+        exerciseId: '1409',
         exerciseName: 'Hip Thrust',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3236.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3236.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1409.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'banded-lateral-walk',
+        exerciseId: '3006',
         exerciseName: 'Crab Walk',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3006.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3006.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3006.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
@@ -4452,21 +4452,21 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
         exerciseId: 'fire-hydrant',
         exerciseName: 'Fire Hydrant',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3013.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0980.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3013.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/custom-b5ecb214-f351-4d88-8759-11c0e93ca0f2.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(15, 12, 12),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'side-plank',
+        exerciseId: '1775',
         exerciseName: 'Side Plank with Clam',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1774.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1775.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1774.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1775.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
@@ -4490,60 +4490,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'sumo-squat',
+        exerciseId: '3142',
         exerciseName: 'Sumo Squat',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0043.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3142.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0043.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3142.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(12, 10, 10, 8, 10, 10),
         restTimerSeconds: 45,
       },
       {
         id: '2',
-        exerciseId: 'single-leg-rdl',
-        exerciseName: 'Single Leg RDLs',
+        exerciseId: '1757',
+        exerciseName: 'Single Leg Deadlift (Dumbbell)',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1756.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1757.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1756.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1757.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8, 6, 8, 8),
         restTimerSeconds: 45,
       },
       {
         id: '3',
-        exerciseId: 'walking-lunge',
+        exerciseId: '0336',
         exerciseName: 'Lunges',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0336.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0336.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 10, 8, 6, 8, 8),
         restTimerSeconds: 45,
       },
       {
         id: '4',
-        exerciseId: 'single-leg-glute-bridge',
+        exerciseId: '1409',
         exerciseName: 'Hip Thrust (Single Leg)',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/3645.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1409.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/3645.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1409.png?v=1770098903217',
         muscle: 'Glutes',
         sets: s3(10, 10, 8),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'pistol-squat',
+        exerciseId: '0544',
         exerciseName: 'Cossack Squats',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/1759.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0544.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/1759.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0544.png?v=1770098903217',
         muscle: 'Legs',
         sets: s3(10, 8, 8),
         restTimerSeconds: 30,
@@ -4567,60 +4567,60 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: 'dumbbell-shoulder-press',
+        exerciseId: '0405',
         exerciseName: 'Shoulder Press',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0405.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0405.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '2',
-        exerciseId: 'tricep-kickback',
+        exerciseId: '0333',
         exerciseName: 'Tricep Kickbacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0333.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0333.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0333.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '3',
-        exerciseId: 'dumbbell-bicep-curl',
+        exerciseId: '0285',
         exerciseName: 'Bicep Curls',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0285.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0285.png?v=1770098903217',
         muscle: 'Arms',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '4',
-        exerciseId: 'lateral-raise',
+        exerciseId: '0334',
         exerciseName: 'Lateral Raise',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0334.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0334.png?v=1770098903217',
         muscle: 'Shoulders',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,
       },
       {
         id: '5',
-        exerciseId: 'push-up',
-        exerciseName: 'Chest Press (Lying)',
+        exerciseId: '0289',
+        exerciseName: 'Dumbbell Bench Press',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0662.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0289.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0662.png',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0289.png?v=1770098903217',
         muscle: 'Chest',
         sets: s3(12, 10, 10),
         restTimerSeconds: 30,

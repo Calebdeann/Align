@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,9 @@ import { router, useFocusEffect } from 'expo-router';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { getWorkoutHistory, WorkoutHistoryItem } from '@/services/api/workouts';
 import { getCurrentUser } from '@/services/api/user';
@@ -193,7 +196,15 @@ function MinusCircleIcon() {
         d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
         fill="#C75050"
       />
-      <Line x1={8} y1={12} x2={16} y2={12} stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" />
+      <Line
+        x1={8}
+        y1={12}
+        x2={16}
+        y2={12}
+        stroke={colors.textInverse}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
@@ -254,10 +265,10 @@ function formatDate(dateString: string): string {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (date.toDateString() === today.toDateString()) {
-    return 'Today';
+    return i18n.t('calendar.today');
   }
   if (date.toDateString() === yesterday.toDateString()) {
-    return 'Yesterday';
+    return i18n.t('calendar.yesterday');
   }
 
   return date.toLocaleDateString('en-US', {
@@ -308,8 +319,11 @@ function TemplateCard({
   onDragEnd,
   isDragGhost,
 }: TemplateCardProps) {
-  const totalSets = getTemplateTotalSets(template);
-  const duration = formatTemplateDuration(template.estimatedDuration);
+  const totalSets = useMemo(() => getTemplateTotalSets(template), [template]);
+  const duration = useMemo(
+    () => formatTemplateDuration(template.estimatedDuration),
+    [template.estimatedDuration]
+  );
   const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragActivatedRef = useRef(false);
   const startPosRef = useRef({ x: 0, y: 0 });
@@ -317,10 +331,11 @@ function TemplateCard({
 
   const cardContent = (
     <Pressable
-      style={[
+      style={({ pressed }) => [
         styles.templateCard,
         { backgroundColor: template.tagColor + '30' },
         isDragGhost && { opacity: 0.3 },
+        pressed && !isDragGhost && { opacity: 0.7 },
       ]}
       onPress={onPress}
     >
@@ -347,14 +362,14 @@ function TemplateCard({
 
       {/* Start Button */}
       <Pressable
-        style={styles.startTemplateButton}
+        style={({ pressed }) => [styles.startTemplateButton, pressed && { opacity: 0.7 }]}
         onPress={(e) => {
           e.stopPropagation();
           onStart();
         }}
       >
         <Text style={styles.startTemplateIcon}>+</Text>
-        <Text style={styles.startTemplateText}>Start</Text>
+        <Text style={styles.startTemplateText}>{i18n.t('common.start')}</Text>
       </Pressable>
     </Pressable>
   );
@@ -370,14 +385,14 @@ function TemplateCard({
         dragActivatedRef.current = false;
         Animated.timing(scaleAnim, {
           toValue: 1.02,
-          duration: 2000,
+          duration: 1200,
           useNativeDriver: true,
         }).start();
         dragTimerRef.current = setTimeout(() => {
           dragActivatedRef.current = true;
           scaleAnim.setValue(1);
           onDragActivate(template, startPosRef.current.x, startPosRef.current.y);
-        }, 2000);
+        }, 1200);
       }}
       onTouchMove={(e) => {
         if (dragActivatedRef.current && onDragMove) {
@@ -603,11 +618,13 @@ function DraggableFolderRow({
 }
 
 export default function WorkoutScreen() {
+  const { t } = useTranslation();
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showWorkoutInProgressModal, setShowWorkoutInProgressModal] = useState(false);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const { isNavigating, withLock } = useNavigationLock();
 
   // Template reorder state
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -625,6 +642,15 @@ export default function WorkoutScreen() {
 
   const activeWorkout = useWorkoutStore((state) => state.activeWorkout);
   const discardActiveWorkout = useWorkoutStore((state) => state.discardActiveWorkout);
+  const getScheduledWorkoutsForTemplate = useWorkoutStore(
+    (state) => state.getScheduledWorkoutsForTemplate
+  );
+  const detachScheduledWorkoutsFromTemplate = useWorkoutStore(
+    (state) => state.detachScheduledWorkoutsFromTemplate
+  );
+  const removeScheduledWorkoutsForTemplate = useWorkoutStore(
+    (state) => state.removeScheduledWorkoutsForTemplate
+  );
 
   // Template store
   const templates = useTemplateStore((state) => state.templates);
@@ -673,7 +699,9 @@ export default function WorkoutScreen() {
     if (activeWorkout?.isMinimized) {
       // If the minimized workout is empty (no exercises), just resume it
       if (activeWorkout.exercises.length === 0) {
-        router.push('/active-workout');
+        withLock(() => {
+          router.push('/active-workout');
+        });
         return;
       }
       setShowWorkoutInProgressModal(true);
@@ -681,26 +709,34 @@ export default function WorkoutScreen() {
       if (activeWorkout) {
         discardActiveWorkout();
       }
-      router.push('/active-workout');
+      withLock(() => {
+        router.push('/active-workout');
+      });
     }
   };
 
   const handleResumeWorkout = () => {
     setShowWorkoutInProgressModal(false);
-    router.push('/active-workout');
+    withLock(() => {
+      router.push('/active-workout');
+    });
   };
 
   const handleStartNewWorkout = () => {
     discardActiveWorkout();
     setShowWorkoutInProgressModal(false);
     if (pendingTemplateId) {
-      router.push({
-        pathname: '/active-workout',
-        params: { templateId: pendingTemplateId },
+      withLock(() => {
+        router.push({
+          pathname: '/active-workout',
+          params: { templateId: pendingTemplateId },
+        });
       });
       setPendingTemplateId(null);
     } else {
-      router.push('/active-workout');
+      withLock(() => {
+        router.push('/active-workout');
+      });
     }
   };
 
@@ -715,9 +751,11 @@ export default function WorkoutScreen() {
       // If the minimized workout is empty (no exercises), discard it and start from template
       if (activeWorkout.exercises.length === 0) {
         discardActiveWorkout();
-        router.push({
-          pathname: '/active-workout',
-          params: { templateId },
+        withLock(() => {
+          router.push({
+            pathname: '/active-workout',
+            params: { templateId },
+          });
         });
         return;
       }
@@ -727,17 +765,21 @@ export default function WorkoutScreen() {
       if (activeWorkout) {
         discardActiveWorkout();
       }
-      router.push({
-        pathname: '/active-workout',
-        params: { templateId },
+      withLock(() => {
+        router.push({
+          pathname: '/active-workout',
+          params: { templateId },
+        });
       });
     }
   };
 
   const handleTemplatePress = (template: WorkoutTemplate) => {
-    router.push({
-      pathname: '/template-detail',
-      params: { templateId: template.id },
+    withLock(() => {
+      router.push({
+        pathname: '/template-detail',
+        params: { templateId: template.id },
+      });
     });
   };
 
@@ -823,19 +865,19 @@ export default function WorkoutScreen() {
 
     // Protect the default "My Templates" folder from deletion
     if (folderToRemove.id === DEFAULT_FOLDER_ID) {
-      Alert.alert('Cannot Delete', 'The "My Templates" folder cannot be deleted.', [
-        { text: 'OK' },
+      Alert.alert(i18n.t('folder.cannotDelete'), i18n.t('folder.cannotDeleteMessage'), [
+        { text: i18n.t('common.ok') },
       ]);
       return;
     }
 
     Alert.alert(
-      'Delete Folder',
-      `Are you sure you want to delete "${folderToRemove.name}"? Templates in this folder will be moved to "My Templates".`,
+      i18n.t('folder.deleteFolder'),
+      i18n.t('folder.deleteConfirm', { name: folderToRemove.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: i18n.t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: i18n.t('common.delete'),
           style: 'destructive',
           onPress: () => {
             setReorderFoldersList((prev) => prev.filter((_, i) => i !== index));
@@ -875,12 +917,16 @@ export default function WorkoutScreen() {
   const handleNewTemplatePress = () => {
     if (folders.length === 0) {
       // No folders yet, just go to create-template (will create default folder)
-      router.push('/create-template');
+      withLock(() => {
+        router.push('/create-template');
+      });
     } else if (folders.length === 1) {
       // Only one folder, go directly to create-template with that folder
-      router.push({
-        pathname: '/create-template',
-        params: { folderId: folders[0].id },
+      withLock(() => {
+        router.push({
+          pathname: '/create-template',
+          params: { folderId: folders[0].id },
+        });
       });
     } else {
       // 2+ folders, show selection modal
@@ -907,9 +953,11 @@ export default function WorkoutScreen() {
   const handleSelectFolderForNewTemplate = (folderId: string) => {
     closeFolderSelectionModal();
     setTimeout(() => {
-      router.push({
-        pathname: '/create-template',
-        params: { folderId },
+      withLock(() => {
+        router.push({
+          pathname: '/create-template',
+          params: { folderId },
+        });
       });
     }, 300);
   };
@@ -943,7 +991,7 @@ export default function WorkoutScreen() {
       // Filter templates in the selected folder
       const folderTemplates = selectedFolderId ? getTemplatesInFolder(selectedFolderId) : [];
       if (folderTemplates.length === 0) {
-        Alert.alert('No Templates', 'This folder has no templates to reorder.');
+        Alert.alert(i18n.t('folder.noTemplates'), i18n.t('folder.noTemplatesReorder'));
         return;
       }
       setReorderTemplates(folderTemplates);
@@ -954,9 +1002,11 @@ export default function WorkoutScreen() {
   const handleFolderMenuAddRoutine = () => {
     closeFolderMenu();
     // Navigate to create-template with folderId param
-    router.push({
-      pathname: '/create-template',
-      params: selectedFolderId ? { folderId: selectedFolderId } : {},
+    withLock(() => {
+      router.push({
+        pathname: '/create-template',
+        params: selectedFolderId ? { folderId: selectedFolderId } : {},
+      });
     });
   };
 
@@ -969,19 +1019,19 @@ export default function WorkoutScreen() {
     // Protect the default folder
     if (selectedFolderId === DEFAULT_FOLDER_ID) {
       closeFolderMenu();
-      Alert.alert('Cannot Delete', 'The "My Templates" folder cannot be deleted.');
+      Alert.alert(i18n.t('folder.cannotDelete'), i18n.t('folder.cannotDeleteMessage'));
       return;
     }
 
     closeFolderMenu();
     setTimeout(() => {
       Alert.alert(
-        'Delete Folder',
-        `Are you sure you want to delete "${folder.name}"? Templates in this folder will be moved to "My Templates".`,
+        i18n.t('folder.deleteFolder'),
+        i18n.t('folder.deleteConfirm', { name: folder.name }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: i18n.t('common.cancel'), style: 'cancel' },
           {
-            text: 'Delete',
+            text: i18n.t('common.delete'),
             style: 'destructive',
             onPress: () => deleteFolder(selectedFolderId),
           },
@@ -990,24 +1040,32 @@ export default function WorkoutScreen() {
     }, 300);
   };
 
-  // Group templates by folder
-  // For the default "My Templates" folder, also include templates without a folderId
-  const getTemplatesInFolder = (folderId: string) => {
-    if (folderId === DEFAULT_FOLDER_ID) {
-      return templates.filter((t) => t.folderId === folderId || !t.folderId);
-    }
-    return templates.filter((t) => t.folderId === folderId);
-  };
+  // Group templates by folder (memoized to avoid re-filtering on every render)
+  const getTemplatesInFolder = useCallback(
+    (folderId: string) => {
+      if (folderId === DEFAULT_FOLDER_ID) {
+        return templates.filter((t) => t.folderId === folderId || !t.folderId);
+      }
+      return templates.filter((t) => t.folderId === folderId);
+    },
+    [templates]
+  );
 
-  // Templates not in any folder (excluding those that should be in default folder)
-  const getUnfolderedTemplates = () => {
-    // If the default folder exists, unfoldered templates go there
+  // Pre-computed folder → templates map so we don't re-filter inside .map()
+  const folderTemplateMap = useMemo(() => {
+    const map = new Map<string, WorkoutTemplate[]>();
+    folders.forEach((f) => map.set(f.id, getTemplatesInFolder(f.id)));
+    return map;
+  }, [folders, getTemplatesInFolder]);
+
+  // Templates not in any folder (memoized)
+  const unfolderedTemplates = useMemo(() => {
     const hasDefaultFolder = folders.some((f) => f.id === DEFAULT_FOLDER_ID);
     if (hasDefaultFolder) {
-      return []; // All unfoldered templates are shown in "My Templates" folder
+      return [];
     }
     return templates.filter((t) => !t.folderId);
-  };
+  }, [folders, templates]);
 
   // Drag-to-folder functions
   const clearLongPressTimer = () => {
@@ -1128,17 +1186,43 @@ export default function WorkoutScreen() {
 
   const removeTemplateFromReorder = (index: number) => {
     const templateToRemove = reorderTemplates[index];
-    Alert.alert('Remove Template', `Are you sure you want to remove "${templateToRemove.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => {
-          setReorderTemplates((prev) => prev.filter((_, i) => i !== index));
-          removeTemplate(templateToRemove.id);
-        },
-      },
-    ]);
+    const linkedWorkouts = getScheduledWorkoutsForTemplate(templateToRemove.id);
+
+    const doRemove = (deleteWorkouts: boolean) => {
+      if (deleteWorkouts) {
+        removeScheduledWorkoutsForTemplate(templateToRemove.id);
+      } else {
+        detachScheduledWorkoutsFromTemplate(templateToRemove.id);
+      }
+      setReorderTemplates((prev) => prev.filter((_, i) => i !== index));
+      removeTemplate(templateToRemove.id);
+    };
+
+    if (linkedWorkouts.length > 0) {
+      const count = linkedWorkouts.length;
+      Alert.alert(
+        i18n.t('template.removeTitle'),
+        i18n.t('template.removeWithWorkouts', { name: templateToRemove.name, count }),
+        [
+          { text: i18n.t('common.cancel'), style: 'cancel' },
+          { text: i18n.t('template.keepWorkouts'), onPress: () => doRemove(false) },
+          {
+            text: i18n.t('template.deleteAll'),
+            style: 'destructive',
+            onPress: () => doRemove(true),
+          },
+        ]
+      );
+    } else {
+      Alert.alert(
+        i18n.t('template.removeTitle'),
+        i18n.t('template.removeConfirm', { name: templateToRemove.name }),
+        [
+          { text: i18n.t('common.cancel'), style: 'cancel' },
+          { text: i18n.t('common.remove'), style: 'destructive', onPress: () => doRemove(false) },
+        ]
+      );
+    }
   };
 
   const saveTemplateReorder = () => {
@@ -1161,36 +1245,60 @@ export default function WorkoutScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Workout</Text>
+          <Text style={styles.headerTitle}>{t('workout.title')}</Text>
         </View>
 
         {/* Start Empty Workout Button */}
-        <Pressable style={styles.startEmptyButton} onPress={handleStartEmptyWorkout}>
+        <Pressable
+          style={({ pressed }) => [styles.startEmptyButton, pressed && { opacity: 0.7 }]}
+          onPress={handleStartEmptyWorkout}
+        >
           <Text style={styles.plusIcon}>+</Text>
-          <Text style={styles.startEmptyText}>Start Empty Workout</Text>
+          <Text style={styles.startEmptyText}>{t('workout.startEmpty')}</Text>
         </Pressable>
 
         {/* Saved Templates Section */}
-        <Text style={styles.sectionTitleWithPadding}>Saved Templates</Text>
+        <Text style={styles.sectionTitleWithPadding}>{t('workout.savedTemplates')}</Text>
 
         <View style={styles.cardsRow}>
           {/* New Template Card */}
           <Pressable style={styles.card} onPress={handleNewTemplatePress}>
             <PlusCircleIcon />
-            <Text style={styles.cardText}>New Template</Text>
+            <Text
+              style={styles.cardText}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
+              {t('workout.newTemplate')}
+            </Text>
           </Pressable>
 
           {/* Explore Templates Card */}
-          <Pressable style={styles.card} onPress={() => router.push('/explore-templates')}>
+          <Pressable
+            style={styles.card}
+            onPress={() =>
+              withLock(() => {
+                router.push('/explore-templates');
+              })
+            }
+          >
             <SearchIcon />
-            <Text style={styles.cardText}>Explore Templates</Text>
+            <Text
+              style={styles.cardText}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
+              {t('workout.exploreTemplates')}
+            </Text>
           </Pressable>
         </View>
 
         {/* My Templates - only show section if there's at least 1 template */}
         {templates.length > 0 && (
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Templates</Text>
+            <Text style={styles.sectionTitle}>{t('workout.myTemplates')}</Text>
             <View style={styles.sectionHeaderRight}>
               {/* Folder icon - create new folder */}
               <Pressable onPress={openCreateFolderModal} style={styles.folderButton}>
@@ -1203,14 +1311,14 @@ export default function WorkoutScreen() {
         {templates.length === 0 && folders.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="fitness-outline" size={48} color={colors.border} />
-            <Text style={styles.emptyStateText}>No templates yet</Text>
-            <Text style={styles.emptyStateSubtext}>Create or save a template to get started</Text>
+            <Text style={styles.emptyStateText}>{t('workout.noTemplates')}</Text>
+            <Text style={styles.emptyStateSubtext}>{t('workout.noTemplatesSubtext')}</Text>
           </View>
         ) : (
           <View style={styles.templatesList}>
             {/* Render folders with their templates */}
             {folders.map((folder) => {
-              const folderTemplates = getTemplatesInFolder(folder.id);
+              const folderTemplates = folderTemplateMap.get(folder.id) || [];
 
               return (
                 <View
@@ -1230,7 +1338,7 @@ export default function WorkoutScreen() {
                     ]}
                   >
                     <Pressable
-                      style={styles.folderHeader}
+                      style={({ pressed }) => [styles.folderHeader, pressed && { opacity: 0.7 }]}
                       onPress={() => toggleFolderCollapsed(folder.id)}
                     >
                       <FolderChevronIcon collapsed={folder.isCollapsed} />
@@ -1251,14 +1359,16 @@ export default function WorkoutScreen() {
                         <Pressable
                           style={styles.addTemplateBox}
                           onPress={() => {
-                            router.push({
-                              pathname: '/create-template',
-                              params: { folderId: folder.id },
+                            withLock(() => {
+                              router.push({
+                                pathname: '/create-template',
+                                params: { folderId: folder.id },
+                              });
                             });
                           }}
                         >
                           <Text style={styles.addTemplateIcon}>+</Text>
-                          <Text style={styles.addTemplateText}>Add Template</Text>
+                          <Text style={styles.addTemplateText}>{t('workout.addTemplate')}</Text>
                         </Pressable>
                       ) : (
                         folderTemplates.map((template) => (
@@ -1285,7 +1395,7 @@ export default function WorkoutScreen() {
             })}
 
             {/* Render unfoldered templates */}
-            {getUnfolderedTemplates().map((template) => (
+            {unfolderedTemplates.map((template) => (
               <TemplateCard
                 key={template.id}
                 template={template}
@@ -1316,21 +1426,40 @@ export default function WorkoutScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.workoutInProgressModal}>
-            <Text style={styles.modalTitle}>You have a workout in progress.</Text>
-            <Text style={styles.modalSubtitle}>
-              If you start a new workout, your old workout will be permanently deleted.
-            </Text>
+            <Text style={styles.modalTitle}>{t('workout.inProgressTitle')}</Text>
+            <Text style={styles.modalSubtitle}>{t('workout.inProgressSubtitle')}</Text>
 
             <Pressable style={styles.resumeButton} onPress={handleResumeWorkout}>
-              <Text style={styles.resumeButtonText}>Resume Workout in Progress</Text>
+              <Text
+                style={styles.resumeButtonText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {t('workout.resumeWorkout')}
+              </Text>
             </Pressable>
 
             <Pressable style={styles.startNewButton} onPress={handleStartNewWorkout}>
-              <Text style={styles.startNewButtonText}>Start New Workout</Text>
+              <Text
+                style={styles.startNewButtonText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {t('workout.startNewWorkout')}
+              </Text>
             </Pressable>
 
             <Pressable style={styles.cancelButton} onPress={handleCancelModal}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text
+                style={styles.cancelButtonText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {t('common.cancel')}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -1354,19 +1483,19 @@ export default function WorkoutScreen() {
               <View style={styles.menuContainer}>
                 <Pressable style={styles.menuItem} onPress={handleFolderMenuReorderTemplates}>
                   <ReorderIcon />
-                  <Text style={styles.menuItemText}>Reorder Templates</Text>
+                  <Text style={styles.menuItemText}>{t('folder.reorderTemplates')}</Text>
                 </Pressable>
 
                 <Pressable style={styles.menuItem} onPress={handleFolderMenuAddRoutine}>
                   <AddIcon />
-                  <Text style={styles.menuItemText}>Add New Template</Text>
+                  <Text style={styles.menuItemText}>{t('folder.addNewTemplate')}</Text>
                 </Pressable>
 
                 {/* Only show delete option for non-default folders */}
                 {selectedFolderId !== DEFAULT_FOLDER_ID && (
                   <Pressable style={styles.menuItem} onPress={handleFolderMenuDeleteFolder}>
                     <DeleteIcon />
-                    <Text style={styles.menuItemTextDelete}>Delete Folder</Text>
+                    <Text style={styles.menuItemTextDelete}>{t('folder.deleteFolder')}</Text>
                   </Pressable>
                 )}
               </View>
@@ -1384,10 +1513,10 @@ export default function WorkoutScreen() {
       >
         <View style={styles.createFolderModalOverlay}>
           <View style={styles.createFolderModal}>
-            <Text style={styles.createFolderTitle}>Create Folder</Text>
+            <Text style={styles.createFolderTitle}>{t('folder.createFolder')}</Text>
             <TextInput
               style={styles.folderNameInput}
-              placeholder="Folder Name"
+              placeholder={t('folder.folderName')}
               placeholderTextColor={colors.textSecondary}
               value={newFolderName}
               onChangeText={setNewFolderName}
@@ -1395,10 +1524,10 @@ export default function WorkoutScreen() {
             />
             <View style={styles.createFolderButtons}>
               <Pressable style={styles.createFolderCancelButton} onPress={closeCreateFolderModal}>
-                <Text style={styles.createFolderCancelText}>Cancel</Text>
+                <Text style={styles.createFolderCancelText}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable style={styles.createFolderOkButton} onPress={handleCreateFolder}>
-                <Text style={styles.createFolderOkText}>OK</Text>
+                <Text style={styles.createFolderOkText}>{t('common.ok')}</Text>
               </Pressable>
             </View>
           </View>
@@ -1414,7 +1543,7 @@ export default function WorkoutScreen() {
         <SafeAreaView style={styles.reorderContainer} edges={['top']}>
           {/* Reorder Header */}
           <View style={styles.reorderHeader}>
-            <Text style={styles.reorderTitle}>Reorder</Text>
+            <Text style={styles.reorderTitle}>{t('common.reorder')}</Text>
           </View>
           <View style={styles.divider} />
 
@@ -1444,7 +1573,7 @@ export default function WorkoutScreen() {
           {/* Done Button */}
           <View style={styles.reorderBottom}>
             <Pressable style={styles.doneButton} onPress={saveTemplateReorder}>
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={styles.doneButtonText}>{t('common.done')}</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -1459,7 +1588,7 @@ export default function WorkoutScreen() {
         <SafeAreaView style={styles.reorderContainer} edges={['top']}>
           {/* Reorder Header */}
           <View style={styles.reorderHeader}>
-            <Text style={styles.reorderTitle}>Reorder Folders</Text>
+            <Text style={styles.reorderTitle}>{t('folder.reorderFolders')}</Text>
           </View>
           <View style={styles.divider} />
 
@@ -1489,7 +1618,7 @@ export default function WorkoutScreen() {
           {/* Done Button */}
           <View style={styles.reorderBottom}>
             <Pressable style={styles.doneButton} onPress={saveFolderReorder}>
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={styles.doneButtonText}>{t('common.done')}</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -1512,7 +1641,7 @@ export default function WorkoutScreen() {
             <Pressable onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalHandle} />
 
-              <Text style={styles.folderSelectionTitle}>Select Folder</Text>
+              <Text style={styles.folderSelectionTitle}>{t('folder.selectFolder')}</Text>
 
               {/* Folder List */}
               <View style={styles.folderSelectionList}>
@@ -1664,6 +1793,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.text,
     marginTop: spacing.sm,
+    textAlign: 'center',
   },
   historyList: {
     paddingHorizontal: spacing.lg,
@@ -1766,7 +1896,7 @@ const styles = StyleSheet.create({
   startTemplateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 20,
@@ -1824,10 +1954,10 @@ const styles = StyleSheet.create({
   resumeButtonText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
   startNewButton: {
-    backgroundColor: '#F5F4FA',
+    backgroundColor: colors.card,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -1836,10 +1966,10 @@ const styles = StyleSheet.create({
   startNewButtonText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#E53935',
+    color: colors.danger,
   },
   cancelButton: {
-    backgroundColor: '#F5F4FA',
+    backgroundColor: colors.card,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -1886,7 +2016,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   menuItemTextDelete: {
-    color: '#E53935',
+    color: colors.danger,
   },
 
   // Reorder Templates Modal Styles
@@ -1985,7 +2115,7 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
 
   // Section header with folder icon
@@ -2120,7 +2250,7 @@ const styles = StyleSheet.create({
   createFolderOkText: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
-    color: '#FFFFFF',
+    color: colors.textInverse,
   },
 
   // Folder selection modal styles

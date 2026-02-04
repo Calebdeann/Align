@@ -1,3 +1,5 @@
+import i18n from '@/i18n';
+
 export type MonthData = {
   id: string;
   year: number;
@@ -5,6 +7,34 @@ export type MonthData = {
   weeks: (number | null)[][];
 };
 
+// Keep English arrays for non-display logic (data keys, date calculations)
+const MONTH_KEYS = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+] as const;
+
+const DAY_KEYS = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su'] as const;
+
+// Translated month names - call these functions to get current-language values
+export function getMonthNames(): string[] {
+  return MONTH_KEYS.map((key) => i18n.t(`calendar.months.${key}`));
+}
+
+export function getDayAbbreviations(): string[] {
+  return DAY_KEYS.map((key) => i18n.t(`calendar.daysAbbr.${key}`));
+}
+
+// Keep legacy exports for backward compatibility during migration
 export const MONTH_NAMES = [
   'January',
   'February',

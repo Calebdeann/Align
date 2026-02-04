@@ -11,6 +11,7 @@
  */
 
 import { supabase } from './supabase';
+import { logger } from '@/utils/logger';
 
 type AuthStateListener = (userId: string | null) => void;
 
@@ -39,7 +40,7 @@ class AuthStateManager {
 
         // Only notify if userId actually changed
         if (newUserId !== this.currentUserId) {
-          console.log(
+          logger.info(
             `[AuthState] User changed: ${this.currentUserId?.slice(0, 8) ?? 'null'} -> ${newUserId?.slice(0, 8) ?? 'null'} (${event})`
           );
           this.currentUserId = newUserId;
@@ -47,7 +48,7 @@ class AuthStateManager {
         }
       });
     } catch (error) {
-      console.error('[AuthState] Failed to initialize:', error);
+      logger.error('[AuthState] Failed to initialize', { error });
       this.initialized = true; // Mark as initialized even on error to prevent hanging
     }
   }
@@ -92,7 +93,7 @@ class AuthStateManager {
       try {
         listener(this.currentUserId);
       } catch (error) {
-        console.error('[AuthState] Listener error:', error);
+        logger.error('[AuthState] Listener error', { error });
       }
     });
   }
