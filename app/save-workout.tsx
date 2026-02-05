@@ -42,7 +42,6 @@ import {
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 import { getTemplateImageById } from '@/constants/templateImages';
 import { formatExerciseNameString } from '@/utils/textFormatters';
-import { endWorkoutLiveActivity } from '@/services/liveActivity';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -604,8 +603,6 @@ export default function SaveWorkoutScreen() {
         if (workoutId) {
           // Clear active workout now that save is confirmed
           discardActiveWorkout();
-          endWorkoutLiveActivity();
-
           // Auto-mark the scheduled workout as complete for today
           const todayKey = `${completedAt.getFullYear()}-${String(completedAt.getMonth() + 1).padStart(2, '0')}-${String(completedAt.getDate()).padStart(2, '0')}`;
           if (workoutData.scheduledWorkoutId) {
@@ -916,6 +913,9 @@ export default function SaveWorkoutScreen() {
 
                 {isExpanded && completedSets.length > 0 && (
                   <View style={styles.setsContainer}>
+                    {we.notes?.trim() ? (
+                      <Text style={styles.exerciseNotesText}>{we.notes}</Text>
+                    ) : null}
                     <View style={styles.setsHeader}>
                       <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
                       <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
@@ -1250,8 +1250,15 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
   },
+  exerciseNotesText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
   setsContainer: {
-    paddingTop: spacing.sm,
+    paddingTop: 12,
     paddingBottom: spacing.sm,
   },
   setsHeader: {

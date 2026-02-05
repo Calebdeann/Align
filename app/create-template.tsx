@@ -24,6 +24,10 @@ import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { useWorkoutStore, PendingExercise } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import {
+  NumericInputDoneButton,
+  NUMERIC_ACCESSORY_ID,
+} from '@/components/ui/NumericInputDoneButton';
 import { prefetchExerciseGif } from '@/stores/exerciseStore';
 import { getWeightUnit, UnitSystem, filterNumericInput, fromKgForDisplay } from '@/utils/units';
 import { formatExerciseNameString } from '@/utils/textFormatters';
@@ -35,8 +39,11 @@ import {
 import { getCurrentUser } from '@/services/api/user';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { getSimplifiedMuscleI18nKey } from '@/constants/muscleGroups';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+type SetType = 'normal' | 'warmup' | 'failure' | 'dropset';
 
 // Rest timer options in seconds (matches active-workout)
 const REST_TIMER_OPTIONS = [
@@ -174,6 +181,8 @@ interface SwipeableSetRowProps {
   setIndex: number;
   exerciseIndex: number;
   weightUnit: string;
+  setTypeLabel: string;
+  setType?: SetType;
   onUpdateValue: (
     exerciseIndex: number,
     setIndex: number,
@@ -181,6 +190,7 @@ interface SwipeableSetRowProps {
     value: string
   ) => void;
   onDelete: (exerciseIndex: number, setIndex: number) => void;
+  onSetTypePress?: (exerciseIndex: number, setIndex: number) => void;
   previousWeight?: string;
   previousReps?: string;
 }
@@ -190,12 +200,29 @@ function SwipeableSetRow({
   setIndex,
   exerciseIndex,
   weightUnit,
+  setTypeLabel,
+  setType,
   onUpdateValue,
   onDelete,
+  onSetTypePress,
   previousWeight,
   previousReps,
 }: SwipeableSetRowProps) {
   const swipeableRef = useRef<Swipeable>(null);
+
+  const getSetTypeLabelStyle = () => {
+    switch (setType) {
+      case 'warmup':
+        return styles.setTypeTextWarmup;
+      case 'failure':
+        return styles.setTypeTextFailure;
+      case 'dropset':
+        return styles.setTypeTextDropset;
+      case 'normal':
+      default:
+        return null;
+    }
+  };
 
   const handleDelete = useCallback(() => {
     swipeableRef.current?.close();
@@ -225,10 +252,18 @@ function SwipeableSetRow({
       containerStyle={swipeStyles.container}
     >
       <View style={[styles.setRow, { marginHorizontal: 0, backgroundColor: colors.background }]}>
-        {/* Set number */}
-        <View style={[styles.setColumn, styles.setNumberButton]}>
-          <Text style={[styles.setText, styles.setNumber]}>{set.setNumber}</Text>
-        </View>
+        {/* Set number / type */}
+        <Pressable
+          style={[styles.setColumn, styles.setNumberButton]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onSetTypePress?.(exerciseIndex, setIndex);
+          }}
+        >
+          <Text style={[styles.setText, styles.setNumber, getSetTypeLabelStyle()]}>
+            {setTypeLabel}
+          </Text>
+        </Pressable>
 
         {/* Previous column */}
         <Text style={[styles.setText, styles.previousColumn, styles.previousText]}>
@@ -245,6 +280,7 @@ function SwipeableSetRow({
           keyboardType="numeric"
           placeholder={previousWeight || '0'}
           placeholderTextColor={colors.textTertiary}
+          inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
         />
 
         {/* Reps Input */}
@@ -257,6 +293,7 @@ function SwipeableSetRow({
           keyboardType="numeric"
           placeholder={previousReps || '0'}
           placeholderTextColor={colors.textTertiary}
+          inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
         />
       </View>
     </Swipeable>
@@ -495,6 +532,12 @@ export default function CreateTemplateScreen() {
   );
   const restTimerModalSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
+  // Set type modal state
+  const [showSetTypeModal, setShowSetTypeModal] = useState(false);
+  const [setTypeModalExerciseIndex, setSetTypeModalExerciseIndex] = useState<number | null>(null);
+  const [setTypeModalSetIndex, setSetTypeModalSetIndex] = useState<number | null>(null);
+  const setTypeModalSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
   // Load current user for fetching exercise history
   useEffect(() => {
     async function loadUser() {
@@ -636,6 +679,78 @@ export default function CreateTemplateScreen() {
       setShowExerciseMenu(false);
       setSelectedExerciseIndex(null);
     });
+  };
+
+  // Set Type Modal Functions
+  const openSetTypeModal = (exerciseIndex: number, setIndex: number) => {
+    setSetTypeModalExerciseIndex(exerciseIndex);
+    setSetTypeModalSetIndex(setIndex);
+    setShowSetTypeModal(true);
+    Animated.spring(setTypeModalSlideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeSetTypeModal = () => {
+    Animated.timing(setTypeModalSlideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowSetTypeModal(false);
+      setSetTypeModalExerciseIndex(null);
+      setSetTypeModalSetIndex(null);
+    });
+  };
+
+  const updateSetType = (newType: SetType) => {
+    if (setTypeModalExerciseIndex === null || setTypeModalSetIndex === null) return;
+
+    setExercises((prev) => {
+      const updated = [...prev];
+      updated[setTypeModalExerciseIndex].sets[setTypeModalSetIndex] = {
+        ...updated[setTypeModalExerciseIndex].sets[setTypeModalSetIndex],
+        setType: newType,
+      };
+      return updated;
+    });
+    closeSetTypeModal();
+  };
+
+  const removeSetFromTypeModal = () => {
+    if (setTypeModalExerciseIndex === null || setTypeModalSetIndex === null) return;
+
+    setExercises((prev) => {
+      const updated = [...prev];
+      const exercise = updated[setTypeModalExerciseIndex];
+
+      if (exercise.sets.length <= 1) {
+        closeSetTypeModal();
+        return updated.filter((_, i) => i !== setTypeModalExerciseIndex);
+      }
+
+      exercise.sets = exercise.sets.filter((_, i) => i !== setTypeModalSetIndex);
+      exercise.sets = exercise.sets.map((set, i) => ({ ...set, setNumber: i + 1 }));
+      return updated;
+    });
+    closeSetTypeModal();
+  };
+
+  const getSetTypeLabel = (set: TemplateSet, setIndex: number): string => {
+    switch (set.setType) {
+      case 'warmup':
+        return 'W';
+      case 'failure':
+        return 'F';
+      case 'dropset':
+        return 'D';
+      case 'normal':
+      default:
+        return (setIndex + 1).toString();
+    }
   };
 
   const handleReorderExercises = () => {
@@ -1067,7 +1182,7 @@ export default function CreateTemplateScreen() {
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="never"
           keyboardDismissMode="interactive"
         >
           {exercises.map((exercise, exerciseIndex) => (
@@ -1174,8 +1289,11 @@ export default function CreateTemplateScreen() {
                     setIndex={setIndex}
                     exerciseIndex={exerciseIndex}
                     weightUnit={weightLabel}
+                    setTypeLabel={getSetTypeLabel(set, setIndex)}
+                    setType={(set.setType || 'normal') as SetType}
                     onUpdateValue={updateSetValue}
                     onDelete={deleteSet}
+                    onSetTypePress={openSetTypeModal}
                     previousWeight={prevWeight}
                     previousReps={prevReps}
                   />
@@ -1277,6 +1395,20 @@ export default function CreateTemplateScreen() {
                     <Text style={styles.menuItemText}>Add to Superset</Text>
                   </Pressable>
                 )}
+
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    const exerciseIdx = selectedExerciseIndex!;
+                    const lastSetIdx = exercises[exerciseIdx].sets.length - 1;
+                    closeExerciseMenu();
+                    setTimeout(() => openSetTypeModal(exerciseIdx, lastSetIdx), 300);
+                  }}
+                >
+                  <Ionicons name="swap-vertical-outline" size={20} color={colors.text} />
+                  <Text style={styles.menuItemText}>{t('workout.setType')}</Text>
+                </Pressable>
 
                 <Pressable
                   style={styles.menuItem}
@@ -1484,7 +1616,10 @@ export default function CreateTemplateScreen() {
                           {formatExerciseNameString(exercise.exerciseName)}
                         </Text>
                         <View style={styles.supersetExerciseSubRow}>
-                          <Text style={styles.supersetExerciseMuscle}>{exercise.muscle}</Text>
+                          <Text style={styles.supersetExerciseMuscle}>
+                            {t(getSimplifiedMuscleI18nKey(exercise.muscle || '')) ||
+                              exercise.muscle}
+                          </Text>
                           {existingSuperset != null && (
                             <View
                               style={[
@@ -1536,6 +1671,104 @@ export default function CreateTemplateScreen() {
           </Animated.View>
         </Pressable>
       </Modal>
+
+      {/* Set Type Modal */}
+      <Modal
+        visible={showSetTypeModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeSetTypeModal}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            closeSetTypeModal();
+          }}
+        >
+          <Animated.View
+            style={[
+              styles.menuModalContent,
+              { transform: [{ translateY: setTypeModalSlideAnim }] },
+            ]}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalHandle} />
+
+              <View style={styles.menuContainer}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    updateSetType('warmup');
+                  }}
+                >
+                  <View style={styles.setTypeLetterContainer}>
+                    <Text style={styles.setTypeTextWarmup}>W</Text>
+                  </View>
+                  <Text style={styles.setTypeTextWarmup}>{t('workout.warmupSet')}</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    updateSetType('normal');
+                  }}
+                >
+                  <View style={styles.setTypeLetterContainer}>
+                    <Text style={styles.menuItemText}>
+                      {setTypeModalSetIndex !== null ? setTypeModalSetIndex + 1 : '1'}
+                    </Text>
+                  </View>
+                  <Text style={styles.menuItemText}>{t('workout.normalSet')}</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    updateSetType('failure');
+                  }}
+                >
+                  <View style={styles.setTypeLetterContainer}>
+                    <Text style={styles.setTypeTextFailure}>F</Text>
+                  </View>
+                  <Text style={styles.setTypeTextFailure}>{t('workout.failureSet')}</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    updateSetType('dropset');
+                  }}
+                >
+                  <View style={styles.setTypeLetterContainer}>
+                    <Text style={styles.setTypeTextDropset}>D</Text>
+                  </View>
+                  <Text style={styles.setTypeTextDropset}>{t('workout.dropSet')}</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    removeSetFromTypeModal();
+                  }}
+                >
+                  <View style={styles.setTypeLetterContainer}>
+                    <Ionicons name="trash-outline" size={18} color="#E53935" />
+                  </View>
+                  <Text style={styles.menuItemTextRemove}>{t('workout.removeSet')}</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      <NumericInputDoneButton />
     </SafeAreaView>
   );
 }
@@ -1669,6 +1902,7 @@ const styles = StyleSheet.create({
   restTimerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: spacing.sm,
     paddingVertical: spacing.sm,
   },
@@ -1807,6 +2041,26 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: '#C75050',
+  },
+  setTypeLetterContainer: {
+    width: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setTypeTextWarmup: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: '#F5A623',
+  },
+  setTypeTextFailure: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.danger,
+  },
+  setTypeTextDropset: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: '#2196F3',
   },
 
   // Reorder Modal Styles

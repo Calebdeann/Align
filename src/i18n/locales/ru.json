@@ -105,7 +105,15 @@
     "googleNoResponse": "Нет ответа от Google. Попробуй ещё раз.",
     "googleSignInError": "Не удалось войти через Google. Попробуй ещё раз.",
     "accountAlreadyExists": "Аккаунт уже существует",
-    "accountAlreadyExistsMessage": "У тебя уже есть аккаунт. Выполняем вход."
+    "accountAlreadyExistsMessage": "У тебя уже есть аккаунт. Выполняем вход.",
+    "signInWithEmail": "Войти через почту",
+    "hideEmailSignIn": "Скрыть вход через почту",
+    "emailPlaceholder": "Электронная почта",
+    "passwordPlaceholder": "Пароль",
+    "continueWithEmail": "Продолжить через почту",
+    "emailPasswordRequired": "Введи почту и пароль.",
+    "passwordTooShort": "Пароль должен быть не менее 6 символов.",
+    "emailSignInError": "Не удалось войти через почту. Попробуй ещё раз."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Суперсет",
     "superset": "Суперсет",
     "addToSupersetN": "Добавить в суперсет {{number}}",
+    "setType": "Тип подхода",
     "warmupSet": "Разминочный подход",
     "normalSet": "Обычный подход",
     "failureSet": "Подход до отказа",

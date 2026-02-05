@@ -105,7 +105,15 @@
     "googleNoResponse": "Google 没有响应, 请重试。",
     "googleSignInError": "无法使用 Google 登录, 请重试。",
     "accountAlreadyExists": "账号已存在",
-    "accountAlreadyExistsMessage": "你已经有账号了, 正在登录。"
+    "accountAlreadyExistsMessage": "你已经有账号了, 正在登录。",
+    "signInWithEmail": "使用邮箱登录",
+    "hideEmailSignIn": "隐藏邮箱登录",
+    "emailPlaceholder": "邮箱地址",
+    "passwordPlaceholder": "密码",
+    "continueWithEmail": "使用邮箱继续",
+    "emailPasswordRequired": "请输入邮箱和密码。",
+    "passwordTooShort": "密码至少需要6个字符。",
+    "emailSignInError": "无法使用邮箱登录, 请重试。"
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "超级组",
     "superset": "超级组",
     "addToSupersetN": "添加到超级组 {{number}}",
+    "setType": "组类型",
     "warmupSet": "热身组",
     "normalSet": "正式组",
     "failureSet": "力竭组",

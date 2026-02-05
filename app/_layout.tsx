@@ -9,24 +9,15 @@ import { colors } from '@/constants/theme';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { initializeStoreManager } from '@/lib/storeManager';
-// Note: Profile fetching is handled by storeManager on auth state change, not eagerly here
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { cleanupStaleLiveActivities } from '@/services/liveActivity';
 import '@/i18n';
 import { useLanguageSync } from '@/hooks/useLanguageSync';
 import { useExerciseTranslations } from '@/hooks/useExerciseTranslations';
+import { SuperwallProvider } from 'expo-superwall';
 
 // Context to signal whether SuperwallProvider is active in the tree
 // Tabs layout checks this before calling useSuperwall to avoid crashes
 export const SuperwallReadyContext = React.createContext(false);
-
-// Lazy import SuperwallProvider to prevent crash if native module isn't ready
-let SuperwallProvider: React.ComponentType<any> | null = null;
-try {
-  SuperwallProvider = require('expo-superwall').SuperwallProvider;
-} catch (e) {
-  console.warn('[RootLayout] Failed to load SuperwallProvider:', e);
-}
 
 // Keep splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -46,7 +37,6 @@ export default function RootLayout() {
         await Promise.allSettled([
           Promise.resolve().then(() => initializeStoreManager()),
           Promise.resolve().then(() => initializeFromLocale()),
-          Promise.resolve().then(() => cleanupStaleLiveActivities()),
         ]);
 
         // Load fonts (must complete before render)
@@ -115,17 +105,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
-        {SuperwallProvider ? (
-          <ErrorBoundary fallback={appContent}>
-            <SuperwallProvider apiKeys={{ ios: 'pk_vhA9Ry9TLgVUTyK_ugU0P' }}>
-              <SuperwallReadyContext.Provider value={true}>
-                {appContent}
-              </SuperwallReadyContext.Provider>
-            </SuperwallProvider>
-          </ErrorBoundary>
-        ) : (
-          appContent
-        )}
+        <SuperwallProvider
+          apiKeys={{ ios: 'pk_vhA9Ry9TLgVUTyK_ugU0P' }}
+          options={{ logging: { level: 'debug', scopes: ['all'] } }}
+        >
+          <SuperwallReadyContext.Provider value={true}>{appContent}</SuperwallReadyContext.Provider>
+        </SuperwallProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>
   );

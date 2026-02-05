@@ -22,6 +22,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="target-weight" />
       <Stack.Screen name="referral" />
       <Stack.Screen name="signin" />
+      <Stack.Screen name="email-signin" />
       <Stack.Screen name="reminder" />
       <Stack.Screen name="reviews" />
       <Stack.Screen name="potential" />
@@ -29,7 +30,6 @@ export default function OnboardingLayout() {
       <Stack.Screen name="generating-plan" />
       <Stack.Screen name="goal-comparison" />
       <Stack.Screen name="goal-reality" />
-      <Stack.Screen name="plan-ready" />
       <Stack.Screen name="thank-you" />
     </Stack>
   );

@@ -27,30 +27,33 @@ class AuthStateManager {
 
   private async initialize() {
     try {
-      // Get initial auth state
+      // Use getSession() instead of getUser() - reads from local storage without
+      // a network call, so userId is available immediately on cold start even
+      // without network. onAuthStateChange handles token refresh in the background.
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      this.currentUserId = user?.id ?? null;
-      this.initialized = true;
-
-      // Listen for auth changes (login, logout, token refresh)
-      supabase.auth.onAuthStateChange((event, session) => {
-        const newUserId = session?.user?.id ?? null;
-
-        // Only notify if userId actually changed
-        if (newUserId !== this.currentUserId) {
-          logger.info(
-            `[AuthState] User changed: ${this.currentUserId?.slice(0, 8) ?? 'null'} -> ${newUserId?.slice(0, 8) ?? 'null'} (${event})`
-          );
-          this.currentUserId = newUserId;
-          this.notifyListeners();
-        }
-      });
+        data: { session },
+      } = await supabase.auth.getSession();
+      this.currentUserId = session?.user?.id ?? null;
     } catch (error) {
-      logger.error('[AuthState] Failed to initialize', { error });
-      this.initialized = true; // Mark as initialized even on error to prevent hanging
+      logger.error('[AuthState] Failed to get initial session', { error });
+    } finally {
+      this.initialized = true;
     }
+
+    // Register listener OUTSIDE try/catch - must always run even if initial
+    // fetch failed, otherwise auth can never recover and stores never rehydrate
+    supabase.auth.onAuthStateChange((event, session) => {
+      const newUserId = session?.user?.id ?? null;
+
+      // Only notify if userId actually changed
+      if (newUserId !== this.currentUserId) {
+        logger.info(
+          `[AuthState] User changed: ${this.currentUserId?.slice(0, 8) ?? 'null'} -> ${newUserId?.slice(0, 8) ?? 'null'} (${event})`
+        );
+        this.currentUserId = newUserId;
+        this.notifyListeners();
+      }
+    });
   }
 
   /**

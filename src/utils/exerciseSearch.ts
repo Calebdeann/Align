@@ -1,5 +1,6 @@
 import { Exercise, ExerciseTranslation } from '@/services/api/exercises';
 import { useExerciseStore } from '@/stores/exerciseStore';
+import { getSimplifiedMuscleId } from '@/constants/muscleGroups';
 
 /**
  * Scores an exercise based on how well it matches a search query.
@@ -96,7 +97,9 @@ function scoreExercise(
     score += 25;
   }
 
-  if (muscle.includes(q)) {
+  // Match against both raw muscle name and simplified category (e.g., "legs" matches quads/hamstrings/calves)
+  const simplifiedMuscle = muscle ? getSimplifiedMuscleId(muscle) : '';
+  if (muscle.includes(q) || simplifiedMuscle.includes(q)) {
     score += 10;
   }
 

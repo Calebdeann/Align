@@ -4,41 +4,36 @@ import { supabase } from '@/services/supabase';
 import { Exercise, ExerciseTranslation, fetchExerciseTranslations } from '@/services/api/exercises';
 import { formatExerciseDisplayName, toTitleCase } from '@/utils/textFormatters';
 
-// 30 popular exercises for women - names to match against DB
+// 25 popular exercises for women (16-30) - names to match against DB
 const POPULAR_EXERCISE_NAMES = [
-  // Glutes/Legs (12)
-  'barbell hip thrust',
-  'glute bridge',
+  // Glutes & Legs (13)
+  'hip thrust',
   'romanian deadlift',
-  'bulgarian split squat',
   'barbell squat',
-  'leg press',
-  'walking lunge',
+  'bulgarian split squat',
+  'hip abduction',
   'cable kickback',
+  'leg press',
+  'leg extension',
+  'leg curl',
+  'walking lunge',
+  'glute bridge',
   'sumo deadlift',
-  'dumbbell step up',
-  'lever lying leg curl',
-  'standing calf raise',
-  // Upper Body (10)
+  'deadlift',
+  // Upper Body (8)
   'lat pulldown',
-  'cable seated row',
-  'dumbbell seated shoulder press',
+  'seated row',
   'lateral raise',
-  'dumbbell bicep curl',
+  'shoulder press',
   'tricep pushdown',
-  'push up',
-  'dumbbell bench press',
+  'dumbbell curl',
   'face pull',
-  'barbell bent over row',
-  // Core (8)
+  'dumbbell bench press',
+  // Core (4)
   'plank',
-  'crunch',
+  'cable crunch',
   'leg raise',
   'russian twist',
-  'dead bug',
-  'mountain climber',
-  'cable kneeling crunch',
-  'bird dog',
 ];
 
 interface ExerciseStore {

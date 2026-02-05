@@ -174,6 +174,7 @@ interface WorkoutStore {
       muscle: string;
       gifUrl?: string;
       thumbnailUrl?: string;
+      notes?: string;
       sets: { targetWeight?: number; targetReps?: number }[];
       restTimerSeconds: number;
     }[],
@@ -305,7 +306,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
             gifUrl: te.gifUrl,
             thumbnailUrl: te.thumbnailUrl,
           },
-          notes: '',
+          notes: te.notes || '',
           restTimerSeconds: te.restTimerSeconds,
           sets: te.sets.map((s, index) => ({
             id: `set_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
@@ -685,6 +686,15 @@ export const useWorkoutStore = create<WorkoutStore>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
+
+        // Auto-minimize active workout on cold start so the widget banner shows
+        // and the workout tab doesn't silently discard it as "stale state"
+        if (state.activeWorkout && !state.activeWorkout.isMinimized) {
+          useWorkoutStore.setState({
+            activeWorkout: { ...state.activeWorkout, isMinimized: true },
+          });
+        }
+
         // Defer until template store is also rehydrated
         setTimeout(() => {
           const { useTemplateStore } = require('@/stores/templateStore');

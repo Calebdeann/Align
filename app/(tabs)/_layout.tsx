@@ -9,14 +9,7 @@ import ActiveWorkoutWidget from '@/components/workout/ActiveWorkoutWidget';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useExerciseStore } from '@/stores/exerciseStore';
 import { SuperwallReadyContext } from '../_layout';
-
-// Safe import of useSuperwall - returns null if module not available
-let useSuperwall: any = null;
-try {
-  useSuperwall = require('expo-superwall').useSuperwall;
-} catch (e) {
-  console.warn('[TabsLayout] Failed to load useSuperwall:', e);
-}
+import { useSuperwall, usePlacement } from 'expo-superwall';
 
 // Custom tab bar button with haptic feedback
 function HapticTabButton(props: any) {
@@ -122,38 +115,42 @@ function TabsContent() {
   );
 }
 
-// Superwall paywall gate — shows tabs immediately, triggers paywall in background
+// Superwall paywall gate: if user isn't subscribed, show paywall when entering tabs
 function SuperwallGate() {
-  const superwallState = useSuperwall!((state: any) => ({
+  const { subscriptionStatus } = useSuperwall((state) => ({
     subscriptionStatus: state.subscriptionStatus,
-    registerPlacement: state.registerPlacement,
   }));
-
-  const registerPlacementRef = useRef(superwallState.registerPlacement);
-  registerPlacementRef.current = superwallState.registerPlacement;
-
   const [paywallShown, setPaywallShown] = useState(false);
-  const subscriptionStatus = superwallState.subscriptionStatus;
 
-  // When subscription status resolves as INACTIVE, show paywall overlay
+  const { registerPlacement } = usePlacement({
+    onDismiss: () => {
+      // Paywall dismissed without subscribing, send back to welcome
+      if (subscriptionStatus?.status !== 'ACTIVE') {
+        router.replace('/');
+      }
+    },
+    onSkip: () => {
+      console.log('[Superwall] Tabs paywall skipped');
+    },
+    onError: (error) => {
+      console.warn('[Superwall] Tabs paywall error:', error);
+    },
+  });
+
   useEffect(() => {
     if (!subscriptionStatus || subscriptionStatus.status === 'UNKNOWN') return;
     if (subscriptionStatus.status === 'ACTIVE') return;
+    if (paywallShown) return;
 
-    if (!paywallShown) {
-      setPaywallShown(true);
-      registerPlacementRef
-        .current('campaign_trigger')
-        .then(() => {
-          // Paywall dismissed — if still not subscribed, redirect to welcome
-          if (subscriptionStatus.status !== 'ACTIVE') {
-            router.replace('/');
-          }
-        })
-        .catch((e: any) => {
-          console.warn('[TabsLayout] Paywall registration error:', e);
-        });
-    }
+    setPaywallShown(true);
+    registerPlacement({
+      placement: 'campaign_trigger',
+      feature: () => {
+        console.log('[Superwall] Tabs: user has access');
+      },
+    }).catch((e) => {
+      console.warn('[Superwall] Tabs paywall error:', e);
+    });
   }, [subscriptionStatus?.status, paywallShown]);
 
   return <TabsContent />;
@@ -170,11 +167,10 @@ export default function TabsLayout() {
   }, [loadExercises]);
 
   // Only use Superwall gate when the provider is confirmed in the tree
-  if (isSuperwalReady && useSuperwall) {
+  if (isSuperwalReady) {
     return <SuperwallGate />;
   }
 
-  // No Superwall provider — render tabs directly without paywall blocking
   return <TabsContent />;
 }
 

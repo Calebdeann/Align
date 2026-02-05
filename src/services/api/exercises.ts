@@ -269,15 +269,7 @@ interface FilterOptions {
 }
 
 // Equipment values that map to "Other" category
-const OTHER_EQUIPMENT = [
-  'smith machine',
-  'weighted',
-  'exercise ball',
-  'medicine ball',
-  'assisted',
-  'roller',
-  'bosu ball',
-];
+const OTHER_EQUIPMENT = ['exercise ball', 'medicine ball', 'assisted', 'foam roller', 'ab wheel'];
 
 // Client-side filtering for cached exercises (no API call)
 export function filterExercisesClient(exercises: Exercise[], options: FilterOptions): Exercise[] {
@@ -306,6 +298,16 @@ export function filterExercisesClient(exercises: Exercise[], options: FilterOpti
       // Machine filter - match all machine types (leverage machine, smith machine, sled machine, etc.)
       filtered = filtered.filter(
         (e) => e.equipment && e.equipment.some((eq) => eq.toLowerCase().includes('machine'))
+      );
+    } else if (equipmentLower === 'band') {
+      // Band filter - match both 'band' and 'bands' (DB stores 'bands')
+      filtered = filtered.filter(
+        (e) =>
+          e.equipment &&
+          e.equipment.some((eq) => {
+            const eqLower = eq.toLowerCase();
+            return eqLower === 'band' || eqLower === 'bands' || eqLower === 'resistance band';
+          })
       );
     } else {
       // Specific equipment type

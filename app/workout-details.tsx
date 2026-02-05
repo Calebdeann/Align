@@ -615,6 +615,9 @@ export default function WorkoutDetailsScreen() {
                 {/* Expanded Sets */}
                 {isExpanded && completedSets.length > 0 && (
                   <View style={styles.setsContainer}>
+                    {ex.notes?.trim() ? (
+                      <Text style={styles.exerciseNotesText}>{ex.notes}</Text>
+                    ) : null}
                     <View style={styles.setsHeader}>
                       <Text style={[styles.setHeaderText, styles.setColumn]}>
                         {t('template.set')}
@@ -867,8 +870,15 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
   },
+  exerciseNotesText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
   setsContainer: {
-    paddingTop: spacing.sm,
+    paddingTop: 12,
     paddingBottom: spacing.sm,
   },
   setsHeader: {

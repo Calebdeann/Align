@@ -105,7 +105,15 @@
     "googleNoResponse": "Pas de réponse de Google. Réessaie s'il te plaît.",
     "googleSignInError": "Impossible de se connecter avec Google. Réessaie s'il te plaît.",
     "accountAlreadyExists": "Compte déjà existant",
-    "accountAlreadyExistsMessage": "Tu as déjà un compte. Connexion en cours."
+    "accountAlreadyExistsMessage": "Tu as déjà un compte. Connexion en cours.",
+    "signInWithEmail": "Se connecter avec un e-mail",
+    "hideEmailSignIn": "Masquer la connexion par e-mail",
+    "emailPlaceholder": "Adresse e-mail",
+    "passwordPlaceholder": "Mot de passe",
+    "continueWithEmail": "Continuer avec un e-mail",
+    "emailPasswordRequired": "Veuillez entrer votre e-mail et mot de passe.",
+    "passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères.",
+    "emailSignInError": "Impossible de se connecter par e-mail. Réessaie s'il te plaît."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Superset",
     "superset": "Superset",
     "addToSupersetN": "Ajouter au Superset {{number}}",
+    "setType": "Type de Série",
     "warmupSet": "Série d'Échauffement",
     "normalSet": "Série Normale",
     "failureSet": "Série à l'Échec",

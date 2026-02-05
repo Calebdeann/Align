@@ -105,7 +105,15 @@
     "googleNoResponse": "Google-dan cavab gəlmədi. Zəhmət olmasa yenidən cəhd et.",
     "googleSignInError": "Google ilə daxil olmaq mümkün olmadı. Zəhmət olmasa yenidən cəhd et.",
     "accountAlreadyExists": "Hesab artıq mövcuddur",
-    "accountAlreadyExistsMessage": "Sənin artıq hesabın var. Daxil olunur."
+    "accountAlreadyExistsMessage": "Sənin artıq hesabın var. Daxil olunur.",
+    "signInWithEmail": "E-poçt ilə daxil ol",
+    "hideEmailSignIn": "E-poçt girişini gizlət",
+    "emailPlaceholder": "E-poçt ünvanı",
+    "passwordPlaceholder": "Şifrə",
+    "continueWithEmail": "E-poçt ilə davam et",
+    "emailPasswordRequired": "Zəhmət olmasa e-poçt və şifrəni daxil et.",
+    "passwordTooShort": "Şifrə ən azı 6 simvol olmalıdır.",
+    "emailSignInError": "E-poçt ilə daxil olmaq mümkün olmadı. Zəhmət olmasa yenidən cəhd et."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Super Set",
     "superset": "Superset",
     "addToSupersetN": "Superset {{number}}-ə Əlavə Et",
+    "setType": "Set Növü",
     "warmupSet": "İsitmə Seti",
     "normalSet": "Normal Set",
     "failureSet": "İflas Seti",

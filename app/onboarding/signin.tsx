@@ -261,6 +261,16 @@ export default function SignInScreen() {
               </View>
             )}
           </Pressable>
+
+          {/* Email sign-in link */}
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/onboarding/email-signin');
+            }}
+          >
+            <Text style={styles.emailLinkText}>{t('auth.signInWithEmail')}</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     </View>
@@ -335,5 +345,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.lg,
     color: '#000000',
+  },
+  emailLinkText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    paddingVertical: spacing.sm,
   },
 });

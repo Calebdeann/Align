@@ -105,7 +105,15 @@
     "googleNoResponse": "Sem resposta do Google. Por favor, tente novamente.",
     "googleSignInError": "Nao foi possivel entrar com Google. Por favor, tente novamente.",
     "accountAlreadyExists": "Conta ja existe",
-    "accountAlreadyExistsMessage": "Voce ja tem uma conta. Entrando."
+    "accountAlreadyExistsMessage": "Voce ja tem uma conta. Entrando.",
+    "signInWithEmail": "Entrar com e-mail",
+    "hideEmailSignIn": "Ocultar login por e-mail",
+    "emailPlaceholder": "Endereco de e-mail",
+    "passwordPlaceholder": "Senha",
+    "continueWithEmail": "Continuar com e-mail",
+    "emailPasswordRequired": "Por favor, insira e-mail e senha.",
+    "passwordTooShort": "A senha deve ter pelo menos 6 caracteres.",
+    "emailSignInError": "Nao foi possivel entrar com e-mail. Por favor, tente novamente."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Superconjunto",
     "superset": "Superconjunto",
     "addToSupersetN": "Adicionar ao Superconjunto {{number}}",
+    "setType": "Tipo de Série",
     "warmupSet": "Serie de Aquecimento",
     "normalSet": "Serie Normal",
     "failureSet": "Serie ate a Falha",

@@ -255,6 +255,7 @@ export default function WorkoutPreviewScreen() {
             exerciseId: ex.exerciseId,
             exerciseName: ex.exerciseName,
             muscle: ex.muscle,
+            notes: ex.notes,
             sets: ex.sets.map((s) => ({
               targetWeight: s.targetWeight,
               targetReps: s.targetReps,

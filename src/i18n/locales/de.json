@@ -105,7 +105,15 @@
     "googleNoResponse": "Keine Antwort von Google. Bitte versuche es erneut.",
     "googleSignInError": "Anmeldung mit Google nicht möglich. Bitte versuche es erneut.",
     "accountAlreadyExists": "Konto existiert bereits",
-    "accountAlreadyExistsMessage": "Du hast bereits ein Konto. Du wirst jetzt angemeldet."
+    "accountAlreadyExistsMessage": "Du hast bereits ein Konto. Du wirst jetzt angemeldet.",
+    "signInWithEmail": "Mit E-Mail anmelden",
+    "hideEmailSignIn": "E-Mail-Anmeldung ausblenden",
+    "emailPlaceholder": "E-Mail-Adresse",
+    "passwordPlaceholder": "Passwort",
+    "continueWithEmail": "Mit E-Mail fortfahren",
+    "emailPasswordRequired": "Bitte gib E-Mail und Passwort ein.",
+    "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen haben.",
+    "emailSignInError": "Anmeldung mit E-Mail nicht möglich. Bitte versuche es erneut."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Supersatz",
     "superset": "Supersatz",
     "addToSupersetN": "Zu Supersatz {{number}} hinzufügen",
+    "setType": "Satztyp",
     "warmupSet": "Aufwärmsatz",
     "normalSet": "Normaler Satz",
     "failureSet": "Satz bis zum Versagen",

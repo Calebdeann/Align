@@ -163,7 +163,9 @@ export default function OnboardingWelcome() {
 
         {/* Main content - positioned slightly above center */}
         <View style={styles.content}>
-          <Text style={styles.logo}>{t('welcome.align')}</Text>
+          <Pressable onPress={() => router.push('/onboarding/generating-plan?skipTo=70')}>
+            <Text style={styles.logo}>{t('welcome.align')}</Text>
+          </Pressable>
           <Pressable onPress={() => router.replace('/(tabs)')}>
             <Text style={styles.tagline}>{t('welcome.forTheGirls')}</Text>
           </Pressable>

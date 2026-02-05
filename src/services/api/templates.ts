@@ -57,6 +57,7 @@ export interface DbTemplateSet {
   set_number: number;
   target_weight: number | null;
   target_reps: number | null;
+  set_type?: string;
   created_at: string;
 }
 
@@ -182,13 +183,25 @@ export async function saveUserTemplate(
         set_number: set.setNumber,
         target_weight: set.targetWeight ?? null,
         target_reps: set.targetReps ?? null,
+        set_type: set.setType || 'normal',
       }));
 
       if (setsToInsert.length > 0) {
         const { error: setsError } = await supabase.from('template_sets').insert(setsToInsert);
 
         if (setsError) {
-          logger.warn('Error saving template sets', { error: setsError });
+          // Fallback: retry without set_type if column doesn't exist yet (rule #8)
+          if (setsError.code === 'PGRST204' || setsError.message?.includes('set_type')) {
+            const fallbackSets = setsToInsert.map(({ set_type, ...rest }) => rest);
+            const { error: fallbackError } = await supabase
+              .from('template_sets')
+              .insert(fallbackSets);
+            if (fallbackError) {
+              logger.warn('Error saving template sets (fallback)', { error: fallbackError });
+            }
+          } else {
+            logger.warn('Error saving template sets', { error: setsError });
+          }
         }
       }
     }
@@ -343,13 +356,25 @@ export async function updateUserTemplate(
           set_number: set.setNumber,
           target_weight: set.targetWeight ?? null,
           target_reps: set.targetReps ?? null,
+          set_type: set.setType || 'normal',
         }));
 
         if (setsToInsert.length > 0) {
           const { error: setsError } = await supabase.from('template_sets').insert(setsToInsert);
 
           if (setsError) {
-            logger.warn('Error saving template sets', { error: setsError });
+            // Fallback: retry without set_type if column doesn't exist yet (rule #8)
+            if (setsError.code === 'PGRST204' || setsError.message?.includes('set_type')) {
+              const fallbackSets = setsToInsert.map(({ set_type, ...rest }) => rest);
+              const { error: fallbackError } = await supabase
+                .from('template_sets')
+                .insert(fallbackSets);
+              if (fallbackError) {
+                logger.warn('Error saving template sets (fallback)', { error: fallbackError });
+              }
+            } else {
+              logger.warn('Error saving template sets', { error: setsError });
+            }
           }
         }
       }
@@ -434,10 +459,11 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
           logger.warn('Error fetching template sets', { error: setsError });
         }
 
-        const templateSets: TemplateSet[] = (sets || []).map((set) => ({
+        const templateSets: TemplateSet[] = (sets || []).map((set: any) => ({
           setNumber: set.set_number,
           targetWeight: set.target_weight ?? undefined,
           targetReps: set.target_reps ?? undefined,
+          setType: set.set_type ?? 'normal',
         }));
 
         templateExercises.push({

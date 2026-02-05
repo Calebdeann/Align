@@ -105,7 +105,15 @@
     "googleNoResponse": "Sin respuesta de Google. Por favor inténtalo de nuevo.",
     "googleSignInError": "No se pudo iniciar sesión con Google. Por favor inténtalo de nuevo.",
     "accountAlreadyExists": "La cuenta ya existe",
-    "accountAlreadyExistsMessage": "Ya tienes una cuenta. Iniciando sesión."
+    "accountAlreadyExistsMessage": "Ya tienes una cuenta. Iniciando sesión.",
+    "signInWithEmail": "Iniciar sesión con correo",
+    "hideEmailSignIn": "Ocultar inicio con correo",
+    "emailPlaceholder": "Correo electrónico",
+    "passwordPlaceholder": "Contraseña",
+    "continueWithEmail": "Continuar con correo",
+    "emailPasswordRequired": "Por favor ingresa correo y contraseña.",
+    "passwordTooShort": "La contraseña debe tener al menos 6 caracteres.",
+    "emailSignInError": "No se pudo iniciar sesión con correo. Por favor inténtalo de nuevo."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Superserie",
     "superset": "Superserie",
     "addToSupersetN": "Agregar a Superserie {{number}}",
+    "setType": "Tipo de Serie",
     "warmupSet": "Serie de Calentamiento",
     "normalSet": "Serie Normal",
     "failureSet": "Serie al Fallo",

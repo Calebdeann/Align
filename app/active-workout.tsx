@@ -37,6 +37,10 @@ import {
   fromKgForDisplay,
 } from '@/utils/units';
 import ClockModal from '@/components/workout/ClockModal';
+import {
+  NumericInputDoneButton,
+  NUMERIC_ACCESSORY_ID,
+} from '@/components/ui/NumericInputDoneButton';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore } from '@/stores/templateStore';
@@ -46,20 +50,16 @@ import {
   prefetchExerciseGif,
   getExerciseDisplayName,
 } from '@/stores/exerciseStore';
-import { playTimerSound } from '@/utils/sounds';
-import {
-  startWorkoutLiveActivity,
-  updateWorkoutLiveActivity,
-  endWorkoutLiveActivity,
-} from '@/services/liveActivity';
-import {
-  writeWorkoutStateToWidget,
-  onWidgetSetCompleted,
-  readWidgetActions,
-  WidgetAction,
-} from '@/services/widgetBridge';
+import { playTimerSoundDouble, triggerTimerVibration } from '@/utils/sounds';
+import { getSimplifiedMuscleI18nKey } from '@/constants/muscleGroups';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Auto-scroll constants for positioning focused inputs above keyboard
+const KEYBOARD_SCROLL_DELAY_MS = 150;
+const SCROLL_PADDING_TOP = 80;
+const ESTIMATED_SET_ROW_HEIGHT = 36;
+const ESTIMATED_CARD_HEADER_HEIGHT = 160;
 
 interface Exercise {
   id: string;
@@ -457,6 +457,7 @@ interface SwipeableSetRowProps {
   suggestedReps?: string;
   rpeEnabled: boolean;
   onRpePress: (exerciseIndex: number, setIndex: number) => void;
+  onInputFocus?: () => void;
 }
 
 function SwipeableSetRow({
@@ -475,6 +476,7 @@ function SwipeableSetRow({
   suggestedReps,
   rpeEnabled,
   onRpePress,
+  onInputFocus,
 }: SwipeableSetRowProps) {
   const swipeableRef = useRef<Swipeable>(null);
 
@@ -548,6 +550,8 @@ function SwipeableSetRow({
           keyboardType="numeric"
           placeholder={suggestedWeight || previousWeight || '0'}
           placeholderTextColor={colors.textTertiary}
+          inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
+          onFocus={onInputFocus}
         />
         <TextInput
           style={[styles.setText, styles.repsColumn, styles.setInput]}
@@ -558,6 +562,8 @@ function SwipeableSetRow({
           keyboardType="numeric"
           placeholder={suggestedReps || previousReps || '0'}
           placeholderTextColor={colors.textTertiary}
+          inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
+          onFocus={onInputFocus}
         />
 
         {/* RPE column (conditional) */}
@@ -701,6 +707,34 @@ export default function ActiveWorkoutScreen() {
   // Wall-clock epoch for elapsed timer: elapsed = floor((now - epoch) / 1000)
   const timerEpochRef = useRef<number>(Date.now());
 
+  // Auto-scroll refs
+  const scrollViewRef = useRef<ScrollView>(null);
+  const exerciseCardYPositions = useRef<Map<number, number>>(new Map());
+
+  // Auto-scroll to make the focused exercise input visible above the keyboard
+  const scrollToExercise = useCallback((exerciseIndex: number, setIndex?: number) => {
+    setTimeout(() => {
+      const cardY = exerciseCardYPositions.current.get(exerciseIndex);
+      if (cardY == null || !scrollViewRef.current) return;
+
+      let targetY = cardY;
+
+      if (setIndex != null && setIndex > 0) {
+        const setRowOffset = ESTIMATED_CARD_HEADER_HEIGHT + setIndex * ESTIMATED_SET_ROW_HEIGHT;
+        // Show 2 rows of context above the focused row, but never scroll past the card header
+        const maxOffset = setRowOffset - ESTIMATED_SET_ROW_HEIGHT * 2;
+        if (maxOffset > 0) {
+          targetY += Math.min(setRowOffset, maxOffset);
+        }
+      }
+
+      scrollViewRef.current.scrollTo({
+        y: Math.max(0, targetY - SCROLL_PADDING_TOP),
+        animated: true,
+      });
+    }, KEYBOARD_SCROLL_DELAY_MS);
+  }, []);
+
   // Parse edit data for edit mode
   const editDataParsed = useMemo(() => {
     if (!editDataParam) return null;
@@ -769,18 +803,6 @@ export default function ActiveWorkoutScreen() {
       setWorkoutExercises(activeWorkout.exercises as WorkoutExercise[]);
       startedAtRef.current = new Date(activeWorkout.startedAt);
       restoreActiveWorkout();
-
-      // Restart Live Activity for restored workout
-      const completedSets = activeWorkout.exercises.reduce(
-        (total: number, ex: any) => total + ex.sets.filter((s: any) => s.completed).length,
-        0
-      );
-      startWorkoutLiveActivity(
-        activeWorkout.templateName || t('workout.title'),
-        activeWorkout.exercises.length,
-        completedSets,
-        activeWorkout.startedAt
-      );
     } else if (!activeWorkout || isDifferentTemplate) {
       // No active workout, OR starting a different template — create fresh
       if (templateId) {
@@ -792,9 +814,11 @@ export default function ActiveWorkoutScreen() {
             muscle: e.muscle,
             gifUrl: e.gifUrl,
             thumbnailUrl: e.thumbnailUrl,
+            notes: e.notes,
             sets: e.sets.map((s) => ({
               targetWeight: s.targetWeight,
               targetReps: s.targetReps,
+              setType: s.setType,
             })),
             restTimerSeconds: e.restTimerSeconds,
           }));
@@ -812,7 +836,7 @@ export default function ActiveWorkoutScreen() {
               gifUrl: te.gifUrl,
               thumbnailUrl: te.thumbnailUrl,
             },
-            notes: '',
+            notes: te.notes || '',
             restTimerSeconds: te.restTimerSeconds,
             sets: te.sets.map((s, index) => ({
               id: `set_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
@@ -821,7 +845,7 @@ export default function ActiveWorkoutScreen() {
               kg: s.targetWeight?.toString() || '',
               reps: s.targetReps?.toString() || '',
               completed: false,
-              setType: 'normal' as SetType,
+              setType: (s.setType || 'normal') as SetType,
               rpe: null,
             })),
             previousSets: te.sets.map((s, idx) => ({
@@ -832,21 +856,11 @@ export default function ActiveWorkoutScreen() {
             supersetId: null,
           }));
           setWorkoutExercises(localExercises);
-
-          // Start Live Activity for template workout
-          startWorkoutLiveActivity(
-            template.name,
-            templateExercises.length,
-            0,
-            new Date().toISOString()
-          );
         } else {
           startActiveWorkout(null);
-          startWorkoutLiveActivity(t('workout.title'), 0, 0, new Date().toISOString());
         }
       } else {
         startActiveWorkout(null);
-        startWorkoutLiveActivity(t('workout.title'), 0, 0, new Date().toISOString());
       }
     }
     // If activeWorkout exists, not minimized, same template — returning from
@@ -994,106 +1008,8 @@ export default function ActiveWorkoutScreen() {
         (total, ex) => total + ex.sets.filter((s) => s.completed).length,
         0
       );
-
-      // Write full workout state to widget via App Groups
-      writeWorkoutStateToWidget({
-        workoutName: activeWorkout?.templateName || t('workout.title'),
-        startedAtMs: startedAtRef.current.getTime(),
-        exercises: workoutExercises.map((we) => ({
-          name: we.exercise.name,
-          thumbnailUrl: we.exercise.thumbnailUrl,
-          sets: we.sets.map((s, idx) => ({
-            setNumber: idx + 1,
-            totalSets: we.sets.length,
-            weight: s.kg,
-            reps: s.reps,
-            completed: s.completed,
-            setType: s.setType,
-          })),
-        })),
-        currentExerciseIndex,
-        currentSetIndex,
-        totalCompletedSets: completedSets,
-        totalSets,
-        allSetsComplete: currentExerciseIndex === -1,
-        weightUnit: units === 'imperial' ? 'lbs' : 'kg',
-      });
-
-      // Get current exercise thumbnail for the Live Activity image
-      const currentThumbnailUrl =
-        currentExerciseIndex >= 0
-          ? workoutExercises[currentExerciseIndex]?.exercise?.thumbnailUrl
-          : undefined;
-
-      // Update Live Activity (serves as wake-up signal for the widget)
-      updateWorkoutLiveActivity(
-        activeWorkout?.templateName || t('workout.title'),
-        workoutExercises.length,
-        completedSets,
-        startedAtRef.current.toISOString(),
-        currentThumbnailUrl
-      );
     }
   }, [workoutExercises]);
-
-  // Listen for set completions from the Live Activity widget
-  useEffect(() => {
-    if (isEditMode) return;
-
-    const unsubscribe = onWidgetSetCompleted((event) => {
-      const actions: WidgetAction[] = event?.actions ?? [];
-      for (const action of actions) {
-        if (action.type === 'completeSet') {
-          const { exerciseIndex, setIndex } = action;
-          if (
-            exerciseIndex >= 0 &&
-            exerciseIndex < workoutExercises.length &&
-            setIndex >= 0 &&
-            setIndex < workoutExercises[exerciseIndex].sets.length
-          ) {
-            if (!workoutExercises[exerciseIndex].sets[setIndex].completed) {
-              toggleSetCompletion(exerciseIndex, setIndex);
-            }
-          }
-        }
-      }
-    });
-
-    return unsubscribe;
-  }, [workoutExercises, isEditMode]);
-
-  // Check for pending widget actions when app comes to foreground
-  useEffect(() => {
-    if (isEditMode) return;
-
-    const checkPendingActions = async () => {
-      const actions = await readWidgetActions();
-      for (const action of actions) {
-        if (action.type === 'completeSet') {
-          const { exerciseIndex, setIndex } = action;
-          if (
-            exerciseIndex >= 0 &&
-            exerciseIndex < workoutExercises.length &&
-            setIndex >= 0 &&
-            setIndex < workoutExercises[exerciseIndex].sets.length &&
-            !workoutExercises[exerciseIndex].sets[setIndex].completed
-          ) {
-            toggleSetCompletion(exerciseIndex, setIndex);
-          }
-        }
-      }
-    };
-
-    checkPendingActions();
-
-    const subscription = AppState.addEventListener('change', (nextState: string) => {
-      if (nextState === 'active') {
-        checkPendingActions();
-      }
-    });
-
-    return () => subscription.remove();
-  }, [workoutExercises, isEditMode]);
 
   async function handlePendingExercises(exercises: Exercise[]) {
     try {
@@ -1709,7 +1625,6 @@ export default function ActiveWorkoutScreen() {
           }
           if (restTimerRef.current) clearInterval(restTimerRef.current);
           if (!isEditMode) {
-            endWorkoutLiveActivity();
             discardActiveWorkout();
           }
           router.back();
@@ -1782,9 +1697,9 @@ export default function ActiveWorkoutScreen() {
           // Timer completion alerts based on user preferences
           const { vibrationEnabled, timerSoundId } = useUserPreferencesStore.getState();
           if (vibrationEnabled) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            triggerTimerVibration();
           }
-          playTimerSound(timerSoundId);
+          playTimerSoundDouble(timerSoundId);
           Animated.timing(restPopupSlideAnim, {
             toValue: 200,
             duration: 200,
@@ -1980,16 +1895,20 @@ export default function ActiveWorkoutScreen() {
       ) : (
         // Filled State with Exercises
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="never"
           keyboardDismissMode="interactive"
         >
           {workoutExercises.map((workoutExercise, exerciseIndex) => (
             <View
               key={`${workoutExercise.exercise.id}-${exerciseIndex}`}
               style={styles.exerciseCard}
+              onLayout={(e) => {
+                exerciseCardYPositions.current.set(exerciseIndex, e.nativeEvent.layout.y);
+              }}
             >
               {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
@@ -2050,6 +1969,7 @@ export default function ActiveWorkoutScreen() {
                 placeholderTextColor={colors.textSecondary}
                 value={workoutExercise.notes}
                 onChangeText={(text) => updateNotes(exerciseIndex, text)}
+                onFocus={() => scrollToExercise(exerciseIndex)}
               />
 
               {/* Rest Timer */}
@@ -2121,6 +2041,7 @@ export default function ActiveWorkoutScreen() {
                     suggestedReps={suggestedReps}
                     rpeEnabled={rpeTrackingEnabled}
                     onRpePress={openRpeModal}
+                    onInputFocus={() => scrollToExercise(exerciseIndex, setIndex)}
                   />
                 );
               })}
@@ -2235,6 +2156,20 @@ export default function ActiveWorkoutScreen() {
                     <Text style={styles.menuItemText}>{t('workout.addToSuperset')}</Text>
                   </Pressable>
                 )}
+
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    const exerciseIdx = selectedExerciseIndex!;
+                    const lastSetIdx = workoutExercises[exerciseIdx].sets.length - 1;
+                    closeExerciseMenu();
+                    setTimeout(() => openSetTypeModal(exerciseIdx, lastSetIdx), 300);
+                  }}
+                >
+                  <Ionicons name="swap-vertical-outline" size={20} color={colors.text} />
+                  <Text style={styles.menuItemText}>{t('workout.setType')}</Text>
+                </Pressable>
 
                 <Pressable
                   style={styles.menuItem}
@@ -2455,7 +2390,8 @@ export default function ActiveWorkoutScreen() {
                         </Text>
                         <View style={styles.supersetExerciseSubRow}>
                           <Text style={styles.supersetExerciseMuscle}>
-                            {workoutExercise.exercise.muscle}
+                            {t(getSimplifiedMuscleI18nKey(workoutExercise.exercise.muscle || '')) ||
+                              workoutExercise.exercise.muscle}
                           </Text>
                           {existingSuperset != null && (
                             <View
@@ -2714,6 +2650,8 @@ export default function ActiveWorkoutScreen() {
           </SafeAreaView>
         </Animated.View>
       )}
+
+      <NumericInputDoneButton />
     </SafeAreaView>
   );
 }
@@ -2884,6 +2822,7 @@ const styles = StyleSheet.create({
   restTimerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: spacing.sm,
     paddingVertical: spacing.sm,
   },

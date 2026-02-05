@@ -19,6 +19,7 @@ export interface TemplateSet {
   setNumber: number;
   targetWeight?: number; // kg
   targetReps?: number;
+  setType?: string; // 'normal' | 'warmup' | 'failure' | 'dropset'
 }
 
 // Template exercise structure

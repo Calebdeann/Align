@@ -105,7 +105,15 @@
     "googleNoResponse": "No response from Google. Please try again.",
     "googleSignInError": "Unable to sign in with Google. Please try again.",
     "accountAlreadyExists": "Account Already Exists",
-    "accountAlreadyExistsMessage": "You already have an account. Signing you in."
+    "accountAlreadyExistsMessage": "You already have an account. Signing you in.",
+    "signInWithEmail": "Sign in with Email",
+    "hideEmailSignIn": "Hide email sign-in",
+    "emailPlaceholder": "Email address",
+    "passwordPlaceholder": "Password",
+    "continueWithEmail": "Continue with Email",
+    "emailPasswordRequired": "Please enter both email and password.",
+    "passwordTooShort": "Password must be at least 6 characters.",
+    "emailSignInError": "Unable to sign in with email. Please try again."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Super Set",
     "superset": "Superset",
     "addToSupersetN": "Add to Superset {{number}}",
+    "setType": "Set Type",
     "warmupSet": "Warm-up Set",
     "normalSet": "Normal Set",
     "failureSet": "Failure Set",

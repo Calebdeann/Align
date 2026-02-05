@@ -105,7 +105,15 @@
     "googleNoResponse": "Geen reactie van Google. Probeer het opnieuw.",
     "googleSignInError": "Inloggen met Google niet gelukt. Probeer het opnieuw.",
     "accountAlreadyExists": "Account bestaat al",
-    "accountAlreadyExistsMessage": "Je hebt al een account. Je wordt ingelogd."
+    "accountAlreadyExistsMessage": "Je hebt al een account. Je wordt ingelogd.",
+    "signInWithEmail": "Inloggen met e-mail",
+    "hideEmailSignIn": "E-mail login verbergen",
+    "emailPlaceholder": "E-mailadres",
+    "passwordPlaceholder": "Wachtwoord",
+    "continueWithEmail": "Doorgaan met e-mail",
+    "emailPasswordRequired": "Vul je e-mail en wachtwoord in.",
+    "passwordTooShort": "Het wachtwoord moet minstens 6 tekens bevatten.",
+    "emailSignInError": "Inloggen met e-mail niet gelukt. Probeer het opnieuw."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Super Set",
     "superset": "Superset",
     "addToSupersetN": "Toevoegen aan superset {{number}}",
+    "setType": "Settype",
     "warmupSet": "Warming-up set",
     "normalSet": "Normale set",
     "failureSet": "Failure set",

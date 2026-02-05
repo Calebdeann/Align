@@ -105,7 +105,15 @@
     "googleNoResponse": "Google से कोई जवाब नहीं आया। कृपया फिर से प्रयास करें।",
     "googleSignInError": "Google से साइन इन नहीं हो पाया। कृपया फिर से प्रयास करें।",
     "accountAlreadyExists": "अकाउंट पहले से मौजूद है",
-    "accountAlreadyExistsMessage": "तुम्हारा पहले से एक अकाउंट है। साइन इन हो रहा है।"
+    "accountAlreadyExistsMessage": "तुम्हारा पहले से एक अकाउंट है। साइन इन हो रहा है।",
+    "signInWithEmail": "ईमेल से साइन इन करें",
+    "hideEmailSignIn": "ईमेल साइन इन छुपाएं",
+    "emailPlaceholder": "ईमेल पता",
+    "passwordPlaceholder": "पासवर्ड",
+    "continueWithEmail": "ईमेल से जारी रखें",
+    "emailPasswordRequired": "कृपया ईमेल और पासवर्ड दर्ज करें।",
+    "passwordTooShort": "पासवर्ड कम से कम 6 अक्षर का होना चाहिए।",
+    "emailSignInError": "ईमेल से साइन इन नहीं हो पाया। कृपया फिर से प्रयास करें।"
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "सुपर सेट",
     "superset": "सुपरसेट",
     "addToSupersetN": "सुपरसेट {{number}} में जोड़ें",
+    "setType": "सेट प्रकार",
     "warmupSet": "वॉर्म-अप सेट",
     "normalSet": "नॉर्मल सेट",
     "failureSet": "फ़ेलियर सेट",

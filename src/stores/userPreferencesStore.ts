@@ -7,7 +7,7 @@ export type WeightUnit = 'kg' | 'lbs';
 export type DistanceUnit = 'kilometers' | 'miles';
 export type MeasurementUnit = 'cm' | 'in';
 export type UnitSystem = 'metric' | 'imperial';
-export type TimerSoundId = 'chime' | 'bell' | 'ding';
+export type TimerSoundId = 'chime' | 'bell' | 'ding' | 'pulse' | 'alert';
 
 // Countries that use imperial system (US, Liberia, Myanmar)
 const IMPERIAL_COUNTRIES = ['US', 'LR', 'MM'];

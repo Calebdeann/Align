@@ -105,7 +105,15 @@
     "googleNoResponse": "Niciun raspuns de la Google. Te rugam sa incerci din nou.",
     "googleSignInError": "Nu s-a putut conecta cu Google. Te rugam sa incerci din nou.",
     "accountAlreadyExists": "Contul exista deja",
-    "accountAlreadyExistsMessage": "Ai deja un cont. Te conectam."
+    "accountAlreadyExistsMessage": "Ai deja un cont. Te conectam.",
+    "signInWithEmail": "Conecteaza-te cu e-mail",
+    "hideEmailSignIn": "Ascunde conectarea cu e-mail",
+    "emailPlaceholder": "Adresa de e-mail",
+    "passwordPlaceholder": "Parola",
+    "continueWithEmail": "Continua cu e-mail",
+    "emailPasswordRequired": "Te rugam sa introduci e-mailul si parola.",
+    "passwordTooShort": "Parola trebuie sa aiba cel putin 6 caractere.",
+    "emailSignInError": "Nu s-a putut conecta cu e-mail. Te rugam sa incerci din nou."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Super Set",
     "superset": "Superset",
     "addToSupersetN": "Adauga la Supersetul {{number}}",
+    "setType": "Tipul Seriei",
     "warmupSet": "Set de incalzire",
     "normalSet": "Set normal",
     "failureSet": "Set la esec",

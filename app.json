@@ -18,8 +18,6 @@
       "bundleIdentifier": "com.aligntracker.app",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSSupportsLiveActivities": true,
-        "NSSupportsLiveActivitiesFrequentUpdates": false,
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {}
@@ -57,28 +55,11 @@
           "photosPermission": "Allow Align to access your photos to add images to your workout templates.",
           "cameraPermission": "Allow Align to take photos for your workout templates."
         }
-      ],
-      "./plugins/withWorkoutWidget",
-      "expo-live-activity"
+      ]
     ],
     "extra": {
       "router": {},
       "eas": {
-        "build": {
-          "experimental": {
-            "ios": {
-              "appExtensions": [
-                {
-                  "targetName": "LiveActivity",
-                  "bundleIdentifier": "com.aligntracker.app.LiveActivity",
-                  "entitlements": {
-                    "com.apple.security.application-groups": ["group.com.aligntracker.app"]
-                  }
-                }
-              ]
-            }
-          }
-        },
         "projectId": "9360f59b-9137-443a-9823-a2a318eee257"
       }
     }

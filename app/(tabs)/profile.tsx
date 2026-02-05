@@ -455,10 +455,10 @@ export default function ProfileScreen() {
           />
         </MenuCard>
 
-        {/* DEV ONLY: Quick Login */}
-        {__DEV_MODE__ && !userId && (
+        {/* Quick Google Login (visible for TestFlight/dev, remove for App Store submission) */}
+        {!userId && (
           <>
-            <SectionHeader title="Dev Only" />
+            <SectionHeader title="Quick Login" />
             <Pressable
               style={styles.devLoginButton}
               onPress={handleDevGoogleLogin}

@@ -31,6 +31,11 @@ import {
 import { useRecentExercisesStore } from '@/stores/recentExercisesStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
+import {
+  SIMPLIFIED_MUSCLE_GROUPS,
+  getSimplifiedMuscleI18nKey,
+  expandMuscleFilter,
+} from '@/constants/muscleGroups';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -96,7 +101,11 @@ function ExerciseItem({
   onPressName,
   alreadyInWorkoutLabel,
 }: ExerciseItemProps) {
+  const { t } = useTranslation();
   const showSelected = isSelected || isAlreadyAdded;
+  const muscleLabel = exercise.muscle_group
+    ? t(getSimplifiedMuscleI18nKey(exercise.muscle_group)) || exercise.muscle_group
+    : '';
 
   return (
     <Pressable
@@ -146,7 +155,7 @@ function ExerciseItem({
           {getExerciseDisplayName(exercise)}
         </Text>
         <Text style={styles.exerciseMuscle}>
-          {isAlreadyAdded ? alreadyInWorkoutLabel : exercise.muscle_group}
+          {isAlreadyAdded ? alreadyInWorkoutLabel : muscleLabel}
         </Text>
       </View>
       <View
@@ -305,20 +314,7 @@ export default function AddExerciseScreen() {
   const MUSCLE_OPTIONS = useMemo(
     () => [
       { id: 'all', label: t('muscles.all') },
-      { id: 'abs', label: t('muscles.abs') },
-      { id: 'biceps', label: t('muscles.biceps') },
-      { id: 'calves', label: t('muscles.calves') },
-      { id: 'delts', label: t('muscles.delts') },
-      { id: 'forearms', label: t('muscles.forearms') },
-      { id: 'glutes', label: t('muscles.glutes') },
-      { id: 'hamstrings', label: t('muscles.hamstrings') },
-      { id: 'lats', label: t('muscles.lats') },
-      { id: 'pectorals', label: t('muscles.pectorals') },
-      { id: 'quads', label: t('muscles.quads') },
-      { id: 'spine', label: t('muscles.spine') },
-      { id: 'traps', label: t('muscles.traps') },
-      { id: 'triceps', label: t('muscles.triceps') },
-      { id: 'upper back', label: t('muscles.upperBack') },
+      ...SIMPLIFIED_MUSCLE_GROUPS.map((g) => ({ id: g.id, label: t(g.i18nKey) })),
     ],
     [t]
   );
@@ -351,7 +347,7 @@ export default function AddExerciseScreen() {
     if (debouncedQuery.trim()) {
       const searchResults = filterExercisesClient(allExercises, {
         query: debouncedQuery,
-        muscles: selectedMuscle !== 'all' ? [selectedMuscle] : undefined,
+        muscles: selectedMuscle !== 'all' ? expandMuscleFilter(selectedMuscle) : undefined,
         equipment: selectedEquipment !== 'all' ? selectedEquipment : undefined,
       });
       return [
@@ -365,7 +361,7 @@ export default function AddExerciseScreen() {
 
     // Get all exercises with filters applied
     const allFiltered = filterExercisesClient(allExercises, {
-      muscles: selectedMuscle !== 'all' ? [selectedMuscle] : undefined,
+      muscles: selectedMuscle !== 'all' ? expandMuscleFilter(selectedMuscle) : undefined,
       equipment: selectedEquipment !== 'all' ? selectedEquipment : undefined,
     });
 

@@ -1,24 +1,12 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
-
-// Safe import of useSuperwall - returns no-op hook if module not available
-let useSuperwall: any = null;
-try {
-  useSuperwall = require('expo-superwall').useSuperwall;
-} catch (e) {
-  console.warn('[GeneratingPlan] Failed to load useSuperwall:', e);
-}
-
-// Fallback hook that returns no-op values (maintains hook call order)
-function useSuperwallFallback() {
-  return { registerPlacement: async () => {}, subscriptionStatus: null };
-}
+import { usePlacement } from 'expo-superwall';
 
 // Segments with varying speeds to simulate buffering (~10s total)
 const progressSegments = [
@@ -80,13 +68,20 @@ function AnimatedCheck({ visible, onAppear }: { visible: boolean; onAppear?: () 
   );
 }
 
-// Use real hook if available, otherwise use fallback (must be decided at module level, not conditionally)
-const useSuperwallSafe = useSuperwall
-  ? (selector: any) => useSuperwall(selector)
-  : useSuperwallFallback;
-
 export default function GeneratingPlanScreen() {
   const { t } = useTranslation();
+  const { skipTo } = useLocalSearchParams<{ skipTo?: string }>();
+  const skipToPercent = skipTo ? parseInt(skipTo, 10) : 0;
+  const hasNavigated = useRef(false);
+  const [loadingComplete, setLoadingComplete] = useState(false);
+
+  const navigateToSignup = useCallback(() => {
+    if (hasNavigated.current) return;
+    hasNavigated.current = true;
+    router.push('/onboarding/signup');
+  }, []);
+
+  const { registerPlacement } = usePlacement();
 
   const programDetails = useMemo(
     () => [
@@ -110,16 +105,6 @@ export default function GeneratingPlanScreen() {
     ],
     [t]
   );
-
-  const superwallState = useSuperwallSafe((state: any) => ({
-    registerPlacement: state.registerPlacement,
-    subscriptionStatus: state.subscriptionStatus,
-  }));
-
-  const registerPlacementRef = useRef(superwallState.registerPlacement);
-  registerPlacementRef.current = superwallState.registerPlacement;
-  const subscriptionStatusRef = useRef(superwallState.subscriptionStatus);
-  subscriptionStatusRef.current = superwallState.subscriptionStatus;
 
   const [currentStage, setCurrentStage] = useState(0);
   const [displayPercent, setDisplayPercent] = useState(0);
@@ -150,7 +135,16 @@ export default function GeneratingPlanScreen() {
   }, [isLoading]);
 
   useEffect(() => {
-    const animations = progressSegments.map((segment) =>
+    // If skipTo param is set, jump ahead and only animate remaining segments
+    const remainingSegments = skipToPercent
+      ? progressSegments.filter((s) => s.toValue > skipToPercent)
+      : progressSegments;
+
+    if (skipToPercent) {
+      progressAnim.setValue(skipToPercent);
+    }
+
+    const animations = remainingSegments.map((segment) =>
       Animated.timing(progressAnim, {
         toValue: segment.toValue,
         duration: segment.duration,
@@ -161,16 +155,7 @@ export default function GeneratingPlanScreen() {
 
     Animated.sequence(animations).start(() => {
       setIsLoading(false);
-
-      // Fire-and-forget Superwall registration (don't block navigation)
-      registerPlacementRef.current('campaign_trigger').catch(() => {});
-
-      const status = subscriptionStatusRef.current;
-      if (status?.status === 'ACTIVE') {
-        router.push('/onboarding/signup');
-      } else {
-        router.push('/onboarding/plan-ready');
-      }
+      setLoadingComplete(true);
     });
 
     const percentListener = progressAnim.addListener(({ value }) => {
@@ -201,6 +186,19 @@ export default function GeneratingPlanScreen() {
       progressAnim.removeListener(percentListener);
     };
   }, []);
+
+  // Trigger paywall when loading animation finishes
+  useEffect(() => {
+    if (!loadingComplete) return;
+
+    registerPlacement({
+      placement: 'campaign_trigger',
+      feature: () => {
+        // User subscribed or already has access
+        navigateToSignup();
+      },
+    });
+  }, [loadingComplete]);
 
   const currentMessage = stages[currentStage]?.message || stages[0].message;
 

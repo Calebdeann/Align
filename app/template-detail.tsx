@@ -146,6 +146,9 @@ function ExerciseRow({
       {/* Expanded Sets Details */}
       {isExpanded && (
         <View style={styles.setsContainer}>
+          {exercise.notes?.trim() ? (
+            <Text style={styles.exerciseNotesText}>{exercise.notes}</Text>
+          ) : null}
           {/* Sets Header */}
           <View style={styles.setsHeader}>
             <Text style={[styles.setHeaderText, styles.setColumn]}>{t('template.set')}</Text>
@@ -1084,9 +1087,16 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
   },
+  exerciseNotesText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
   // Sets display styles
   setsContainer: {
-    paddingTop: spacing.sm,
+    paddingTop: 12,
     paddingBottom: spacing.sm,
   },
   setsHeader: {

@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, Dimensions, Animated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
-import { playTimerSound } from '@/utils/sounds';
+import { playTimerSoundDouble, triggerTimerVibration } from '@/utils/sounds';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -53,9 +52,9 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
             setTimerRunning(false);
             const { vibrationEnabled, timerSoundId } = useUserPreferencesStore.getState();
             if (vibrationEnabled) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              triggerTimerVibration();
             }
-            playTimerSound(timerSoundId);
+            playTimerSoundDouble(timerSoundId);
             return 0;
           }
           return prev - 1;

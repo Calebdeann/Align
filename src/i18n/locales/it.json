@@ -105,7 +105,15 @@
     "googleNoResponse": "Nessuna risposta da Google. Per favore riprova.",
     "googleSignInError": "Impossibile accedere con Google. Per favore riprova.",
     "accountAlreadyExists": "Account già esistente",
-    "accountAlreadyExistsMessage": "Hai già un account. Accesso in corso."
+    "accountAlreadyExistsMessage": "Hai già un account. Accesso in corso.",
+    "signInWithEmail": "Accedi con e-mail",
+    "hideEmailSignIn": "Nascondi accesso e-mail",
+    "emailPlaceholder": "Indirizzo e-mail",
+    "passwordPlaceholder": "Password",
+    "continueWithEmail": "Continua con e-mail",
+    "emailPasswordRequired": "Inserisci e-mail e password.",
+    "passwordTooShort": "La password deve avere almeno 6 caratteri.",
+    "emailSignInError": "Impossibile accedere con e-mail. Per favore riprova."
   },
   "onboarding": {
     "intro": {
@@ -371,6 +379,7 @@
     "superSet": "Superset",
     "superset": "Superset",
     "addToSupersetN": "Aggiungi al Superset {{number}}",
+    "setType": "Tipo di Serie",
     "warmupSet": "Serie di Riscaldamento",
     "normalSet": "Serie Normale",
     "failureSet": "Serie a Cedimento",
