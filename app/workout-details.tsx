@@ -85,16 +85,19 @@ function formatDate(dateString: string): string {
 // Get color for muscle type
 function getMuscleColor(muscle: string): string {
   const muscleColors: Record<string, string> = {
-    Legs: colors.workout.legs,
-    Arms: colors.workout.arms,
     Back: colors.workout.back,
+    Biceps: colors.workout.biceps,
+    Calves: colors.workout.calves,
+    Cardio: colors.workout.cardio,
     Chest: colors.workout.chest,
-    Shoulders: colors.workout.shoulders,
     Core: colors.workout.core,
     Abs: colors.workout.core,
-    Cardio: colors.workout.cardio,
+    Glutes: colors.workout.glutes,
+    Legs: colors.workout.legs,
+    Other: colors.workout.other,
+    Shoulders: colors.workout.shoulders,
+    Triceps: colors.workout.triceps,
     'Full Body': colors.workout.fullBody,
-    Glutes: colors.workout.legs,
   };
   return muscleColors[muscle] || colors.primary;
 }
@@ -576,13 +579,18 @@ export default function WorkoutDetailsScreen() {
                   }}
                 >
                   <Pressable
-                    onPress={() => {
-                      withLock(() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        prefetchExerciseGif(ex.exercise_id);
-                        router.push(`/exercise/${ex.exercise_id}`);
-                      });
-                    }}
+                    onPress={
+                      ex.image_url || ex.thumbnail_url
+                        ? () => {
+                            withLock(() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              prefetchExerciseGif(ex.exercise_id);
+                              router.push(`/exercise/${ex.exercise_id}`);
+                            });
+                          }
+                        : undefined
+                    }
+                    disabled={!ex.image_url && !ex.thumbnail_url}
                   >
                     <ExerciseImage
                       gifUrl={ex.image_url || undefined}
@@ -594,13 +602,17 @@ export default function WorkoutDetailsScreen() {
                   <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
                     <Text
                       style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
-                      onPress={() => {
-                        withLock(() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          prefetchExerciseGif(ex.exercise_id);
-                          router.push(`/exercise/${ex.exercise_id}`);
-                        });
-                      }}
+                      onPress={
+                        ex.image_url || ex.thumbnail_url
+                          ? () => {
+                              withLock(() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                prefetchExerciseGif(ex.exercise_id);
+                                router.push(`/exercise/${ex.exercise_id}`);
+                              });
+                            }
+                          : undefined
+                      }
                     >
                       {formatExerciseNameString(ex.exercise_name)}
                     </Text>

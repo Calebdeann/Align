@@ -1015,3 +1015,22 @@ export function aggregateMuscleData(
     return b.sets - a.sets;
   });
 }
+
+export async function getCompletedWorkoutCount(userId: string): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('workouts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (error) {
+      logger.warn('Error fetching workout count', { error });
+      return 0;
+    }
+
+    return count ?? 0;
+  } catch (error) {
+    logger.warn('Error in getCompletedWorkoutCount', { error });
+    return 0;
+  }
+}

@@ -190,6 +190,7 @@ Use `QuestionLayout` component with `optionStyles` for all multi-select/single-s
 8. **Database columns must be backwards-compatible in code.** When adding new database columns: (a) never unconditionally include them in INSERT or UPDATE statements, (b) always provide a fallback retry path that strips new columns if the insert fails with a schema error (PGRST204), and (c) core save operations (workouts, templates, profiles) must NEVER hard-fail due to optional feature columns. See `.claude/backend-rules.md` for the full pattern and protected operations list.
 9. **Exercise row tap targets:** Exercise detail view must ONLY open when tapping the thumbnail image or the exercise name text. Never wrap entire exercise rows in a navigation Pressable. Always use `Text.onPress` with `alignSelf: 'flex-start'` on exercise name Text elements so the tap target is constrained to the visible text only (not the full row width). The parent View should use `flex: 1` + `pointerEvents="box-none"` so taps on empty space pass through harmlessly.
 10. **Workout tracker and template builder parity.** Any UX or functionality change made to the active workout tracker (`app/active-workout.tsx`) must be replicated in the template builder (`app/create-template.tsx`) unless explicitly told not to, or unless it would cause issues specific to the template context.
+11. **Superwall: always use official docs.** When implementing or modifying Superwall integration, reference the official Expo SDK docs at https://superwall.com/docs/expo/ . Do not guess APIs or invent patterns. Key docs: install (`/quickstart/install`), configure (`/quickstart/configure`), present paywall (`/quickstart/present-first-paywall`), feature gating (`/quickstart/feature-gating`), usePlacement (`/sdk-reference/hooks/usePlacement`), useSuperwall (`/sdk-reference/hooks/useSuperwall`).
 
 ## Backend Security
 
@@ -276,11 +277,16 @@ Google Sign-In:
 - Don't add comments unless logic is complex
 - Never use em-dashes in the app. Use commas or periods instead.
 
-## Monetization (Later)
+## Monetization - Superwall
 
-- Hard paywall after onboarding
+- Hard paywall after onboarding (triggers in `generating-plan.tsx` when loading bar hits 100%)
 - Monthly + Annual subscriptions via Superwall
 - Mixpanel for analytics
+- **Superwall SDK:** `expo-superwall` (Expo native module, no app.json plugin needed)
+- **Docs:** https://superwall.com/docs/expo/ (ALWAYS reference official docs for Superwall implementation)
+- **Key hooks:** `useSuperwall()` for SDK state, `usePlacement()` for paywall triggers
+- **Placement:** `onboarding_trigger`
+- **Provider:** `SuperwallProvider` wraps app in `app/_layout.tsx`
 
 ## Quick Reference
 

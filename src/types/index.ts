@@ -17,13 +17,17 @@ export interface UserProfile {
 
 // Workout type colors (matches theme.ts workout colors)
 export type WorkoutType =
-  | 'legs'
-  | 'arms'
   | 'back'
-  | 'chest'
-  | 'shoulders'
-  | 'core'
+  | 'biceps'
+  | 'calves'
   | 'cardio'
+  | 'chest'
+  | 'core'
+  | 'glutes'
+  | 'legs'
+  | 'other'
+  | 'shoulders'
+  | 'triceps'
   | 'fullBody'
   | 'rest';
 

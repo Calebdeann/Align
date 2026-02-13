@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef, useContext } from 'react';
-import { Tabs, router } from 'expo-router';
+import { useEffect } from 'react';
+import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
@@ -8,8 +8,6 @@ import { colors } from '@/constants/theme';
 import ActiveWorkoutWidget from '@/components/workout/ActiveWorkoutWidget';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useExerciseStore } from '@/stores/exerciseStore';
-import { SuperwallReadyContext } from '../_layout';
-import { useSuperwall, usePlacement } from 'expo-superwall';
 
 // Custom tab bar button with haptic feedback
 function HapticTabButton(props: any) {
@@ -33,7 +31,6 @@ function HapticTabButton(props: any) {
   );
 }
 
-// Pure tabs UI — no Superwall dependency
 function TabsContent() {
   const { t } = useTranslation();
   const activeWorkout = useWorkoutStore((state) => state.activeWorkout);
@@ -115,61 +112,12 @@ function TabsContent() {
   );
 }
 
-// Superwall paywall gate: if user isn't subscribed, show paywall when entering tabs
-function SuperwallGate() {
-  const { subscriptionStatus } = useSuperwall((state) => ({
-    subscriptionStatus: state.subscriptionStatus,
-  }));
-  const [paywallShown, setPaywallShown] = useState(false);
-
-  const { registerPlacement } = usePlacement({
-    onDismiss: () => {
-      // Paywall dismissed without subscribing, send back to welcome
-      if (subscriptionStatus?.status !== 'ACTIVE') {
-        router.replace('/');
-      }
-    },
-    onSkip: () => {
-      console.log('[Superwall] Tabs paywall skipped');
-    },
-    onError: (error) => {
-      console.warn('[Superwall] Tabs paywall error:', error);
-    },
-  });
-
-  useEffect(() => {
-    if (!subscriptionStatus || subscriptionStatus.status === 'UNKNOWN') return;
-    if (subscriptionStatus.status === 'ACTIVE') return;
-    if (paywallShown) return;
-
-    setPaywallShown(true);
-    registerPlacement({
-      placement: 'campaign_trigger',
-      feature: () => {
-        console.log('[Superwall] Tabs: user has access');
-      },
-    }).catch((e) => {
-      console.warn('[Superwall] Tabs paywall error:', e);
-    });
-  }, [subscriptionStatus?.status, paywallShown]);
-
-  return <TabsContent />;
-}
-
-// Main export — checks if SuperwallProvider is available before using the hook
 export default function TabsLayout() {
-  const isSuperwalReady = useContext(SuperwallReadyContext);
   const loadExercises = useExerciseStore((state) => state.loadExercises);
 
-  // Prefetch exercises when tabs load so they're ready when user needs them
   useEffect(() => {
     loadExercises();
   }, [loadExercises]);
-
-  // Only use Superwall gate when the provider is confirmed in the tree
-  if (isSuperwalReady) {
-    return <SuperwallGate />;
-  }
 
   return <TabsContent />;
 }

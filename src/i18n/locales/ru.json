@@ -473,6 +473,14 @@
     "hourMinutes": "{{hours}} ч, {{minutes}} мин",
     "minutes": "{{minutes}} мин"
   },
+  "workoutComplete": {
+    "shareWorkout": "Поделиться тренировкой - Отметить @align.tracker",
+    "done": "Готово",
+    "duration": "Длительность",
+    "volume": "Объём",
+    "exercises": "Упражнения",
+    "sets": "Подходы"
+  },
   "workoutDetails": {
     "title": "Детали тренировки",
     "workoutNotFound": "Тренировка не найдена",
@@ -591,7 +599,7 @@
     "muscle": "Мышца"
   },
   "explore": {
-    "title": "Обзор",
+    "title": "Обзор Шаблонов",
     "workouts": "Тренировки",
     "countWorkouts": "{{count}} тренировок",
     "categoryWorkouts": "Тренировки: {{category}}",
@@ -603,13 +611,13 @@
   },
   "equipment": {
     "all": "Всё оборудование",
-    "bodyWeight": "Собственный вес",
+    "none": "Без оборудования",
     "barbell": "Штанга",
     "dumbbell": "Гантель",
     "kettlebell": "Гиря",
-    "cable": "Тросовый тренажёр",
-    "band": "Резинка",
     "machine": "Тренажёр",
+    "plate": "Диск",
+    "resistanceBand": "Резинка",
     "other": "Другое"
   },
   "muscles": {
@@ -636,7 +644,8 @@
     "core": "Кор",
     "cardio": "Кардио",
     "fullBody": "Всё тело",
-    "lowerBody": "Низ тела"
+    "lowerBody": "Низ тела",
+    "other": "Other"
   },
   "templateCategories": {
     "abs": "Пресс",

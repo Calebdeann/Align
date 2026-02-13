@@ -615,8 +615,8 @@ export default function CalendarScreen() {
       return <View key={`empty-${weekIndex}-${dayIndex}`} style={styles.dayCell} />;
     }
 
-    // Get unique colors for workout dots (max 3 dots)
-    const dotColors = workouts.slice(0, 3).map((w) => w.tagColor);
+    // Get unique colors for workout dots (max 5 dots)
+    const dotColors = workouts.slice(0, 5).map((w) => w.tagColor);
 
     // Create date object for this day
     const handlePress = () => {

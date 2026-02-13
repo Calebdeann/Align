@@ -15,7 +15,7 @@ import {
   PanResponder,
   AppState,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -614,6 +614,7 @@ const swipeStyles = StyleSheet.create({
 
 export default function ActiveWorkoutScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { templateId, editData: editDataParam } = useLocalSearchParams<{
     templateId?: string;
     editData?: string;
@@ -648,6 +649,9 @@ export default function ActiveWorkoutScreen() {
   const [showExerciseMenu, setShowExerciseMenu] = useState(false);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
   const menuSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
+  // Track if user has actively interacted with exercises (prevents restore effect from undoing deletions)
+  const hasUserModifiedExercises = useRef(false);
 
   // Reorder state
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -801,6 +805,7 @@ export default function ActiveWorkoutScreen() {
       setElapsedSeconds(activeWorkout.elapsedSeconds);
       timerEpochRef.current = Date.now() - activeWorkout.elapsedSeconds * 1000;
       setWorkoutExercises(activeWorkout.exercises as WorkoutExercise[]);
+      hasUserModifiedExercises.current = true;
       startedAtRef.current = new Date(activeWorkout.startedAt);
       restoreActiveWorkout();
     } else if (!activeWorkout || isDifferentTemplate) {
@@ -856,6 +861,7 @@ export default function ActiveWorkoutScreen() {
             supersetId: null,
           }));
           setWorkoutExercises(localExercises);
+          hasUserModifiedExercises.current = true;
         } else {
           startActiveWorkout(null);
         }
@@ -932,7 +938,12 @@ export default function ActiveWorkoutScreen() {
   // Skip in edit mode - exercises come from editData, not store.
   useEffect(() => {
     if (isEditMode) return;
-    if (activeWorkout && activeWorkout.exercises.length > 0 && workoutExercises.length === 0) {
+    if (
+      activeWorkout &&
+      activeWorkout.exercises.length > 0 &&
+      workoutExercises.length === 0 &&
+      !hasUserModifiedExercises.current
+    ) {
       const storeMatchesCurrent = !templateId || activeWorkout.sourceTemplateId === templateId;
       if (storeMatchesCurrent) {
         setWorkoutExercises(activeWorkout.exercises as WorkoutExercise[]);
@@ -986,7 +997,7 @@ export default function ActiveWorkoutScreen() {
   // Sync exercises to global store whenever they change (skip in edit mode)
   useEffect(() => {
     if (isEditMode) return;
-    if (workoutExercises.length > 0) {
+    if (workoutExercises.length > 0 || hasUserModifiedExercises.current) {
       setActiveWorkoutExercises(workoutExercises);
 
       // Find the current (first uncompleted) set
@@ -1026,6 +1037,7 @@ export default function ActiveWorkoutScreen() {
         supersetId: null,
       }));
       setWorkoutExercises((prev) => [...prev, ...newWorkoutExercises]);
+      hasUserModifiedExercises.current = true;
 
       // Phase 2: Fetch history and preferences in background, then patch
       let currentUserId = userId;
@@ -1813,7 +1825,7 @@ export default function ActiveWorkoutScreen() {
   const weightLabel = getWeightUnit(units).toUpperCase();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 44) }]}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable
@@ -1913,11 +1925,18 @@ export default function ActiveWorkoutScreen() {
               {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
                 <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    prefetchExerciseGif(workoutExercise.exercise.id);
-                    router.push(`/exercise/${workoutExercise.exercise.id}`);
-                  }}
+                  onPress={
+                    workoutExercise.exercise.gifUrl || workoutExercise.exercise.thumbnailUrl
+                      ? () => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          prefetchExerciseGif(workoutExercise.exercise.id);
+                          router.push(`/exercise/${workoutExercise.exercise.id}`);
+                        }
+                      : undefined
+                  }
+                  disabled={
+                    !workoutExercise.exercise.gifUrl && !workoutExercise.exercise.thumbnailUrl
+                  }
                 >
                   <ExerciseImage
                     gifUrl={workoutExercise.exercise.gifUrl}
@@ -1930,11 +1949,15 @@ export default function ActiveWorkoutScreen() {
                   <Text
                     numberOfLines={2}
                     style={[styles.exerciseTitle, { alignSelf: 'flex-start' }]}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      prefetchExerciseGif(workoutExercise.exercise.id);
-                      router.push(`/exercise/${workoutExercise.exercise.id}`);
-                    }}
+                    onPress={
+                      workoutExercise.exercise.gifUrl || workoutExercise.exercise.thumbnailUrl
+                        ? () => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            prefetchExerciseGif(workoutExercise.exercise.id);
+                            router.push(`/exercise/${workoutExercise.exercise.id}`);
+                          }
+                        : undefined
+                    }
                   >
                     {getExerciseDisplayName(workoutExercise.exercise)}
                   </Text>
@@ -2652,7 +2675,7 @@ export default function ActiveWorkoutScreen() {
       )}
 
       <NumericInputDoneButton />
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, Image } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
@@ -43,12 +44,20 @@ export default function SignUpScreen() {
       // Sign out any existing session to prevent stale data
       await supabase.auth.signOut();
 
-      // Get Apple credential
+      // Generate nonce for Supabase token verification
+      const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce
+      );
+
+      // Get Apple credential with hashed nonce
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
+        nonce: hashedNonce,
       });
 
       if (!credential.identityToken) {
@@ -59,13 +68,15 @@ export default function SignUpScreen() {
 
       console.log('[Auth:SignUp] Apple credential received, signing into Supabase...');
 
-      // Sign in with Supabase using the Apple ID token
+      // Sign in with Supabase using the Apple ID token + raw nonce
       const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'apple',
         token: credential.identityToken,
+        nonce: rawNonce,
       });
 
       if (error) {
+        console.error('[Auth:SignUp] Supabase signInWithIdToken error:', error.message);
         throw error;
       }
 

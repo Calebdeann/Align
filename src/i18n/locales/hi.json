@@ -473,6 +473,14 @@
     "hourMinutes": "{{hours}} घंटा, {{minutes}} मिनट",
     "minutes": "{{minutes}} मिनट"
   },
+  "workoutComplete": {
+    "shareWorkout": "वर्कआउट शेयर करें - @align.tracker टैग करें",
+    "done": "पूर्ण",
+    "duration": "अवधि",
+    "volume": "वॉल्यूम",
+    "exercises": "व्यायाम",
+    "sets": "सेट"
+  },
   "workoutDetails": {
     "title": "वर्कआउट विवरण",
     "workoutNotFound": "वर्कआउट नहीं मिली",
@@ -591,7 +599,7 @@
     "muscle": "मसल"
   },
   "explore": {
-    "title": "एक्सप्लोर",
+    "title": "टेम्पलेट एक्सप्लोर करें",
     "workouts": "वर्कआउट",
     "countWorkouts": "{{count}} वर्कआउट",
     "categoryWorkouts": "{{category}} वर्कआउट",
@@ -603,20 +611,20 @@
   },
   "equipment": {
     "all": "सभी इक्विपमेंट",
-    "bodyWeight": "बॉडी वेट",
+    "none": "कोई नहीं",
     "barbell": "बारबेल",
     "dumbbell": "डम्बेल",
     "kettlebell": "केटलबेल",
-    "cable": "केबल",
-    "band": "बैंड",
     "machine": "मशीन",
+    "plate": "प्लेट",
+    "resistanceBand": "रेज़िस्टेंस बैंड",
     "other": "अन्य"
   },
   "muscles": {
     "all": "सभी मसल्स",
     "abs": "एब्स",
     "biceps": "बाइसेप्स",
-    "calves": "काल्व्स",
+    "calves": "पिंडली",
     "delts": "डेल्ट्स",
     "forearms": "फोरआर्म्स",
     "glutes": "ग्लूट्स",
@@ -636,7 +644,8 @@
     "core": "कोर",
     "cardio": "कार्डियो",
     "fullBody": "फुल बॉडी",
-    "lowerBody": "लोअर बॉडी"
+    "lowerBody": "लोअर बॉडी",
+    "other": "Other"
   },
   "templateCategories": {
     "abs": "एब्स",

@@ -473,6 +473,14 @@
     "hourMinutes": "{{hours}} hour, {{minutes}} minutes",
     "minutes": "{{minutes}} minutes"
   },
+  "workoutComplete": {
+    "shareWorkout": "Share workout - Tag @align.tracker",
+    "done": "Done",
+    "duration": "Duration",
+    "volume": "Volume",
+    "exercises": "Exercises",
+    "sets": "Sets"
+  },
   "workoutDetails": {
     "title": "Workout Details",
     "workoutNotFound": "Workout not found",
@@ -591,7 +599,7 @@
     "muscle": "Muscle"
   },
   "explore": {
-    "title": "Explore",
+    "title": "Explore Templates",
     "workouts": "Workouts",
     "countWorkouts": "{{count}} workouts",
     "categoryWorkouts": "{{category}} Workouts",
@@ -603,13 +611,13 @@
   },
   "equipment": {
     "all": "All Equipment",
-    "bodyWeight": "Body Weight",
+    "none": "None",
     "barbell": "Barbell",
     "dumbbell": "Dumbbell",
     "kettlebell": "Kettlebell",
-    "cable": "Cable",
-    "band": "Band",
     "machine": "Machine",
+    "plate": "Plate",
+    "resistanceBand": "Resistance Band",
     "other": "Other"
   },
   "muscles": {
@@ -636,7 +644,8 @@
     "core": "Core",
     "cardio": "Cardio",
     "fullBody": "Full Body",
-    "lowerBody": "Lower Body"
+    "lowerBody": "Lower Body",
+    "other": "Other"
   },
   "templateCategories": {
     "abs": "Abs",

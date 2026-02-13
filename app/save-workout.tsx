@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,9 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
-  LayoutAnimation,
-  Platform,
-  UIManager,
+  Animated,
   Image,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -22,18 +21,11 @@ import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/constants/theme';
-import {
-  saveCompletedWorkout,
-  updateCompletedWorkout,
-  getExerciseMuscles,
-  ExerciseMuscle,
-} from '@/services/api/workouts';
+import { saveCompletedWorkout, updateCompletedWorkout } from '@/services/api/workouts';
 import { UnitSystem, kgToLbs, toKgForStorage, getWeightUnit } from '@/utils/units';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
-import { ExerciseImage } from '@/components/ExerciseImage';
-import { prefetchExerciseGif } from '@/stores/exerciseStore';
 import {
   ImagePickerSheet,
   ImagePlaceholderIcon,
@@ -41,12 +33,7 @@ import {
 } from '@/components/ImagePickerSheet';
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 import { getTemplateImageById } from '@/constants/templateImages';
-import { formatExerciseNameString } from '@/utils/textFormatters';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // Set types matching the active workout
 type SetType = 'normal' | 'warmup' | 'failure' | 'dropset';
@@ -78,26 +65,6 @@ interface WorkoutExercise {
   restTimerSeconds?: number;
 }
 
-// Superset colors matching active-workout
-const SUPERSET_COLORS = ['#64B5F6', '#7AC29A', '#FF8A65', '#E53935', '#BA68C8'];
-
-const getSupersetColor = (supersetId: number): string => {
-  return SUPERSET_COLORS[(supersetId - 1) % SUPERSET_COLORS.length];
-};
-
-const getSetTypeLabel = (setType: SetType | undefined, setIndex: number): string => {
-  switch (setType) {
-    case 'warmup':
-      return 'W';
-    case 'failure':
-      return 'F';
-    case 'dropset':
-      return 'D';
-    default:
-      return (setIndex + 1).toString();
-  }
-};
-
 interface WorkoutData {
   exercises: WorkoutExercise[];
   durationSeconds: number;
@@ -123,79 +90,6 @@ function BackIcon() {
   );
 }
 
-// Calculate muscle distribution from exercises (basic fallback using exercise.muscle)
-function calculateBasicMuscleSplit(exercises: WorkoutExercise[]): Map<string, number> {
-  const muscleCount = new Map<string, number>();
-
-  exercises.forEach((we) => {
-    const completedSets = we.sets.filter((s) => s.completed).length;
-    if (completedSets > 0) {
-      const muscle = we.exercise.muscle || 'Other';
-      const current = muscleCount.get(muscle) || 0;
-      muscleCount.set(muscle, current + completedSets);
-    }
-  });
-
-  return muscleCount;
-}
-
-// Calculate detailed muscle distribution using exercise_muscles data
-interface DetailedMuscleData {
-  name: string;
-  sets: number;
-  isPrimary: boolean;
-}
-
-function calculateDetailedMuscleSplit(
-  exercises: WorkoutExercise[],
-  exerciseMuscles: Map<string, ExerciseMuscle[]>
-): DetailedMuscleData[] {
-  const muscleMap = new Map<string, { primarySets: number; secondarySets: number }>();
-
-  exercises.forEach((we) => {
-    const completedSets = we.sets.filter((s) => s.completed).length;
-    if (completedSets === 0) return;
-
-    const muscles = exerciseMuscles.get(we.exercise.id);
-    if (muscles && muscles.length > 0) {
-      // Use detailed muscle mappings
-      muscles.forEach((m) => {
-        const existing = muscleMap.get(m.muscle) || { primarySets: 0, secondarySets: 0 };
-        if (m.activation === 'primary') {
-          existing.primarySets += completedSets;
-        } else {
-          existing.secondarySets += completedSets;
-        }
-        muscleMap.set(m.muscle, existing);
-      });
-    } else {
-      // Fallback to basic muscle from exercise
-      const muscle = we.exercise.muscle || 'Other';
-      const existing = muscleMap.get(muscle) || { primarySets: 0, secondarySets: 0 };
-      existing.primarySets += completedSets;
-      muscleMap.set(muscle, existing);
-    }
-  });
-
-  // Convert to array
-  const result: DetailedMuscleData[] = [];
-  muscleMap.forEach((data, muscle) => {
-    if (data.primarySets > 0) {
-      result.push({ name: muscle, sets: data.primarySets, isPrimary: true });
-    }
-    if (data.secondarySets > 0) {
-      result.push({ name: muscle, sets: data.secondarySets, isPrimary: false });
-    }
-  });
-
-  // Sort: primary first (by sets desc), then secondary (by sets desc)
-  return result.sort((a, b) => {
-    if (a.isPrimary && !b.isPrimary) return -1;
-    if (!a.isPrimary && b.isPrimary) return 1;
-    return b.sets - a.sets;
-  });
-}
-
 // Calculate total volume (weight x reps)
 function calculateTotalVolume(exercises: WorkoutExercise[]): number {
   let total = 0;
@@ -219,6 +113,209 @@ function calculateTotalSets(exercises: WorkoutExercise[]): number {
     return total + we.sets.filter((s) => s.completed).length;
   }, 0);
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+function DurationPickerModal({
+  visible,
+  durationSeconds,
+  onSave,
+  onClose,
+}: {
+  visible: boolean;
+  durationSeconds: number;
+  onSave: (seconds: number) => void;
+  onClose: () => void;
+}) {
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const [selectedSeconds, setSelectedSeconds] = useState(durationSeconds);
+
+  useEffect(() => {
+    if (visible) {
+      setSelectedSeconds(durationSeconds);
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  const adjust = (delta: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedSeconds((prev) => Math.max(60, prev + delta));
+  };
+
+  const displayHours = Math.floor(selectedSeconds / 3600);
+  const displayMinutes = Math.floor((selectedSeconds % 3600) / 60);
+
+  const durationDisplay =
+    displayHours > 0 ? `${displayHours}h ${displayMinutes}min` : `${displayMinutes}min`;
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <Pressable
+        style={pickerStyles.overlay}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onClose();
+        }}
+      >
+        <Animated.View style={[pickerStyles.sheet, { transform: [{ translateY: slideAnim }] }]}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={pickerStyles.handle} />
+
+            <View style={pickerStyles.header}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onClose();
+                }}
+              >
+                <Text style={pickerStyles.cancelText}>{i18n.t('common.cancel')}</Text>
+              </Pressable>
+              <Text style={pickerStyles.title}>{i18n.t('saveWorkout.duration')}</Text>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  onSave(selectedSeconds);
+                }}
+              >
+                <Text style={pickerStyles.saveText}>{i18n.t('common.save')}</Text>
+              </Pressable>
+            </View>
+
+            <View style={pickerStyles.durationDisplay}>
+              <Text style={pickerStyles.durationText}>{durationDisplay}</Text>
+            </View>
+
+            <View style={pickerStyles.buttonRow}>
+              <Pressable style={pickerStyles.adjustButton} onPress={() => adjust(-5 * 60)}>
+                <Text style={pickerStyles.adjustButtonText}>-5</Text>
+              </Pressable>
+              <Pressable style={pickerStyles.adjustButton} onPress={() => adjust(-60)}>
+                <Text style={pickerStyles.adjustButtonText}>-1</Text>
+              </Pressable>
+              <Text style={pickerStyles.unitLabel}>min</Text>
+              <Pressable style={pickerStyles.adjustButton} onPress={() => adjust(60)}>
+                <Text style={pickerStyles.adjustButtonText}>+1</Text>
+              </Pressable>
+              <Pressable style={pickerStyles.adjustButton} onPress={() => adjust(5 * 60)}>
+                <Text style={pickerStyles.adjustButtonText}>+5</Text>
+              </Pressable>
+            </View>
+
+            <View style={pickerStyles.buttonRow}>
+              <Pressable style={pickerStyles.adjustButton} onPress={() => adjust(-15 * 60)}>
+                <Text style={pickerStyles.adjustButtonText}>-15</Text>
+              </Pressable>
+              <Pressable style={pickerStyles.adjustButton} onPress={() => adjust(-60 * 60)}>
+                <Text style={pickerStyles.adjustButtonText}>-1h</Text>
+              </Pressable>
+              <Text style={pickerStyles.unitLabel}>hour</Text>
+              <Pressable style={pickerStyles.adjustButton} onPress={() => adjust(60 * 60)}>
+                <Text style={pickerStyles.adjustButtonText}>+1h</Text>
+              </Pressable>
+              <Pressable style={pickerStyles.adjustButton} onPress={() => adjust(15 * 60)}>
+                <Text style={pickerStyles.adjustButtonText}>+15</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Animated.View>
+      </Pressable>
+    </Modal>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md + 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  cancelText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+  },
+  title: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.lg,
+    color: colors.text,
+  },
+  saveText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.primary,
+  },
+  durationDisplay: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  durationText: {
+    fontFamily: fonts.bold,
+    fontSize: 36,
+    color: colors.text,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  adjustButton: {
+    width: 56,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adjustButtonText: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  unitLabel: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    width: 36,
+    textAlign: 'center',
+  },
+});
 
 // Format duration from seconds to "X hour, Y minutes"
 function formatDuration(seconds: number): string {
@@ -279,12 +376,6 @@ export default function SaveWorkoutScreen() {
   );
   const [editDuration, setEditDuration] = useState(workoutData.durationSeconds);
   const [showDurationModal, setShowDurationModal] = useState(false);
-  const [durationHours, setDurationHours] = useState(
-    Math.floor(workoutData.durationSeconds / 3600).toString()
-  );
-  const [durationMinutes, setDurationMinutes] = useState(
-    Math.floor((workoutData.durationSeconds % 3600) / 60).toString()
-  );
   const [isSaving, setIsSaving] = useState(false);
   const [showExerciseChangeModal, setShowExerciseChangeModal] = useState(false);
   const [pendingSaveCallback, setPendingSaveCallback] = useState<(() => void) | null>(null);
@@ -316,55 +407,6 @@ export default function SaveWorkoutScreen() {
     return null;
   });
 
-  // Detailed muscle data from exercise_muscles table
-  const [exerciseMusclesMap, setExerciseMusclesMap] = useState<Map<string, ExerciseMuscle[]>>(
-    new Map()
-  );
-  const [isLoadingMuscles, setIsLoadingMuscles] = useState(true);
-
-  // In edit mode, auto-expand all exercises so user can see current data
-  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(() => {
-    if (!isEditMode) return new Set();
-    // Pre-expand all exercises
-    const expanded = new Set<string>();
-    workoutData.exercises.forEach((we, index) => {
-      if (we.sets.some((s) => s.completed)) {
-        expanded.add(`${we.exercise.id}-${index}`);
-      }
-    });
-    return expanded;
-  });
-
-  const toggleExercise = (exerciseId: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedExercises((prev) => {
-      const next = new Set(prev);
-      if (next.has(exerciseId)) {
-        next.delete(exerciseId);
-      } else {
-        next.add(exerciseId);
-      }
-      return next;
-    });
-  };
-
-  // Fetch detailed muscle mappings on mount
-  useEffect(() => {
-    async function fetchMuscleData() {
-      const exerciseIds = workoutData.exercises.map((we) => we.exercise.id);
-      if (exerciseIds.length === 0) {
-        setIsLoadingMuscles(false);
-        return;
-      }
-
-      const muscleData = await getExerciseMuscles(exerciseIds);
-      setExerciseMusclesMap(muscleData);
-      setIsLoadingMuscles(false);
-    }
-
-    fetchMuscleData();
-  }, [workoutData.exercises]);
-
   // Pick up template image selection when returning from template-images screen
   useFocusEffect(
     useCallback(() => {
@@ -389,32 +431,6 @@ export default function SaveWorkoutScreen() {
     () => calculateTotalSets(workoutData.exercises),
     [workoutData.exercises]
   );
-
-  // Calculate detailed muscle split using exercise_muscles data
-  const detailedMuscles = useMemo(() => {
-    return calculateDetailedMuscleSplit(workoutData.exercises, exerciseMusclesMap);
-  }, [workoutData.exercises, exerciseMusclesMap]);
-
-  // Combine primary + secondary muscles by name with percentage
-  const allMuscles = useMemo(() => {
-    const muscleMap = new Map<string, number>();
-    detailedMuscles.forEach((m) => {
-      muscleMap.set(m.name, (muscleMap.get(m.name) || 0) + m.sets);
-    });
-    const total = Array.from(muscleMap.values()).reduce((sum, s) => sum + s, 0);
-    return Array.from(muscleMap.entries())
-      .map(([name, sets]) => ({
-        name,
-        sets,
-        percentage: total > 0 ? Math.round((sets / total) * 100) : 0,
-      }))
-      .sort((a, b) => b.percentage - a.percentage);
-  }, [detailedMuscles]);
-
-  // Get exercises with completed sets
-  const completedExercises = useMemo(() => {
-    return workoutData.exercises.filter((we) => we.sets.some((s) => s.completed));
-  }, [workoutData.exercises]);
 
   // Check if exercises have changed from the original template
   const exercisesChanged = useMemo(() => {
@@ -522,8 +538,8 @@ export default function SaveWorkoutScreen() {
     router.back();
   };
 
-  // The current effective duration (editable in edit mode)
-  const currentDuration = isEditMode ? editDuration : workoutData.durationSeconds;
+  // The current effective duration (always editable)
+  const currentDuration = editDuration;
 
   // The actual save logic (extracted to be callable after modal confirmation)
   const performSave = async () => {
@@ -618,19 +634,22 @@ export default function SaveWorkoutScreen() {
             );
           }
 
-          Alert.alert(
-            i18n.t('saveWorkout.workoutSaved'),
-            i18n.t('saveWorkout.workoutSavedMessage'),
-            [
-              {
-                text: i18n.t('common.ok'),
-                onPress: () => {
-                  router.dismissAll();
-                  router.replace('/(tabs)/workout');
-                },
-              },
-            ]
-          );
+          const displayTitle = workoutTitle || workoutData.templateName || 'Workout';
+          router.dismissAll();
+          router.push({
+            pathname: '/workout-complete',
+            params: {
+              workoutTitle: displayTitle,
+              durationSeconds: String(currentDuration),
+              totalVolume: String(
+                Math.round(units === 'imperial' ? kgToLbs(totalVolume) : totalVolume)
+              ),
+              volumeUnit: getWeightUnit(units),
+              exerciseCount: String(exercisesWithCompletedSets.length),
+              totalSets: String(totalSets),
+              userId: workoutData.userId,
+            },
+          });
         } else {
           Alert.alert(i18n.t('saveWorkout.saveFailed'), i18n.t('saveWorkout.saveFailedMessage'));
         }
@@ -753,36 +772,27 @@ export default function SaveWorkoutScreen() {
           </View>
         </View>
 
-        {/* Date & Time Section */}
-        <Text style={styles.sectionTitle}>Date & Time</Text>
+        {/* Stats Section */}
+        <Text style={styles.sectionTitle}>Stats</Text>
         <View style={styles.card}>
           <Pressable
             style={styles.statRow}
-            onPress={
-              isEditMode
-                ? () => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setDurationHours(Math.floor(currentDuration / 3600).toString());
-                    setDurationMinutes(Math.floor((currentDuration % 3600) / 60).toString());
-                    setShowDurationModal(true);
-                  }
-                : undefined
-            }
-            disabled={!isEditMode}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowDurationModal(true);
+            }}
           >
             <View style={styles.statIconContainer}>
               <Ionicons name="time-outline" size={18} color={colors.text} />
             </View>
             <Text style={styles.statLabel}>{t('saveWorkout.duration')}</Text>
             <Text style={styles.statValue}>{formatDuration(currentDuration)}</Text>
-            {isEditMode && (
-              <Ionicons
-                name="pencil-outline"
-                size={16}
-                color={colors.textSecondary}
-                style={{ marginLeft: 8 }}
-              />
-            )}
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={colors.textSecondary}
+              style={{ marginLeft: 8 }}
+            />
           </Pressable>
 
           <View style={styles.cardDivider} />
@@ -806,156 +816,31 @@ export default function SaveWorkoutScreen() {
           </View>
         </View>
 
-        {/* Muscles Worked Section */}
-        <Text style={styles.sectionTitle}>Muscles Worked</Text>
-        <View style={styles.card}>
-          {isLoadingMuscles ? (
-            <ActivityIndicator
-              size="small"
-              color={colors.primary}
-              style={{ paddingVertical: spacing.md }}
-            />
-          ) : allMuscles.length > 0 ? (
-            <View style={styles.muscleList}>
-              {allMuscles.map((muscle) => (
-                <View key={muscle.name}>
-                  <Text style={styles.muscleName}>
-                    {muscle.name.charAt(0).toUpperCase() + muscle.name.slice(1)}
-                  </Text>
-                  <View style={styles.muscleBarRow}>
-                    <View style={styles.progressBarContainer}>
-                      <View
-                        style={[
-                          styles.progressBar,
-                          {
-                            width: `${muscle.percentage}%`,
-                            backgroundColor: colors.primary,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.musclePercentage}>{muscle.percentage}%</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>No muscle data available</Text>
-          )}
-        </View>
-
-        {/* Exercises Section */}
-        <Text style={styles.sectionTitle}>{t('saveWorkout.exercises')}</Text>
-        <View style={styles.card}>
-          {completedExercises.map((we, index) => {
-            const isExpanded = expandedExercises.has(`${we.exercise.id}-${index}`);
-            const completedSets = we.sets.filter((s) => s.completed);
-            return (
-              <View key={`${we.exercise.id}-${index}`}>
-                {we.supersetId != null && (
-                  <View
-                    style={[
-                      styles.supersetBadge,
-                      { backgroundColor: getSupersetColor(we.supersetId) },
-                    ]}
-                  >
-                    <Text style={styles.supersetBadgeText}>Superset {we.supersetId}</Text>
-                  </View>
-                )}
-                <Pressable
-                  style={styles.exerciseRow}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    toggleExercise(`${we.exercise.id}-${index}`);
-                  }}
-                >
-                  <Pressable
-                    onPress={() => {
-                      withLock(() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        prefetchExerciseGif(we.exercise.id);
-                        router.push(`/exercise/${we.exercise.id}`);
-                      });
-                    }}
-                    disabled={isNavigating}
-                  >
-                    <ExerciseImage
-                      gifUrl={we.exercise.gifUrl}
-                      thumbnailUrl={we.exercise.thumbnailUrl}
-                      size={40}
-                      borderRadius={8}
-                    />
-                  </Pressable>
-                  <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
-                    <Text
-                      style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
-                      onPress={
-                        isNavigating
-                          ? undefined
-                          : () => {
-                              withLock(() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                prefetchExerciseGif(we.exercise.id);
-                                router.push(`/exercise/${we.exercise.id}`);
-                              });
-                            }
-                      }
-                    >
-                      {formatExerciseNameString(we.exercise.name)}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name={isExpanded ? 'chevron-down' : 'chevron-forward'}
-                    size={20}
-                    color={colors.textSecondary}
-                  />
-                </Pressable>
-
-                {isExpanded && completedSets.length > 0 && (
-                  <View style={styles.setsContainer}>
-                    {we.notes?.trim() ? (
-                      <Text style={styles.exerciseNotesText}>{we.notes}</Text>
-                    ) : null}
-                    <View style={styles.setsHeader}>
-                      <Text style={[styles.setHeaderText, styles.setColumn]}>SET</Text>
-                      <Text style={styles.setHeaderText}>WEIGHT & REPS</Text>
-                    </View>
-                    {completedSets.map((set, setIndex) => (
-                      <View key={set.id} style={styles.setRow}>
-                        <Text
-                          style={[
-                            styles.setNumber,
-                            styles.setColumn,
-                            set.setType === 'warmup' && styles.setTypeWarmup,
-                            set.setType === 'failure' && styles.setTypeFailure,
-                            set.setType === 'dropset' && styles.setTypeDropset,
-                          ]}
-                        >
-                          {getSetTypeLabel(set.setType, setIndex)}
-                        </Text>
-                        <Text style={styles.setText}>
-                          {set.kg && set.reps
-                            ? `${set.kg} ${getWeightUnit(units)} x ${set.reps} reps${set.rpe ? ` @ RPE ${set.rpe}` : ''}`
-                            : set.kg
-                              ? `${set.kg} ${getWeightUnit(units)} x - reps`
-                              : set.reps
-                                ? `- x ${set.reps} reps`
-                                : '- x -'}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {index < completedExercises.length - 1 && <View style={styles.exerciseDivider} />}
-              </View>
-            );
-          })}
-
-          {completedExercises.length === 0 && (
-            <Text style={styles.emptyText}>No completed exercises</Text>
-          )}
-        </View>
+        {!isEditMode && (
+          <Pressable
+            style={styles.discardButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert(
+                'Discard Workout',
+                'Are you sure you want to discard this workout? This cannot be undone.',
+                [
+                  { text: i18n.t('common.cancel'), style: 'cancel' },
+                  {
+                    text: 'Discard',
+                    style: 'destructive',
+                    onPress: () => {
+                      discardActiveWorkout();
+                      router.dismissAll();
+                    },
+                  },
+                ]
+              );
+            }}
+          >
+            <Text style={styles.discardButtonText}>Discard Workout</Text>
+          </Pressable>
+        )}
 
         {isEditMode && (
           <Pressable
@@ -1029,61 +914,16 @@ export default function SaveWorkoutScreen() {
         </View>
       </Modal>
 
-      {/* Duration Edit Modal */}
-      <Modal visible={showDurationModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowDurationModal(false)}>
-          <Pressable style={styles.exerciseChangeModal} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>{t('saveWorkout.editWorkout')}</Text>
-            <View style={styles.durationInputRow}>
-              <View style={styles.durationInputGroup}>
-                <TextInput
-                  style={styles.durationInput}
-                  value={durationHours}
-                  onChangeText={(v) => setDurationHours(v.replace(/[^0-9]/g, ''))}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={colors.textTertiary}
-                  maxLength={2}
-                />
-                <Text style={styles.durationLabel}>hours</Text>
-              </View>
-              <View style={styles.durationInputGroup}>
-                <TextInput
-                  style={styles.durationInput}
-                  value={durationMinutes}
-                  onChangeText={(v) => setDurationMinutes(v.replace(/[^0-9]/g, ''))}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={colors.textTertiary}
-                  maxLength={2}
-                />
-                <Text style={styles.durationLabel}>minutes</Text>
-              </View>
-            </View>
-            <Pressable
-              style={styles.updateTemplateButton}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                const h = parseInt(durationHours, 10) || 0;
-                const m = parseInt(durationMinutes, 10) || 0;
-                setEditDuration(h * 3600 + m * 60);
-                setShowDurationModal(false);
-              }}
-            >
-              <Text style={styles.updateTemplateButtonText}>{t('common.save')}</Text>
-            </Pressable>
-            <Pressable
-              style={styles.keepOriginalButton}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setShowDurationModal(false);
-              }}
-            >
-              <Text style={styles.keepOriginalButtonText}>{t('common.cancel')}</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* Duration Picker Modal - Apple style bottom sheet */}
+      <DurationPickerModal
+        visible={showDurationModal}
+        durationSeconds={currentDuration}
+        onSave={(seconds) => {
+          setEditDuration(seconds);
+          setShowDurationModal(false);
+        }}
+        onClose={() => setShowDurationModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -1204,123 +1044,15 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
   },
-  muscleList: {
-    gap: spacing.md,
-  },
-  muscleName: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.md,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  muscleBarRow: {
-    flexDirection: 'row',
+  discardButton: {
     alignItems: 'center',
-    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
   },
-  progressBarContainer: {
-    flex: 1,
-    height: 10,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  musclePercentage: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    minWidth: 36,
-  },
-  exerciseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: spacing.sm,
-  },
-  exerciseName: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.primary,
-  },
-  exerciseDivider: {
-    height: 1,
-    backgroundColor: 'rgba(217, 217, 217, 0.25)',
-  },
-  exerciseNotesText: {
+  discardButtonText: {
     fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  setsContainer: {
-    paddingTop: 12,
-    paddingBottom: spacing.sm,
-  },
-  setsHeader: {
-    flexDirection: 'row',
-    paddingBottom: spacing.sm,
-  },
-  setHeaderText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.xs,
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
-  setColumn: {
-    width: 40,
-    marginRight: spacing.md,
-    textAlign: 'center',
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  setNumber: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.sm,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  setText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
-  },
-  setTypeWarmup: {
-    color: '#F5A623',
-  },
-  setTypeFailure: {
+    fontSize: fontSize.md,
     color: colors.danger,
-  },
-  setTypeDropset: {
-    color: '#2196F3',
-  },
-  supersetBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 6,
-    marginBottom: spacing.xs,
-  },
-  supersetBadgeText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 11,
-    color: colors.textInverse,
-    letterSpacing: 0.2,
-  },
-  emptyText: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textTertiary,
-    textAlign: 'center',
-    paddingVertical: spacing.lg,
   },
   bottomSpacer: {
     height: 40,
@@ -1396,33 +1128,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.primary,
-  },
-  durationInputRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.lg,
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
-  },
-  durationInputGroup: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  durationInput: {
-    width: 80,
-    height: 56,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    fontFamily: fonts.bold,
-    fontSize: 24,
-    color: colors.text,
-    textAlign: 'center',
-    backgroundColor: colors.surfaceSecondary,
-  },
-  durationLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
   },
 });

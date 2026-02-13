@@ -5,8 +5,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
+import { useSuperwall, usePlacement } from 'expo-superwall';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
-import { usePlacement } from 'expo-superwall';
 
 // Segments with varying speeds to simulate buffering (~10s total)
 const progressSegments = [
@@ -74,14 +74,27 @@ export default function GeneratingPlanScreen() {
   const skipToPercent = skipTo ? parseInt(skipTo, 10) : 0;
   const hasNavigated = useRef(false);
   const [loadingComplete, setLoadingComplete] = useState(false);
+  const paywallTriggered = useRef(false);
+
+  const { isConfigured, configurationError } = useSuperwall();
+  const { registerPlacement } = usePlacement({
+    onPresent: (info) => console.log('[Superwall] Paywall presented:', info.name),
+    onDismiss: (info, result) => console.log('[Superwall] Paywall dismissed:', result),
+    onSkip: (reason) => {
+      console.log('[Superwall] Paywall skipped:', JSON.stringify(reason));
+      navigateToSignup();
+    },
+    onError: (error) => {
+      console.log('[Superwall] Paywall error:', error);
+      navigateToSignup();
+    },
+  });
 
   const navigateToSignup = useCallback(() => {
     if (hasNavigated.current) return;
     hasNavigated.current = true;
     router.push('/onboarding/signup');
   }, []);
-
-  const { registerPlacement } = usePlacement();
 
   const programDetails = useMemo(
     () => [
@@ -187,18 +200,34 @@ export default function GeneratingPlanScreen() {
     };
   }, []);
 
-  // Trigger paywall when loading animation finishes
+  // Trigger Superwall paywall when loading finishes and SDK is ready
   useEffect(() => {
-    if (!loadingComplete) return;
+    console.log(
+      `[Superwall] Effect: loadingComplete=${loadingComplete}, isConfigured=${isConfigured}, configError=${configurationError}, triggered=${paywallTriggered.current}`
+    );
+    if (!loadingComplete || paywallTriggered.current) return;
 
-    registerPlacement({
-      placement: 'campaign_trigger',
-      feature: () => {
-        // User subscribed or already has access
-        navigateToSignup();
-      },
-    });
-  }, [loadingComplete]);
+    if (isConfigured) {
+      paywallTriggered.current = true;
+      console.log('[Superwall] Calling registerPlacement with onboarding_trigger');
+      registerPlacement({
+        placement: 'onboarding_trigger',
+        feature: () => {
+          console.log('[Superwall] Feature callback fired, navigating to signup');
+          navigateToSignup();
+        },
+      });
+      return;
+    }
+
+    console.log('[Superwall] SDK not configured yet, starting 5s timeout');
+    // Safety timeout: if SDK doesn't configure within 5s, skip paywall
+    const timeout = setTimeout(() => {
+      console.log('[Superwall] Timeout reached, skipping paywall');
+      navigateToSignup();
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [loadingComplete, isConfigured]);
 
   const currentMessage = stages[currentStage]?.message || stages[0].message;
 

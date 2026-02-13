@@ -51,13 +51,17 @@ export const colors = {
 
   // Workout type colors (for calendar dots and labels)
   workout: {
-    legs: '#FF6B9D',
-    arms: '#64B5F6',
     back: '#81C784',
-    chest: '#FFB74D',
-    shoulders: '#BA68C8',
-    core: '#4DD0E1',
+    biceps: '#64B5F6',
+    calves: '#FFD54F',
     cardio: '#FF8A65',
+    chest: '#FFB74D',
+    core: '#4DD0E1',
+    glutes: '#FF6B9D',
+    legs: '#E991B8',
+    other: '#A0A0A0',
+    shoulders: '#BA68C8',
+    triceps: '#4FC3F7',
     fullBody: '#947AFF',
     rest: '#BDBDBD',
   },

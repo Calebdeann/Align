@@ -473,6 +473,14 @@
     "hourMinutes": "{{hours}} saat, {{minutes}} dəqiqə",
     "minutes": "{{minutes}} dəqiqə"
   },
+  "workoutComplete": {
+    "shareWorkout": "Məşqi paylaş - @align.tracker etiketlə",
+    "done": "Hazır",
+    "duration": "Müddət",
+    "volume": "Həcm",
+    "exercises": "Təmrinlər",
+    "sets": "Setlər"
+  },
   "workoutDetails": {
     "title": "Məşq Detalları",
     "workoutNotFound": "Məşq tapılmadı",
@@ -591,7 +599,7 @@
     "muscle": "Əzələ"
   },
   "explore": {
-    "title": "Kəşf Et",
+    "title": "Şablonları Kəşf Et",
     "workouts": "Məşqlər",
     "countWorkouts": "{{count}} məşq",
     "categoryWorkouts": "{{category}} Məşqləri",
@@ -603,13 +611,13 @@
   },
   "equipment": {
     "all": "Bütün Avadanlıqlar",
-    "bodyWeight": "Bədən Çəkisi",
+    "none": "Heç biri",
     "barbell": "Ştanq",
     "dumbbell": "Gantel",
     "kettlebell": "Girə",
-    "cable": "Kabel",
-    "band": "Bant",
     "machine": "Maşın",
+    "plate": "Disk",
+    "resistanceBand": "Müqavimət Bandı",
     "other": "Digər"
   },
   "muscles": {
@@ -636,7 +644,8 @@
     "core": "Nüvə",
     "cardio": "Kardio",
     "fullBody": "Tam Bədən",
-    "lowerBody": "Aşağı Bədən"
+    "lowerBody": "Aşağı Bədən",
+    "other": "Other"
   },
   "templateCategories": {
     "abs": "Qarın",

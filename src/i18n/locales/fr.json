@@ -473,6 +473,14 @@
     "hourMinutes": "{{hours}} heure, {{minutes}} minutes",
     "minutes": "{{minutes}} minutes"
   },
+  "workoutComplete": {
+    "shareWorkout": "Partager l'entraînement - Taguer @align.tracker",
+    "done": "Terminé",
+    "duration": "Durée",
+    "volume": "Volume",
+    "exercises": "Exercices",
+    "sets": "Séries"
+  },
   "schedule": {
     "repeatNever": "Jamais",
     "repeatEveryDay": "Tous les jours",
@@ -536,13 +544,13 @@
   },
   "equipment": {
     "all": "Tout l'équipement",
-    "bodyWeight": "Poids du corps",
+    "none": "Aucun",
     "barbell": "Barre",
     "dumbbell": "Haltère",
     "kettlebell": "Kettlebell",
-    "cable": "Câble",
-    "band": "Élastique",
     "machine": "Machine",
+    "plate": "Disque",
+    "resistanceBand": "Bande de Résistance",
     "other": "Autre"
   },
   "muscles": {
@@ -569,7 +577,8 @@
     "core": "Gainage",
     "cardio": "Cardio",
     "fullBody": "Full Body",
-    "lowerBody": "Bas du corps"
+    "lowerBody": "Bas du corps",
+    "other": "Other"
   },
   "templateCategories": {
     "abs": "Abdos",
@@ -677,7 +686,7 @@
     "muscle": "Muscle"
   },
   "explore": {
-    "title": "Explorer",
+    "title": "Explorer les Modeles",
     "workouts": "Entraînements",
     "countWorkouts": "{{count}} entraînements",
     "categoryWorkouts": "Entraînements {{category}}",

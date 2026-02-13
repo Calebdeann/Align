@@ -458,13 +458,18 @@ export default function WorkoutPreviewScreen() {
                           }}
                         >
                           <Pressable
-                            onPress={() => {
-                              withLock(() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                prefetchExerciseGif(ex.exerciseId);
-                                router.push(`/exercise/${ex.exerciseId}`);
-                              });
-                            }}
+                            onPress={
+                              ex.gifUrl || ex.thumbnailUrl
+                                ? () => {
+                                    withLock(() => {
+                                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                      prefetchExerciseGif(ex.exerciseId);
+                                      router.push(`/exercise/${ex.exerciseId}`);
+                                    });
+                                  }
+                                : undefined
+                            }
+                            disabled={!ex.gifUrl && !ex.thumbnailUrl}
                           >
                             <ExerciseImage
                               gifUrl={ex.gifUrl}
@@ -479,13 +484,17 @@ export default function WorkoutPreviewScreen() {
                           >
                             <Text
                               style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
-                              onPress={() => {
-                                withLock(() => {
-                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                  prefetchExerciseGif(ex.exerciseId);
-                                  router.push(`/exercise/${ex.exerciseId}`);
-                                });
-                              }}
+                              onPress={
+                                ex.gifUrl || ex.thumbnailUrl
+                                  ? () => {
+                                      withLock(() => {
+                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                        prefetchExerciseGif(ex.exerciseId);
+                                        router.push(`/exercise/${ex.exerciseId}`);
+                                      });
+                                    }
+                                  : undefined
+                              }
                             >
                               {formatExerciseNameString(ex.exerciseName)}
                             </Text>

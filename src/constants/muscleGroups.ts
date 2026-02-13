@@ -8,17 +8,32 @@ export interface SimplifiedMuscleGroup {
 }
 
 export const SIMPLIFIED_MUSCLE_GROUPS: SimplifiedMuscleGroup[] = [
-  { id: 'chest', i18nKey: 'muscles.chest', muscleGroupValues: ['pectorals'] },
   {
     id: 'back',
     i18nKey: 'muscles.back',
     muscleGroupValues: ['lats', 'upper back', 'traps', 'spine'],
   },
-  { id: 'shoulders', i18nKey: 'muscles.shoulders', muscleGroupValues: ['delts'] },
-  { id: 'arms', i18nKey: 'muscles.arms', muscleGroupValues: ['biceps', 'triceps', 'forearms'] },
-  { id: 'legs', i18nKey: 'muscles.legs', muscleGroupValues: ['quads', 'hamstrings', 'calves'] },
-  { id: 'glutes', i18nKey: 'muscles.glutes', muscleGroupValues: ['glutes'] },
+  { id: 'biceps', i18nKey: 'muscles.biceps', muscleGroupValues: ['biceps'] },
+  { id: 'chest', i18nKey: 'muscles.chest', muscleGroupValues: ['pectorals'] },
   { id: 'core', i18nKey: 'muscles.core', muscleGroupValues: ['abs'] },
+  { id: 'glutes', i18nKey: 'muscles.glutes', muscleGroupValues: ['glutes'] },
+  { id: 'calves', i18nKey: 'muscles.calves', muscleGroupValues: ['calves'] },
+  {
+    id: 'legs',
+    i18nKey: 'muscles.legs',
+    muscleGroupValues: ['quads', 'hamstrings', 'adductors', 'abductors'],
+  },
+  {
+    id: 'shoulders',
+    i18nKey: 'muscles.shoulders',
+    muscleGroupValues: ['delts', 'serratus anterior'],
+  },
+  { id: 'triceps', i18nKey: 'muscles.triceps', muscleGroupValues: ['triceps'] },
+  {
+    id: 'other',
+    i18nKey: 'muscles.other',
+    muscleGroupValues: ['forearms', 'cardiovascular system'],
+  },
 ];
 
 // Reverse lookup: maps a raw muscle_group value to its simplified category i18n key.
@@ -32,7 +47,7 @@ for (const group of SIMPLIFIED_MUSCLE_GROUPS) {
 
 // Returns the i18n key for the simplified category, or falls back to capitalizing the raw value.
 export function getSimplifiedMuscleI18nKey(muscleGroup: string): string {
-  return reverseLookup.get(muscleGroup.toLowerCase()) || '';
+  return reverseLookup.get(muscleGroup.toLowerCase()) || 'muscles.other';
 }
 
 // Returns the simplified category name directly (English fallback, no i18n).
@@ -45,7 +60,7 @@ for (const group of SIMPLIFIED_MUSCLE_GROUPS) {
 }
 
 export function getSimplifiedMuscleId(muscleGroup: string): string {
-  return reverseNameLookup.get(muscleGroup.toLowerCase()) || muscleGroup;
+  return reverseNameLookup.get(muscleGroup.toLowerCase()) || 'other';
 }
 
 // Expands a simplified category ID to its array of muscle_group values for filtering.

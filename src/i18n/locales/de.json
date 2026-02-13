@@ -473,6 +473,14 @@
     "hourMinutes": "{{hours}} Stunde, {{minutes}} Minuten",
     "minutes": "{{minutes}} Minuten"
   },
+  "workoutComplete": {
+    "shareWorkout": "Training teilen - @align.tracker taggen",
+    "done": "Fertig",
+    "duration": "Dauer",
+    "volume": "Volumen",
+    "exercises": "Übungen",
+    "sets": "Sätze"
+  },
   "schedule": {
     "repeatNever": "Nie",
     "repeatEveryDay": "Jeden Tag",
@@ -536,13 +544,13 @@
   },
   "equipment": {
     "all": "Alle Geräte",
-    "bodyWeight": "Körpergewicht",
+    "none": "Keines",
     "barbell": "Langhantel",
     "dumbbell": "Kurzhantel",
     "kettlebell": "Kettlebell",
-    "cable": "Kabelzug",
-    "band": "Widerstandsband",
     "machine": "Maschine",
+    "plate": "Scheibe",
+    "resistanceBand": "Widerstandsband",
     "other": "Sonstiges"
   },
   "muscles": {
@@ -569,7 +577,8 @@
     "core": "Rumpf",
     "cardio": "Cardio",
     "fullBody": "Ganzkörper",
-    "lowerBody": "Unterkörper"
+    "lowerBody": "Unterkörper",
+    "other": "Other"
   },
   "templateCategories": {
     "abs": "Bauchmuskeln",
@@ -677,7 +686,7 @@
     "muscle": "Muskel"
   },
   "explore": {
-    "title": "Entdecken",
+    "title": "Vorlagen Entdecken",
     "workouts": "Trainings",
     "countWorkouts": "{{count}} Trainings",
     "categoryWorkouts": "{{category}} Trainings",

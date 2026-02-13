@@ -48,7 +48,7 @@ const WORKOUT_COLOURS = [
   { id: 'purple', color: colors.primary },
   { id: 'green', color: colors.workout.back },
   { id: 'blue', color: colors.workout.chest },
-  { id: 'orange', color: colors.workout.arms },
+  { id: 'orange', color: colors.workout.biceps },
   { id: 'pink', color: colors.workout.legs },
   { id: 'teal', color: colors.workout.cardio },
   { id: 'yellow', color: colors.workout.shoulders },
@@ -401,14 +401,18 @@ export default function SaveTemplateScreen() {
                   }}
                 >
                   <Pressable
-                    onPress={() => {
-                      withLock(() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        prefetchExerciseGif(exercise.exerciseId);
-                        router.push(`/exercise/${exercise.exerciseId}`);
-                      });
-                    }}
-                    disabled={isNavigating}
+                    onPress={
+                      exercise.gifUrl || exercise.thumbnailUrl
+                        ? () => {
+                            withLock(() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              prefetchExerciseGif(exercise.exerciseId);
+                              router.push(`/exercise/${exercise.exerciseId}`);
+                            });
+                          }
+                        : undefined
+                    }
+                    disabled={isNavigating || (!exercise.gifUrl && !exercise.thumbnailUrl)}
                   >
                     <ExerciseImage
                       gifUrl={exercise.gifUrl}
@@ -421,7 +425,7 @@ export default function SaveTemplateScreen() {
                     <Text
                       style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
                       onPress={
-                        isNavigating
+                        isNavigating || (!exercise.gifUrl && !exercise.thumbnailUrl)
                           ? undefined
                           : () => {
                               withLock(() => {

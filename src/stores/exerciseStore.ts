@@ -46,7 +46,7 @@ interface ExerciseStore {
   translations: Map<string, ExerciseTranslation>;
   translationsLanguage: string | null;
 
-  loadExercises: () => Promise<void>;
+  loadExercises: (forceRefresh?: boolean) => Promise<void>;
   loadTranslations: (language: string) => Promise<void>;
   getPopularExercises: () => Exercise[];
   getAllExercisesSorted: () => Exercise[];
@@ -69,11 +69,11 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => ({
   translations: new Map(),
   translationsLanguage: null,
 
-  loadExercises: async () => {
+  loadExercises: async (forceRefresh = false) => {
     const { isLoaded, isLoading } = get();
 
-    // Don't refetch if already loaded or loading
-    if (isLoaded || isLoading) return;
+    // Don't refetch if already loaded or loading (unless forced)
+    if ((isLoaded || isLoading) && !forceRefresh) return;
 
     set({ isLoading: true, error: null });
 
@@ -90,11 +90,17 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => ({
         throw new Error(error.message);
       }
 
-      // Add muscle alias for backwards compatibility
-      const exercises = (data || []).map((e) => ({
-        ...e,
-        muscle: e.muscle_group,
-      }));
+      // Add muscle alias for backwards compatibility, then sort by visible display name
+      const exercises = (data || [])
+        .map((e) => ({
+          ...e,
+          muscle: e.muscle_group,
+        }))
+        .sort((a, b) => {
+          const nameA = (a.display_name || a.name).toLowerCase();
+          const nameB = (b.display_name || b.name).toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
 
       set({
         allExercises: exercises,
@@ -162,8 +168,16 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => ({
 
   getAllExercisesSorted: () => {
     const { allExercises } = get();
-    // Already sorted by name from Supabase query
-    return allExercises;
+    // Sort by the name users actually see (display_name, falling back to formatted name)
+    return [...allExercises].sort((a, b) => {
+      const nameA = (
+        a.display_name || formatExerciseDisplayName(a.name, a.equipment)
+      ).toLowerCase();
+      const nameB = (
+        b.display_name || formatExerciseDisplayName(b.name, b.equipment)
+      ).toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
   },
 
   getTranslatedDisplayName: (exercise) => {

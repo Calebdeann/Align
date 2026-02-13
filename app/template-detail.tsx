@@ -53,7 +53,7 @@ const WORKOUT_COLOURS = [
   { id: 'purple', color: colors.primary },
   { id: 'green', color: colors.workout.back },
   { id: 'blue', color: colors.workout.chest },
-  { id: 'orange', color: colors.workout.arms },
+  { id: 'orange', color: colors.workout.biceps },
   { id: 'pink', color: colors.workout.legs },
   { id: 'teal', color: colors.workout.cardio },
   { id: 'yellow', color: colors.workout.shoulders },
@@ -107,13 +107,18 @@ function ExerciseRow({
         }}
       >
         <Pressable
-          onPress={() => {
-            withLock(() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              prefetchExerciseGif(exercise.exerciseId);
-              router.push(`/exercise/${exercise.exerciseId}`);
-            });
-          }}
+          onPress={
+            exercise.gifUrl || exercise.thumbnailUrl
+              ? () => {
+                  withLock(() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    prefetchExerciseGif(exercise.exerciseId);
+                    router.push(`/exercise/${exercise.exerciseId}`);
+                  });
+                }
+              : undefined
+          }
+          disabled={!exercise.gifUrl && !exercise.thumbnailUrl}
         >
           <ExerciseImage
             gifUrl={exercise.gifUrl}
@@ -125,13 +130,17 @@ function ExerciseRow({
         <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
           <Text
             style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
-            onPress={() => {
-              withLock(() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                prefetchExerciseGif(exercise.exerciseId);
-                router.push(`/exercise/${exercise.exerciseId}`);
-              });
-            }}
+            onPress={
+              exercise.gifUrl || exercise.thumbnailUrl
+                ? () => {
+                    withLock(() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      prefetchExerciseGif(exercise.exerciseId);
+                      router.push(`/exercise/${exercise.exerciseId}`);
+                    });
+                  }
+                : undefined
+            }
           >
             {formatExerciseNameString(exercise.exerciseName)}
           </Text>

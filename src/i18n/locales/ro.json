@@ -473,6 +473,14 @@
     "hourMinutes": "{{hours}} ora, {{minutes}} minute",
     "minutes": "{{minutes}} minute"
   },
+  "workoutComplete": {
+    "shareWorkout": "Distribuie antrenamentul - Etichetează @align.tracker",
+    "done": "Gata",
+    "duration": "Durată",
+    "volume": "Volum",
+    "exercises": "Exerciții",
+    "sets": "Seturi"
+  },
   "workoutDetails": {
     "title": "Detalii antrenament",
     "workoutNotFound": "Antrenamentul nu a fost gasit",
@@ -591,7 +599,7 @@
     "muscle": "Muschi"
   },
   "explore": {
-    "title": "Exploreaza",
+    "title": "Exploreaza Sabloane",
     "workouts": "Antrenamente",
     "countWorkouts": "{{count}} antrenamente",
     "categoryWorkouts": "Antrenamente {{category}}",
@@ -603,13 +611,13 @@
   },
   "equipment": {
     "all": "Tot echipamentul",
-    "bodyWeight": "Greutatea corpului",
+    "none": "Niciunul",
     "barbell": "Bara",
     "dumbbell": "Gantera",
     "kettlebell": "Kettlebell",
-    "cable": "Cablu",
-    "band": "Banda",
     "machine": "Aparat",
+    "plate": "Disc",
+    "resistanceBand": "Bandă de Rezistență",
     "other": "Altele"
   },
   "muscles": {
@@ -636,7 +644,8 @@
     "core": "Core",
     "cardio": "Cardio",
     "fullBody": "Corp complet",
-    "lowerBody": "Corp inferior"
+    "lowerBody": "Corp inferior",
+    "other": "Other"
   },
   "templateCategories": {
     "abs": "Abdominale",

@@ -39,6 +39,32 @@ import {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+const MUSCLE_GROUP_ICONS: Record<string, any> = {
+  all: require('../assets/Body Graph Icons/AllMuscles_BodyGraph.png'),
+  back: require('../assets/Body Graph Icons/Back_BodyGraph.png'),
+  biceps: require('../assets/Body Graph Icons/Biceps_BodyGraph.png'),
+  calves: require('../assets/Body Graph Icons/Calves_BodyGraph.png'),
+  chest: require('../assets/Body Graph Icons/Chest_BodyGraph.png'),
+  core: require('../assets/Body Graph Icons/Core_BodyGraph.png'),
+  glutes: require('../assets/Body Graph Icons/Glutes_BodyGraph.png'),
+  legs: require('../assets/Body Graph Icons/Legs_BodyGraph.png'),
+  other: require('../assets/Body Graph Icons/Other_BodyGraph.png'),
+  shoulders: require('../assets/Body Graph Icons/Shoulders_BodyGraph.png'),
+  triceps: require('../assets/Body Graph Icons/Triceps_BodyGraph.png'),
+};
+
+const EQUIPMENT_ICONS: Record<string, any> = {
+  all: require('../assets/Body Graph Icons/AllMuscles_BodyGraph.png'),
+  none: require('../assets/Equipment/None.png'),
+  barbell: require('../assets/Equipment/Barbell.png'),
+  dumbbell: require('../assets/Equipment/Dumbell.png'),
+  kettlebell: require('../assets/Equipment/Kettlebell.png'),
+  machine: require('../assets/Equipment/Machine.png'),
+  'weighted plate': require('../assets/Equipment/Plate.png'),
+  band: require('../assets/Equipment/ResistanceBand.png'),
+  other: require('../assets/Body Graph Icons/Other_BodyGraph.png'),
+};
+
 // Equipment and muscle option IDs - labels are resolved via i18n inside the component
 
 // SVG Icons
@@ -122,11 +148,15 @@ function ExerciseItem({
     >
       <View style={[styles.exerciseIndicator, showSelected && styles.exerciseIndicatorSelected]} />
       <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onPressName();
-        }}
-        disabled={isAlreadyAdded}
+        onPress={
+          exercise.image_url || exercise.thumbnail_url
+            ? () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onPressName();
+              }
+            : undefined
+        }
+        disabled={isAlreadyAdded || (!exercise.image_url && !exercise.thumbnail_url)}
       >
         <ExerciseImage
           gifUrl={exercise.image_url}
@@ -144,7 +174,7 @@ function ExerciseItem({
             { alignSelf: 'flex-start' },
           ]}
           onPress={
-            isAlreadyAdded
+            isAlreadyAdded || (!exercise.image_url && !exercise.thumbnail_url)
               ? undefined
               : () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -181,11 +211,22 @@ interface FilterModalProps {
   title: string;
   options: FilterOption[];
   selectedId: string;
+  icons?: Record<string, any>;
+  iconSizes?: Record<string, number>;
   onSelect: (id: string) => void;
   onClose: () => void;
 }
 
-function FilterModal({ visible, title, options, selectedId, onSelect, onClose }: FilterModalProps) {
+function FilterModal({
+  visible,
+  title,
+  options,
+  selectedId,
+  icons,
+  iconSizes,
+  onSelect,
+  onClose,
+}: FilterModalProps) {
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   useEffect(() => {
@@ -244,7 +285,21 @@ function FilterModal({ visible, title, options, selectedId, onSelect, onClose }:
                   }}
                 >
                   <View style={styles.filterOptionLeft}>
-                    {option.id !== 'all' && <View style={styles.filterOptionCircle} />}
+                    <View style={styles.filterOptionCircle}>
+                      {icons?.[option.id] && (
+                        <Image
+                          source={icons[option.id]}
+                          style={[
+                            styles.filterOptionIcon,
+                            iconSizes?.[option.id] && {
+                              width: iconSizes[option.id],
+                              height: iconSizes[option.id],
+                            },
+                          ]}
+                          contentFit="contain"
+                        />
+                      )}
+                    </View>
                     <Text
                       style={[
                         styles.filterOptionText,
@@ -289,8 +344,7 @@ export default function AddExerciseScreen() {
   const [showEquipmentModal, setShowEquipmentModal] = useState(false);
 
   // Exercise store (cached exercises)
-  const { allExercises, isLoaded, isLoading, error, loadExercises, getPopularExercises } =
-    useExerciseStore();
+  const { allExercises, isLoaded, isLoading, error, loadExercises } = useExerciseStore();
   // Subscribe to translation changes so exercise names re-render in the selected language
   const translationsLanguage = useExerciseStore((state) => state.translationsLanguage);
   const { getRecentExercises, addRecentExercises } = useRecentExercisesStore();
@@ -299,13 +353,13 @@ export default function AddExerciseScreen() {
   const EQUIPMENT_OPTIONS = useMemo(
     () => [
       { id: 'all', label: t('equipment.all') },
-      { id: 'body weight', label: t('equipment.bodyWeight') },
+      { id: 'none', label: t('equipment.none') },
       { id: 'barbell', label: t('equipment.barbell') },
       { id: 'dumbbell', label: t('equipment.dumbbell') },
       { id: 'kettlebell', label: t('equipment.kettlebell') },
-      { id: 'cable', label: t('equipment.cable') },
-      { id: 'band', label: t('equipment.band') },
       { id: 'machine', label: t('equipment.machine') },
+      { id: 'weighted plate', label: t('equipment.plate') },
+      { id: 'band', label: t('equipment.resistanceBand') },
       { id: 'other', label: t('equipment.other') },
     ],
     [t]
@@ -355,9 +409,8 @@ export default function AddExerciseScreen() {
       ];
     }
 
-    // Get recent and popular exercises
+    // Get recent exercises
     const recent = getRecentExercises(allExercises);
-    const popular = getPopularExercises();
 
     // Get all exercises with filters applied
     const allFiltered = filterExercisesClient(allExercises, {
@@ -365,28 +418,23 @@ export default function AddExerciseScreen() {
       equipment: selectedEquipment !== 'all' ? selectedEquipment : undefined,
     });
 
-    // Deduplication: Recent > Popular > All
+    // Deduplication: Recent > All
     const recentIds = new Set(recent.map((e) => e.id));
-    const popularWithoutRecent = popular.filter((e) => !recentIds.has(e.id));
-    const excludedIds = new Set([...recentIds, ...popular.map((e) => e.id)]);
-    const allWithoutRecentAndPopular = allFiltered.filter((e) => !excludedIds.has(e.id));
+    const allWithoutRecent = allFiltered.filter((e) => !recentIds.has(e.id));
 
     const result = [];
 
-    // Only show Recent and Popular sections if no filters are active
+    // Only show Recent section if no filters are active
     if (!hasActiveFilters) {
       if (recent.length > 0) {
         result.push({ title: t('addExercise.recent'), data: recent });
       }
-      if (popularWithoutRecent.length > 0) {
-        result.push({ title: t('addExercise.popular'), data: popularWithoutRecent });
-      }
     }
 
-    if (allWithoutRecentAndPopular.length > 0 || hasActiveFilters) {
+    if (allWithoutRecent.length > 0 || hasActiveFilters) {
       result.push({
         title: t('addExercise.allExercises'),
-        data: hasActiveFilters ? allFiltered : allWithoutRecentAndPopular,
+        data: hasActiveFilters ? allFiltered : allWithoutRecent,
       });
     }
 
@@ -396,7 +444,6 @@ export default function AddExerciseScreen() {
     debouncedQuery,
     selectedMuscle,
     selectedEquipment,
-    getPopularExercises,
     getRecentExercises,
     hasActiveFilters,
     t,
@@ -667,6 +714,7 @@ export default function AddExerciseScreen() {
         title={t('addExercise.selectMuscle')}
         options={MUSCLE_OPTIONS}
         selectedId={selectedMuscle}
+        icons={MUSCLE_GROUP_ICONS}
         onSelect={setSelectedMuscle}
         onClose={() => setShowMuscleModal(false)}
       />
@@ -677,6 +725,18 @@ export default function AddExerciseScreen() {
         title={t('addExercise.selectEquipment')}
         options={EQUIPMENT_OPTIONS}
         selectedId={selectedEquipment}
+        icons={EQUIPMENT_ICONS}
+        iconSizes={{
+          all: 45,
+          none: 49,
+          barbell: 45,
+          dumbbell: 45,
+          kettlebell: 45,
+          machine: 45,
+          'weighted plate': 45,
+          band: 45,
+          other: 45,
+        }}
         onSelect={setSelectedEquipment}
         onClose={() => setShowEquipmentModal(false)}
       />
@@ -905,7 +965,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: SCREEN_HEIGHT * 0.7,
+    maxHeight: SCREEN_HEIGHT * 0.95,
     paddingBottom: 40,
   },
   modalHandle: {
@@ -921,7 +981,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md + 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -937,7 +997,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   filterOptionsScroll: {
-    maxHeight: SCREEN_HEIGHT * 0.5,
+    maxHeight: SCREEN_HEIGHT * 0.8,
   },
   filterOptionItem: {
     flexDirection: 'row',
@@ -954,10 +1014,17 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   filterOptionCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  filterOptionIcon: {
+    width: 43,
+    height: 43,
   },
   filterOptionText: {
     fontFamily: fonts.medium,

@@ -473,6 +473,14 @@
     "hourMinutes": "{{hours}} uur, {{minutes}} minuten",
     "minutes": "{{minutes}} minuten"
   },
+  "workoutComplete": {
+    "shareWorkout": "Training delen - Tag @align.tracker",
+    "done": "Klaar",
+    "duration": "Duur",
+    "volume": "Volume",
+    "exercises": "Oefeningen",
+    "sets": "Sets"
+  },
   "workoutDetails": {
     "title": "Workout details",
     "workoutNotFound": "Workout niet gevonden",
@@ -591,7 +599,7 @@
     "muscle": "Spier"
   },
   "explore": {
-    "title": "Verkennen",
+    "title": "Sjablonen Verkennen",
     "workouts": "Workouts",
     "countWorkouts": "{{count}} workouts",
     "categoryWorkouts": "{{category}} workouts",
@@ -603,13 +611,13 @@
   },
   "equipment": {
     "all": "Alle apparatuur",
-    "bodyWeight": "Lichaamsgewicht",
+    "none": "Geen",
     "barbell": "Barbell",
     "dumbbell": "Dumbbell",
     "kettlebell": "Kettlebell",
-    "cable": "Kabel",
-    "band": "Weerstandsband",
     "machine": "Machine",
+    "plate": "Schijf",
+    "resistanceBand": "Weerstandsband",
     "other": "Overig"
   },
   "muscles": {
@@ -636,7 +644,8 @@
     "core": "Core",
     "cardio": "Cardio",
     "fullBody": "Full Body",
-    "lowerBody": "Onderkant lichaam"
+    "lowerBody": "Onderkant lichaam",
+    "other": "Other"
   },
   "templateCategories": {
     "abs": "Buikspieren",

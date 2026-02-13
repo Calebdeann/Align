@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Exercise Rename Tool - 124 Exercises</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 24px; }
+    h1 { color: #947AFF; margin-bottom: 8px; font-size: 24px; }
+    .subtitle { color: #888; margin-bottom: 24px; font-size: 14px; }
+
+    .stats-bar { display: flex; gap: 24px; margin-bottom: 20px; }
+    .stat { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 12px 20px; }
+    .stat-value { color: #947AFF; font-size: 22px; font-weight: 700; }
+    .stat-label { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    .search-box { width: 100%; padding: 10px 16px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; margin-bottom: 20px; outline: none; }
+    .search-box:focus { border-color: #947AFF; }
+    .search-box::placeholder { color: #666; }
+
+    .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: #ccc; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+    .filter-btn:hover { border-color: #947AFF; color: #947AFF; }
+    .filter-btn.active { background: #947AFF; border-color: #947AFF; color: white; }
+
+    .count { color: #947AFF; font-size: 14px; margin-bottom: 16px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 10px 12px; background: #1a1a1a; color: #947AFF; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10; }
+    td { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; font-size: 14px; vertical-align: top; }
+    tr:hover td { background: #111; }
+    tr.conflict td { background: rgba(250, 204, 21, 0.05); }
+    tr.conflict { border-left: 3px solid #facc15; }
+
+    .original { color: #888; }
+    .muscle-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .equip-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; background: #1a1a2e; color: #a78bfa; white-space: nowrap; }
+
+    .mg-lats, .mg-upper-back { background: #1a2d3e; color: #60a5fa; }
+    .mg-biceps { background: #1a3e2d; color: #34d399; }
+    .mg-delts, .mg-shoulders { background: #3e2d1a; color: #fb923c; }
+    .mg-abs { background: #3e3e1a; color: #facc15; }
+    .mg-glutes { background: #2d1a3e; color: #c084fc; }
+    .mg-quads, .mg-hamstrings, .mg-calves, .mg-adductors, .mg-abductors { background: #2d1a3e; color: #c084fc; }
+    .mg-triceps { background: #1a3e3e; color: #22d3ee; }
+    .mg-chest, .mg-pectorals { background: #3e1a1a; color: #f87171; }
+    .mg-forearms { background: #2a2a2a; color: #a0a0a0; }
+    .mg-cardiovascular-system { background: #1a3e1a; color: #4ade80; }
+    .mg-traps { background: #3e2d1a; color: #fb923c; }
+
+    .name-input { width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid #333; background: #111; color: #fff; font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+    .name-input:focus { border-color: #947AFF; background: #1a1a2e; }
+    .name-input.edited { border-color: #947AFF; background: rgba(148, 122, 255, 0.08); }
+    .name-input.conflict { border-color: #facc15; background: rgba(250, 204, 21, 0.08); }
+
+    .similar-container { margin-top: 6px; display: none; }
+    .similar-container.visible { display: block; }
+    .similar-label { font-size: 11px; color: #666; margin-bottom: 4px; }
+    .similar-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .similar-chip { background: #1a1a2e; color: #a78bfa; padding: 2px 8px; border-radius: 10px; font-size: 11px; white-space: nowrap; cursor: default; }
+    .similar-chip.exact-match { background: rgba(250, 204, 21, 0.15); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); }
+
+    .conflict-warning { display: inline-flex; align-items: center; gap: 4px; color: #facc15; font-size: 11px; margin-top: 4px; }
+    .conflict-warning::before { content: '!'; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: #facc15; color: #0a0a0a; font-size: 10px; font-weight: 700; }
+
+    .bottom-bar { position: sticky; bottom: 0; background: #0a0a0a; border-top: 1px solid #333; padding: 16px 0; margin-top: 20px; display: flex; gap: 12px; align-items: center; z-index: 20; }
+    .btn { padding: 10px 24px; border-radius: 10px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; transition: all 0.2s; }
+    .btn-primary { background: #947AFF; color: white; }
+    .btn-primary:hover { background: #8066e6; }
+    .btn-secondary { background: #1a1a1a; color: #ccc; border: 1px solid #333; }
+    .btn-secondary:hover { border-color: #947AFF; color: #947AFF; }
+    .btn-success { background: #22c55e; color: white; }
+    .btn-success:hover { background: #16a34a; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-reset { background: transparent; color: #888; border: 1px solid #333; }
+    .btn-reset:hover { border-color: #f87171; color: #f87171; }
+
+    .sql-output { margin-top: 16px; display: none; }
+    .sql-output.visible { display: block; }
+    .sql-output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .sql-output-title { color: #947AFF; font-size: 14px; font-weight: 600; }
+    .sql-pre { background: #111; border: 1px solid #333; border-radius: 10px; padding: 16px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #e0e0e0; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
+    .sql-keyword { color: #947AFF; }
+    .sql-string { color: #34d399; }
+    .sql-comment { color: #666; }
+
+    .loading-overlay { position: fixed; inset: 0; background: rgba(10,10,10,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .loading-text { color: #947AFF; font-size: 16px; }
+    .loading-overlay.hidden { display: none; }
+
+    .toast { position: fixed; bottom: 80px; right: 24px; background: #22c55e; color: white; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+
+    .edited-count { color: #947AFF; font-weight: 600; }
+    .conflict-count { color: #facc15; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="loading-overlay" id="loading">
+    <div class="loading-text">Loading exercises from Supabase...</div>
+  </div>
+
+  <div class="toast" id="toast">Copied to clipboard</div>
+
+  <h1>Exercise Rename Tool</h1>
+  <p class="subtitle">124 exercises to rename. Edit suggested display names, check for conflicts, then generate SQL.</p>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-value" id="totalStat">124</div>
+      <div class="stat-label">To Rename</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value edited-count" id="editedStat">0</div>
+      <div class="stat-label">Edited</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value conflict-count" id="conflictStat">0</div>
+      <div class="stat-label">Conflicts</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="dbStat">--</div>
+      <div class="stat-label">DB Exercises</div>
+    </div>
+  </div>
+
+  <input type="text" class="search-box" id="search" placeholder="Search by original name, display name, or muscle group..." />
+
+  <div class="filters" id="filters"></div>
+
+  <p class="count" id="count">Showing 124 of 124</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40px">#</th>
+        <th style="width:110px">Muscle Group</th>
+        <th style="width:100px">Equipment</th>
+        <th style="width:260px">Original Name (ExerciseDB)</th>
+        <th style="width:320px">Suggested Display Name</th>
+        <th>Similar in DB</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="bottom-bar">
+    <button class="btn btn-primary" id="generateBtn" onclick="generateSQL()">Generate SQL</button>
+    <button class="btn btn-success" id="copyBtn" onclick="copySQL()" disabled>Copy SQL</button>
+    <button class="btn btn-reset" onclick="resetAll()">Reset All</button>
+    <span id="bottomInfo" style="color:#888;font-size:13px;margin-left:auto;"></span>
+  </div>
+
+  <div class="sql-output" id="sqlOutput">
+    <div class="sql-output-header">
+      <span class="sql-output-title" id="sqlTitle">Generated SQL</span>
+    </div>
+    <pre class="sql-pre" id="sqlPre"></pre>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://dngpsabyqsuunajtotci.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_LXI8w9s0XF_r1LI3u7LpAg_IM4KGa63';
+
+    const renameExercises = [
+      { id: '29d9e9f5-19e9-4772-a9f1-d4d063335857', name: 'cable bar lateral pulldown', displayName: 'Bar Lateral Pulldown (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '09df18b0-b6ab-4c63-ada2-f2662b4057aa', name: 'bayesian curl', displayName: 'Bayesian Curl (Cable)', muscleGroup: 'biceps', equipment: 'cable' },
+      { id: 'fbfcf0a4-edde-4aac-8587-c645b4e3c834', name: 'smith behind neck press', displayName: 'Behind Neck Press (Smith Machine)', muscleGroup: 'delts', equipment: 'smith machine' },
+      { id: 'c1c7c1ff-aefc-4029-9ae1-c5980bc2278c', name: 'roller body saw', displayName: 'Body Saw (Roller)', muscleGroup: 'abs', equipment: 'roller' },
+      { id: 'fa3a79a5-ffde-4479-ba9b-0dab2a95c6b5', name: 'box jump down with one leg stabilization', displayName: 'Box Jump', muscleGroup: 'calves', equipment: 'body weight' },
+      { id: '8868a3ec-8fce-459e-b27b-cbd8b1796976', name: 'barbell bench squat', displayName: 'Box Squat (Barbell)', muscleGroup: 'quads', equipment: 'barbell' },
+      { id: '7e66927e-1b49-4731-81f7-52fd6da90906', name: 'bridge - mountain climber (Cross body)', displayName: 'Bridge Mountain Climber (Cross Body)', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: '61684449-ed56-43fb-8f57-0744766cf0c9', name: 'bulgarian split squat', displayName: 'Bulgarian Split Squat', muscleGroup: 'quads', equipment: 'body weight' },
+      { id: 'a35fbdbb-af1d-4216-b063-91108ede897a', name: 'dumbbell clean', displayName: 'Clean', muscleGroup: 'glutes', equipment: 'dumbbell' },
+      { id: 'f1e77569-36f2-46ae-bc0c-a912b9a4b4b1', name: 'dumbbell close grip press', displayName: 'Close Grip Press (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: '506b2fb7-57ef-4a25-9e96-48ce3c952331', name: 'dumbbell close-grip press', displayName: 'Close Grip Press (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: '93bbe248-2c57-4f24-9868-e2c7e60a477c', name: 'dumbbell cuban press', displayName: 'Cuban Press (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '94f3652e-7fa7-4d9c-a1be-34037d7b66d9', name: 'elbow-to-knee', displayName: 'Elbow to Knee', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: '6d605679-7e82-4ce0-9029-10ee05376455', name: 'ez barbell curl', displayName: 'EZ Bar Biceps Curl', muscleGroup: 'biceps', equipment: 'ez barbell' },
+      { id: '173cd3e6-71ef-44d2-b564-8bed032463bb', name: 'cable fly', displayName: 'Fly (Cable)', muscleGroup: 'chest', equipment: 'cable' },
+      { id: '78eef81e-b954-42e6-91bd-cede0c5ca52f', name: 'weighted front plank', displayName: 'Front Plank (Weighted)', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: 'ea632678-6146-40ad-b2f4-2a26ef69395a', name: 'lever front pulldown', displayName: 'Front Pulldown (Machine)', muscleGroup: 'lats', equipment: 'leverage machine' },
+      { id: 'a96d96c3-0d89-4858-ba49-0f98b5059c95', name: 'frog pump', displayName: 'Frog Pump', muscleGroup: 'glutes', equipment: 'body weight' },
+      { id: 'e48a38c9-6b3a-474b-9a0c-47d8ca838b4a', name: 'gironda sternum chin', displayName: 'Gironda Sternum Chin', muscleGroup: 'lats', equipment: 'body weight' },
+      { id: 'fc16618a-ad09-4110-b825-864e83644b0c', name: 'glute-ham raise', displayName: 'Glute Ham Raise', muscleGroup: 'hamstrings', equipment: 'body weight' },
+      { id: '2f56edeb-3759-4c29-8648-cb1f5cde905a', name: 'glute kickback machine', displayName: 'Glute Kickback (Machine)', muscleGroup: 'glutes', equipment: 'machine' },
+      { id: '6b691a1f-50f1-4545-9d9c-0c6305398574', name: 'hack one leg calf raise', displayName: 'Hack One Leg Calf Raise', muscleGroup: 'calves', equipment: 'sled machine' },
+      { id: '612262e5-babc-4a20-8150-e031727a6e6c', name: 'olympic barbell hammer curl', displayName: 'Hammer Curl (Barbell)', muscleGroup: 'biceps', equipment: 'olympic barbell' },
+      { id: 'f3239d7c-f07f-434a-8c17-3875c804f3b8', name: 'dumbbell hammer curl', displayName: 'Hammer Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: '718c295b-bfb9-4cd1-8b8c-9be4dd7272aa', name: 'lever hammer grip preacher curl', displayName: 'Hammer Grip Preacher Curl (Machine)', muscleGroup: 'biceps', equipment: 'leverage machine' },
+      { id: '80d215b5-d599-4940-94bf-1583f7422117', name: 'kettlebell hang clean', displayName: 'Hang Clean', muscleGroup: 'hamstrings', equipment: 'kettlebell' },
+      { id: 'a4eb9d3f-c5b7-4851-a545-8f17fe3eddf0', name: 'weighted hanging leg-hip raise', displayName: 'Hanging Leg Hip Raise (Weighted)', muscleGroup: 'abs', equipment: 'weighted' },
+      { id: '10f9cec0-3f3d-4a49-bf82-50eb6621d56e', name: 'cable high pulley overhead tricep extension', displayName: 'High Pulley Overhead Tricep Extension (Cable)', muscleGroup: 'triceps', equipment: 'cable' },
+      { id: '325eed73-6baa-446e-9805-e9bb70739042', name: 'cable high row (Kneeling)', displayName: 'High Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '2602ed1b-1aa6-4dd9-b9e3-f010903f18b2', name: 'cable hip adduction', displayName: 'Hip Adduction (Cable)', muscleGroup: 'adductors', equipment: 'cable' },
+      { id: '07d2aee1-5ff3-4a99-a466-ddebe7a93502', name: 'hip thrust', displayName: 'Hip Thrust (Barbell)', muscleGroup: 'glutes', equipment: 'barbell' },
+      { id: '26e2f90a-6a78-4d9c-b884-04f3e445c3c9', name: 'lever horizontal one leg press', displayName: 'Horizontal One Leg Press (Machine)', muscleGroup: 'glutes', equipment: 'leverage machine' },
+      { id: '4f633c7a-d9ae-4f96-9060-232d5e7c0d93', name: 'hyght dumbbell fly', displayName: 'Hyght Dumbbell Fly (Dumbbell)', muscleGroup: 'pectorals', equipment: 'dumbbell' },
+      { id: '4863d58e-d1db-4a19-b83b-f433a79331d3', name: 'cable incline bench row', displayName: 'Incline Bench Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '87027a52-9bb4-4331-bbe5-2f594f3ec428', name: 'lever incline chest press', displayName: 'Incline Chest Press (Machine)', muscleGroup: 'pectorals', equipment: 'leverage machine' },
+      { id: '114e0847-f57d-44f0-ae21-02f1c6a22031', name: 'lever incline chest press v. 2', displayName: 'Incline Chest Press (Machine)', muscleGroup: 'chest', equipment: 'machine' },
+      { id: '1c56f0a0-33eb-4231-9a77-ec3c7c34fc8d', name: 'barbell incline close grip bench press', displayName: 'Incline Close Grip Bench Press (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: 'a5ddd812-c631-4b02-ab5a-63fac4c65d57', name: 'dumbbell incline hammer press', displayName: 'Incline Hammer Press (Dumbbell)', muscleGroup: 'pectorals', equipment: 'dumbbell' },
+      { id: '5cbba88a-0737-4816-8349-36aa80c14736', name: 'dumbbell incline alternate press', displayName: 'Incline Press (Dumbbell)', muscleGroup: 'pectorals', equipment: 'dumbbell' },
+      { id: '12c94b1c-f552-4c13-a0f7-5646797fb9af', name: 'cable incline pushdown', displayName: 'Incline Pushdown (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '5ef11525-d2e2-4b67-9d36-5375a2a4d63e', name: 'dumbbell incline raise', displayName: 'Incline Raise (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '117d202d-618c-4727-913b-8e2f39210b05', name: 'dumbbell incline rear lateral raise', displayName: 'Incline Rear Lateral Raise (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: 'e7bc32dc-ed83-4f38-b6e8-222d332e047c', name: 'dumbbell incline two arm extension', displayName: 'Incline Two Arm Extension (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: '471e266f-8fe4-4161-8f3c-d7e45fb5cfb8', name: 'inverted row', displayName: 'Inverted Row', muscleGroup: 'upper back', equipment: 'body weight' },
+      { id: '71ccaf21-0400-40af-9e8a-c7b2953b0c71', name: 'lever high row', displayName: 'Iso Lateral Chest Press (Machine)', muscleGroup: 'upper back', equipment: 'leverage machine' },
+      { id: '9527e51c-d9dd-4116-bfeb-fabe43854d12', name: 'jackknife sit-up', displayName: 'Jackknife Sit Up', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: 'c6b333eb-f8d9-41dc-9d8a-9c1d0979716e', name: 'ez barbell jm bench press', displayName: 'JM Bench Press (EZ Bar)', muscleGroup: 'triceps', equipment: 'ez barbell' },
+      { id: '1e6eadea-bc74-45fb-990b-1f04634c669c', name: 'barbell jm bench press', displayName: 'JM Press (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: '3cbe0952-7a66-4df8-b4e9-bc248335406f', name: 'jump rope', displayName: 'Jump Rope', muscleGroup: 'cardiovascular system', equipment: 'rope' },
+      { id: 'ffe4eb9c-0ed1-4de0-9af5-0f7cca9a3ec6', name: 'cable kickback', displayName: 'Kickback (Cable)', muscleGroup: 'triceps', equipment: 'cable' },
+      { id: 'd5d180b8-de36-4ac9-82b1-12ab3255d6ec', name: 'dumbbell kickback', displayName: 'Kickback (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: '790f68a5-f507-4aae-a82d-0351ee01c23a', name: 'kipping muscle up', displayName: 'Kipping Muscle Up', muscleGroup: 'lats', equipment: 'body weight' },
+      { id: '42d8b41c-3f53-4f53-87d8-a7f8dca5224f', name: 'vertical leg raise (on parallel bars)', displayName: 'Knee Raise Parallel Bars', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: 'e54ce874-fd95-4507-bb3d-71d012d317c1', name: 'knee touch crunch', displayName: 'Knee Touch Crunch', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: '93be5199-858b-44ea-8c88-b4bb72c0fadd', name: 'lever kneeling leg curl', displayName: 'Kneeling Leg Curl (Machine)', muscleGroup: 'hamstrings', equipment: 'leverage machine' },
+      { id: 'bd3aadac-3075-4b1f-8bfe-06a23787f0b9', name: 'cable kneeling rear delt row (With rope)', displayName: 'Kneeling Rear Delt Row (Cable)', muscleGroup: 'delts', equipment: 'cable' },
+      { id: '139796b1-7fff-461d-9761-2c01d6287203', name: 'cable pulldown (pro lat bar)', displayName: 'Lat Pulldown (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '2035603f-078c-4c3f-ad27-a79390c4dd65', name: 'lever reverse grip lateral pulldown', displayName: 'Lat Pulldown (Machine)', muscleGroup: 'lats', equipment: 'machine' },
+      { id: '33011dd8-1172-4ca0-9e5f-77950392663e', name: 'cable lateral pulldown with v-bar', displayName: 'Lat Pulldown Close Grip (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: 'af5f042a-1510-400b-9bb8-fe2e878aff42', name: 'cable lat pulldown full range of motion', displayName: 'Lat Pulldown Full Range of Motion (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '8d8a0274-df17-4372-96a8-913144846398', name: 'barbell lateral lunge', displayName: 'Lateral Lunge', muscleGroup: 'glutes', equipment: 'barbell' },
+      { id: '4b4ae9ff-a88d-4a5e-8e68-b5a2160a28ef', name: 'cable lateral pulldown (With rope attachment)', displayName: 'Lateral Pulldown (With Rope Attachment)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '8cec213d-8ba0-4168-8fde-dadd2f6e1bad', name: 'cable lateral raise', displayName: 'Lateral Raise (Cable)', muscleGroup: 'delts', equipment: 'cable' },
+      { id: '19fbf784-339e-4ecb-b66d-1f8082ba48c3', name: 'sled 45 leg press', displayName: 'Leg Press (Machine)', muscleGroup: 'glutes', equipment: 'sled machine' },
+      { id: 'd7a7ced2-6cc5-46c5-83f6-b95c694497eb', name: 'lever alternate leg press', displayName: 'Leg Press Horizontal (Machine)', muscleGroup: 'quads', equipment: 'leverage machine' },
+      { id: '755508fe-82b9-4c0a-8170-514bfbf8b6c9', name: 'cable low fly', displayName: 'Low Cable Fly Crossovers', muscleGroup: 'pectorals', equipment: 'cable' },
+      { id: '579b971b-6799-486d-a04d-fff8453d1768', name: 'low glute bridge on floor', displayName: 'Low Glute Bridge on Floor', muscleGroup: 'glutes', equipment: 'body weight' },
+      { id: 'e0dca4ea-c58d-4b24-94bd-d1f9c7e0c9b3', name: 'walking lunge', displayName: 'Lunge', muscleGroup: 'glutes', equipment: 'body weight' },
+      { id: 'cd681207-6e9a-480b-ab72-4dc03e6c1230', name: 'weighted lunge with swing', displayName: 'Lunge with Swing (Weighted)', muscleGroup: 'glutes', equipment: 'weighted' },
+      { id: '251a8b42-ac60-495a-8fe4-0bb60d2f749c', name: 'barbell lying back of the head tricep extension', displayName: 'Lying Back of the Head Tricep Extension (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: '82869fd9-ee7f-4885-b7ef-aabe49500412', name: 'barbell lying close-grip press', displayName: 'Lying Close Grip Press (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: 'b3d6409e-c8b5-48fd-9c3b-4ad085e70725', name: 'dumbbell lying elbow press', displayName: 'Lying Elbow Press (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: '21222a7d-a99b-4986-b9d9-3e3dd5ec9320', name: 'barbell lying extension', displayName: 'Lying Extension (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: 'b590aa8b-dbfa-4deb-8808-a6ced27350ed', name: 'cable lying fly', displayName: 'Lying Fly (Cable)', muscleGroup: 'pectorals', equipment: 'cable' },
+      { id: '4c843074-68bb-4d9d-b873-e74fd03d816b', name: 'lever lying leg curl', displayName: 'Lying Leg Curl (Machine)', muscleGroup: 'hamstrings', equipment: 'leverage machine' },
+      { id: '00c9ee8c-a973-4a2d-8eca-91837dfed338', name: 'barbell lying lifting (on hip)', displayName: 'Lying Lifting (On Hip)', muscleGroup: 'glutes', equipment: 'barbell' },
+      { id: '623147e2-26e8-46e6-9081-cc4b2e953f9a', name: 'dumbbell lying rear delt row', displayName: 'Lying Rear Delt Row (Dumbbell)', muscleGroup: 'upper back', equipment: 'dumbbell' },
+      { id: '7d14b043-31c5-41e6-9b35-3285a265f725', name: 'dumbbell lying single extension', displayName: 'Lying Single Extension (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: 'f79078c1-c5b2-4415-96d3-081341c92142', name: 'barbell lying triceps extension skull crusher', displayName: 'Lying Triceps Extension Skull Crusher (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: 'd3789c6a-0024-4a84-9b87-192f786343b0', name: 'machine inner chest press', displayName: 'Machine Inner Chest Press (Machine)', muscleGroup: 'pectorals', equipment: 'leverage machine' },
+      { id: 'ee060018-173f-40bb-a4c2-6801274b83b2', name: 'weighted muscle up (on bar)', displayName: 'Muscle Up (On Bar)', muscleGroup: 'lats', equipment: 'body weight' },
+      { id: '5c687d18-d0d9-4cb5-a829-5652f3c7f629', name: 'smith narrow row', displayName: 'Narrow Row (Smith Machine)', muscleGroup: 'upper back', equipment: 'smith machine' },
+      { id: '4bb7baa8-17e1-4d68-99cb-7eb996a80173', name: 'negative crunch', displayName: 'Negative Crunch', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: 'aa49e952-b68b-45ca-ae13-7e7587040784', name: 'oblique crunch v. 2', displayName: 'Oblique Crunch', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: '608d0f98-6cff-4082-8874-17b91be8ce35', name: 'oblique crunches floor', displayName: 'Oblique Crunch', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: 'dfcd013d-7f9d-4a59-9c36-7f856f9e9a59', name: 'lever one arm bent over row', displayName: 'One Arm Bent Over Row (Machine)', muscleGroup: 'upper back', equipment: 'barbell' },
+      { id: '8af8ff27-0e78-450e-8e96-6618ec1dc468', name: 'kettlebell one arm clean and jerk', displayName: 'One Arm Clean and Jerk (Kettlebell)', muscleGroup: 'shoulders', equipment: 'kettlebell' },
+      { id: '791307bd-b263-4730-98cf-62370037abb7', name: 'dumbbell one arm hammer preacher curl', displayName: 'One Arm Hammer Preacher Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: '1ddb6494-56e8-491a-b7cf-fec21c5144e4', name: 'cable one arm incline press', displayName: 'One Arm Incline Press (Cable)', muscleGroup: 'chest', equipment: 'cable' },
+      { id: '1f76827f-9ef3-4880-b5ba-02c47d104aca', name: 'cable one arm lateral bent-over', displayName: 'One Arm Lateral Bent Over (Cable)', muscleGroup: 'pectorals', equipment: 'cable' },
+      { id: 'adccac78-a8ce-48fd-a24e-473461f1a783', name: 'dumbbell one arm lateral raise', displayName: 'One Arm Lateral Raise (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '0d83082f-8ceb-456b-8f2c-2f7c835717a7', name: 'dumbbell one arm lateral raise with support', displayName: 'One Arm Lateral Raise with Support (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: 'c9f763f8-a2a3-44b5-bd1d-7b4d5fb8c9b4', name: 'lever one arm lateral wide pulldown', displayName: 'One Arm Lateral Wide Pulldown (Machine)', muscleGroup: 'lats', equipment: 'leverage machine' },
+      { id: '2231cf07-7179-4095-9e05-ee6eb82401d5', name: 'band one arm overhead biceps curl', displayName: 'One Arm Overhead Biceps Curl (Band)', muscleGroup: 'biceps', equipment: 'band' },
+      { id: 'c47e59f9-1dd5-4ebb-aa4e-7016b05cbe1d', name: 'cable one arm pulldown', displayName: 'One Arm Pulldown (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '1447a7e6-775e-48e3-824e-5928db070316', name: 'kettlebell one arm push press', displayName: 'One Arm Push Press (Kettlebell)', muscleGroup: 'shoulders', equipment: 'kettlebell' },
+      { id: 'a01130bc-03bd-4afa-82a9-7632dda04066', name: 'single arm push-up', displayName: 'One Arm Push Up', muscleGroup: 'chest', equipment: 'body weight' },
+      { id: '3d4a716f-9f5a-4406-9f33-ddf26ee08e30', name: 'dumbbell one arm reverse fly (With support)', displayName: 'One Arm Reverse Fly (With Support)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '54e17e13-230b-44b6-8c0b-ef2f3ddc1935', name: 'dumbbell one arm reverse preacher curl', displayName: 'One Arm Reverse Preacher Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: 'cace3821-3827-4fcf-842b-d078a8f74f71', name: 'dumbbell one arm reverse wrist curl', displayName: 'One Arm Reverse Wrist Curl (Dumbbell)', muscleGroup: 'forearms', equipment: 'dumbbell' },
+      { id: 'b9553700-c899-495a-a1d4-99ebe94e557e', name: 'kettlebell one arm row', displayName: 'One Arm Row (Kettlebell)', muscleGroup: 'upper back', equipment: 'kettlebell' },
+      { id: '27d5765e-da57-475c-ad43-77a15cad1b18', name: 'lever one arm shoulder press', displayName: 'One Arm Shoulder Press (Machine)', muscleGroup: 'shoulders', equipment: 'machine' },
+      { id: 'aafddac4-c47c-4951-8601-d317e39c6618', name: 'barbell one arm side deadlift', displayName: 'One Arm Side Deadlift (Barbell)', muscleGroup: 'glutes', equipment: 'barbell' },
+      { id: '801054ed-4cb7-476e-a118-c5dc36b3bd1e', name: 'barbell one arm snatch', displayName: 'One Arm Snatch (Barbell)', muscleGroup: 'delts', equipment: 'barbell' },
+      { id: 'f5dffa2b-6309-4451-b3e6-ed5b208b6d87', name: 'dumbbell one arm standing curl', displayName: 'One Arm Standing Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: 'efdbc11e-90e1-4d82-b707-ba9a3738aad4', name: 'dumbbell one arm standing hammer curl', displayName: 'One Arm Standing Hammer Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: 'd382986d-b68c-4e7c-a6ac-cd309c913543', name: 'cable one arm straight back high row (Kneeling)', displayName: 'One Arm Straight Back High Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: 'a15df0ed-ddc5-479f-b8c7-089038c2eb0f', name: 'dumbbell one arm triceps extension (On bench)', displayName: 'One Arm Triceps Extension (On Bench)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: 'f995f70c-e595-4432-bbeb-68e8a3a083d5', name: 'band one arm twisting chest press', displayName: 'One Arm Twisting Chest Press (Band)', muscleGroup: 'pectorals', equipment: 'band' },
+      { id: 'eb1cdbb3-2c8e-407d-a0a3-e66631c579eb', name: 'band one arm twisting seated row', displayName: 'One Arm Twisting Seated Row (Band)', muscleGroup: 'upper back', equipment: 'bands' },
+      { id: 'dea2d7dc-03e0-4e3c-8d02-fe3cbfc4d5f4', name: 'dumbbell one arm upright row', displayName: 'One Arm Upright Row (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '7584a0de-3d3a-4e0e-92dd-a667207d01f0', name: 'dumbbell one arm wrist curl', displayName: 'One Arm Wrist Curl (Dumbbell)', muscleGroup: 'forearms', equipment: 'dumbbell' },
+      { id: 'b107141e-ce2e-4998-b978-d52f97e785c0', name: 'dumbbell one arm zottman preacher curl', displayName: 'One Arm Zottman Preacher Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: 'eef143af-12b8-4532-b51f-48d61ee5200c', name: 'smith one leg floor calf raise', displayName: 'One Leg Floor Calf Raise (Smith Machine)', muscleGroup: 'calves', equipment: 'smith machine' },
+      { id: '013bee62-28e0-4a85-8e81-400756ac2e19', name: 'one leg squat', displayName: 'One Leg Squat', muscleGroup: 'glutes', equipment: 'body weight' },
+      { id: '7f9991aa-b817-438d-a6c8-6e6176819bbc', name: 'barbell one leg squat', displayName: 'One Leg Squat (Barbell)', muscleGroup: 'quads', equipment: 'barbell' },
+      { id: '676f4195-49aa-47c6-8a9e-f400511b2251', name: 'otis up', displayName: 'Otis Up (Weighted)', muscleGroup: 'abs', equipment: 'weighted' },
+      { id: 'afac1002-6d79-4974-9482-9a9e36c1f04e', name: 'lever overhand triceps dip', displayName: 'Overhand Triceps Dip (Machine)', muscleGroup: 'triceps', equipment: 'machine' },
+      { id: 'd6231999-8ddd-4a39-8f0a-66ba5ff63f7f', name: 'cable overhead curl', displayName: 'Overhead Curl (Cable)', muscleGroup: 'biceps', equipment: 'cable' },
+      { id: 'd508d575-3cee-43a2-a242-4703e92c1ef1', name: 'barbell standing close grip military press', displayName: 'Overhead Press (Barbell)', muscleGroup: 'delts', equipment: 'barbell' },
+      { id: '36712316-9f74-4f78-b688-3b655cef7df7', name: 'dumbbell one arm shoulder press', displayName: 'Overhead Press (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '13affaa6-65cd-4e92-8615-947a2bf5e9ba', name: 'smith standing military press', displayName: 'Overhead Press (Smith Machine)', muscleGroup: 'delts', equipment: 'smith machine' },
+      { id: '7ab82f8a-6246-41f1-99f8-3e76dd0571c6', name: 'barbell overhead squat', displayName: 'Overhead Squat', muscleGroup: 'quads', equipment: 'barbell' },
+      { id: '19842cc1-5cb8-443e-a7f3-0d2f21b0fb5a', name: 'cable overhead triceps extension (rope attachment)', displayName: 'Overhead Triceps Extension (Cable)', muscleGroup: 'triceps', equipment: 'cable' },
+      { id: 'cb686404-2cf6-4bef-b2a1-63d8875296ae', name: 'dumbbell palm rotational bent over row', displayName: 'Palm Rotational Bent Over Row (Dumbbell)', muscleGroup: 'upper back', equipment: 'dumbbell' },
+      { id: 'ed86e5b9-7444-43ad-9641-3f3e196ca954', name: 'cable palm rotational row', displayName: 'Palm Rotational Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '869fe789-e046-4054-8fcb-90270a0de43e', name: 'barbell palms down wrist curl over a bench', displayName: 'Palms Down Wrist Curl Over A Bench (Barbell)', muscleGroup: 'forearms', equipment: 'barbell' },
+      { id: '69da400d-3f95-46f3-90ac-16dc2ce1d4c6', name: 'dumbbell palms in incline bench press', displayName: 'Palms in Incline Bench Press (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: '54cdc0e2-4dc9-4258-969b-d04d1491262d', name: 'barbell palms up wrist curl over a bench', displayName: 'Palms Up Wrist Curl Over A Bench (Barbell)', muscleGroup: 'forearms', equipment: 'barbell' },
+      { id: 'e3e4aeba-e851-4e56-b420-2106ed0e5d02', name: 'assisted parallel close grip pull-up', displayName: 'Parallel Close Grip Pull Up (Assisted)', muscleGroup: 'lats', equipment: 'leverage machine' },
+      { id: 'e89483af-23fa-463c-ab8e-743a597d8568', name: 'power clean', displayName: 'Power Clean', muscleGroup: 'hamstrings', equipment: 'barbell' },
+      { id: 'ba23901a-f639-44fd-b462-a033419bf628', name: 'barbell preacher curl', displayName: 'Preacher Curl (Barbell)', muscleGroup: 'biceps', equipment: 'barbell' },
+      { id: '60f80c3a-390d-4e51-b6c8-539180d482d4', name: 'cable preacher curl', displayName: 'Preacher Curl (Cable)', muscleGroup: 'biceps', equipment: 'cable' },
+      { id: '38607e5a-c8ab-4402-ae8d-798a55a803a9', name: 'dumbbell alternate preacher curl', displayName: 'Preacher Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: '48aad897-db95-45c8-8207-f97478b0dd76', name: 'dumbbell preacher curl', displayName: 'Preacher Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: '440ef3b4-af85-4821-9931-73ed16e5baf5', name: 'barbell press sit-up', displayName: 'Press Sit Up (Barbell)', muscleGroup: 'abs', equipment: 'barbell' },
+      { id: 'ca15fc4d-7ed6-4f1c-94b5-e5bb078d7b3f', name: 'dumbbell pronate-grip triceps extension', displayName: 'Pronate Grip Triceps Extension (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: 'cd2ed364-c903-40ad-a414-396712c85bc5', name: 'pull-up', displayName: 'Pull Up', muscleGroup: 'lats', equipment: 'body weight' },
+      { id: '378714b4-4dfd-4529-910c-dd4c588da531', name: 'band assisted pull-up', displayName: 'Pull Up (Band)', muscleGroup: 'lats', equipment: 'band' },
+      { id: '0146a866-6dd2-44f1-b8b4-444bad4b021e', name: 'cable pulldown', displayName: 'Pulldown (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: 'e4f90a6f-b17e-4930-8208-688815aaa3f8', name: 'barbell pullover', displayName: 'Pullover (Barbell)', muscleGroup: 'lats', equipment: 'barbell' },
+      { id: 'fbfa8a71-a989-4701-981f-8c0e46610278', name: 'dumbbell pullover', displayName: 'Pullover (Dumbbell)', muscleGroup: 'pectorals', equipment: 'dumbbell' },
+      { id: 'd5467f76-80dd-4022-9fd0-1ccec2e10096', name: 'lever pullover', displayName: 'Pullover (Machine)', muscleGroup: 'lats', equipment: 'leverage machine' },
+      { id: '71d8c39d-3173-49a9-ba19-b396d47dacd9', name: 'dumbbell push press', displayName: 'Push Press', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '77150d85-170c-47e3-a0ae-ad5239a0cf01', name: 'close-grip push-up', displayName: 'Push Up Close Grip', muscleGroup: 'triceps', equipment: 'body weight' },
+      { id: 'f2002905-879f-4832-82e6-b53e92731179', name: 'cable pushdown (Straight arm) v. 2', displayName: 'Pushdown (Straight Arm)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '3691e9c2-6a11-4533-99a2-5a64fe962ecc', name: 'quads (Bodyweight squat)', displayName: 'Quads (Bodyweight Squat)', muscleGroup: 'quads', equipment: 'body weight' },
+      { id: 'eee105bd-86c7-4039-963e-476d0c022135', name: 'dumbbell raise', displayName: 'Raise (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '85129ca6-eaa7-49d4-a9e3-3879a9922c8b', name: 'rear decline bridge', displayName: 'Rear Decline Bridge', muscleGroup: 'glutes', equipment: 'body weight' },
+      { id: '7afa373e-785e-40ff-bd8a-4cc2fb249293', name: 'dumbbell rear lateral raise', displayName: 'Rear Delt Reverse Fly (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: 'ce288847-b986-46e9-8f9c-870325d2ac10', name: 'barbell rear delt row', displayName: 'Rear Delt Row (Barbell)', muscleGroup: 'delts', equipment: 'barbell' },
+      { id: '08ebae6a-b687-490a-83ad-e63b81b7eaa6', name: 'smith rear delt row', displayName: 'Rear Delt Row (Smith Machine)', muscleGroup: 'delts', equipment: 'smith machine' },
+      { id: '924a056f-9cde-4ac0-b42e-256bde5c2a8c', name: 'cable rear delt row (Stirrups)', displayName: 'Rear Delt Row (Stirrups)', muscleGroup: 'delts', equipment: 'cable' },
+      { id: 'f439e46b-d9a8-4fd7-bed6-45c0e207bdd7', name: 'cable rear drive', displayName: 'Rear Drive (Cable)', muscleGroup: 'triceps', equipment: 'cable' },
+      { id: '61fed239-1d2b-4121-893e-7ff6693ed528', name: 'dumbbell rear fly', displayName: 'Rear Fly (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '058a77a5-80d5-44c5-be1a-3b60266e3365', name: 'rear kick', displayName: 'Rear Kick (Machine)', muscleGroup: 'glutes', equipment: 'leverage machine' },
+      { id: 'aba3b5c8-5f82-4ac9-942f-92acd7577895', name: 'barbell rear lunge v. 2', displayName: 'Rear Lunge (Barbell)', muscleGroup: 'glutes', equipment: 'barbell' },
+      { id: 'e62b2f62-2930-48e2-a9bc-87f24fd92a05', name: 'cable rear pulldown', displayName: 'Rear Pulldown (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: 'b003f4e5-5708-4947-969a-9d2537433d37', name: 'lever reverse hyperextension', displayName: 'Reverse Hyperextension', muscleGroup: 'glutes', equipment: 'leverage machine' },
+      { id: 'b52c4518-e495-447d-8d92-64eca350320d', name: 'barbell rear lunge', displayName: 'Reverse Lunge', muscleGroup: 'glutes', equipment: 'barbell' },
+      { id: 'c8056690-fb1d-489d-8e82-ce91e136016d', name: 'cable rope crossover seated row', displayName: 'Rope Crossover Seated Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: 'f7eff40f-2782-49b1-917c-494af0262d86', name: 'cable rope elevated seated row', displayName: 'Rope Elevated Seated Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '88d6b6f9-bb68-4521-8fbc-2d3182e6d5ad', name: 'cable rope extension incline bench row', displayName: 'Rope Extension Incline Bench Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '9e4ed06f-da6a-4ad8-81b3-eb3619bb0c48', name: 'cable rope high pulley overhead tricep extension', displayName: 'Rope High Pulley Overhead Tricep Extension (Cable)', muscleGroup: 'triceps', equipment: 'cable' },
+      { id: '55715067-9eb7-4b9c-ac5b-c61778e4e93e', name: 'cable rope incline tricep extension', displayName: 'Rope Incline Tricep Extension (Cable)', muscleGroup: 'triceps', equipment: 'cable' },
+      { id: 'db4196f0-00da-4b23-b3cc-2e7e1cb9cf98', name: 'cable rope lying on floor tricep extension', displayName: 'Rope Lying on Floor Tricep Extension (Cable)', muscleGroup: 'triceps', equipment: 'cable' },
+      { id: 'ed7ce558-f8f3-4f1f-a415-8a5b38f3c2db', name: 'cable rope seated row', displayName: 'Rope Seated Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '4e829531-8615-44a6-9a43-0030c138a9a8', name: 'cable straight arm pulldown (with rope)', displayName: 'Rope Straight Arm Pulldown', muscleGroup: 'lats', equipment: 'cable' },
+      { id: 'abe304f6-56de-4cd1-b2ec-620667297813', name: 'dumbbell rotation reverse fly', displayName: 'Rotation Reverse Fly (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '4ba6b2e4-e543-4611-9da6-5dbae9dbec0f', name: 'run (Equipment)', displayName: 'Run (Equipment)', muscleGroup: 'cardiovascular system', equipment: 'body weight' },
+      { id: '16b2e2f1-3a15-45b0-8223-87dfd26b6bae', name: 'sled calf press on leg press', displayName: 'Calf Press on Leg Press (Machine)', muscleGroup: 'calves', equipment: 'sled machine' },
+      { id: 'e65ab7fe-4cf1-4f38-9d8b-d95d379211e8', name: 'lever bent over row', displayName: 'Bent Over Row (Machine)', muscleGroup: 'upper back', equipment: 'barbell' },
+      { id: '0d4c7488-7fb8-41d9-a38d-0ae9f4450e48', name: 'lever bent-over row with v-bar', displayName: 'Bent Over Row with V Bar (Machine)', muscleGroup: 'upper back', equipment: 'leverage machine' },
+      { id: '21630e39-fe40-44a5-81d6-0280209c1646', name: 'lever decline chest press', displayName: 'Decline Bench Press (Machine)', muscleGroup: 'pectorals', equipment: 'leverage machine' },
+      { id: '1b2046e8-9295-4ba3-907e-8d73e5459b27', name: 'dumbbell rear delt row (Shoulder)', displayName: 'Dumbbell Row', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '6fbd79cd-f084-455c-a9b8-68758e9f89ef', name: 'dumbbell squeeze press', displayName: 'Dumbbell Squeeze Press', muscleGroup: 'pectorals', equipment: 'body weight' },
+      { id: '10a79ba6-1ecc-40ce-b3c0-87a6250a3647', name: 'lever chest press', displayName: 'Chest Press (Machine)', muscleGroup: 'pectorals', equipment: 'leverage machine' },
+      { id: '4965bb81-263c-4b22-940f-465350325a0e', name: 'plyo push up', displayName: 'Plyo Push Up', muscleGroup: 'pectorals', equipment: 'body weight' },
+      { id: 'a70dcd0e-5fc1-45a2-ac31-827cbd06eddf', name: 'sled closer hack squat', displayName: 'Sled Closer Hack Squat', muscleGroup: 'glutes', equipment: 'sled machine' },
+      { id: '44b9c32e-bdaf-44fd-8f6f-8569e29f155a', name: 'sled forward angled calf raise', displayName: 'Sled Forward Angled Calf Raise (Machine)', muscleGroup: 'calves', equipment: 'machine' },
+      { id: '4dd4e46a-eedd-47d9-8beb-6a51a9f89731', name: 'cable underhand pulldown', displayName: 'Reverse Grip Lat Pulldown (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '9bc374ff-8991-44ea-81b0-84f31d98cd99', name: 'band underhand pulldown', displayName: 'Underhand Pulldown (Band)', muscleGroup: 'lats', equipment: 'band' },
+      { id: 'e582a5af-cc9c-4422-8b98-9620a6f6a167', name: 'barbell lying close-grip triceps extension', displayName: 'Triceps Extension (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: '9583a508-27f6-48db-ab0c-08ffb99d95ea', name: 'olympic barbell triceps extension', displayName: 'Triceps Extension (Barbell)', muscleGroup: 'triceps', equipment: 'olympic barbell' },
+      { id: '7427e85d-e403-47fb-b403-05516568abd4', name: 'cable straight arm pulldown', displayName: 'Straight Arm Lat Pulldown (Cable)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '078b2368-dffe-48dc-a33f-f9154fc9f9ce', name: 'rocky pull-up pulldown', displayName: 'Sternum Pull Up (Gironda)', muscleGroup: 'lats', equipment: 'body weight' },
+      { id: '4fbefb0b-4196-4e13-86e4-ec67d07c2ff3', name: 'smith squat', displayName: 'Squat (Smith Machine)', muscleGroup: 'glutes', equipment: 'smith machine' },
+      { id: '32f0ab63-61d0-47f2-91ab-756a5fa3c0e7', name: 'stair machine', displayName: 'Stair Machine (Steps)', muscleGroup: 'cardiovascular system', equipment: 'body weight' },
+      { id: 'e54b4989-b066-4d5f-8a89-35552243ef2e', name: 'smith back shrug', displayName: 'Shrug (Smith Machine)', muscleGroup: 'traps', equipment: 'smith machine' },
+      { id: 'c7e9810c-baa1-4cc6-9aba-2c1a3f3eef19', name: '45 side bend', displayName: 'Side Bend', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: '10c021e8-9b44-4f6a-9d86-9bab5cd1687f', name: 'side bridge v. 2', displayName: 'Side Bridge', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: 'cde15e95-9f32-4c85-856e-58366d807230', name: 'side bridge hip abduction', displayName: 'Side Bridge Hip Abduction', muscleGroup: 'abductors', equipment: 'body weight' },
+      { id: 'a4cfd11b-5cf1-4104-bcb7-3ebce3760831', name: 'cable side crunch', displayName: 'Side Crunch (Cable)', muscleGroup: 'abs', equipment: 'cable' },
+      { id: '9b9fc618-294e-43be-baad-c59dd8338213', name: 'side hip (On parallel bars)', displayName: 'Side Hip (On Parallel Bars)', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: '3171da4b-e0d8-4b3d-8a8d-763314cc4c49', name: 'bodyweight incline side plank', displayName: 'Side Plank', muscleGroup: 'abs', equipment: 'body weight' },
+      { id: 'e97b7908-e155-4146-9d23-3909126b0748', name: 'side plank hip adduction', displayName: 'Side Plank Hip Adduction', muscleGroup: 'adductors', equipment: 'body weight' },
+      { id: '4ae18694-de8f-4d78-a455-b0747e8379f7', name: 'barbell side split squat v. 2', displayName: 'Side Split Squat (Barbell)', muscleGroup: 'quads', equipment: 'barbell' },
+      { id: '4f823cc4-f828-4882-9752-010eac95017c', name: 'side-to-side chin', displayName: 'Side to Side Chin', muscleGroup: 'lats', equipment: 'body weight' },
+      { id: 'e53f19f5-3ade-412a-bdf1-04b8418aa7e8', name: 'cable one arm bent over row', displayName: 'Single Arm Cable Row', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '104769bc-36be-424c-8fd0-509dc1491224', name: 'cable one arm curl', displayName: 'Single Arm Curl (Cable)', muscleGroup: 'biceps', equipment: 'cable' },
+      { id: '525122f5-c4cb-4a48-b1ea-1f2ac5b20cfa', name: 'alternate lateral pulldown', displayName: 'Single Arm Lat Pulldown', muscleGroup: 'lats', equipment: 'cable' },
+      { id: 'e162bef8-8b6f-4f28-9729-1536cccbaea7', name: 'cable one arm lateral raise', displayName: 'Single Arm Lateral Raise (Cable)', muscleGroup: 'delts', equipment: 'cable' },
+      { id: '4bcffd37-b1f3-4b37-b0ce-89592533b8fe', name: 'dumbbell standing one arm extension', displayName: 'Single Arm Tricep Extension (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: 'a95b17be-875a-444b-83a1-d2d44a97bf21', name: 'cable one arm tricep pushdown', displayName: 'Single Arm Triceps Pushdown (Cable)', muscleGroup: 'triceps', equipment: 'cable' },
+      { id: '0d18f551-624d-4028-aeff-8a0ad15029f4', name: 'dumbbell single leg deadlift with stepbox support', displayName: 'Single Leg Deadlift with Stepbox Support (Dumbbell)', muscleGroup: 'glutes', equipment: 'dumbbell' },
+      { id: '570969f5-7d67-46d7-8e81-94de78442203', name: 'barbell single leg split squat', displayName: 'Single Leg Split Squat (Barbell)', muscleGroup: 'quads', equipment: 'barbell' },
+      { id: 'e74eed60-5461-44c1-9cc3-8e2e983d7a45', name: 'smith single leg split squat', displayName: 'Single Leg Split Squat (Smith Machine)', muscleGroup: 'quads', equipment: 'smith machine' },
+      { id: '237e95d9-c7f5-4254-8fdb-0e1368bc2536', name: 'barbell seated behind head military press', displayName: 'Seated Behind Head Military Press (Barbell)', muscleGroup: 'delts', equipment: 'barbell' },
+      { id: '49614395-5f64-4441-a1c1-ace694d43270', name: 'dumbbell seated bench extension', displayName: 'Seated Bench Extension (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: '1d101c97-2473-4398-934f-9ff45a50f575', name: 'dumbbell seated bent arm lateral raise', displayName: 'Seated Bent Arm Lateral Raise (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: 'ff9bf085-d9c1-4bd1-a18b-32e7ce665b2b', name: 'dumbbell seated bicep curl', displayName: 'Seated Bicep Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: 'c45a58e5-5e31-46fb-a352-bfcca372e14a', name: 'cable low seated row', displayName: 'Seated Cable Row Bar Grip', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: 'd7c30306-4810-4017-b912-e156345f3a1c', name: 'cable seated wide-grip row', displayName: 'Seated Cable Row Bar Wide Grip', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '4a3c848b-3f47-4d07-a73b-fd775192cc5a', name: 'cable straight back seated row', displayName: 'Seated Cable Row V Grip (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '21c5ea36-04a6-460c-b78a-397aae9bfde9', name: 'lever seated calf press', displayName: 'Seated Calf Press (Machine)', muscleGroup: 'calves', equipment: 'leverage machine' },
+      { id: '97c60e33-c608-42e4-ba8c-b65b06219b2a', name: 'cable seated chest press', displayName: 'Seated Chest Flys (Cable)', muscleGroup: 'chest', equipment: 'cable' },
+      { id: '152e7720-2bee-4fdc-a047-865ff0ebec0e', name: 'barbell seated close grip behind neck triceps extension', displayName: 'Seated Close Grip Behind Neck Triceps Extension (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: 'f6e2e596-902a-4185-b1c1-93efa16a7966', name: 'cable seated crunch', displayName: 'Seated Crunch (Cable)', muscleGroup: 'abs', equipment: 'cable' },
+      { id: 'dd6042ae-2cf7-44c3-a42e-b64a4b7f7027', name: 'lever seated crunch', displayName: 'Seated Crunch (Machine)', muscleGroup: 'abs', equipment: 'machine' },
+      { id: 'a8406aa2-6c24-483f-be03-17763be13b48', name: 'lever seated crunch v. 2', displayName: 'Seated Crunch (Machine)', muscleGroup: 'abs', equipment: 'leverage machine' },
+      { id: '38764fc1-d49a-4a71-b44e-75ae7e6c99f0', name: 'cable seated curl', displayName: 'Seated Curl (Cable)', muscleGroup: 'biceps', equipment: 'cable' },
+      { id: 'e81ec897-31ee-4289-bc9f-e45df582a19f', name: 'ez barbell seated curls', displayName: 'Seated Curls (EZ Bar)', muscleGroup: 'biceps', equipment: 'ez barbell' },
+      { id: '79e241f6-8d2f-4a43-a458-3052809303c1', name: 'lever seated dip', displayName: 'Seated Dip Machine', muscleGroup: 'triceps', equipment: 'leverage machine' },
+      { id: '65613229-6fba-4ad3-9d7a-5983f6ca5660', name: 'lever seated fly', displayName: 'Seated Fly (Machine)', muscleGroup: 'chest', equipment: 'machine' },
+      { id: 'b88229e9-7723-4534-abeb-8db47c5d33f2', name: 'dumbbell seated alternate front raise', displayName: 'Seated Front Raise (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '8d1d2743-7a19-4014-bfd3-77f32ffcc41c', name: 'dumbbell seated front raise', displayName: 'Seated Front Raise (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '55bea771-1ee3-4523-a724-84e717cc64f9', name: 'lever seated good morning', displayName: 'Seated Good Morning (Machine)', muscleGroup: 'glutes', equipment: 'leverage machine' },
+      { id: 'cd61a961-4cc6-4400-a491-59bd04f65e75', name: 'cable seated high row (V-bar)', displayName: 'Seated High Row (V Bar)', muscleGroup: 'lats', equipment: 'cable' },
+      { id: '80b95c04-cb24-461e-adcc-3ef5254d0b63', name: 'lever seated hip abduction', displayName: 'Seated Hip Abduction (Machine)', muscleGroup: 'abductors', equipment: 'leverage machine' },
+      { id: 'cf25cccb-5827-4b54-accf-259ab2db84ec', name: 'dumbbell incline biceps curl', displayName: 'Seated Incline Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: 'd768df3e-5270-456d-bc41-e09ac8527653', name: 'dumbbell seated lateral raise', displayName: 'Seated Lateral Raise (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '3b04b961-384e-418d-a1aa-b5067e30e2c4', name: 'lever seated leg curl', displayName: 'Seated Leg Curl (Machine)', muscleGroup: 'hamstrings', equipment: 'leverage machine' },
+      { id: '33b27b6b-ca95-4fbd-8c15-eba6b0e8d02b', name: 'lever seated leg raise crunch', displayName: 'Seated Leg Raise Crunch (Machine)', muscleGroup: 'abs', equipment: 'machine' },
+      { id: '91a2dcfa-2069-4da2-8a17-3a3217a8ee0c', name: 'cable seated one arm alternate row', displayName: 'Seated One Arm Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: '2b02d563-8830-4658-a8cf-cccebc650958', name: 'dumbbell seated one leg calf raise - hammer grip', displayName: 'Seated One Leg Calf Raise Hammer Grip (Dumbbell)', muscleGroup: 'calves', equipment: 'dumbbell' },
+      { id: '21acf4de-e23c-499a-bb44-fc26cb171c7d', name: 'barbell seated overhead press', displayName: 'Seated Overhead Press (Barbell)', muscleGroup: 'delts', equipment: 'barbell' },
+      { id: 'bc57a92a-9b5a-414b-a4f9-4861de313629', name: 'dumbbell bench seated press', displayName: 'Seated Overhead Press (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '7b38b7f2-e020-47df-979c-8add744e5052', name: 'barbell seated overhead triceps extension', displayName: 'Seated Overhead Triceps Extension (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: '3ebbc1a3-4dad-4b0d-83f2-2a5e74a777ee', name: 'dumbbell seated palms up wrist curl', displayName: 'Seated Palms Up Wrist Curl', muscleGroup: 'forearms', equipment: 'dumbbell' },
+      { id: '6b3a9977-b189-4441-b3e6-3dda22f56d84', name: 'dumbbell seated preacher curl', displayName: 'Seated Preacher Curl (Dumbbell)', muscleGroup: 'biceps', equipment: 'dumbbell' },
+      { id: '97c23981-8db1-48d1-a32d-eee85eb18785', name: 'dumbbell seated alternate press', displayName: 'Seated Press (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '53f04ddf-7133-4135-b4e6-066910ae536e', name: 'lever seated reverse fly', displayName: 'Seated Reverse Fly (Machine)', muscleGroup: 'shoulders', equipment: 'machine' },
+      { id: '8d0568f5-3314-4223-800d-cb79a16c473c', name: 'lever seated reverse fly (parallel grip)', displayName: 'Seated Reverse Fly (Parallel Grip)', muscleGroup: 'shoulders', equipment: 'machine' },
+      { id: '082c0cb2-6aa0-4454-a0a3-fff0c5258f8d', name: 'dumbbell seated reverse grip one arm overhead tricep extension', displayName: 'Seated Reverse Grip One Arm Overhead Tricep Extension (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: '33398017-fafb-4e0f-b16b-461fb3d7fb94', name: 'cable seated row', displayName: 'Seated Row (Cable)', muscleGroup: 'upper back', equipment: 'cable' },
+      { id: 'c08b355c-5e82-4ea1-a04e-3471ff3e44f6', name: 'lever seated row', displayName: 'Seated Row (Machine)', muscleGroup: 'upper back', equipment: 'leverage machine' },
+      { id: '72b22b19-1387-4c1f-bfa6-cea3f11aa696', name: 'dumbbell seated alternate shoulder', displayName: 'Seated Shoulder (Dumbbell)', muscleGroup: 'shoulders', equipment: 'dumbbell' },
+      { id: 'e337f353-1d4f-4597-be9b-f3a0f2d05ef3', name: 'lever shoulder press v. 2', displayName: 'Shoulder Press (Machine)', muscleGroup: 'delts', equipment: 'leverage machine' },
+      { id: 'a1ade56b-0c2a-4c08-a5fe-7b6fad9795bb', name: 'smith shoulder press', displayName: 'Shoulder Press (Smith Machine)', muscleGroup: 'delts', equipment: 'smith machine' },
+      { id: '105a552a-c547-40cf-9cc9-76b87f3105b6', name: 'cable shoulder press', displayName: 'Shoulder Press (Cable)', muscleGroup: 'delts', equipment: 'cable' },
+      { id: 'c9292246-efc4-45a1-9a08-3726128d188f', name: 'dumbbell seated shoulder press', displayName: 'Shoulder Press (Dumbbell)', muscleGroup: 'delts', equipment: 'dumbbell' },
+      { id: '27d809df-1cec-4639-9864-80328fff02c5', name: 'shoulder grip pull-up', displayName: 'Shoulder Grip Pull Up', muscleGroup: 'lats', equipment: 'body weight' },
+      { id: '98c2c8e2-c78b-4f55-af4a-1050edc40506', name: 'lever seated squat calf raise on leg press machine', displayName: 'Seated Squat Calf Raise on Leg Press Machine (Machine)', muscleGroup: 'calves', equipment: 'leverage machine' },
+      { id: '766c797f-d5f0-4cf0-8328-961c9190dbf2', name: 'dumbbell seated triceps extension', displayName: 'Seated Triceps Extension (Dumbbell)', muscleGroup: 'triceps', equipment: 'dumbbell' },
+      { id: '14af1e11-86f6-499c-bd2c-9d0d812aea5e', name: 'ez barbell seated triceps extension', displayName: 'Seated Triceps Extension (EZ Bar)', muscleGroup: 'triceps', equipment: 'ez barbell' },
+      { id: 'd4048197-a075-4751-8fc4-ef5e60a343e9', name: 'barbell seated twist', displayName: 'Seated Twist (Barbell)', muscleGroup: 'abs', equipment: 'barbell' },
+      { id: 'a93b8a83-3ed4-4c58-a1d4-724f7c5d55f6', name: 'cable seated twist', displayName: 'Seated Twist (Cable)', muscleGroup: 'abs', equipment: 'cable' },
+      { id: 'a54076b0-5ef8-45b8-a0db-1aae13c26ce4', name: 'kettlebell seated two arm military press', displayName: 'Seated Two Arm Military Press (Kettlebell)', muscleGroup: 'delts', equipment: 'kettlebell' },
+      { id: '117ab0c6-153e-40dc-ae4c-e3834f930d91', name: 'barbell reverse wrist curl v. 2', displayName: 'Seated Wrist Extension (Barbell)', muscleGroup: 'forearms', equipment: 'barbell' },
+      { id: '89df000d-49b5-4d74-9706-af069b3e55a3', name: 'self assisted inverse leg curl', displayName: 'Self Assisted Inverse Leg Curl', muscleGroup: 'hamstrings', equipment: 'body weight' },
+      { id: '2133c1c8-5df6-48c9-a6cb-994d4f03ec9d', name: 'self assisted inverse leg curl (On floor)', displayName: 'Self Assisted Inverse Leg Curl', muscleGroup: 'hamstrings', equipment: 'body weight' },
+      { id: '7ba0fc80-6c8a-4cfb-bde4-d76b93fc37b8', name: 'smith standing behind head military press', displayName: 'Standing Behind Head Military Press (Smith Machine)', muscleGroup: 'delts', equipment: 'smith machine' },
+      { id: 'f53c7ac7-5b97-4615-bbf4-b05ddeefff84', name: 'standing behind neck press', displayName: 'Standing Behind Neck Press (Barbell)', muscleGroup: 'shoulders', equipment: 'barbell' },
+      { id: 'a6048441-251f-470d-93fd-85a395ebad8c', name: 'barbell pin presses', displayName: 'Pin Presses (Barbell)', muscleGroup: 'triceps', equipment: 'barbell' },
+      { id: '44762178-8769-4c0a-bc98-e0d6ba6742f1', name: 'walking on incline treadmill', displayName: 'Walking on Incline Treadmill (Machine)', muscleGroup: 'cardiovascular system', equipment: 'leverage machine' },
+      { id: 'afdf70a6-a7b6-404f-9e0b-fe26fa27ca6d', name: 'walking on stepmill', displayName: 'Walking on Stepmill', muscleGroup: 'cardiovascular system', equipment: 'stepmill machine' },
+    ];
+
+    // State
+    let dbExercises = [];
+    let dbDisplayNames = new Set();
+    let dbDisplayNameMap = {};
+    let editedNames = {};
+    let activeCategory = 'All';
+
+    // Initialize edited names from defaults
+    renameExercises.forEach(ex => {
+      editedNames[ex.id] = ex.displayName;
+    });
+
+    // Deduplicate renameExercises by id (the last duplicate entry for barbell seated twist)
+    const seenIds = new Set();
+    const uniqueRenameExercises = [];
+    for (const ex of renameExercises) {
+      if (!seenIds.has(ex.id)) {
+        seenIds.add(ex.id);
+        uniqueRenameExercises.push(ex);
+      }
+    }
+
+    // Fetch all exercises from Supabase
+    async function fetchDBExercises() {
+      try {
+        const resp = await fetch(`${SUPABASE_URL}/rest/v1/exercises?select=id,name,display_name,muscle_group,equipment&order=name&limit=700`, {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Range': '0-699'
+          }
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        dbExercises = await resp.json();
+        dbDisplayNames = new Set();
+        dbDisplayNameMap = {};
+        dbExercises.forEach(ex => {
+          const dn = (ex.display_name || ex.name || '').toLowerCase().trim();
+          dbDisplayNames.add(dn);
+          if (!dbDisplayNameMap[dn]) dbDisplayNameMap[dn] = [];
+          dbDisplayNameMap[dn].push(ex);
+        });
+        document.getElementById('dbStat').textContent = dbExercises.length;
+        document.getElementById('loading').classList.add('hidden');
+        buildFilters();
+        render();
+      } catch (err) {
+        console.error('Failed to fetch exercises:', err);
+        document.getElementById('loading').innerHTML = `<div class="loading-text" style="color:#f87171;">Failed to load from Supabase: ${err.message}<br><br><button class="btn btn-primary" onclick="location.reload()">Retry</button><br><br><button class="btn btn-secondary" onclick="document.getElementById('loading').classList.add('hidden');buildFilters();render();">Continue without DB</button></div>`;
+      }
+    }
+
+    // Get unique muscle groups
+    function getMuscleGroups() {
+      const groups = [...new Set(uniqueRenameExercises.map(e => e.muscleGroup))].sort();
+      return groups;
+    }
+
+    // Build filter buttons
+    function buildFilters() {
+      const filtersDiv = document.getElementById('filters');
+      filtersDiv.innerHTML = '';
+
+      const allBtn = document.createElement('button');
+      allBtn.className = 'filter-btn active';
+      allBtn.textContent = `All (${uniqueRenameExercises.length})`;
+      allBtn.onclick = () => { activeCategory = 'All'; updateFilterUI(); render(); };
+      filtersDiv.appendChild(allBtn);
+
+      const conflictBtn = document.createElement('button');
+      conflictBtn.className = 'filter-btn';
+      conflictBtn.id = 'conflictFilterBtn';
+      const conflictCount = countConflicts();
+      conflictBtn.textContent = `Conflicts (${conflictCount})`;
+      conflictBtn.onclick = () => { activeCategory = '__conflicts__'; updateFilterUI(); render(); };
+      filtersDiv.appendChild(conflictBtn);
+
+      getMuscleGroups().forEach(mg => {
+        const count = uniqueRenameExercises.filter(e => e.muscleGroup === mg).length;
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn';
+        btn.textContent = `${formatMuscleGroup(mg)} (${count})`;
+        btn.onclick = () => { activeCategory = mg; updateFilterUI(); render(); };
+        filtersDiv.appendChild(btn);
+      });
+    }
+
+    function updateFilterUI() {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      const buttons = document.querySelectorAll('.filter-btn');
+      buttons.forEach(b => {
+        const text = b.textContent.toLowerCase();
+        if (activeCategory === 'All' && text.startsWith('all')) b.classList.add('active');
+        else if (activeCategory === '__conflicts__' && text.startsWith('conflicts')) b.classList.add('active');
+        else if (text.startsWith(formatMuscleGroup(activeCategory).toLowerCase())) b.classList.add('active');
+      });
+    }
+
+    function formatMuscleGroup(mg) {
+      return mg.split(/[\s_-]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    function getMuscleClass(mg) {
+      const slug = mg.replace(/[\s]+/g, '-').toLowerCase();
+      return `mg-${slug}`;
+    }
+
+    function countConflicts() {
+      let count = 0;
+      const renameIds = new Set(uniqueRenameExercises.map(e => e.id));
+      uniqueRenameExercises.forEach(ex => {
+        const currentName = (editedNames[ex.id] || ex.displayName).toLowerCase().trim();
+        const matches = dbDisplayNameMap[currentName] || [];
+        const externalMatches = matches.filter(m => m.id !== ex.id && !renameIds.has(m.id));
+        if (externalMatches.length > 0) count++;
+      });
+      return count;
+    }
+
+    function countEdited() {
+      let count = 0;
+      uniqueRenameExercises.forEach(ex => {
+        if (editedNames[ex.id] !== ex.displayName) count++;
+      });
+      return count;
+    }
+
+    function updateStats() {
+      document.getElementById('editedStat').textContent = countEdited();
+      const conflicts = countConflicts();
+      document.getElementById('conflictStat').textContent = conflicts;
+      const conflictBtn = document.getElementById('conflictFilterBtn');
+      if (conflictBtn) conflictBtn.textContent = `Conflicts (${conflicts})`;
+    }
+
+    // Find similar exercises in DB
+    function findSimilar(displayName, exerciseId) {
+      if (!dbExercises.length) return [];
+      const words = displayName.toLowerCase().split(/[\s(),-]+/).filter(w => w.length > 2);
+      const renameIds = new Set(uniqueRenameExercises.map(e => e.id));
+
+      const scored = dbExercises
+        .filter(db => db.id !== exerciseId)
+        .map(db => {
+          const dbName = (db.display_name || db.name || '').toLowerCase();
+          let score = 0;
+          const exactMatch = dbName === displayName.toLowerCase().trim();
+          if (exactMatch) score += 100;
+          words.forEach(w => {
+            if (dbName.includes(w)) score += 1;
+          });
+          return { ...db, score, exactMatch, isRenameTarget: renameIds.has(db.id) };
+        })
+        .filter(db => db.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8);
+
+      return scored;
+    }
+
+    function isConflict(exerciseId) {
+      const currentName = (editedNames[exerciseId] || '').toLowerCase().trim();
+      const matches = dbDisplayNameMap[currentName] || [];
+      const renameIds = new Set(uniqueRenameExercises.map(e => e.id));
+      return matches.some(m => m.id !== exerciseId && !renameIds.has(m.id));
+    }
+
+    function getFiltered() {
+      const search = document.getElementById('search').value.toLowerCase().trim();
+      let filtered = uniqueRenameExercises;
+
+      if (activeCategory === '__conflicts__') {
+        filtered = filtered.filter(e => isConflict(e.id));
+      } else if (activeCategory !== 'All') {
+        filtered = filtered.filter(e => e.muscleGroup === activeCategory);
+      }
+
+      if (search) {
+        filtered = filtered.filter(e =>
+          e.name.toLowerCase().includes(search) ||
+          (editedNames[e.id] || e.displayName).toLowerCase().includes(search) ||
+          e.muscleGroup.toLowerCase().includes(search) ||
+          e.equipment.toLowerCase().includes(search)
+        );
+      }
+
+      return filtered;
+    }
+
+    function render() {
+      const filtered = getFiltered();
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML = '';
+
+      filtered.forEach((ex, i) => {
+        const currentName = editedNames[ex.id] || ex.displayName;
+        const hasConflict = isConflict(ex.id);
+        const isEdited = currentName !== ex.displayName;
+
+        const row = document.createElement('tr');
+        if (hasConflict) row.classList.add('conflict');
+        row.id = `row-${ex.id}`;
+
+        const inputClasses = ['name-input'];
+        if (isEdited) inputClasses.push('edited');
+        if (hasConflict) inputClasses.push('conflict');
+
+        row.innerHTML = `
+          <td style="color:#666;font-size:12px;">${i + 1}</td>
+          <td><span class="muscle-badge ${getMuscleClass(ex.muscleGroup)}">${formatMuscleGroup(ex.muscleGroup)}</span></td>
+          <td><span class="equip-badge">${ex.equipment}</span></td>
+          <td class="original">${ex.name}</td>
+          <td>
+            <input
+              type="text"
+              class="${inputClasses.join(' ')}"
+              value="${escapeHtml(currentName)}"
+              data-id="${ex.id}"
+              data-original="${escapeHtml(ex.displayName)}"
+              onfocus="showSimilar('${ex.id}')"
+              oninput="handleInput('${ex.id}', this)"
+            />
+            ${hasConflict ? '<div class="conflict-warning">Name already exists in DB</div>' : ''}
+            <div class="similar-container" id="similar-${ex.id}"></div>
+          </td>
+          <td id="similar-cell-${ex.id}" style="font-size:12px;color:#666;">
+            <div class="similar-chips" id="chips-${ex.id}"></div>
+          </td>
+        `;
+
+        tbody.appendChild(row);
+      });
+
+      document.getElementById('count').textContent = `Showing ${filtered.length} of ${uniqueRenameExercises.length}`;
+      updateStats();
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function escapeSql(str) {
+      return str.replace(/'/g, "''");
+    }
+
+    function handleInput(id, input) {
+      editedNames[id] = input.value;
+      const ex = uniqueRenameExercises.find(e => e.id === id);
+      const isEdited = input.value !== ex.displayName;
+      const hasConflict = isConflict(id);
+
+      input.classList.toggle('edited', isEdited);
+      input.classList.toggle('conflict', hasConflict);
+
+      const row = document.getElementById(`row-${id}`);
+      row.classList.toggle('conflict', hasConflict);
+
+      // Update conflict warning
+      const existingWarning = row.querySelector('.conflict-warning');
+      if (hasConflict && !existingWarning) {
+        const warning = document.createElement('div');
+        warning.className = 'conflict-warning';
+        warning.textContent = 'Name already exists in DB';
+        input.parentNode.insertBefore(warning, input.nextSibling);
+      } else if (!hasConflict && existingWarning) {
+        existingWarning.remove();
+      }
+
+      updateStats();
+      showSimilar(id);
+    }
+
+    function showSimilar(id) {
+      const currentName = editedNames[id] || '';
+      const similar = findSimilar(currentName, id);
+      const chipsDiv = document.getElementById(`chips-${id}`);
+
+      if (!chipsDiv) return;
+
+      if (similar.length === 0) {
+        chipsDiv.innerHTML = '<span style="color:#555;font-size:11px;">No similar exercises</span>';
+        return;
+      }
+
+      chipsDiv.innerHTML = similar.map(s => {
+        const name = s.display_name || s.name;
+        const chipClass = s.exactMatch ? 'similar-chip exact-match' : 'similar-chip';
+        return `<span class="${chipClass}" title="${s.name} (${s.muscle_group || 'unknown'})">${name}</span>`;
+      }).join('');
+    }
+
+    function generateSQL() {
+      const lines = [];
+      lines.push('-- Exercise Display Name Renames');
+      lines.push(`-- Generated: ${new Date().toISOString()}`);
+      lines.push(`-- Total updates: ${uniqueRenameExercises.length}`);
+      lines.push('');
+
+      // Group by muscle group
+      const groups = {};
+      uniqueRenameExercises.forEach(ex => {
+        if (!groups[ex.muscleGroup]) groups[ex.muscleGroup] = [];
+        groups[ex.muscleGroup].push(ex);
+      });
+
+      Object.keys(groups).sort().forEach(mg => {
+        lines.push(`-- ${formatMuscleGroup(mg)}`);
+        groups[mg].forEach(ex => {
+          const newName = editedNames[ex.id] || ex.displayName;
+          lines.push(`UPDATE exercises SET display_name = '${escapeSql(newName)}' WHERE id = '${ex.id}';`);
+        });
+        lines.push('');
+      });
+
+      const sqlText = lines.join('\n');
+      const sqlPre = document.getElementById('sqlPre');
+      sqlPre.textContent = sqlText;
+      document.getElementById('sqlOutput').classList.add('visible');
+      document.getElementById('sqlTitle').textContent = `Generated SQL - ${uniqueRenameExercises.length} UPDATE statements`;
+      document.getElementById('copyBtn').disabled = false;
+      document.getElementById('bottomInfo').textContent = `${uniqueRenameExercises.length} UPDATE statements generated`;
+
+      // Scroll to SQL output
+      document.getElementById('sqlOutput').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function copySQL() {
+      const sqlText = document.getElementById('sqlPre').textContent;
+      navigator.clipboard.writeText(sqlText).then(() => {
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      }).catch(err => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = sqlText;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      });
+    }
+
+    function resetAll() {
+      if (!confirm('Reset all display names to their original suggestions?')) return;
+      uniqueRenameExercises.forEach(ex => {
+        editedNames[ex.id] = ex.displayName;
+      });
+      render();
+    }
+
+    // Search handler
+    document.getElementById('search').addEventListener('input', render);
+
+    // Start
+    fetchDBExercises();
+  </script>
+</body>
+</html>

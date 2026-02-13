@@ -117,50 +117,78 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
     }).start(() => onClose());
   };
 
-  const handleChooseFromLibrary = async () => {
-    close();
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert(i18n.t('errors.permissionNeeded'), i18n.t('errors.photoLibraryPermission'));
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      onImageSelected({
-        type: 'gallery',
-        uri: result.assets[0].uri,
+  // Awaitable close: waits for animation + iOS Modal dismissal before resolving.
+  // Prevents iOS from silently dropping the image picker presentation when
+  // the RN Modal's UIViewController is still being dismissed.
+  const closeAndWait = (): Promise<void> => {
+    return new Promise((resolve) => {
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(() => {
+        onClose();
+        setTimeout(resolve, 500);
       });
+    });
+  };
+
+  const handleChooseFromLibrary = async () => {
+    try {
+      await closeAndWait();
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(i18n.t('errors.permissionNeeded'), i18n.t('errors.photoLibraryPermission'));
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        onImageSelected({
+          type: 'gallery',
+          uri: result.assets[0].uri,
+        });
+      }
+    } catch (error) {
+      console.warn('ImagePickerSheet: Error choosing from library:', error);
     }
   };
 
   const handleTakePhoto = async () => {
-    close();
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert(i18n.t('errors.permissionNeeded'), i18n.t('errors.cameraPermission'));
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      onImageSelected({
-        type: 'camera',
-        uri: result.assets[0].uri,
+    try {
+      await closeAndWait();
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(i18n.t('errors.permissionNeeded'), i18n.t('errors.cameraPermission'));
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
       });
+      if (!result.canceled && result.assets[0]) {
+        onImageSelected({
+          type: 'camera',
+          uri: result.assets[0].uri,
+        });
+      }
+    } catch (error) {
+      console.warn('ImagePickerSheet: Error taking photo:', error);
     }
   };
 
-  const handleOpenTemplates = () => {
-    close();
-    router.push('/template-images');
+  const handleOpenTemplates = async () => {
+    try {
+      await closeAndWait();
+      router.push('/template-images');
+    } catch (error) {
+      console.warn('ImagePickerSheet: Error opening templates:', error);
+    }
   };
 
   return (

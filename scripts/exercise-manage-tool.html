@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Exercise Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 24px; padding-bottom: 80px; }
+    h1 { color: #947AFF; margin-bottom: 4px; font-size: 24px; }
+    .subtitle { color: #888; margin-bottom: 20px; font-size: 13px; }
+    .stats { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .stat { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 10px 18px; }
+    .stat-value { font-size: 22px; font-weight: 700; color: #947AFF; }
+    .stat-value.rename-color { color: #22d3ee; }
+    .stat-value.bin-color { color: #ef4444; }
+    .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .toolbar { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+    .search-box { flex: 1; min-width: 250px; padding: 10px 16px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; }
+    .search-box::placeholder { color: #666; }
+    .search-box:focus { outline: none; border-color: #947AFF; }
+    .filters { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid #333; background: #1a1a1a; color: #ccc; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+    .filter-btn:hover { border-color: #947AFF; color: #947AFF; }
+    .filter-btn.active { background: #947AFF; border-color: #947AFF; color: white; }
+    .view-toggle { display: flex; gap: 4px; background: #1a1a1a; border-radius: 8px; padding: 3px; border: 1px solid #222; margin-bottom: 16px; width: fit-content; }
+    .view-toggle button { padding: 5px 14px; border: none; border-radius: 6px; background: transparent; color: #888; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+    .view-toggle button.active { background: #947AFF; color: white; }
+    .count { color: #666; font-size: 13px; margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 8px 10px; background: #1a1a1a; color: #947AFF; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 2; }
+    td { padding: 6px 10px; border-bottom: 1px solid #1a1a1a; font-size: 13px; vertical-align: middle; }
+    tr:hover td { background: #111; }
+    tr.renamed td { background: rgba(34,211,238,0.05); }
+    tr.binned td { background: rgba(239,68,68,0.06); }
+    tr.binned .name-input { text-decoration: line-through; color: #666; pointer-events: none; }
+    tr.binned .original-name { text-decoration: line-through; color: #555; }
+    .thumb { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; background: #1a1a1a; cursor: pointer; border: 1px solid #222; transition: transform 0.15s; }
+    .thumb:hover { transform: scale(1.08); border-color: #947AFF; }
+    .thumb-placeholder { width: 48px; height: 48px; border-radius: 6px; background: #1a1a1a; border: 1px solid #222; display: flex; align-items: center; justify-content: center; color: #444; font-size: 9px; }
+    .original-name { color: #666; font-size: 12px; }
+    .name-input { width: 100%; padding: 5px 8px; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 13px; font-weight: 600; }
+    .name-input:focus { outline: none; border-color: #947AFF; box-shadow: 0 0 0 2px rgba(148,122,255,0.2); }
+    .name-input.changed { border-color: #22d3ee; background: rgba(34,211,238,0.05); }
+    .cat-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+    .cat-legs { background: #2d1a3e; color: #c084fc; }
+    .cat-back { background: #1a2d3e; color: #60a5fa; }
+    .cat-chest { background: #3e1a1a; color: #f87171; }
+    .cat-shoulders { background: #3e2d1a; color: #fb923c; }
+    .cat-biceps { background: #1a3e2d; color: #34d399; }
+    .cat-triceps { background: #1a3e3e; color: #22d3ee; }
+    .cat-core { background: #3e3e1a; color: #facc15; }
+    .cat-cardio { background: #1a3e1a; color: #4ade80; }
+    .cat-forearms { background: #2a2a1a; color: #d4d48a; }
+    .cat-other { background: #2a2a2a; color: #a0a0a0; }
+    .equip { color: #555; font-size: 11px; }
+    .bin-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: #888; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .bin-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.1); }
+    .bin-btn.active { border-color: #ef4444; color: white; background: #ef4444; }
+    .undo-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #22c55e; background: transparent; color: #22c55e; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .undo-btn:hover { background: #22c55e; color: white; }
+    .action-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #1a1a1a; border-top: 1px solid #333; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; z-index: 10; }
+    .action-bar-left { display: flex; gap: 16px; align-items: center; font-size: 13px; }
+    .action-bar-right { display: flex; gap: 8px; }
+    .pending { color: #22d3ee; font-weight: 600; }
+    .binned-count { color: #ef4444; font-weight: 600; }
+    .btn { padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: #947AFF; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #7c5fff; }
+    .btn-success { background: #22c55e; color: white; }
+    .btn-success:hover:not(:disabled) { background: #16a34a; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover:not(:disabled) { background: #dc2626; }
+    .btn-secondary { background: #333; color: #ccc; }
+    .btn-secondary:hover:not(:disabled) { background: #444; }
+    .gif-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 60; display: none; align-items: center; justify-content: center; cursor: pointer; flex-direction: column; gap: 12px; }
+    .gif-overlay img { max-width: 400px; max-height: 400px; border-radius: 12px; border: 2px solid #947AFF; }
+    .gif-overlay .gif-label { color: white; font-size: 16px; font-weight: 600; background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 8px; }
+    .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; font-weight: 600; z-index: 100; display: none; animation: fadeIn 0.3s; }
+    .toast.success { background: #22c55e; }
+    .toast.error { background: #ef4444; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 50; display: none; align-items: center; justify-content: center; }
+    .modal { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 24px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .modal h2 { color: #947AFF; margin-bottom: 12px; }
+    .modal pre { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 12px; color: #e0e0e0; white-space: pre-wrap; word-break: break-all; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .loading { text-align: center; padding: 60px; color: #888; }
+    .loading-spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #333; border-top-color: #947AFF; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 70; display: none; align-items: center; justify-content: center; }
+    .progress-box { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 32px; text-align: center; min-width: 300px; }
+    .progress-box h3 { color: #947AFF; margin-bottom: 16px; }
+    .progress-bar-wrap { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+    .progress-bar-inner { height: 100%; background: #947AFF; border-radius: 4px; transition: width 0.2s; }
+    .progress-text { color: #888; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Exercise Manager</h1>
+  <p class="subtitle">Rename exercises inline. Bin exercises to delete. Apply changes to Supabase.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-value" id="stat-total">-</div><div class="stat-label">Total</div></div>
+    <div class="stat"><div class="stat-value rename-color" id="stat-renamed">0</div><div class="stat-label">Renamed</div></div>
+    <div class="stat"><div class="stat-value bin-color" id="stat-binned">0</div><div class="stat-label">Binned</div></div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" class="search-box" id="search" placeholder="Search exercises..." oninput="render()" />
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div class="view-toggle">
+    <button class="active" onclick="setView('all',this)">All</button>
+    <button onclick="setView('renamed',this)">Renamed</button>
+    <button onclick="setView('binned',this)">Binned</button>
+    <button onclick="setView('unchanged',this)">Unchanged</button>
+  </div>
+
+  <p class="count" id="count"></p>
+
+  <div id="loading" class="loading"><span class="loading-spinner"></span> Loading exercises from Supabase...</div>
+
+  <table id="table" style="display:none">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th style="width:56px">Img</th>
+        <th style="width:180px">DB Name</th>
+        <th style="width:280px">Display Name (editable)</th>
+        <th style="width:90px">Category</th>
+        <th style="width:100px">Equipment</th>
+        <th style="width:40px">Bin</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="action-bar">
+    <div class="action-bar-left">
+      <span><span class="pending" id="rename-count">0</span> renames</span>
+      <span><span class="binned-count" id="bin-count">0</span> binned</span>
+    </div>
+    <div class="action-bar-right">
+      <button class="btn btn-secondary" onclick="exportChanges()">Export JSON</button>
+      <button class="btn btn-secondary" onclick="resetAll()">Reset All</button>
+      <button class="btn btn-success" id="apply-renames-btn" onclick="applyRenames()" disabled>Apply Renames</button>
+      <button class="btn btn-danger" id="delete-binned-btn" onclick="deleteBinned()" disabled>Delete Binned</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="gif-overlay" id="gif-overlay" onclick="closeGif()">
+    <img id="gif-img" src="" />
+    <div class="gif-label" id="gif-label"></div>
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2 id="modal-title">Export</h2>
+      <pre id="modal-content"></pre>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="navigator.clipboard.writeText(document.getElementById('modal-content').textContent);showToast('Copied!','success')">Copy</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-overlay').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-overlay" id="progress-overlay">
+    <div class="progress-box">
+      <h3 id="progress-title">Applying...</h3>
+      <div class="progress-bar-wrap"><div class="progress-bar-inner" id="progress-bar"></div></div>
+      <div class="progress-text" id="progress-text">0 / 0</div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://dngpsabyqsuunajtotci.supabase.co';
+    const ANON_KEY = 'sb_publishable_LXI8w9s0XF_r1LI3u7LpAg_IM4KGa63';
+    const STORAGE_KEY = 'exercise-manager-state';
+
+    let allExercises = [];
+    // State: { renames: { id: newName }, binned: { id: true } }
+    let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"renames":{},"binned":{}}');
+    let viewMode = 'all';
+    let activeCategory = 'All';
+
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+    async function fetchExercises() {
+      const all = [];
+      let offset = 0;
+      while (true) {
+        const resp = await fetch(`${SUPABASE_URL}/rest/v1/exercises?select=id,name,display_name,muscle_group,equipment,thumbnail_url,image_url&order=name&offset=${offset}&limit=1000`, {
+          headers: { 'apikey': ANON_KEY, 'Authorization': `Bearer ${ANON_KEY}` }
+        });
+        const data = await resp.json();
+        all.push(...data);
+        if (data.length < 1000) break;
+        offset += 1000;
+      }
+      return all.sort((a, b) => {
+        const na = (a.display_name || a.name).toLowerCase();
+        const nb = (b.display_name || b.name).toLowerCase();
+        return na.localeCompare(nb);
+      });
+    }
+
+    function getCategory(muscle) {
+      if (!muscle) return 'Other';
+      const m = muscle.toLowerCase();
+      if (m.includes('glute') || m.includes('quad') || m.includes('hamstring') || m.includes('adductor') || m.includes('abductor') || m.includes('calve')) return 'Legs/Glutes';
+      if (m.includes('lat') || m.includes('upper back') || m.includes('spine') || m.includes('trap')) return 'Back';
+      if (m.includes('pectoral') || m.includes('chest')) return 'Chest';
+      if (m.includes('delt') || m.includes('shoulder') || m.includes('serratus')) return 'Shoulders';
+      if (m.includes('bicep')) return 'Biceps';
+      if (m.includes('tricep')) return 'Triceps';
+      if (m.includes('abs') || m.includes('core')) return 'Core';
+      if (m.includes('cardio')) return 'Cardio';
+      if (m.includes('forearm')) return 'Forearms';
+      return 'Other';
+    }
+
+    function getCatClass(cat) {
+      const map = { 'Legs/Glutes': 'legs', 'Back': 'back', 'Chest': 'chest', 'Shoulders': 'shoulders', 'Biceps': 'biceps', 'Triceps': 'triceps', 'Core': 'core', 'Cardio': 'cardio', 'Forearms': 'forearms' };
+      return 'cat-' + (map[cat] || 'other');
+    }
+
+    function getFiltered() {
+      let list = allExercises;
+      if (activeCategory !== 'All') list = list.filter(e => getCategory(e.muscle_group) === activeCategory);
+
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      if (q) list = list.filter(e => {
+        const dn = (e.display_name || '').toLowerCase();
+        const n = e.name.toLowerCase();
+        const rn = (state.renames[e.id] || '').toLowerCase();
+        return dn.includes(q) || n.includes(q) || rn.includes(q);
+      });
+
+      if (viewMode === 'renamed') list = list.filter(e => state.renames[e.id]);
+      else if (viewMode === 'binned') list = list.filter(e => state.binned[e.id]);
+      else if (viewMode === 'unchanged') list = list.filter(e => !state.renames[e.id] && !state.binned[e.id]);
+
+      return list;
+    }
+
+    function updateStats() {
+      const renames = Object.keys(state.renames).length;
+      const binned = Object.keys(state.binned).length;
+      document.getElementById('stat-total').textContent = allExercises.length;
+      document.getElementById('stat-renamed').textContent = renames;
+      document.getElementById('stat-binned').textContent = binned;
+      document.getElementById('rename-count').textContent = renames;
+      document.getElementById('bin-count').textContent = binned;
+      document.getElementById('apply-renames-btn').disabled = renames === 0;
+      document.getElementById('delete-binned-btn').disabled = binned === 0;
+      document.getElementById('apply-renames-btn').textContent = `Apply Renames (${renames})`;
+      document.getElementById('delete-binned-btn').textContent = `Delete Binned (${binned})`;
+    }
+
+    function render() {
+      const filtered = getFiltered();
+      const tbody = document.getElementById('tbody');
+      document.getElementById('count').textContent = `Showing ${filtered.length} of ${allExercises.length}`;
+
+      tbody.innerHTML = filtered.map((ex, i) => {
+        const isBinned = state.binned[ex.id];
+        const isRenamed = state.renames[ex.id];
+        const currentDisplay = ex.display_name || '';
+        const inputValue = isRenamed || currentDisplay;
+        const cat = getCategory(ex.muscle_group);
+        const equip = (ex.equipment || []).join(', ') || 'body weight';
+        const rowClass = isBinned ? 'binned' : isRenamed ? 'renamed' : '';
+
+        return `<tr class="${rowClass}" id="row-${ex.id}">
+          <td style="color:#555;font-size:11px">${i + 1}</td>
+          <td>${ex.thumbnail_url
+            ? `<img class="thumb" src="${ex.thumbnail_url}" loading="lazy" onclick="showGif('${ex.id}')" onerror="this.outerHTML='<div class=thumb-placeholder>-</div>'" />`
+            : '<div class="thumb-placeholder">-</div>'
+          }</td>
+          <td class="original-name">${ex.name}</td>
+          <td><input class="name-input ${isRenamed ? 'changed' : ''}" value="${escHtml(inputValue)}" data-id="${ex.id}" data-original="${escHtml(currentDisplay)}" onchange="onRename(this)" onkeydown="if(event.key==='Enter'){this.blur()}" /></td>
+          <td><span class="cat-badge ${getCatClass(cat)}">${cat}</span></td>
+          <td class="equip">${equip}</td>
+          <td>${isBinned
+            ? `<button class="undo-btn" onclick="unbinExercise('${ex.id}')" title="Undo bin">↩</button>`
+            : `<button class="bin-btn" onclick="binExercise('${ex.id}')" title="Bin this exercise">✕</button>`
+          }</td>
+        </tr>`;
+      }).join('');
+
+      updateStats();
+    }
+
+    function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function onRename(input) {
+      const id = input.dataset.id;
+      const original = input.dataset.original;
+      const newVal = input.value.trim();
+
+      if (newVal === original || newVal === '') {
+        delete state.renames[id];
+        input.classList.remove('changed');
+        input.closest('tr').classList.remove('renamed');
+      } else {
+        state.renames[id] = newVal;
+        input.classList.add('changed');
+        input.closest('tr').classList.add('renamed');
+      }
+      save();
+      updateStats();
+    }
+
+    function binExercise(id) {
+      state.binned[id] = true;
+      delete state.renames[id]; // no point renaming if binning
+      save();
+      render();
+    }
+
+    function unbinExercise(id) {
+      delete state.binned[id];
+      save();
+      render();
+    }
+
+    function setView(mode, btn) {
+      viewMode = mode;
+      document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    }
+
+    function setCategory(cat, btn) {
+      activeCategory = cat;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    }
+
+    function buildFilters() {
+      const cats = ['All', ...new Set(allExercises.map(e => getCategory(e.muscle_group)))].filter(Boolean);
+      const div = document.getElementById('filters');
+      cats.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn' + (cat === 'All' ? ' active' : '');
+        const count = cat === 'All' ? allExercises.length : allExercises.filter(e => getCategory(e.muscle_group) === cat).length;
+        btn.textContent = `${cat} (${count})`;
+        btn.onclick = function() { setCategory(cat, this); };
+        div.appendChild(btn);
+      });
+    }
+
+    function showGif(id) {
+      const ex = allExercises.find(e => e.id === id);
+      if (!ex?.image_url) return;
+      document.getElementById('gif-img').src = ex.image_url;
+      document.getElementById('gif-label').textContent = ex.display_name || ex.name;
+      document.getElementById('gif-overlay').style.display = 'flex';
+    }
+
+    function closeGif() {
+      document.getElementById('gif-overlay').style.display = 'none';
+      document.getElementById('gif-img').src = '';
+    }
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast ' + type;
+      t.style.display = 'block';
+      setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+    function showProgress(title) {
+      document.getElementById('progress-title').textContent = title;
+      document.getElementById('progress-bar').style.width = '0%';
+      document.getElementById('progress-text').textContent = '';
+      document.getElementById('progress-overlay').style.display = 'flex';
+    }
+
+    function updateProgress(done, total) {
+      document.getElementById('progress-bar').style.width = (done / total * 100) + '%';
+      document.getElementById('progress-text').textContent = `${done} / ${total}`;
+    }
+
+    function hideProgress() {
+      document.getElementById('progress-overlay').style.display = 'none';
+    }
+
+    function exportChanges() {
+      const renames = Object.entries(state.renames).map(([id, newName]) => {
+        const ex = allExercises.find(e => e.id === id);
+        return { id, name: ex?.name, old_display: ex?.display_name, new_display: newName };
+      });
+      const binned = Object.keys(state.binned).map(id => {
+        const ex = allExercises.find(e => e.id === id);
+        return { id, name: ex?.name, display_name: ex?.display_name };
+      });
+      const output = { renames, binned };
+      document.getElementById('modal-title').textContent = `Changes (${renames.length} renames, ${binned.length} binned)`;
+      document.getElementById('modal-content').textContent = JSON.stringify(output, null, 2);
+      document.getElementById('modal-overlay').style.display = 'flex';
+    }
+
+    async function applyRenames() {
+      const entries = Object.entries(state.renames);
+      if (entries.length === 0) return;
+      if (!confirm(`Apply ${entries.length} renames to Supabase?`)) return;
+
+      const serviceKey = prompt('Enter your SUPABASE_SERVICE_ROLE_KEY:');
+      if (!serviceKey) return;
+
+      showProgress('Applying renames...');
+      let success = 0, failed = 0;
+
+      for (let i = 0; i < entries.length; i++) {
+        const [id, newName] = entries[i];
+        try {
+          const resp = await fetch(`${SUPABASE_URL}/rest/v1/exercises?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': serviceKey,
+              'Authorization': `Bearer ${serviceKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({ display_name: newName })
+          });
+          if (resp.ok) {
+            success++;
+            // Update local data
+            const ex = allExercises.find(e => e.id === id);
+            if (ex) ex.display_name = newName;
+            delete state.renames[id];
+          } else { failed++; }
+        } catch { failed++; }
+        updateProgress(i + 1, entries.length);
+      }
+
+      save();
+      hideProgress();
+      render();
+      showToast(`Renamed ${success} exercises.${failed ? ` ${failed} failed.` : ''}`, failed ? 'error' : 'success');
+    }
+
+    async function deleteBinned() {
+      const ids = Object.keys(state.binned);
+      if (ids.length === 0) return;
+      if (!confirm(`Delete ${ids.length} exercises from Supabase? This cannot be undone.`)) return;
+
+      const serviceKey = prompt('Enter your SUPABASE_SERVICE_ROLE_KEY:');
+      if (!serviceKey) return;
+
+      showProgress('Deleting exercises...');
+      const headers = { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Prefer': 'return=minimal' };
+      let success = 0, failed = 0;
+
+      for (let i = 0; i < ids.length; i += 20) {
+        const batch = ids.slice(i, i + 20);
+        const filter = batch.map(id => `"${id}"`).join(',');
+        try {
+          const resp = await fetch(`${SUPABASE_URL}/rest/v1/exercises?id=in.(${filter})`, { method: 'DELETE', headers });
+          if (resp.ok) success += batch.length; else failed += batch.length;
+        } catch { failed += batch.length; }
+        updateProgress(Math.min(i + 20, ids.length), ids.length);
+      }
+
+      if (success > 0) {
+        allExercises = allExercises.filter(e => !state.binned[e.id]);
+        state.binned = {};
+        save();
+        // Rebuild filters with new counts
+        document.getElementById('filters').innerHTML = '';
+        buildFilters();
+        render();
+      }
+
+      hideProgress();
+      showToast(`Deleted ${success} exercises.${failed ? ` ${failed} failed.` : ''}`, failed ? 'error' : 'success');
+    }
+
+    function resetAll() {
+      if (!confirm('Clear all renames and bin decisions?')) return;
+      state = { renames: {}, binned: {} };
+      save();
+      render();
+    }
+
+    // Keyboard: Escape closes overlays
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeGif();
+        document.getElementById('modal-overlay').style.display = 'none';
+      }
+    });
+
+    async function init() {
+      allExercises = await fetchExercises();
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('table').style.display = 'table';
+      buildFilters();
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>

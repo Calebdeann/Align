@@ -27,7 +27,7 @@ const WORKOUT_COLOURS = [
   { id: 'purple', color: colors.primary },
   { id: 'green', color: colors.workout.back },
   { id: 'blue', color: colors.workout.chest },
-  { id: 'orange', color: colors.workout.arms },
+  { id: 'orange', color: colors.workout.biceps },
   { id: 'pink', color: colors.workout.legs },
   { id: 'teal', color: colors.workout.cardio },
   { id: 'yellow', color: colors.workout.shoulders },
@@ -416,9 +416,7 @@ export default function ExploreTemplatesScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>{t('explore.workouts')}</Text>
-
-        <View style={styles.cardGrid}>
+        <View style={[styles.cardGrid, { marginTop: spacing.lg }]}>
           {ALL_CATEGORIES.map((category) => {
             const count = getCategoryCount(category.id);
             const heroImage = CATEGORY_HERO_IMAGES[category.id];
@@ -581,14 +579,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
   },
-  sectionTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.text,
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-
   // 2-column category card grid
   cardGrid: {
     flexDirection: 'row',

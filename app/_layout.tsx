@@ -10,14 +10,10 @@ import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { initializeStoreManager } from '@/lib/storeManager';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SuperwallProvider } from 'expo-superwall';
 import '@/i18n';
 import { useLanguageSync } from '@/hooks/useLanguageSync';
 import { useExerciseTranslations } from '@/hooks/useExerciseTranslations';
-import { SuperwallProvider } from 'expo-superwall';
-
-// Context to signal whether SuperwallProvider is active in the tree
-// Tabs layout checks this before calling useSuperwall to avoid crashes
-export const SuperwallReadyContext = React.createContext(false);
 
 // Keep splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -93,9 +89,11 @@ export default function RootLayout() {
         <Stack.Screen name="active-workout" />
         <Stack.Screen name="add-exercise" />
         <Stack.Screen name="save-workout" />
+        <Stack.Screen name="workout-complete" options={{ gestureEnabled: false }} />
         <Stack.Screen name="explore-templates" />
         <Stack.Screen name="template-detail" />
         <Stack.Screen name="create-template" />
+        <Stack.Screen name="schedule-workout" />
         <Stack.Screen name="save-template" />
         <Stack.Screen name="workout-details" />
       </Stack>
@@ -105,11 +103,8 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
-        <SuperwallProvider
-          apiKeys={{ ios: 'pk_vhA9Ry9TLgVUTyK_ugU0P' }}
-          options={{ logging: { level: 'debug', scopes: ['all'] } }}
-        >
-          <SuperwallReadyContext.Provider value={true}>{appContent}</SuperwallReadyContext.Provider>
+        <SuperwallProvider apiKeys={{ ios: 'pk_vhA9Ry9TLgVUTyK_ugU0P' }}>
+          {appContent}
         </SuperwallProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>

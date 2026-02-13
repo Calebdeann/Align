@@ -473,6 +473,14 @@
     "hourMinutes": "{{hours}} 小时 {{minutes}} 分钟",
     "minutes": "{{minutes}} 分钟"
   },
+  "workoutComplete": {
+    "shareWorkout": "分享训练 - 标记 @align.tracker",
+    "done": "完成",
+    "duration": "时长",
+    "volume": "训练量",
+    "exercises": "动作",
+    "sets": "组数"
+  },
   "workoutDetails": {
     "title": "训练详情",
     "workoutNotFound": "未找到训练",
@@ -591,7 +599,7 @@
     "muscle": "肌群"
   },
   "explore": {
-    "title": "探索",
+    "title": "探索模板",
     "workouts": "训练",
     "countWorkouts": "{{count}} 个训练",
     "categoryWorkouts": "{{category}}训练",
@@ -603,13 +611,13 @@
   },
   "equipment": {
     "all": "全部器械",
-    "bodyWeight": "徒手",
+    "none": "无",
     "barbell": "杠铃",
     "dumbbell": "哑铃",
     "kettlebell": "壶铃",
-    "cable": "绳索",
-    "band": "弹力带",
     "machine": "器械",
+    "plate": "杠铃片",
+    "resistanceBand": "弹力带",
     "other": "其他"
   },
   "muscles": {
@@ -636,7 +644,8 @@
     "core": "核心",
     "cardio": "有氧",
     "fullBody": "全身",
-    "lowerBody": "下肢"
+    "lowerBody": "下肢",
+    "other": "Other"
   },
   "templateCategories": {
     "abs": "腹肌",
