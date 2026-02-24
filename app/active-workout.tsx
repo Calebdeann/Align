@@ -23,6 +23,10 @@ import * as Haptics from 'expo-haptics';
 import Svg, { Path, Line } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import {
+  scheduleWorkoutInProgressReminder,
+  cancelWorkoutInProgressReminder,
+} from '@/services/notifications';
+import {
   getBatchExercisePreviousSets,
   PreviousSetData,
   getUserExercisePreferences,
@@ -49,9 +53,16 @@ import {
   useExerciseStore,
   prefetchExerciseGif,
   getExerciseDisplayName,
+  resolveExerciseDisplayName,
 } from '@/stores/exerciseStore';
 import { playTimerSoundDouble, triggerTimerVibration } from '@/utils/sounds';
 import { getSimplifiedMuscleI18nKey } from '@/constants/muscleGroups';
+import {
+  startWorkoutLiveActivity,
+  updateWorkoutLiveActivity,
+  endWorkoutLiveActivity,
+  CurrentExerciseInfo,
+} from '@/services/liveActivity';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -67,6 +78,7 @@ interface Exercise {
   muscle: string;
   gifUrl?: string;
   thumbnailUrl?: string;
+  is_custom?: boolean;
 }
 
 // Set types: 'normal' shows the set number, others show their first letter
@@ -89,6 +101,77 @@ interface WorkoutExercise {
   sets: ExerciseSet[];
   previousSets: PreviousSetData[] | null;
   supersetId: number | null; // null = not in a superset, 1+ = superset group number
+}
+
+// Build live activity info from current workout state
+function getSetDisplayValues(
+  ex: WorkoutExercise,
+  setIndex: number,
+  units: UnitSystem
+): { weight: string; reps: string } {
+  const set = ex.sets[setIndex];
+  let weight = set.kg;
+  let reps = set.reps;
+
+  // Fallback 1: suggestion from previous set in current workout
+  if (!weight && setIndex > 0) {
+    const prevCurrentSet = ex.sets[setIndex - 1];
+    if (prevCurrentSet.kg) weight = prevCurrentSet.kg;
+  }
+  if (!reps && setIndex > 0) {
+    const prevCurrentSet = ex.sets[setIndex - 1];
+    if (prevCurrentSet.reps) reps = prevCurrentSet.reps;
+  }
+
+  // Fallback 2: previous session history
+  const prevSet = ex.previousSets?.[setIndex];
+  if (!weight && prevSet?.weightKg != null) {
+    weight = fromKgForDisplay(prevSet.weightKg, units).toString();
+  }
+  if (!reps && prevSet?.reps != null) {
+    reps = prevSet.reps.toString();
+  }
+
+  return { weight, reps };
+}
+
+function getCurrentExerciseInfo(
+  exercises: WorkoutExercise[],
+  weightUnit: string,
+  units: UnitSystem
+): CurrentExerciseInfo | null {
+  if (exercises.length === 0) return null;
+
+  // Find first exercise with an incomplete set
+  for (const ex of exercises) {
+    const incompleteIdx = ex.sets.findIndex((s) => !s.completed);
+    if (incompleteIdx !== -1) {
+      const { weight, reps } = getSetDisplayValues(ex, incompleteIdx, units);
+      return {
+        exerciseName: ex.exercise.name,
+        currentSetNumber: incompleteIdx + 1,
+        totalSets: ex.sets.length,
+        weight,
+        reps,
+        weightUnit,
+        imageUrl: ex.exercise.thumbnailUrl || ex.exercise.gifUrl,
+      };
+    }
+  }
+
+  // All sets complete - show last exercise's last set
+  const lastEx = exercises[exercises.length - 1];
+  const lastSetIdx = lastEx.sets.length - 1;
+  const { weight, reps } = getSetDisplayValues(lastEx, lastSetIdx, units);
+  return {
+    exerciseName: lastEx.exercise.name,
+    currentSetNumber: lastEx.sets.length,
+    totalSets: lastEx.sets.length,
+    weight,
+    reps,
+    weightUnit,
+    imageUrl: lastEx.exercise.thumbnailUrl || lastEx.exercise.gifUrl,
+  };
 }
 
 // Superset colors - each superset group gets a different color
@@ -357,7 +440,7 @@ function DraggableExerciseRow({
       <ExerciseImage
         gifUrl={workoutExercise.exercise.gifUrl}
         thumbnailUrl={workoutExercise.exercise.thumbnailUrl}
-        size={48}
+        size={55}
         borderRadius={8}
       />
       <Text style={styles.reorderExerciseName}>
@@ -547,7 +630,7 @@ function SwipeableSetRow({
           onChangeText={(value) =>
             onUpdateValue(exerciseIndex, setIndex, 'kg', filterNumericInput(value))
           }
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           placeholder={suggestedWeight || previousWeight || '0'}
           placeholderTextColor={colors.textTertiary}
           inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
@@ -615,9 +698,14 @@ const swipeStyles = StyleSheet.create({
 export default function ActiveWorkoutScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { templateId, editData: editDataParam } = useLocalSearchParams<{
+  const {
+    templateId,
+    editData: editDataParam,
+    addExercise: addExerciseParam,
+  } = useLocalSearchParams<{
     templateId?: string;
     editData?: string;
+    addExercise?: string;
   }>();
   const isEditMode = !!editDataParam;
 
@@ -765,10 +853,11 @@ export default function ActiveWorkoutScreen() {
       const editExercises: WorkoutExercise[] = editDataParsed.exercises.map((we: any) => ({
         exercise: {
           id: we.exercise.id,
-          name: we.exercise.name,
+          name: resolveExerciseDisplayName(we.exercise.id, we.exercise.name),
           muscle: we.exercise.muscle,
           gifUrl: we.exercise.gifUrl,
           thumbnailUrl: we.exercise.thumbnailUrl,
+          is_custom: we.exercise.is_custom,
         },
         notes: we.notes || '',
         restTimerSeconds: we.restTimerSeconds ?? 90,
@@ -802,11 +891,13 @@ export default function ActiveWorkoutScreen() {
     if (activeWorkout && activeWorkout.isMinimized && !isDifferentTemplate) {
       // Restore minimized workout (same template or no template specified)
       isRestoringRef.current = true;
-      setElapsedSeconds(activeWorkout.elapsedSeconds);
-      timerEpochRef.current = Date.now() - activeWorkout.elapsedSeconds * 1000;
+      startedAtRef.current = new Date(activeWorkout.startedAt);
+      // Compute elapsed from the real start time, not the stale elapsedSeconds snapshot
+      const realElapsed = Math.floor((Date.now() - startedAtRef.current.getTime()) / 1000);
+      setElapsedSeconds(realElapsed);
+      timerEpochRef.current = Date.now() - realElapsed * 1000;
       setWorkoutExercises(activeWorkout.exercises as WorkoutExercise[]);
       hasUserModifiedExercises.current = true;
-      startedAtRef.current = new Date(activeWorkout.startedAt);
       restoreActiveWorkout();
     } else if (!activeWorkout || isDifferentTemplate) {
       // No active workout, OR starting a different template — create fresh
@@ -826,6 +917,7 @@ export default function ActiveWorkoutScreen() {
               setType: s.setType,
             })),
             restTimerSeconds: e.restTimerSeconds,
+            is_custom: e.is_custom,
           }));
 
           // Update the store
@@ -836,10 +928,11 @@ export default function ActiveWorkoutScreen() {
           const localExercises: WorkoutExercise[] = templateExercises.map((te) => ({
             exercise: {
               id: te.exerciseId,
-              name: te.exerciseName,
+              name: resolveExerciseDisplayName(te.exerciseId, te.exerciseName),
               muscle: te.muscle,
               gifUrl: te.gifUrl,
               thumbnailUrl: te.thumbnailUrl,
+              is_custom: te.is_custom,
             },
             notes: te.notes || '',
             restTimerSeconds: te.restTimerSeconds,
@@ -875,9 +968,17 @@ export default function ActiveWorkoutScreen() {
   }, []);
 
   // Set startedAt on mount (only for fresh workouts, not restored ones)
+  // Also start Live Activity (skip in edit mode)
   useEffect(() => {
     if (!isRestoringRef.current) {
       startedAtRef.current = new Date();
+    }
+
+    if (!isEditMode && startedAtRef.current) {
+      startWorkoutLiveActivity(
+        startedAtRef.current.toISOString(),
+        null // exercises may not be populated yet; sync effect handles first update
+      );
     }
 
     return () => {
@@ -900,17 +1001,27 @@ export default function ActiveWorkoutScreen() {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      // Recalculate epoch from startedAt on every focus to handle background drift
+      if (startedAtRef.current) {
+        const realElapsed = Math.floor((Date.now() - startedAtRef.current.getTime()) / 1000);
+        timerEpochRef.current = Date.now() - realElapsed * 1000;
+      }
       intervalRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - timerEpochRef.current) / 1000);
         setElapsedSeconds(elapsed);
         updateActiveWorkoutTime(elapsed);
       }, 1000);
 
+      // Cancel any pending workout-in-progress notification (user is back)
+      cancelWorkoutInProgressReminder();
+
       return () => {
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
+        // Schedule a "still working out?" notification for 15 min from now
+        scheduleWorkoutInProgressReminder();
       };
     }, [])
   );
@@ -931,6 +1042,19 @@ export default function ActiveWorkoutScreen() {
         });
     }
   }, [pendingExercises]);
+
+  // Auto-open exercise picker when deep linked from Live Activity empty state
+  const hasHandledAddExercise = useRef(false);
+  useEffect(() => {
+    if (addExerciseParam && !hasHandledAddExercise.current) {
+      hasHandledAddExercise.current = true;
+      // Small delay to let the workout screen finish mounting
+      const timer = setTimeout(() => {
+        handleAddExercise();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [addExerciseParam]);
 
   // Sync exercises from store when restoring a persisted workout (e.g. app relaunch).
   // Guard: only sync if the store's template matches what we're currently viewing,
@@ -1019,6 +1143,14 @@ export default function ActiveWorkoutScreen() {
         (total, ex) => total + ex.sets.filter((s) => s.completed).length,
         0
       );
+
+      // Update Live Activity with current exercise info
+      if (startedAtRef.current) {
+        updateWorkoutLiveActivity(
+          startedAtRef.current.toISOString(),
+          getCurrentExerciseInfo(workoutExercises, getWeightUnit(units), units)
+        );
+      }
     }
   }, [workoutExercises]);
 
@@ -1062,10 +1194,12 @@ export default function ActiveWorkoutScreen() {
           const previousSets = previousSetsMap.get(we.exercise.id) || null;
           const preference = preferencesMap.get(we.exercise.id);
           const restTimer = preference != null ? preference.restTimerSeconds : we.restTimerSeconds;
+          // Only apply previous set count if user hasn't modified sets (still at initial 1)
+          const userModified = we.sets.length !== 1;
           return {
             ...we,
             restTimerSeconds: restTimer,
-            sets: previousSets ? createDefaultSets(previousSets, units) : we.sets,
+            sets: !userModified && previousSets ? createDefaultSets(previousSets, units) : we.sets,
             previousSets,
           };
         })
@@ -1412,8 +1546,7 @@ export default function ActiveWorkoutScreen() {
     setRestTimerActive(false);
     // Minimize the workout - widget will handle timer from store
     minimizeActiveWorkout();
-    // Always navigate to workout tab when exiting (not discarding)
-    router.replace('/(tabs)/workout');
+    router.back();
   };
 
   const handleSave = () => {
@@ -1444,6 +1577,8 @@ export default function ActiveWorkoutScreen() {
       restTimerRef.current = null;
     }
     setRestTimerActive(false);
+    cancelWorkoutInProgressReminder();
+    endWorkoutLiveActivity();
 
     // Prepare workout data for save screen
     const workoutData = {
@@ -1636,6 +1771,8 @@ export default function ActiveWorkoutScreen() {
             intervalRef.current = null;
           }
           if (restTimerRef.current) clearInterval(restTimerRef.current);
+          cancelWorkoutInProgressReminder();
+          endWorkoutLiveActivity();
           if (!isEditMode) {
             discardActiveWorkout();
           }
@@ -1808,7 +1945,7 @@ export default function ActiveWorkoutScreen() {
   };
 
   // Get display label for set type
-  const getSetTypeLabel = (set: ExerciseSet, setIndex: number): string => {
+  const getSetTypeLabel = (set: ExerciseSet, setIndex: number, allSets: ExerciseSet[]): string => {
     switch (set.setType) {
       case 'warmup':
         return 'W';
@@ -1817,8 +1954,14 @@ export default function ActiveWorkoutScreen() {
       case 'dropset':
         return 'D';
       case 'normal':
-      default:
-        return (setIndex + 1).toString();
+      default: {
+        let normalCount = 0;
+        for (let i = 0; i <= setIndex; i++) {
+          const t = allSets[i].setType;
+          if (!t || t === 'normal') normalCount++;
+        }
+        return normalCount.toString();
+      }
     }
   };
 
@@ -1941,7 +2084,7 @@ export default function ActiveWorkoutScreen() {
                   <ExerciseImage
                     gifUrl={workoutExercise.exercise.gifUrl}
                     thumbnailUrl={workoutExercise.exercise.thumbnailUrl}
-                    size={40}
+                    size={46}
                     borderRadius={8}
                   />
                 </Pressable>
@@ -1982,6 +2125,13 @@ export default function ActiveWorkoutScreen() {
                   ]}
                 >
                   <Text style={styles.supersetBadgeText}>{t('workout.superset')}</Text>
+                </View>
+              )}
+
+              {/* Custom Exercise Badge */}
+              {workoutExercise.exercise.is_custom && (
+                <View style={[styles.supersetBadge, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.supersetBadgeText}>Custom</Text>
                 </View>
               )}
 
@@ -2052,7 +2202,7 @@ export default function ActiveWorkoutScreen() {
                     set={set}
                     setIndex={setIndex}
                     exerciseIndex={exerciseIndex}
-                    setTypeLabel={getSetTypeLabel(set, setIndex)}
+                    setTypeLabel={getSetTypeLabel(set, setIndex, workoutExercise.sets)}
                     setType={set.setType}
                     onUpdateValue={updateSetValue}
                     onToggleCompletion={toggleSetCompletion}
@@ -2403,7 +2553,7 @@ export default function ActiveWorkoutScreen() {
                       <ExerciseImage
                         gifUrl={workoutExercise.exercise.gifUrl}
                         thumbnailUrl={workoutExercise.exercise.thumbnailUrl}
-                        size={40}
+                        size={46}
                         borderRadius={8}
                       />
 

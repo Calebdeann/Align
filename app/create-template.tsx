@@ -28,9 +28,8 @@ import {
   NumericInputDoneButton,
   NUMERIC_ACCESSORY_ID,
 } from '@/components/ui/NumericInputDoneButton';
-import { prefetchExerciseGif } from '@/stores/exerciseStore';
+import { prefetchExerciseGif, resolveExerciseDisplayName } from '@/stores/exerciseStore';
 import { getWeightUnit, UnitSystem, filterNumericInput, fromKgForDisplay } from '@/utils/units';
-import { formatExerciseNameString } from '@/utils/textFormatters';
 import {
   getBatchExercisePreviousSets,
   getUserExercisePreferences,
@@ -42,6 +41,11 @@ import { useNavigationLock } from '@/hooks/useNavigationLock';
 import { getSimplifiedMuscleI18nKey } from '@/constants/muscleGroups';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const KEYBOARD_SCROLL_DELAY_MS = 150;
+const SCROLL_PADDING_TOP = 80;
+const ESTIMATED_SET_ROW_HEIGHT = 36;
+const ESTIMATED_CARD_HEADER_HEIGHT = 160;
 
 type SetType = 'normal' | 'warmup' | 'failure' | 'dropset';
 
@@ -191,6 +195,7 @@ interface SwipeableSetRowProps {
   ) => void;
   onDelete: (exerciseIndex: number, setIndex: number) => void;
   onSetTypePress?: (exerciseIndex: number, setIndex: number) => void;
+  onInputFocus?: () => void;
   previousWeight?: string;
   previousReps?: string;
 }
@@ -205,6 +210,7 @@ function SwipeableSetRow({
   onUpdateValue,
   onDelete,
   onSetTypePress,
+  onInputFocus,
   previousWeight,
   previousReps,
 }: SwipeableSetRowProps) {
@@ -277,10 +283,11 @@ function SwipeableSetRow({
           onChangeText={(value) =>
             onUpdateValue(exerciseIndex, setIndex, 'targetWeight', filterNumericInput(value))
           }
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           placeholder={previousWeight || '0'}
           placeholderTextColor={colors.textTertiary}
           inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
+          onFocus={onInputFocus}
         />
 
         {/* Reps Input */}
@@ -294,6 +301,7 @@ function SwipeableSetRow({
           placeholder={previousReps || '0'}
           placeholderTextColor={colors.textTertiary}
           inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
+          onFocus={onInputFocus}
         />
       </View>
     </Swipeable>
@@ -415,11 +423,11 @@ function DraggableExerciseRow({
       <ExerciseImage
         gifUrl={exercise.gifUrl}
         thumbnailUrl={exercise.thumbnailUrl}
-        size={48}
+        size={55}
         borderRadius={8}
       />
       <Text style={styles.reorderExerciseName}>
-        {formatExerciseNameString(exercise.exerciseName)}
+        {resolveExerciseDisplayName(exercise.exerciseId, exercise.exerciseName)}
       </Text>
       <View style={styles.dragHandle} {...panResponder.panHandlers}>
         <DragHandleIcon />
@@ -506,6 +514,32 @@ export default function CreateTemplateScreen() {
   const [showExerciseMenu, setShowExerciseMenu] = useState(false);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
   const menuSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
+  // Auto-scroll when inputs are focused (matches active-workout)
+  const scrollViewRef = useRef<ScrollView>(null);
+  const exerciseCardYPositions = useRef<Map<number, number>>(new Map());
+
+  const scrollToExercise = useCallback((exerciseIndex: number, setIndex?: number) => {
+    setTimeout(() => {
+      const cardY = exerciseCardYPositions.current.get(exerciseIndex);
+      if (cardY == null || !scrollViewRef.current) return;
+
+      let targetY = cardY;
+
+      if (setIndex != null && setIndex > 0) {
+        const setRowOffset = ESTIMATED_CARD_HEADER_HEIGHT + setIndex * ESTIMATED_SET_ROW_HEIGHT;
+        const maxOffset = setRowOffset - ESTIMATED_SET_ROW_HEIGHT * 2;
+        if (maxOffset > 0) {
+          targetY += Math.min(setRowOffset, maxOffset);
+        }
+      }
+
+      scrollViewRef.current.scrollTo({
+        y: Math.max(0, targetY - SCROLL_PADDING_TOP),
+        animated: true,
+      });
+    }, KEYBOARD_SCROLL_DELAY_MS);
+  }, []);
 
   // Reorder modal state
   const [showReorderModal, setShowReorderModal] = useState(false);
@@ -614,6 +648,7 @@ export default function CreateTemplateScreen() {
       sets: [{ setNumber: 1, targetWeight: undefined, targetReps: undefined }],
       restTimerSeconds: 0,
       supersetId: null,
+      is_custom: pe.is_custom,
     }));
     setExercises((prev) => [...prev, ...newExercises]);
 
@@ -647,8 +682,12 @@ export default function CreateTemplateScreen() {
         const previousSets = prevSetsMap.get(ex.exerciseId);
         const preference = preferencesMap.get(ex.exerciseId);
         const restTimerSeconds = preference?.restTimerSeconds || ex.restTimerSeconds;
-        const setCount = previousSets && previousSets.length > 0 ? previousSets.length : 1;
-        const sets: TemplateSet[] = Array.from({ length: setCount }, (_, i) => ({
+        // Only apply previous set count if user hasn't modified sets (still at initial 1)
+        const userModified = ex.sets.length !== 1;
+        if (userModified || !previousSets || previousSets.length === 0) {
+          return { ...ex, restTimerSeconds };
+        }
+        const sets: TemplateSet[] = Array.from({ length: previousSets.length }, (_, i) => ({
           setNumber: i + 1,
           targetWeight: undefined,
           targetReps: undefined,
@@ -739,7 +778,7 @@ export default function CreateTemplateScreen() {
     closeSetTypeModal();
   };
 
-  const getSetTypeLabel = (set: TemplateSet, setIndex: number): string => {
+  const getSetTypeLabel = (set: TemplateSet, setIndex: number, allSets: TemplateSet[]): string => {
     switch (set.setType) {
       case 'warmup':
         return 'W';
@@ -748,8 +787,14 @@ export default function CreateTemplateScreen() {
       case 'dropset':
         return 'D';
       case 'normal':
-      default:
-        return (setIndex + 1).toString();
+      default: {
+        let normalCount = 0;
+        for (let i = 0; i <= setIndex; i++) {
+          const t = allSets[i].setType;
+          if (!t || t === 'normal') normalCount++;
+        }
+        return normalCount.toString();
+      }
     }
   };
 
@@ -1037,9 +1082,19 @@ export default function CreateTemplateScreen() {
   ) => {
     setExercises((prev) => {
       const updated = [...prev];
+      let numericValue: number | string | undefined;
+      if (value === '') {
+        numericValue = undefined;
+      } else if (value.endsWith('.')) {
+        // Keep raw string so trailing decimal isn't stripped mid-typing
+        numericValue = value;
+      } else {
+        const n = parseFloat(value);
+        numericValue = isNaN(n) ? undefined : n;
+      }
       updated[exerciseIndex].sets[setIndex] = {
         ...updated[exerciseIndex].sets[setIndex],
-        [field]: value ? parseFloat(value) : undefined,
+        [field]: numericValue,
       };
       return updated;
     });
@@ -1069,12 +1124,24 @@ export default function CreateTemplateScreen() {
       return;
     }
 
+    // Ensure any trailing-decimal strings (e.g. "12.") are parsed to numbers before saving
+    const cleanedExercises = exercises.map((ex) => ({
+      ...ex,
+      sets: ex.sets.map((set) => ({
+        ...set,
+        targetWeight:
+          typeof set.targetWeight === 'string'
+            ? parseFloat(set.targetWeight) || undefined
+            : set.targetWeight,
+      })),
+    }));
+
     // Navigate to save-template page with exercise data
     withLock(() => {
       router.push({
         pathname: '/save-template',
         params: {
-          exercises: JSON.stringify(exercises),
+          exercises: JSON.stringify(cleanedExercises),
           ...(templateId ? { templateId } : {}),
           ...(folderId ? { folderId } : {}),
         },
@@ -1179,6 +1246,7 @@ export default function CreateTemplateScreen() {
       ) : (
         // Filled State with Exercises - Matching active-workout UI
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets
@@ -1186,7 +1254,13 @@ export default function CreateTemplateScreen() {
           keyboardDismissMode="interactive"
         >
           {exercises.map((exercise, exerciseIndex) => (
-            <View key={exercise.id} style={styles.exerciseCard}>
+            <View
+              key={exercise.id}
+              style={styles.exerciseCard}
+              onLayout={(e) => {
+                exerciseCardYPositions.current.set(exerciseIndex, e.nativeEvent.layout.y);
+              }}
+            >
               {/* Exercise Header */}
               <View style={styles.exerciseHeader}>
                 <Pressable
@@ -1206,7 +1280,7 @@ export default function CreateTemplateScreen() {
                   <ExerciseImage
                     gifUrl={exercise.gifUrl}
                     thumbnailUrl={exercise.thumbnailUrl}
-                    size={40}
+                    size={46}
                     borderRadius={8}
                   />
                 </Pressable>
@@ -1225,7 +1299,7 @@ export default function CreateTemplateScreen() {
                         : undefined
                     }
                   >
-                    {formatExerciseNameString(exercise.exerciseName)}
+                    {resolveExerciseDisplayName(exercise.exerciseId, exercise.exerciseName)}
                   </Text>
                 </View>
                 <Pressable
@@ -1251,6 +1325,13 @@ export default function CreateTemplateScreen() {
                 </View>
               )}
 
+              {/* Custom Exercise Badge */}
+              {exercise.is_custom && (
+                <View style={[styles.supersetBadge, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.supersetBadgeText}>Custom</Text>
+                </View>
+              )}
+
               {/* Notes Input */}
               <TextInput
                 style={styles.notesInput}
@@ -1258,6 +1339,7 @@ export default function CreateTemplateScreen() {
                 placeholderTextColor={colors.textSecondary}
                 value={exercise.notes || ''}
                 onChangeText={(text) => updateNotes(exerciseIndex, text)}
+                onFocus={() => scrollToExercise(exerciseIndex)}
               />
 
               {/* Rest Timer */}
@@ -1298,11 +1380,12 @@ export default function CreateTemplateScreen() {
                     setIndex={setIndex}
                     exerciseIndex={exerciseIndex}
                     weightUnit={weightLabel}
-                    setTypeLabel={getSetTypeLabel(set, setIndex)}
+                    setTypeLabel={getSetTypeLabel(set, setIndex, exercise.sets)}
                     setType={(set.setType || 'normal') as SetType}
                     onUpdateValue={updateSetValue}
                     onDelete={deleteSet}
                     onSetTypePress={openSetTypeModal}
+                    onInputFocus={() => scrollToExercise(exerciseIndex, setIndex)}
                     previousWeight={prevWeight}
                     previousReps={prevReps}
                   />
@@ -1509,9 +1592,12 @@ export default function CreateTemplateScreen() {
                 <Text style={styles.restTimerModalTitle}>Rest Timer</Text>
                 {restTimerModalExerciseIndex !== null && (
                   <Text style={styles.restTimerModalSubtitle}>
-                    {formatExerciseNameString(
-                      exercises[restTimerModalExerciseIndex]?.exerciseName || ''
-                    )}
+                    {restTimerModalExerciseIndex !== null && exercises[restTimerModalExerciseIndex]
+                      ? resolveExerciseDisplayName(
+                          exercises[restTimerModalExerciseIndex].exerciseId,
+                          exercises[restTimerModalExerciseIndex].exerciseName
+                        )
+                      : ''}
                   </Text>
                 )}
               </View>
@@ -1616,13 +1702,13 @@ export default function CreateTemplateScreen() {
                       <ExerciseImage
                         gifUrl={exercise.gifUrl}
                         thumbnailUrl={exercise.thumbnailUrl}
-                        size={40}
+                        size={46}
                         borderRadius={8}
                       />
 
                       <View style={styles.supersetExerciseInfo}>
                         <Text style={styles.supersetExerciseName}>
-                          {formatExerciseNameString(exercise.exerciseName)}
+                          {resolveExerciseDisplayName(exercise.exerciseId, exercise.exerciseName)}
                         </Text>
                         <View style={styles.supersetExerciseSubRow}>
                           <Text style={styles.supersetExerciseMuscle}>
@@ -1791,7 +1877,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: 20,
   },
   backButton: {
     padding: spacing.xs,

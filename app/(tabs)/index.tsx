@@ -8,8 +8,8 @@ import {
   Pressable,
   Animated,
   LayoutAnimation,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
 import { router, useFocusEffect } from 'expo-router';
@@ -221,11 +221,23 @@ const WorkoutListRow = memo(function WorkoutListRow(props: WorkoutListRowProps) 
       </Pressable>
       <View style={styles.workoutInfoPressable}>
         {props.imageUri ? (
-          <Image source={{ uri: props.imageUri }} style={styles.workoutThumbnail} />
+          <Image
+            source={{ uri: props.imageUri }}
+            style={styles.workoutThumbnail}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : props.imageTemplateId ? (
           (() => {
             const src = getTemplateImageById(props.imageTemplateId);
-            return src ? <Image source={src} style={styles.workoutThumbnail} /> : null;
+            return src ? (
+              <Image
+                source={src}
+                style={styles.workoutThumbnail}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
+            ) : null;
           })()
         ) : null}
         <View style={styles.workoutInfo}>
@@ -269,14 +281,13 @@ function generateDays(baseDate: Date, startOffset: number, count: number) {
   return days;
 }
 
-// Initial days: 30 days in the past + today + 30 days in future
-const INITIAL_PAST_DAYS = 30;
+// List view: start from today, load past/future on scroll
 const INITIAL_FUTURE_DAYS = 30;
 const DAYS_TO_LOAD = 15;
 
 export default function CalendarScreen() {
   const { t } = useTranslation();
-  const today = useMemo(() => new Date(), []);
+  const [today, setToday] = useState(() => new Date());
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
   const currentDate = today.getDate();
@@ -290,9 +301,11 @@ export default function CalendarScreen() {
 
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [months, setMonths] = useState(() => generateMonths(currentYear, currentMonth, 12));
-  const [listDays, setListDays] = useState(() =>
-    generateDays(today, -INITIAL_PAST_DAYS, INITIAL_PAST_DAYS + 1 + INITIAL_FUTURE_DAYS)
-  );
+  const [listDays, setListDays] = useState(() => generateDays(today, 0, 1 + INITIAL_FUTURE_DAYS));
+  // Key to force FlatList remount (ensures list starts at top)
+  const [listKey, setListKey] = useState(0);
+  // Guard: prevent onStartReached from firing immediately after list mount/reset
+  const listMountTime = useRef(Date.now());
 
   const flatListRef = useRef<FlatList>(null);
   const listFlatListRef = useRef<FlatList>(null);
@@ -412,7 +425,13 @@ export default function CalendarScreen() {
         fetchCompletedWorkouts(userId);
       }
       lastFocusTime.current = now;
-    }, [userId, fetchCompletedWorkouts])
+
+      // Refresh "today" if the date has changed (e.g. app left open past midnight)
+      const now2 = new Date();
+      if (now2.toDateString() !== today.toDateString()) {
+        setToday(now2);
+      }
+    }, [userId, fetchCompletedWorkouts, today])
   );
 
   // Helper to get completed workouts for a specific date (uses store method)
@@ -495,15 +514,11 @@ export default function CalendarScreen() {
   const handleViewModeSwitch = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (viewMode === 'calendar') {
-      // Switching to list view - reset list days and scroll to today
-      setListDays(
-        generateDays(today, -INITIAL_PAST_DAYS, INITIAL_PAST_DAYS + 1 + INITIAL_FUTURE_DAYS)
-      );
+      // Switching to list view - today at index 0
+      setListDays(generateDays(today, 0, 1 + INITIAL_FUTURE_DAYS));
+      setListKey((k) => k + 1);
+      listMountTime.current = Date.now();
       setViewMode('list');
-      // Scroll to today after render
-      setTimeout(() => {
-        listFlatListRef.current?.scrollToIndex({ index: INITIAL_PAST_DAYS, animated: false });
-      }, 100);
     } else {
       // Switching to calendar view - scroll to current month
       setViewMode('calendar');
@@ -526,22 +541,11 @@ export default function CalendarScreen() {
       const diffTime = targetStart.getTime() - todayStart.getTime();
       const dayOffset = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-      // Generate list days centered around the target date
-      // We want the target date to be visible, so generate days around it
-      const startOffset = dayOffset - INITIAL_PAST_DAYS;
-      const newListDays = generateDays(
-        today,
-        startOffset,
-        INITIAL_PAST_DAYS + 1 + INITIAL_FUTURE_DAYS
-      );
-
-      setListDays(newListDays);
+      // Target date at index 0
+      setListDays(generateDays(today, dayOffset, 1 + INITIAL_FUTURE_DAYS));
+      setListKey((k) => k + 1);
+      listMountTime.current = Date.now();
       setViewMode('list');
-
-      // Scroll to the target date (which is at index INITIAL_PAST_DAYS in the new list)
-      setTimeout(() => {
-        listFlatListRef.current?.scrollToIndex({ index: INITIAL_PAST_DAYS, animated: false });
-      }, 100);
     },
     [today]
   );
@@ -587,6 +591,8 @@ export default function CalendarScreen() {
 
   // List view infinite scroll handlers
   const loadMorePastDays = useCallback(() => {
+    // Skip if list just mounted/reset (prevents onStartReached cascade on initial render)
+    if (Date.now() - listMountTime.current < 800) return;
     setListDays((prev) => {
       const firstDay = prev[0];
       const newDays = generateDays(today, firstDay.offset - DAYS_TO_LOAD, DAYS_TO_LOAD);
@@ -780,6 +786,7 @@ export default function CalendarScreen() {
   // List View
   const renderListView = () => (
     <FlatList
+      key={`list-${listKey}`}
       ref={listFlatListRef}
       data={listDays}
       renderItem={renderListDayItem}
@@ -790,12 +797,6 @@ export default function CalendarScreen() {
       onEndReached={loadMoreFutureDays}
       onEndReachedThreshold={0.5}
       showsVerticalScrollIndicator={false}
-      initialScrollIndex={INITIAL_PAST_DAYS}
-      getItemLayout={(_, index) => ({
-        length: 73, // Approximate height of each day item
-        offset: 73 * index,
-        index,
-      })}
       maintainVisibleContentPosition={{
         minIndexForVisible: 0,
       }}
@@ -843,6 +844,8 @@ export default function CalendarScreen() {
           <Image
             source={require('../../assets/images/CalebCass1.png')}
             style={styles.founderPhoto}
+            contentFit="contain"
+            cachePolicy="memory-disk"
           />
 
           <Text
@@ -935,7 +938,6 @@ const styles = StyleSheet.create({
     right: 20,
     width: 125,
     height: 118,
-    resizeMode: 'contain',
     zIndex: 1,
   },
   founderGreeting: {

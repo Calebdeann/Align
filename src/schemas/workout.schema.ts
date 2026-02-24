@@ -44,7 +44,7 @@ export const SaveWorkoutInputSchema = z.object({
   completedAt: DateSchema,
   durationSeconds: DurationSecondsSchema,
   notes: z.string().max(2000).optional(),
-  sourceTemplateId: UuidSchema.optional(),
+  sourceTemplateId: NonEmptyStringSchema.optional(),
   imageType: ImageTypeSchema.optional(),
   imageUri: z.string().max(2000).optional(),
   imageTemplateId: z.string().max(200).optional(),

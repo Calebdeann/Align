@@ -215,6 +215,8 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
 
     // Track muscles worked for aggregate storage
     const muscleSetCounts = new Map<string, { primary: number; secondary: number }>();
+    let failedExerciseCount = 0;
+    let failedSetsCount = 0;
 
     // 2. Insert workout_exercises for each exercise
     for (let i = 0; i < validatedInput.exercises.length; i++) {
@@ -238,6 +240,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
 
       if (exerciseError || !workoutExercise) {
         logger.warn('Error saving workout exercise', { error: exerciseError });
+        failedExerciseCount++;
         continue;
       }
 
@@ -257,6 +260,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
 
         if (setsError) {
           logger.warn('Error saving workout sets', { error: setsError });
+          failedSetsCount++;
         }
       }
 
@@ -315,6 +319,17 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
       if (musclesError) {
         logger.warn('Error saving workout muscles', { error: musclesError });
       }
+    }
+
+    // Warn user if some exercises or sets failed to save
+    if (failedExerciseCount > 0 || failedSetsCount > 0) {
+      const parts: string[] = [];
+      if (failedExerciseCount > 0) parts.push(`${failedExerciseCount} exercise(s)`);
+      if (failedSetsCount > 0) parts.push(`set data for ${failedSetsCount} exercise(s)`);
+      Alert.alert(
+        'Partial Save',
+        `Your workout was saved, but ${parts.join(' and ')} could not be saved. You may want to check the workout details.`
+      );
     }
 
     return workoutId;
@@ -416,6 +431,8 @@ export async function updateCompletedWorkout(
 
     // 4. Re-insert exercises, sets, and muscles (same logic as saveCompletedWorkout)
     const muscleSetCounts = new Map<string, { primary: number; secondary: number }>();
+    let failedExerciseCount = 0;
+    let failedSetsCount = 0;
 
     for (let i = 0; i < validatedInput.exercises.length; i++) {
       const exercise = validatedInput.exercises[i];
@@ -438,6 +455,7 @@ export async function updateCompletedWorkout(
 
       if (exerciseError || !workoutExercise) {
         logger.warn('Error saving workout exercise', { error: exerciseError });
+        failedExerciseCount++;
         continue;
       }
 
@@ -455,6 +473,7 @@ export async function updateCompletedWorkout(
         const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert);
         if (setsError) {
           logger.warn('Error saving workout sets', { error: setsError });
+          failedSetsCount++;
         }
       }
 
@@ -511,6 +530,17 @@ export async function updateCompletedWorkout(
       if (musclesError) {
         logger.warn('Error saving workout muscles', { error: musclesError });
       }
+    }
+
+    // Warn user if some exercises or sets failed to save
+    if (failedExerciseCount > 0 || failedSetsCount > 0) {
+      const parts: string[] = [];
+      if (failedExerciseCount > 0) parts.push(`${failedExerciseCount} exercise(s)`);
+      if (failedSetsCount > 0) parts.push(`set data for ${failedSetsCount} exercise(s)`);
+      Alert.alert(
+        'Partial Save',
+        `Your workout was updated, but ${parts.join(' and ')} could not be saved. You may want to check the workout details.`
+      );
     }
 
     return true;

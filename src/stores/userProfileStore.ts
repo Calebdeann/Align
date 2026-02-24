@@ -130,6 +130,9 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
             set({ profile: newProfile, isLoading: false, lastFetchedAt: Date.now() });
             return;
           }
+          // Profile doesn't exist and couldn't be created - expected for sign-in attempts without an account
+          set({ isLoading: false });
+          return;
         }
         console.error('Error fetching profile:', error);
         set({ isLoading: false });

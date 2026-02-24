@@ -28,11 +28,10 @@ import {
 } from '@/services/api/workouts';
 import * as Haptics from 'expo-haptics';
 import { UnitSystem, kgToLbs, getWeightUnit, fromKgForDisplay } from '@/utils/units';
-import { formatExerciseNameString } from '@/utils/textFormatters';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { prefetchExerciseGif } from '@/stores/exerciseStore';
+import { prefetchExerciseGif, resolveExerciseDisplayName } from '@/stores/exerciseStore';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
 import { getTemplateImageById } from '@/constants/templateImages';
 
@@ -109,7 +108,11 @@ const getSupersetColor = (supersetId: number): string => {
   return SUPERSET_COLORS[(supersetId - 1) % SUPERSET_COLORS.length];
 };
 
-const getSetTypeLabel = (setType: SetType | undefined | null, setIndex: number): string => {
+const getSetTypeLabel = (
+  setType: SetType | undefined | null,
+  setIndex: number,
+  allSetTypes: (SetType | undefined | null)[]
+): string => {
   switch (setType) {
     case 'warmup':
       return 'W';
@@ -117,8 +120,14 @@ const getSetTypeLabel = (setType: SetType | undefined | null, setIndex: number):
       return 'F';
     case 'dropset':
       return 'D';
-    default:
-      return (setIndex + 1).toString();
+    default: {
+      let normalCount = 0;
+      for (let i = 0; i <= setIndex; i++) {
+        const t = allSetTypes[i];
+        if (!t || t === 'normal') normalCount++;
+      }
+      return normalCount.toString();
+    }
   }
 };
 
@@ -595,7 +604,7 @@ export default function WorkoutDetailsScreen() {
                     <ExerciseImage
                       gifUrl={ex.image_url || undefined}
                       thumbnailUrl={ex.thumbnail_url || undefined}
-                      size={40}
+                      size={46}
                       borderRadius={8}
                     />
                   </Pressable>
@@ -614,7 +623,7 @@ export default function WorkoutDetailsScreen() {
                           : undefined
                       }
                     >
-                      {formatExerciseNameString(ex.exercise_name)}
+                      {resolveExerciseDisplayName(ex.exercise_id, ex.exercise_name)}
                     </Text>
                   </View>
                   <Ionicons
@@ -647,7 +656,11 @@ export default function WorkoutDetailsScreen() {
                             set.set_type === 'dropset' && styles.setTypeDropset,
                           ]}
                         >
-                          {getSetTypeLabel(set.set_type, setIndex)}
+                          {getSetTypeLabel(
+                            set.set_type,
+                            setIndex,
+                            completedSets.map((s) => s.set_type)
+                          )}
                         </Text>
                         <Text style={styles.setText}>
                           {set.weight && set.reps

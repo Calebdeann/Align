@@ -14,8 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
-// TODO: Re-enable when Push Notifications capability is added in Apple Developer Portal
-// import * as Notifications from 'expo-notifications';
+import { requestNotificationPermissions, scheduleDailyReminder } from '@/services/notifications';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
@@ -331,16 +330,15 @@ export default function ReminderScreen() {
           style={styles.continueButton}
           disabled={isNavigating}
           onPress={() =>
-            withLock(() => {
+            withLock(async () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-              // TODO: Re-enable when Push Notifications capability is added in Apple Developer Portal
-              // Request notification permissions
-              // const { status } = await Notifications.requestPermissionsAsync();
-              // const granted = status === 'granted';
+              const granted = await requestNotificationPermissions();
+              if (granted) {
+                await scheduleDailyReminder(timeString);
+              }
 
-              // Save preferences (for now, just save as true since we can't request permissions yet)
-              useOnboardingStore.getState().setAndSave('notificationsEnabled', true);
+              useOnboardingStore.getState().setAndSave('notificationsEnabled', granted);
               useOnboardingStore.getState().setAndSave('reminderTime', timeString);
 
               router.push('/onboarding/thank-you');

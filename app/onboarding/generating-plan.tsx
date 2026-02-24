@@ -78,16 +78,10 @@ export default function GeneratingPlanScreen() {
 
   const { isConfigured, configurationError } = useSuperwall();
   const { registerPlacement } = usePlacement({
-    onPresent: (info) => console.log('[Superwall] Paywall presented:', info.name),
-    onDismiss: (info, result) => console.log('[Superwall] Paywall dismissed:', result),
-    onSkip: (reason) => {
-      console.log('[Superwall] Paywall skipped:', JSON.stringify(reason));
-      navigateToSignup();
-    },
-    onError: (error) => {
-      console.log('[Superwall] Paywall error:', error);
-      navigateToSignup();
-    },
+    onPresent: () => {},
+    onDismiss: () => {},
+    onSkip: () => navigateToSignup(),
+    onError: () => navigateToSignup(),
   });
 
   const navigateToSignup = useCallback(() => {
@@ -202,31 +196,15 @@ export default function GeneratingPlanScreen() {
 
   // Trigger Superwall paywall when loading finishes and SDK is ready
   useEffect(() => {
-    console.log(
-      `[Superwall] Effect: loadingComplete=${loadingComplete}, isConfigured=${isConfigured}, configError=${configurationError}, triggered=${paywallTriggered.current}`
-    );
     if (!loadingComplete || paywallTriggered.current) return;
 
     if (isConfigured) {
       paywallTriggered.current = true;
-      console.log('[Superwall] Calling registerPlacement with onboarding_trigger');
       registerPlacement({
         placement: 'onboarding_trigger',
-        feature: () => {
-          console.log('[Superwall] Feature callback fired, navigating to signup');
-          navigateToSignup();
-        },
+        feature: () => navigateToSignup(),
       });
-      return;
     }
-
-    console.log('[Superwall] SDK not configured yet, starting 5s timeout');
-    // Safety timeout: if SDK doesn't configure within 5s, skip paywall
-    const timeout = setTimeout(() => {
-      console.log('[Superwall] Timeout reached, skipping paywall');
-      navigateToSignup();
-    }, 5000);
-    return () => clearTimeout(timeout);
   }, [loadingComplete, isConfigured]);
 
   const currentMessage = stages[currentStage]?.message || stages[0].message;

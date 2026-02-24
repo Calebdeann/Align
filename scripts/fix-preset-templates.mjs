@@ -215,6 +215,8 @@ const MANUAL_OVERRIDES = {
   'cable wood chop': 'cable twist',
 
   // === Compound / Full body ===
+  'clean and jerk (barbell)': 'barbell clean and press',
+  'standing hammer curl and press': 'dumbbell standing alternate hammer curl and press',
   'romanian deadlift': 'barbell romanian deadlift',
   'romanian deadlift (barbell)': 'barbell romanian deadlift',
   'good mornings': 'barbell good morning',
@@ -313,6 +315,7 @@ function buildIndexes(exercises) {
   const byName = new Map();
   const byDisplayName = new Map();
   const byExerciseDbId = new Map();
+  const byUuid = new Map();
 
   for (const ex of exercises) {
     const lowerName = ex.name.toLowerCase();
@@ -330,9 +333,11 @@ function buildIndexes(exercises) {
     if (ex.exercise_db_id) {
       byExerciseDbId.set(ex.exercise_db_id, ex);
     }
+
+    byUuid.set(ex.id, ex);
   }
 
-  return { byName, byDisplayName, byExerciseDbId };
+  return { byName, byDisplayName, byExerciseDbId, byUuid };
 }
 
 function extractGifId(gifUrl) {
@@ -412,6 +417,13 @@ function parseTemplateExercises(content) {
     let gifUrlLine = -1;
     for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
       if (lines[j].includes('gifUrl:')) {
+        // Check for null value
+        const nullMatch = lines[j].match(/gifUrl:\s*null/);
+        if (nullMatch) {
+          gifUrl = null;
+          gifUrlLine = j;
+          break;
+        }
         // Value might be on same line or next line
         const sameLineMatch = lines[j].match(/gifUrl:\s*'([^']+)'/);
         if (sameLineMatch) {
@@ -435,6 +447,13 @@ function parseTemplateExercises(content) {
     let thumbnailUrlLine = -1;
     for (let j = i + 1; j < Math.min(i + 12, lines.length); j++) {
       if (lines[j].includes('thumbnailUrl:')) {
+        // Check for null value
+        const nullMatch = lines[j].match(/thumbnailUrl:\s*null/);
+        if (nullMatch) {
+          thumbnailUrl = null;
+          thumbnailUrlLine = j;
+          break;
+        }
         const sameLineMatch = lines[j].match(/thumbnailUrl:\s*'([^']+)'/);
         if (sameLineMatch) {
           thumbnailUrl = sameLineMatch[1];
@@ -471,10 +490,7 @@ function parseTemplateExercises(content) {
 // ---------- Correction logic ----------
 
 function getCorrectExerciseId(dbExercise) {
-  if (dbExercise.exercise_db_id) {
-    return dbExercise.exercise_db_id;
-  }
-  return slugify(dbExercise.name);
+  return dbExercise.id;
 }
 
 function getCorrectGifUrl(dbExercise) {
@@ -500,19 +516,31 @@ function applyCorrections(content, corrections) {
     }
 
     // Update gifUrl
-    if (corr.newGifUrl !== undefined && corr.gifUrlLine >= 0 && corr.oldGifUrl) {
-      lines[corr.gifUrlLine] = lines[corr.gifUrlLine].replace(
-        `'${corr.oldGifUrl}'`,
-        `'${corr.newGifUrl}'`
-      );
+    if (corr.newGifUrl !== undefined && corr.gifUrlLine >= 0) {
+      if (corr.oldGifUrl === null) {
+        // Replace null with URL string (preserve indentation)
+        const indent = lines[corr.gifUrlLine].match(/^(\s*)/)[1];
+        lines[corr.gifUrlLine] = `${indent}gifUrl:\n${indent}  '${corr.newGifUrl}',`;
+      } else if (corr.oldGifUrl) {
+        lines[corr.gifUrlLine] = lines[corr.gifUrlLine].replace(
+          `'${corr.oldGifUrl}'`,
+          `'${corr.newGifUrl}'`
+        );
+      }
     }
 
     // Update thumbnailUrl
-    if (corr.newThumbnailUrl !== undefined && corr.thumbnailUrlLine >= 0 && corr.oldThumbnailUrl) {
-      lines[corr.thumbnailUrlLine] = lines[corr.thumbnailUrlLine].replace(
-        `'${corr.oldThumbnailUrl}'`,
-        `'${corr.newThumbnailUrl}'`
-      );
+    if (corr.newThumbnailUrl !== undefined && corr.thumbnailUrlLine >= 0) {
+      if (corr.oldThumbnailUrl === null) {
+        // Replace null with URL string (preserve indentation)
+        const indent = lines[corr.thumbnailUrlLine].match(/^(\s*)/)[1];
+        lines[corr.thumbnailUrlLine] = `${indent}thumbnailUrl:\n${indent}  '${corr.newThumbnailUrl}',`;
+      } else if (corr.oldThumbnailUrl) {
+        lines[corr.thumbnailUrlLine] = lines[corr.thumbnailUrlLine].replace(
+          `'${corr.oldThumbnailUrl}'`,
+          `'${corr.newThumbnailUrl}'`
+        );
+      }
     }
   }
 
@@ -543,8 +571,27 @@ const alreadyCorrect = [];
 const skipped = [];
 const unmatched = [];
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 for (const tmplEx of templateExercises) {
-  const { match, method } = findBestMatch(tmplEx.exerciseName, tmplEx.gifUrl, indexes, exercises);
+  let match = null;
+  let method = '';
+
+  // For exercises that already have a valid UUID, look them up directly
+  if (UUID_RE.test(tmplEx.exerciseId)) {
+    const dbEx = indexes.byUuid.get(tmplEx.exerciseId);
+    if (dbEx) {
+      match = dbEx;
+      method = 'uuid-lookup';
+    }
+  }
+
+  // Fall back to name-based matching (for preset-* IDs or UUID not found)
+  if (!match) {
+    const result = findBestMatch(tmplEx.exerciseName, tmplEx.gifUrl, indexes, exercises);
+    match = result.match;
+    method = result.method;
+  }
 
   if (method === 'manual-skip') {
     skipped.push({ ...tmplEx, method });
@@ -604,14 +651,14 @@ if (corrections.length > 0) {
       console.log(`    exerciseId: ${c.oldExerciseId} -> ${c.newExerciseId}`);
     }
     if (c.newGifUrl !== undefined) {
-      const oldId = c.oldGifUrl.match(/\/(\d{4})\./)?.[1] || '?';
-      const newId = c.newGifUrl.match(/\/(\d{4})\./)?.[1] || '?';
-      if (oldId !== newId) console.log(`    gifUrl: ...${oldId}.gif -> ...${newId}.gif`);
+      const oldId = c.oldGifUrl ? (c.oldGifUrl.match(/\/(\d{4})\./)?.[1] || '?') : 'null';
+      const newId = c.newGifUrl ? (c.newGifUrl.match(/\/(\d{4})\./)?.[1] || '?') : 'null';
+      console.log(`    gifUrl: ${oldId === 'null' ? 'null' : `...${oldId}.gif`} -> ${newId === 'null' ? 'null' : `...${newId}.gif`}`);
     }
     if (c.newThumbnailUrl !== undefined) {
-      const oldId = c.oldThumbnailUrl.match(/\/(\d{4})\./)?.[1] || '?';
-      const newId = c.newThumbnailUrl.match(/\/(\d{4})\./)?.[1] || '?';
-      if (oldId !== newId) console.log(`    thumbnailUrl: ...${oldId}.png -> ...${newId}.png`);
+      const oldId = c.oldThumbnailUrl ? (c.oldThumbnailUrl.match(/\/(\d{4})\./)?.[1] || '?') : 'null';
+      const newId = c.newThumbnailUrl ? (c.newThumbnailUrl.match(/\/(\d{4})\./)?.[1] || '?') : 'null';
+      console.log(`    thumbnailUrl: ${oldId === 'null' ? 'null' : `...${oldId}.png`} -> ${newId === 'null' ? 'null' : `...${newId}.png`}`);
     }
   }
   console.log('');

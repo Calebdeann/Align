@@ -1,6 +1,5 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { clearWidgetWorkoutState } from './widgetBridge';
 
 // Persisted key for surviving app restarts
 const ACTIVITY_ID_KEY = 'live-activity-id';
@@ -8,6 +7,16 @@ const ACTIVITY_ID_KEY = 'live-activity-id';
 // Module-level activity ID — only one workout Live Activity at a time
 let currentActivityId: string | null = null;
 let isStarting = false;
+
+export interface CurrentExerciseInfo {
+  exerciseName: string;
+  currentSetNumber: number;
+  totalSets: number;
+  weight: string;
+  reps: string;
+  weightUnit: string;
+  imageUrl?: string;
+}
 
 function isSupported(): boolean {
   return Platform.OS === 'ios';
@@ -19,8 +28,7 @@ function isSupported(): boolean {
 async function getLiveActivityModule() {
   try {
     return await import('expo-live-activity');
-  } catch (e) {
-    console.warn('[LiveActivity] Module unavailable:', e);
+  } catch {
     return null;
   }
 }
@@ -45,13 +53,25 @@ async function getPersistedActivityId(): Promise<string | null> {
   }
 }
 
-/**
- * Build the subtitle string for the Live Activity.
- */
-function buildSubtitle(exerciseCount: number, completedSets: number): string {
-  const ex = exerciseCount === 1 ? '1 exercise' : `${exerciseCount} exercises`;
-  const sets = completedSets === 1 ? '1 set' : `${completedSets} sets`;
-  return `${ex} \u2022 ${sets} completed`;
+function buildTitle(info: CurrentExerciseInfo | null): string {
+  if (!info) return '';
+  return info.exerciseName;
+}
+
+function buildSubtitle(info: CurrentExerciseInfo | null): string {
+  if (!info) return '';
+  const setStr = `Set ${info.currentSetNumber} of ${info.totalSets}`;
+  const hasWeight = info.weight !== '';
+  const hasReps = info.reps !== '';
+  if (!hasWeight && !hasReps) {
+    return `${setStr} \u00B7 No values`;
+  }
+  const weightStr = hasWeight ? `${info.weight}${info.weightUnit}` : '';
+  const repsStr = hasReps ? info.reps : '';
+  if (weightStr && repsStr) {
+    return `${setStr} \u00B7 ${weightStr} \u00D7 ${repsStr}`;
+  }
+  return `${setStr} \u00B7 ${weightStr || repsStr}`;
 }
 
 /**
@@ -69,10 +89,9 @@ export async function cleanupStaleLiveActivities(): Promise<void> {
     try {
       LiveActivity.stopActivity(persistedId, { title: 'Workout Complete' });
     } catch {
-      // Activity may already be expired - that's fine
+      // Activity may already be expired
     }
     await persistActivityId(null);
-    clearWidgetWorkoutState();
   }
 }
 
@@ -81,10 +100,8 @@ export async function cleanupStaleLiveActivities(): Promise<void> {
  * The elapsed timer counts up natively from startedAt via ActivityKit.
  */
 export async function startWorkoutLiveActivity(
-  workoutName: string,
-  exerciseCount: number,
-  completedSets: number,
-  startedAt: string
+  startedAt: string,
+  currentExercise: CurrentExerciseInfo | null
 ): Promise<void> {
   if (!isSupported() || isStarting) return;
   isStarting = true;
@@ -108,8 +125,9 @@ export async function startWorkoutLiveActivity(
 
     const id = LiveActivity.startActivity(
       {
-        title: workoutName || 'Workout',
-        subtitle: buildSubtitle(exerciseCount, completedSets),
+        title: buildTitle(currentExercise),
+        subtitle: buildSubtitle(currentExercise),
+        imageName: currentExercise?.imageUrl || undefined,
         progressBar: {
           date: new Date(startedAt).getTime(),
         },
@@ -120,7 +138,7 @@ export async function startWorkoutLiveActivity(
         progressViewTint: '#947AFF',
         progressViewLabelColor: '#947AFF',
         deepLinkUrl: 'align://active-workout',
-        timerType: 'digital',
+        timerType: 'digital' as const,
       }
     );
 
@@ -129,7 +147,6 @@ export async function startWorkoutLiveActivity(
       await persistActivityId(id);
     }
   } catch (e) {
-    // Live Activity is non-critical - warn instead of error to avoid red screen
     console.warn('[LiveActivity] Failed to start:', e);
   } finally {
     isStarting = false;
@@ -137,16 +154,12 @@ export async function startWorkoutLiveActivity(
 }
 
 /**
- * Update the Live Activity with new exercise/set counts.
- * The timer keeps counting automatically — only subtitle changes.
- * Optionally pass thumbnailUrl for the current exercise image.
+ * Update the Live Activity with current exercise info.
+ * The timer keeps counting automatically — only title/subtitle change.
  */
 export async function updateWorkoutLiveActivity(
-  workoutName: string,
-  exerciseCount: number,
-  completedSets: number,
   startedAt: string,
-  thumbnailUrl?: string
+  currentExercise: CurrentExerciseInfo | null
 ): Promise<void> {
   if (!isSupported() || !currentActivityId) return;
 
@@ -155,12 +168,12 @@ export async function updateWorkoutLiveActivity(
 
   try {
     LiveActivity.updateActivity(currentActivityId, {
-      title: workoutName || 'Workout',
-      subtitle: buildSubtitle(exerciseCount, completedSets),
+      title: buildTitle(currentExercise),
+      subtitle: buildSubtitle(currentExercise),
+      imageName: currentExercise?.imageUrl || undefined,
       progressBar: {
         date: new Date(startedAt).getTime(),
       },
-      ...(thumbnailUrl ? { imageName: thumbnailUrl } : {}),
     });
   } catch (e) {
     console.warn('[LiveActivity] Failed to update:', e);
@@ -185,7 +198,6 @@ export async function endWorkoutLiveActivity(): Promise<void> {
   }
   currentActivityId = null;
   await persistActivityId(null);
-  clearWidgetWorkoutState();
 }
 
 /**

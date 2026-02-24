@@ -9,7 +9,6 @@ import { useExerciseStore } from '@/stores/exerciseStore';
 import * as Haptics from 'expo-haptics';
 import { ExerciseImage } from '@/components/ExerciseImage';
 import { useTranslation } from 'react-i18next';
-import { toTitleCase } from '@/utils/textFormatters';
 
 // Muscle chip component
 function MuscleChip({ muscle }: { muscle: string }) {
@@ -195,7 +194,7 @@ export default function ExerciseDetailScreen() {
               <Ionicons name="help-circle-outline" size={32} color={colors.textTertiary} />
               <Text style={styles.noInstructionsText}>{t('workout.instructionsComingSoon')}</Text>
               <Text style={styles.noInstructionsSubtext}>
-                {t('workout.searchYouTube', { name: toTitleCase(exercise.name) })}
+                {t('workout.searchYouTube', { name: translatedDisplayName })}
               </Text>
             </View>
           )}

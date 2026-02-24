@@ -2,6 +2,27 @@ import { Exercise, ExerciseTranslation } from '@/services/api/exercises';
 import { useExerciseStore } from '@/stores/exerciseStore';
 import { getSimplifiedMuscleId } from '@/constants/muscleGroups';
 
+// Bidirectional synonym groups for search.
+// Each inner array is a group of terms that should match each other.
+const SYNONYM_GROUPS: string[][] = [['plate', 'plated', 'weight', 'weighted']];
+
+// Build a lookup: term → set of synonyms (excluding itself)
+const synonymMap = new Map<string, string[]>();
+for (const group of SYNONYM_GROUPS) {
+  for (const term of group) {
+    const others = group.filter((t) => t !== term);
+    const existing = synonymMap.get(term);
+    synonymMap.set(term, existing ? [...existing, ...others] : others);
+  }
+}
+
+// Returns the query term plus any synonyms for it
+function expandWithSynonyms(term: string): string[] {
+  const lower = term.toLowerCase();
+  const synonyms = synonymMap.get(lower);
+  return synonyms ? [lower, ...synonyms] : [lower];
+}
+
 /**
  * Scores an exercise based on how well it matches a search query.
  * Higher scores indicate better matches.
@@ -35,31 +56,33 @@ function scoreExercise(
 
   let score = 0;
 
-  // Keyword matching: check English search aliases
+  // Keyword matching: take the BEST match across all keywords (not cumulative)
+  let bestKeywordScore = 0;
   for (const keyword of keywords) {
     const kw = keyword.toLowerCase();
     if (kw === q) {
-      score += 90;
+      bestKeywordScore = Math.max(bestKeywordScore, 90);
     } else if (kw.startsWith(q)) {
-      score += 80;
+      bestKeywordScore = Math.max(bestKeywordScore, 80);
     } else if (kw.includes(q)) {
-      score += 40;
+      bestKeywordScore = Math.max(bestKeywordScore, 40);
     }
   }
 
-  // Translated keyword matching (same weights)
+  // Translated keyword matching (same approach, best match wins)
   if (translation?.keywords) {
     for (const keyword of translation.keywords) {
       const kw = keyword.toLowerCase();
       if (kw === q) {
-        score += 90;
+        bestKeywordScore = Math.max(bestKeywordScore, 90);
       } else if (kw.startsWith(q)) {
-        score += 80;
+        bestKeywordScore = Math.max(bestKeywordScore, 80);
       } else if (kw.includes(q)) {
-        score += 40;
+        bestKeywordScore = Math.max(bestKeywordScore, 40);
       }
     }
   }
+  score += bestKeywordScore;
 
   // Name matching (checks English name, display_name, and translated names)
   const tName = translation?.name?.toLowerCase() || '';
@@ -74,11 +97,16 @@ function scoreExercise(
     score += 100;
   }
 
-  const nameWords = name.split(/\s+/);
-  const displayWords = displayName ? displayName.split(/\s+/) : [];
-  const tNameWords = tName ? tName.split(/\s+/) : [];
-  const tDisplayWords = tDisplayName ? tDisplayName.split(/\s+/) : [];
-  const allWords = [...nameWords, ...displayWords, ...tNameWords, ...tDisplayWords];
+  // Strip surrounding punctuation so "(pec" matches "pec" and "deck)" matches "deck"
+  const strip = (w: string) => w.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '');
+
+  const nameWords = name.split(/\s+/).map(strip);
+  const displayWords = displayName ? displayName.split(/\s+/).map(strip) : [];
+  const tNameWords = tName ? tName.split(/\s+/).map(strip) : [];
+  const tDisplayWords = tDisplayName ? tDisplayName.split(/\s+/).map(strip) : [];
+  const allWords = [...nameWords, ...displayWords, ...tNameWords, ...tDisplayWords].filter(
+    (w) => w.length > 0
+  );
 
   if (allWords.some((word) => word === q)) {
     score += 50;
@@ -116,6 +144,10 @@ function scoreExercise(
  * Returns exercises sorted by score (highest first).
  * Scores against both English and translated names/keywords.
  *
+ * Multi-word queries are split into individual terms. Each term is scored
+ * independently, and exercises matching more terms always rank higher.
+ * e.g. "bench incline" matches "Incline Bench Press" (2 words) above "Incline Curl" (1 word).
+ *
  * If no query is provided, returns the original array unchanged.
  */
 export function searchAndRankExercises(exercises: Exercise[], query: string): Exercise[] {
@@ -129,11 +161,42 @@ export function searchAndRankExercises(exercises: Exercise[], query: string): Ex
   // Get current translations for bilingual search
   const translations = useExerciseStore.getState().translations;
 
+  // Split query into individual words (filter out empty strings from extra spaces)
+  const queryWords = trimmedQuery.split(/\s+/).filter((w) => w.length > 0);
+
   return exercises
-    .map((exercise) => ({
-      exercise,
-      score: scoreExercise(exercise, trimmedQuery, translations.get(exercise.id)),
-    }))
+    .map((exercise) => {
+      const translation = translations.get(exercise.id);
+
+      if (queryWords.length === 1) {
+        // Single word: score original + synonyms, take best
+        const variants = expandWithSynonyms(trimmedQuery);
+        let best = 0;
+        for (const variant of variants) {
+          best = Math.max(best, scoreExercise(exercise, variant, translation));
+        }
+        return { exercise, score: best };
+      }
+
+      // Multi-word: score each word independently, expanding synonyms
+      let matchedWords = 0;
+      let totalScore = 0;
+      for (const word of queryWords) {
+        const variants = expandWithSynonyms(word);
+        let bestWordScore = 0;
+        for (const variant of variants) {
+          bestWordScore = Math.max(bestWordScore, scoreExercise(exercise, variant, translation));
+        }
+        if (bestWordScore > 0) {
+          matchedWords++;
+          totalScore += bestWordScore;
+        }
+      }
+
+      // Exercises matching more words always rank above those matching fewer
+      const score = matchedWords > 0 ? matchedWords * 1000 + totalScore : 0;
+      return { exercise, score };
+    })
     .filter((result) => result.score > 0)
     .sort((a, b) => {
       // Sort by score descending

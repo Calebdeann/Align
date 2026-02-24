@@ -27,6 +27,12 @@ import { signOut, deleteUserAccount } from '@/services/api/user';
 import { useUserProfileStore, getHighResAvatarUrl } from '@/stores/userProfileStore';
 import { supabase } from '@/services/supabase';
 import { clearUserDataFromStorage } from '@/lib/storeManager';
+import {
+  requestNotificationPermissions,
+  scheduleDailyReminder,
+  cancelDailyReminder,
+  getNotificationPermissionStatus,
+} from '@/services/notifications';
 
 // Required for web browser auth to close properly
 WebBrowser.maybeCompleteAuthSession();
@@ -181,9 +187,41 @@ export default function ProfileScreen() {
 
   async function handleNotificationToggle(value: boolean) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setNotificationsEnabled(value);
-    if (userId) {
-      await updateProfile({ notifications_enabled: value });
+
+    if (value) {
+      const granted = await requestNotificationPermissions();
+      if (!granted) {
+        Alert.alert(
+          t('profile.notifications.permissionDeniedTitle', {
+            defaultValue: 'Notifications Disabled',
+          }),
+          t('profile.notifications.permissionDeniedMessage', {
+            defaultValue:
+              'Please enable notifications in your device Settings to receive workout reminders.',
+          }),
+          [
+            { text: t('common.cancel', { defaultValue: 'Cancel' }) },
+            {
+              text: t('profile.notifications.openSettings', { defaultValue: 'Open Settings' }),
+              onPress: () => Linking.openSettings(),
+            },
+          ]
+        );
+        return;
+      }
+      setNotificationsEnabled(true);
+      if (userId) {
+        await updateProfile({ notifications_enabled: true });
+      }
+      if (profile?.reminder_time) {
+        await scheduleDailyReminder(profile.reminder_time);
+      }
+    } else {
+      setNotificationsEnabled(false);
+      if (userId) {
+        await updateProfile({ notifications_enabled: false });
+      }
+      await cancelDailyReminder();
     }
   }
 
@@ -363,8 +401,14 @@ export default function ProfileScreen() {
                 return;
               }
               const available = await StoreReview.isAvailableAsync();
+              console.log('[StoreReview] isAvailable:', available);
               if (available) {
-                await StoreReview.requestReview();
+                try {
+                  await StoreReview.requestReview();
+                  console.log('[StoreReview] requestReview called');
+                } catch (e) {
+                  console.warn('[StoreReview] requestReview error:', e);
+                }
               } else {
                 Alert.alert(i18n.t('profile.comingSoon'), i18n.t('profile.comingSoonMessage'));
               }
@@ -455,8 +499,8 @@ export default function ProfileScreen() {
           />
         </MenuCard>
 
-        {/* Quick Google Login (visible for TestFlight/dev, remove for App Store submission) */}
-        {!userId && (
+        {/* Quick Google Login - DEV ONLY */}
+        {__DEV_MODE__ && !userId && (
           <>
             <SectionHeader title="Quick Login" />
             <Pressable
@@ -579,7 +623,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   bottomSpacer: {
-    height: 40,
+    height: 80,
   },
   divider: {
     height: 1,

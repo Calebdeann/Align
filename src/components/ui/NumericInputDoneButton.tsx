@@ -1,5 +1,6 @@
 import React from 'react';
 import { InputAccessoryView, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 // TextInputs that want this toolbar should set inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
 export const NUMERIC_ACCESSORY_ID = 'numericDoneButton';
@@ -9,7 +10,13 @@ export function NumericInputDoneButton() {
     <InputAccessoryView nativeID={NUMERIC_ACCESSORY_ID}>
       <View style={styles.toolbar}>
         <View style={styles.spacer} />
-        <Pressable onPress={() => Keyboard.dismiss()} style={styles.doneButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Keyboard.dismiss();
+          }}
+          style={styles.doneButton}
+        >
           <Text style={styles.doneText}>Done</Text>
         </Pressable>
       </View>

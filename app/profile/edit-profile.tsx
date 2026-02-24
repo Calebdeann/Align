@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -23,15 +23,28 @@ export default function EditProfileScreen() {
 
   // Initialize state from cached profile
   const [name, setName] = useState(profile?.name || '');
+  const [weight, setWeight] = useState(profile?.weight?.toString() || '');
+  const [height, setHeight] = useState(profile?.height?.toString() || '');
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingWeight, setIsEditingWeight] = useState(false);
+  const [isEditingHeight, setIsEditingHeight] = useState(false);
+  const nameInputRef = useRef<TextInput>(null);
+  const weightInputRef = useRef<TextInput>(null);
+  const heightInputRef = useRef<TextInput>(null);
+
+  const weightUnit = profile?.weight_unit || 'lbs';
+  const heightUnit = profile?.measurement_unit || 'in';
 
   // Sync state when profile loads/changes (but only if user hasn't made changes)
   useEffect(() => {
     if (profile && !hasChanges) {
       setName(profile.name || '');
+      setWeight(profile.weight?.toString() || '');
+      setHeight(profile.height?.toString() || '');
     }
   }, [profile, hasChanges]);
 
@@ -63,7 +76,16 @@ export default function EditProfileScreen() {
         return;
       }
 
-      const success = await updateProfile({ name: trimmedName });
+      const updates: Record<string, unknown> = { name: trimmedName };
+      const parsedWeight = parseFloat(weight);
+      if (!isNaN(parsedWeight) && parsedWeight > 0) {
+        updates.weight = parsedWeight;
+      }
+      const parsedHeight = parseFloat(height);
+      if (!isNaN(parsedHeight) && parsedHeight > 0) {
+        updates.height = parsedHeight;
+      }
+      const success = await updateProfile(updates);
 
       setIsSaving(false);
 
@@ -219,16 +241,93 @@ export default function EditProfileScreen() {
           <Text style={styles.inputLabel}>Name</Text>
           <View style={styles.inputRow}>
             <TextInput
+              ref={nameInputRef}
               style={styles.input}
               value={name}
               onChangeText={handleNameChange}
               placeholder="Name"
               placeholderTextColor={colors.textSecondary}
               autoCapitalize="words"
+              editable={isEditingName}
+              pointerEvents={isEditingName ? 'auto' : 'none'}
+              onBlur={() => setIsEditingName(false)}
             />
-            <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsEditingName(true);
+                setTimeout(() => nameInputRef.current?.focus(), 100);
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
+            </Pressable>
           </View>
           {nameError && <Text style={styles.errorText}>{nameError}</Text>}
+        </View>
+
+        {/* Weight */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Weight ({weightUnit})</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              ref={weightInputRef}
+              style={styles.input}
+              value={weight}
+              onChangeText={(v) => {
+                setWeight(v);
+                setHasChanges(true);
+              }}
+              placeholder="Weight"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="decimal-pad"
+              editable={isEditingWeight}
+              pointerEvents={isEditingWeight ? 'auto' : 'none'}
+              onBlur={() => setIsEditingWeight(false)}
+            />
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsEditingWeight(true);
+                setTimeout(() => weightInputRef.current?.focus(), 100);
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Height */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Height ({heightUnit})</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              ref={heightInputRef}
+              style={styles.input}
+              value={height}
+              onChangeText={(v) => {
+                setHeight(v);
+                setHasChanges(true);
+              }}
+              placeholder="Height"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="decimal-pad"
+              editable={isEditingHeight}
+              pointerEvents={isEditingHeight ? 'auto' : 'none'}
+              onBlur={() => setIsEditingHeight(false)}
+            />
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setIsEditingHeight(true);
+                setTimeout(() => heightInputRef.current?.focus(), 100);
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
+            </Pressable>
+          </View>
         </View>
       </View>
     </SafeAreaView>

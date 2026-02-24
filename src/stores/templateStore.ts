@@ -34,6 +34,7 @@ export interface TemplateExercise {
   notes?: string;
   restTimerSeconds: number;
   supersetId?: number | null; // null = not in a superset, 1+ = superset group
+  is_custom?: boolean;
 }
 
 // Main template structure
@@ -56,6 +57,7 @@ export interface WorkoutTemplate {
     | 'push'
     | 'upper-body'
     | 'at-home'
+    | 'full-body'
     | 'travel'
     | 'cardio'
     | 'rehab'; // For explore filter categories
@@ -198,22 +200,27 @@ export const useTemplateStore = create<TemplateStore>()(
           folders,
         });
 
-        // Save to backend if userId is provided
+        // Save to backend if userId is provided (retry once on failure)
         if (input.userId) {
-          saveUserTemplate(input.userId, input)
-            .then((backendId) => {
+          const saveToBackend = async (retries = 1) => {
+            try {
+              const backendId = await saveUserTemplate(input.userId!, input);
               if (backendId) {
-                // Update local template with backend ID, keep original local ID for lookups
                 set((state) => ({
                   templates: state.templates.map((t) =>
                     t.id === newTemplate.id ? { ...t, id: backendId, _localId: newTemplate.id } : t
                   ),
                 }));
               }
-            })
-            .catch((err) => {
-              logger.warn('Failed to save template to backend', { error: err });
-            });
+            } catch (err) {
+              if (retries > 0) {
+                setTimeout(() => saveToBackend(retries - 1), 3000);
+              } else {
+                logger.warn('Failed to save template to backend after retries', { error: err });
+              }
+            }
+          };
+          saveToBackend();
         }
 
         return newTemplate;
@@ -475,6 +482,27 @@ export const useTemplateStore = create<TemplateStore>()(
 // Helper to calculate total sets in a template
 export function getTemplateTotalSets(template: WorkoutTemplate): number {
   return template.exercises.reduce((total, ex) => total + ex.sets.length, 0);
+}
+
+// Estimate workout duration from exercises, sets, and rest timers
+export function estimateTemplateDuration(template: { exercises: TemplateExercise[] }): number {
+  const SET_DURATION = 40; // seconds actively performing a set
+  const TRANSITION_TIME = 30; // seconds between exercises
+  const DEFAULT_REST = 60; // fallback rest if not specified
+  const DEFAULT_SETS = 3; // assumed sets when none defined
+
+  if (template.exercises.length === 0) return 5;
+
+  let totalSeconds = 0;
+  for (const exercise of template.exercises) {
+    const sets = exercise.sets.length || DEFAULT_SETS;
+    const rest = exercise.restTimerSeconds || DEFAULT_REST;
+    totalSeconds += sets * SET_DURATION + (sets - 1) * rest;
+  }
+  totalSeconds += (template.exercises.length - 1) * TRANSITION_TIME;
+
+  const minutes = totalSeconds / 60;
+  return Math.max(5, Math.round(minutes / 5) * 5);
 }
 
 // Helper to format duration for display

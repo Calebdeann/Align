@@ -32,18 +32,17 @@ function getGoalInfo(currentWeight: number, targetWeight: number) {
   let difficulty: 'moderate' | 'challenging' | 'difficult';
   let description: string;
 
+  const action = isLosing ? 'lose' : 'gain';
+
   if (percentChange < 10) {
     difficulty = 'moderate';
-    description =
-      'You will lose <10% of your body weight. This is a realistic and sustainable goal achievable through moderate dietary control and increased physical activity.';
+    description = `A ${Math.round(percentChange)}% ${action} is a realistic and sustainable goal, achievable through consistent training and balanced nutrition.`;
   } else if (percentChange < 20) {
     difficulty = 'challenging';
-    description =
-      'This goal requires consistent effort and dedication. Stay committed to your plan!';
+    description = `A ${Math.round(percentChange)}% ${action} requires consistent effort and dedication. Stay committed to your plan!`;
   } else {
     difficulty = 'difficult';
-    description =
-      'This is an ambitious goal! Consider breaking it into smaller milestones for better success.';
+    description = `A ${Math.round(percentChange)}% ${action} is an ambitious goal! Consider breaking it into smaller milestones for better success.`;
   }
 
   return {

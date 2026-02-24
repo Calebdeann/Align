@@ -10,9 +10,9 @@ import {
   ActivityIndicator,
   Modal,
   Animated,
-  Image,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +34,9 @@ import {
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 import { getTemplateImageById } from '@/constants/templateImages';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { cancelWorkoutInProgressReminder } from '@/services/notifications';
+import { endWorkoutLiveActivity } from '@/services/liveActivity';
+import { resolveExerciseDisplayName } from '@/stores/exerciseStore';
 
 // Set types matching the active workout
 type SetType = 'normal' | 'warmup' | 'failure' | 'dropset';
@@ -369,7 +372,7 @@ export default function SaveWorkoutScreen() {
   }, [params.workoutData]);
 
   const [workoutTitle, setWorkoutTitle] = useState(
-    isEditMode && params.editTitle ? (params.editTitle as string) : ''
+    isEditMode && params.editTitle ? (params.editTitle as string) : workoutData.templateName || ''
   );
   const [description, setDescription] = useState(
     isEditMode && params.editNotes ? (params.editNotes as string) : ''
@@ -458,7 +461,7 @@ export default function SaveWorkoutScreen() {
     return workoutData.exercises.map((we, index) => ({
       id: `tex_${Date.now()}_${index}`,
       exerciseId: we.exercise.id,
-      exerciseName: we.exercise.name,
+      exerciseName: resolveExerciseDisplayName(we.exercise.id, we.exercise.name),
       muscle: we.exercise.muscle,
       sets: we.sets
         .filter((s) => s.completed)
@@ -567,7 +570,7 @@ export default function SaveWorkoutScreen() {
         imageTemplateId: selectedImage?.templateImageId || undefined,
         exercises: exercisesWithCompletedSets.map((we) => ({
           exerciseId: we.exercise.id,
-          exerciseName: we.exercise.name,
+          exerciseName: resolveExerciseDisplayName(we.exercise.id, we.exercise.name),
           exerciseMuscle: we.exercise.muscle,
           notes: we.notes,
           supersetId: we.supersetId ?? null,
@@ -618,6 +621,8 @@ export default function SaveWorkoutScreen() {
 
         if (workoutId) {
           // Clear active workout now that save is confirmed
+          cancelWorkoutInProgressReminder();
+          endWorkoutLiveActivity();
           discardActiveWorkout();
           // Auto-mark the scheduled workout as complete for today
           const todayKey = `${completedAt.getFullYear()}-${String(completedAt.getMonth() + 1).padStart(2, '0')}-${String(completedAt.getDate()).padStart(2, '0')}`;
@@ -745,9 +750,19 @@ export default function SaveWorkoutScreen() {
             >
               {selectedImage ? (
                 selectedImage.localSource ? (
-                  <Image source={selectedImage.localSource} style={styles.selectedImage} />
+                  <Image
+                    source={selectedImage.localSource}
+                    style={styles.selectedImage}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
                 ) : (
-                  <Image source={{ uri: selectedImage.uri }} style={styles.selectedImage} />
+                  <Image
+                    source={{ uri: selectedImage.uri }}
+                    style={styles.selectedImage}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
                 )
               ) : (
                 <ImagePlaceholderIcon />
@@ -773,7 +788,7 @@ export default function SaveWorkoutScreen() {
         </View>
 
         {/* Stats Section */}
-        <Text style={styles.sectionTitle}>Stats</Text>
+        <Text style={styles.sectionTitle}>{t('saveWorkout.stats')}</Text>
         <View style={styles.card}>
           <Pressable
             style={styles.statRow}
@@ -801,7 +816,7 @@ export default function SaveWorkoutScreen() {
             <View style={styles.statIconContainer}>
               <Ionicons name="barbell-outline" size={18} color={colors.text} />
             </View>
-            <Text style={styles.statLabel}>Volume</Text>
+            <Text style={styles.statLabel}>{t('saveWorkout.volume')}</Text>
             <Text style={styles.statValue}>{formatVolume(totalVolume, units)}</Text>
           </View>
 
@@ -821,24 +836,23 @@ export default function SaveWorkoutScreen() {
             style={styles.discardButton}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              Alert.alert(
-                'Discard Workout',
-                'Are you sure you want to discard this workout? This cannot be undone.',
-                [
-                  { text: i18n.t('common.cancel'), style: 'cancel' },
-                  {
-                    text: 'Discard',
-                    style: 'destructive',
-                    onPress: () => {
-                      discardActiveWorkout();
-                      router.dismissAll();
-                    },
+              Alert.alert(t('saveWorkout.discardWorkout'), t('saveWorkout.discardWorkoutMessage'), [
+                { text: i18n.t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('saveWorkout.discard'),
+                  style: 'destructive',
+                  onPress: () => {
+                    cancelWorkoutInProgressReminder();
+                    endWorkoutLiveActivity();
+                    discardActiveWorkout();
+                    router.dismissAll();
+                    router.replace('/(tabs)');
                   },
-                ]
-              );
+                },
+              ]);
             }}
           >
-            <Text style={styles.discardButtonText}>Discard Workout</Text>
+            <Text style={styles.discardButtonText}>{t('saveWorkout.discardWorkout')}</Text>
           </Pressable>
         )}
 
@@ -867,7 +881,7 @@ export default function SaveWorkoutScreen() {
             disabled={isNavigating}
           >
             <Ionicons name="pencil-outline" size={18} color={colors.primary} />
-            <Text style={styles.editExercisesText}>Edit Exercises</Text>
+            <Text style={styles.editExercisesText}>{t('saveWorkout.editExercises')}</Text>
           </Pressable>
         )}
 
@@ -885,11 +899,8 @@ export default function SaveWorkoutScreen() {
       <Modal visible={showExerciseChangeModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.exerciseChangeModal}>
-            <Text style={styles.modalTitle}>Update Template?</Text>
-            <Text style={styles.modalSubtitle}>
-              You added or removed exercises from your workout. Would you like to update your
-              template with these changes?
-            </Text>
+            <Text style={styles.modalTitle}>{t('saveWorkout.updateTemplateTitle')}</Text>
+            <Text style={styles.modalSubtitle}>{t('saveWorkout.updateTemplateMessage')}</Text>
 
             <Pressable
               style={styles.updateTemplateButton}
@@ -898,7 +909,7 @@ export default function SaveWorkoutScreen() {
                 handleUpdateTemplate();
               }}
             >
-              <Text style={styles.updateTemplateButtonText}>Update Template</Text>
+              <Text style={styles.updateTemplateButtonText}>{t('saveWorkout.updateTemplate')}</Text>
             </Pressable>
 
             <Pressable
@@ -908,7 +919,7 @@ export default function SaveWorkoutScreen() {
                 handleKeepOriginal();
               }}
             >
-              <Text style={styles.keepOriginalButtonText}>Keep Original</Text>
+              <Text style={styles.keepOriginalButtonText}>{t('saveWorkout.keepOriginal')}</Text>
             </Pressable>
           </View>
         </View>

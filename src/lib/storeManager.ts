@@ -16,6 +16,11 @@ import { useRecentExercisesStore } from '@/stores/recentExercisesStore';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { logger } from '@/utils/logger';
+import {
+  scheduleDailyReminder,
+  cancelDailyReminder,
+  cancelWorkoutInProgressReminder,
+} from '@/services/notifications';
 
 // Initial default states (must match store definitions)
 const WORKOUT_STORE_INITIAL = {
@@ -65,12 +70,19 @@ export function initializeStoreManager() {
       // User logged out or switched accounts
       if (previousUserId !== null) {
         resetStores();
+        cancelDailyReminder();
+        cancelWorkoutInProgressReminder();
       }
 
       // New user logged in
       if (newUserId !== null) {
         await rehydrateStores();
-        useUserProfileStore.getState().refreshProfile();
+        await useUserProfileStore.getState().refreshProfile();
+        // Re-schedule daily reminder if the user had it enabled
+        const profile = useUserProfileStore.getState().profile;
+        if (profile?.notifications_enabled && profile?.reminder_time) {
+          scheduleDailyReminder(profile.reminder_time);
+        }
       }
 
       previousUserId = newUserId;

@@ -78,11 +78,14 @@ export default function ReviewsScreen() {
     } else {
       StoreReview.isAvailableAsync()
         .then((isAvailable) => {
+          console.log('[StoreReview] isAvailable:', isAvailable);
           if (isAvailable) {
-            StoreReview.requestReview().catch(() => {});
+            StoreReview.requestReview()
+              .then(() => console.log('[StoreReview] requestReview called'))
+              .catch((e) => console.warn('[StoreReview] requestReview error:', e));
           }
         })
-        .catch(() => {});
+        .catch((e) => console.warn('[StoreReview] isAvailableAsync error:', e));
     }
 
     setTimeout(() => {

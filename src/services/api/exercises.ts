@@ -42,6 +42,8 @@ export interface Exercise {
   popularity?: number; // 0 = default, 1-5 = popular (used as search ranking tiebreaker)
   // Computed property for backward compatibility
   muscle?: string;
+  // Custom exercise flag
+  is_custom?: boolean;
 }
 
 // Exercise history entry for detail page

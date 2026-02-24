@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
@@ -27,6 +28,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   handleRetry = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     this.setState({ hasError: false });
   };
 

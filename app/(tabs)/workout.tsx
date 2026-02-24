@@ -10,12 +10,11 @@ import {
   Animated,
   Dimensions,
   PanResponder,
-  GestureResponderEvent,
-  PanResponderGestureState,
   Alert,
   TextInput,
 } from 'react-native';
-import { Image } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import Svg, { Path, Rect, Circle, Line } from 'react-native-svg';
@@ -33,6 +32,7 @@ import {
   WorkoutTemplate,
   TemplateFolder,
   getTemplateTotalSets,
+  estimateTemplateDuration,
   formatTemplateDuration,
   DEFAULT_FOLDER_ID,
 } from '@/stores/templateStore';
@@ -300,6 +300,54 @@ function WorkoutHistoryCard({ workout }: WorkoutHistoryCardProps) {
   );
 }
 
+const SWIPE_DELETE_WIDTH = 60;
+
+function SwipeableTemplateCard({
+  template,
+  onDelete,
+  children,
+}: {
+  template: WorkoutTemplate;
+  onDelete: (template: WorkoutTemplate) => void;
+  children: React.ReactNode;
+}) {
+  const swipeableRef = useRef<Swipeable>(null);
+
+  const handleDelete = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    swipeableRef.current?.close();
+    onDelete(template);
+  }, [template, onDelete]);
+
+  const renderRightActions = useCallback(() => {
+    return (
+      <Pressable style={templateSwipeStyles.deleteButton} onPress={handleDelete}>
+        <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+      </Pressable>
+    );
+  }, [handleDelete]);
+
+  return (
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      rightThreshold={30}
+      overshootRight={false}
+      friction={2}
+    >
+      {children}
+    </Swipeable>
+  );
+}
+
+const templateSwipeStyles = StyleSheet.create({
+  deleteButton: {
+    width: SWIPE_DELETE_WIDTH,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+
 interface TemplateCardProps {
   template: WorkoutTemplate;
   onStart: () => void;
@@ -321,8 +369,8 @@ function TemplateCard({
 }: TemplateCardProps) {
   const totalSets = useMemo(() => getTemplateTotalSets(template), [template]);
   const duration = useMemo(
-    () => formatTemplateDuration(template.estimatedDuration),
-    [template.estimatedDuration]
+    () => formatTemplateDuration(estimateTemplateDuration(template)),
+    [template]
   );
   const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragActivatedRef = useRef(false);
@@ -342,9 +390,19 @@ function TemplateCard({
       {/* Template Image */}
       <View style={styles.templateImageContainer}>
         {template.localImage ? (
-          <Image source={template.localImage} style={styles.templateImage} />
+          <Image
+            source={template.localImage}
+            style={styles.templateImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : template.image?.uri ? (
-          <Image source={{ uri: template.image.uri }} style={styles.templateImage} />
+          <Image
+            source={{ uri: template.image.uri }}
+            style={styles.templateImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : (
           <View style={[styles.templateImage, styles.templateImagePlaceholder]}>
             <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
@@ -512,9 +570,19 @@ function DraggableTemplateRow({
       </Pressable>
       <View style={styles.reorderImagePlaceholder}>
         {template.localImage ? (
-          <Image source={template.localImage} style={styles.reorderImage} />
+          <Image
+            source={template.localImage}
+            style={styles.reorderImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : template.image?.uri ? (
-          <Image source={{ uri: template.image.uri }} style={styles.reorderImage} />
+          <Image
+            source={{ uri: template.image.uri }}
+            style={styles.reorderImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : (
           <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
         )}
@@ -782,6 +850,57 @@ export default function WorkoutScreen() {
       });
     });
   };
+
+  const handleDeleteTemplate = useCallback(
+    (template: WorkoutTemplate) => {
+      const linkedWorkouts = getScheduledWorkoutsForTemplate(template.id);
+
+      const doRemove = (deleteWorkouts: boolean) => {
+        if (deleteWorkouts) {
+          removeScheduledWorkoutsForTemplate(template.id);
+        } else {
+          detachScheduledWorkoutsFromTemplate(template.id);
+        }
+        removeTemplate(template.id);
+      };
+
+      if (linkedWorkouts.length > 0) {
+        const count = linkedWorkouts.length;
+        Alert.alert(
+          i18n.t('template.removeTitle'),
+          i18n.t('template.removeWithWorkouts', { name: template.name, count }),
+          [
+            { text: i18n.t('common.cancel'), style: 'cancel' },
+            { text: i18n.t('template.keepWorkouts'), onPress: () => doRemove(false) },
+            {
+              text: i18n.t('template.deleteAll'),
+              style: 'destructive',
+              onPress: () => doRemove(true),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          i18n.t('template.removeTitle'),
+          i18n.t('template.removeConfirm', { name: template.name }),
+          [
+            { text: i18n.t('common.cancel'), style: 'cancel' },
+            {
+              text: i18n.t('common.remove'),
+              style: 'destructive',
+              onPress: () => doRemove(false),
+            },
+          ]
+        );
+      }
+    },
+    [
+      getScheduledWorkoutsForTemplate,
+      removeScheduledWorkoutsForTemplate,
+      detachScheduledWorkoutsFromTemplate,
+      removeTemplate,
+    ]
+  );
 
   async function loadWorkoutHistory() {
     setIsLoading(true);
@@ -1372,20 +1491,25 @@ export default function WorkoutScreen() {
                         </Pressable>
                       ) : (
                         folderTemplates.map((template) => (
-                          <TemplateCard
+                          <SwipeableTemplateCard
                             key={template.id}
                             template={template}
-                            onStart={() => handleStartFromTemplate(template.id)}
-                            onPress={() => handleTemplatePress(template)}
-                            onDragActivate={
-                              folders.length > 1
-                                ? (t, px, py) => activateDrag(t, folder.id, px, py)
-                                : undefined
-                            }
-                            onDragMove={folders.length > 1 ? handleDragTouchMove : undefined}
-                            onDragEnd={folders.length > 1 ? handleDragDrop : undefined}
-                            isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
-                          />
+                            onDelete={handleDeleteTemplate}
+                          >
+                            <TemplateCard
+                              template={template}
+                              onStart={() => handleStartFromTemplate(template.id)}
+                              onPress={() => handleTemplatePress(template)}
+                              onDragActivate={
+                                folders.length > 1
+                                  ? (t, px, py) => activateDrag(t, folder.id, px, py)
+                                  : undefined
+                              }
+                              onDragMove={folders.length > 1 ? handleDragTouchMove : undefined}
+                              onDragEnd={folders.length > 1 ? handleDragDrop : undefined}
+                              isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
+                            />
+                          </SwipeableTemplateCard>
                         ))
                       )}
                     </View>
@@ -1396,20 +1520,25 @@ export default function WorkoutScreen() {
 
             {/* Render unfoldered templates */}
             {unfolderedTemplates.map((template) => (
-              <TemplateCard
+              <SwipeableTemplateCard
                 key={template.id}
                 template={template}
-                onStart={() => handleStartFromTemplate(template.id)}
-                onPress={() => handleTemplatePress(template)}
-                onDragActivate={
-                  folders.length > 1
-                    ? (t, px, py) => activateDrag(t, DEFAULT_FOLDER_ID, px, py)
-                    : undefined
-                }
-                onDragMove={folders.length > 1 ? handleDragTouchMove : undefined}
-                onDragEnd={folders.length > 1 ? handleDragDrop : undefined}
-                isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
-              />
+                onDelete={handleDeleteTemplate}
+              >
+                <TemplateCard
+                  template={template}
+                  onStart={() => handleStartFromTemplate(template.id)}
+                  onPress={() => handleTemplatePress(template)}
+                  onDragActivate={
+                    folders.length > 1
+                      ? (t, px, py) => activateDrag(t, DEFAULT_FOLDER_ID, px, py)
+                      : undefined
+                  }
+                  onDragMove={folders.length > 1 ? handleDragTouchMove : undefined}
+                  onDragEnd={folders.length > 1 ? handleDragDrop : undefined}
+                  isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
+                />
+              </SwipeableTemplateCard>
             ))}
           </View>
         )}
@@ -1693,9 +1822,19 @@ export default function WorkoutScreen() {
           >
             <View style={styles.templateImageContainer}>
               {draggedTemplate.localImage ? (
-                <Image source={draggedTemplate.localImage} style={styles.templateImage} />
+                <Image
+                  source={draggedTemplate.localImage}
+                  style={styles.templateImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
               ) : draggedTemplate.image?.uri ? (
-                <Image source={{ uri: draggedTemplate.image.uri }} style={styles.templateImage} />
+                <Image
+                  source={{ uri: draggedTemplate.image.uri }}
+                  style={styles.templateImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
               ) : (
                 <View style={[styles.templateImage, styles.templateImagePlaceholder]}>
                   <Ionicons name="barbell-outline" size={20} color={colors.textSecondary} />
@@ -1706,7 +1845,7 @@ export default function WorkoutScreen() {
               <Text style={styles.templateName}>{draggedTemplate.name}</Text>
               <Text style={styles.templateMeta}>
                 {getTemplateTotalSets(draggedTemplate)} Sets •{' '}
-                {formatTemplateDuration(draggedTemplate.estimatedDuration)}
+                {formatTemplateDuration(estimateTemplateDuration(draggedTemplate))}
               </Text>
             </View>
           </View>

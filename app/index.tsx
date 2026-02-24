@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { Image } from 'react-native';
 import { Link, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
+import * as SplashScreen from 'expo-splash-screen';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
 
@@ -49,39 +50,25 @@ export default function OnboardingWelcome() {
             .single();
 
           if (profile) {
-            if (__DEV__) {
-              // In dev mode, show welcome screen for testing instead of auto-redirecting
-              console.log(
-                `[Auth:AutoLogin] Dev mode - showing welcome screen (user ${user.id.slice(0, 8)}...)`
-              );
-            } else {
-              console.log(
-                `[Auth:AutoLogin] Found existing session for ${user.id.slice(0, 8)}..., redirecting`
-              );
-              router.replace('/(tabs)');
-              return;
-            }
+            router.replace('/(tabs)');
+            return;
           }
           // Auth exists but no profile, user abandoned onboarding. Sign them out and show welcome.
-          console.log('[Auth:AutoLogin] Session exists but no profile, signing out');
           await supabase.auth.signOut();
         }
       } catch (error) {
-        console.warn('[Auth:AutoLogin] Error checking session:', error);
+        // Session check failed, show welcome screen
       } finally {
         setIsCheckingAuth(false);
+        SplashScreen.hideAsync().catch(() => {});
       }
     }
     checkExistingSession();
   }, []);
 
-  // Show purple screen while checking auth (matches the welcome screen background)
+  // Keep splash screen visible while checking auth
   if (isCheckingAuth) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.textInverse} />
-      </View>
-    );
+    return null;
   }
 
   return (
@@ -163,12 +150,8 @@ export default function OnboardingWelcome() {
 
         {/* Main content - positioned slightly above center */}
         <View style={styles.content}>
-          <Pressable onPress={() => router.push('/onboarding/generating-plan?skipTo=70')}>
-            <Text style={styles.logo}>{t('welcome.align')}</Text>
-          </Pressable>
-          <Pressable onPress={() => router.replace('/(tabs)')}>
-            <Text style={styles.tagline}>{t('welcome.forTheGirls')}</Text>
-          </Pressable>
+          <Text style={styles.logo}>{t('welcome.align')}</Text>
+          <Text style={styles.tagline}>{t('welcome.forTheGirls')}</Text>
         </View>
 
         {/* Bottom buttons */}

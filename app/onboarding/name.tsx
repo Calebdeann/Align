@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,20 +12,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
-import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
-import { useUserProfileStore } from '@/stores/userProfileStore';
+import { colors, fonts, fontSize, spacing, radius } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 export default function NameScreen() {
   const { t } = useTranslation();
-  const { updateProfile } = useUserProfileStore();
+  const { setAndSave, skipField } = useOnboardingStore();
   const { isNavigating, withLock } = useNavigationLock();
   const [name, setName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const trimmedName = name.trim();
-  const canContinue = trimmedName.length >= 2 && !nameError;
+  const canContinue = trimmedName.length >= 3 && !nameError;
 
   async function handleContinue() {
     if (!trimmedName) {
@@ -38,15 +48,8 @@ export default function NameScreen() {
     setNameError(null);
 
     try {
-      // Save the name (skip uniqueness check - names don't need to be unique)
-      const success = await updateProfile({ name: trimmedName });
-
-      if (success) {
-        // Navigate to main app
-        router.replace('/(tabs)');
-      } else {
-        setNameError(t('errors.failedToSave'));
-      }
+      await setAndSave('name', trimmedName);
+      router.push('/onboarding/experience');
     } catch (error) {
       console.error('Error saving name:', error);
       setNameError(t('errors.somethingWentWrongTryAgain'));
@@ -76,14 +79,15 @@ export default function NameScreen() {
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: '100%' }]} />
+          <View style={[styles.progressBarFill, { width: '2%' }]} />
         </View>
 
         <Pressable
           onPress={() =>
             withLock(() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.replace('/(tabs)');
+              skipField('name');
+              router.push('/onboarding/experience');
             })
           }
           disabled={isNavigating}
@@ -97,9 +101,9 @@ export default function NameScreen() {
         <Text style={styles.questionText}>{t('onboarding.name.question')}</Text>
       </View>
 
-      {/* Input */}
-      <View style={styles.inputSection}>
-        <View style={styles.inputContainer}>
+      {/* Centered input */}
+      <View style={styles.centerSection}>
+        <View style={styles.inputCard}>
           <TextInput
             style={styles.input}
             value={name}
@@ -107,35 +111,33 @@ export default function NameScreen() {
             placeholder={t('onboarding.name.placeholder')}
             placeholderTextColor={colors.textSecondary}
             autoCapitalize="words"
-            autoFocus
+            autoFocus={false}
             returnKeyType="done"
             onSubmitEditing={canContinue ? handleContinue : undefined}
           />
         </View>
         {nameError && <Text style={styles.errorText}>{nameError}</Text>}
-        <Text style={styles.helperText}>{t('onboarding.name.helper')}</Text>
       </View>
-
-      {/* Spacer */}
-      <View style={styles.spacer} />
 
       {/* Continue Button */}
-      <View style={styles.bottomSection}>
-        <Pressable
-          style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            handleContinue();
-          }}
-          disabled={!canContinue || isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.continueText}>{t('common.continue')}</Text>
-          )}
-        </Pressable>
-      </View>
+      {!keyboardVisible && (
+        <View style={styles.bottomSection}>
+          <Pressable
+            style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              handleContinue();
+            }}
+            disabled={!canContinue || isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.continueText}>{t('common.continue')}</Text>
+            )}
+          </Pressable>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -193,20 +195,29 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     textAlign: 'center',
   },
-  inputSection: {
+  centerSection: {
+    flex: 1,
+    justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: 60,
+    marginTop: -200,
   },
-  inputContainer: {
-    ...cardStyle,
-    padding: spacing.md,
+  inputCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 74,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: 'rgba(239, 239, 239, 0.5)',
   },
   input: {
+    flex: 1,
     fontFamily: fonts.semiBold,
-    fontSize: fontSize.xl,
-    color: colors.text,
+    fontSize: 24,
+    color: '#000000',
     textAlign: 'center',
-    padding: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   errorText: {
     fontFamily: fonts.regular,
@@ -214,16 +225,6 @@ const styles = StyleSheet.create({
     color: colors.error,
     textAlign: 'center',
     marginTop: spacing.sm,
-  },
-  helperText: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.md,
-  },
-  spacer: {
-    flex: 1,
   },
   bottomSection: {
     paddingHorizontal: spacing.lg,

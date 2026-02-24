@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, Dimensions, Animated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { playTimerSoundDouble, triggerTimerVibration } from '@/utils/sounds';
@@ -123,6 +124,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
   };
 
   const handleTimerAdjust = (delta: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (!timerRunning) {
       const newValue = Math.max(0, timerSeconds + delta);
       setTimerSeconds(newValue);
@@ -134,11 +136,13 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
   };
 
   const handleStopwatchAdjust = (delta: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newValue = Math.max(0, stopwatchSeconds + delta);
     setStopwatchSeconds(newValue);
   };
 
   const handleTimerStartStop = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (timerRunning) {
       setTimerRunning(false);
     } else {
@@ -150,6 +154,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
   };
 
   const handleStopwatchStartStop = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (stopwatchRunning) {
       setStopwatchRunning(false);
     } else {
@@ -158,6 +163,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
   };
 
   const handleTabChange = (tab: ClockTab) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveTab(tab);
     if (tab === 'timer') {
       const progress =
@@ -175,6 +181,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
   });
 
   const handleClose = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
   };
 

@@ -1,19 +1,38 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions, Share, Linking, Modal } from 'react-native';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  Pressable,
+  Dimensions,
+  Linking,
+  Modal,
+  FlatList,
+  ViewToken,
+  Animated,
+  PixelRatio,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
+import { captureRef } from 'react-native-view-shot';
+import RNShare, { Social } from 'react-native-share';
 import { colors, fonts, fontSize, spacing, shadows } from '@/constants/theme';
 import { getCompletedWorkoutCount } from '@/services/api/workouts';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH * 0.85;
+const CARD_MARGIN = 24;
+const CARD_WIDTH = SCREEN_WIDTH - CARD_MARGIN * 2;
+const CARD_HEIGHT = CARD_WIDTH / 1.3;
 
-type CardBackground = 'light' | 'dark' | 'white';
+type CardBackground = 'default' | 'dark' | 'purple' | 'white' | 'transparent';
+
+const THEME_KEYS: CardBackground[] = ['default', 'dark', 'purple', 'white', 'transparent'];
 
 const COMPLIMENTS = [
   'Great Work!',
@@ -53,7 +72,7 @@ const CARD_THEMES: Record<
   CardBackground,
   { bg: string; text: string; sub: string; brand: string }
 > = {
-  light: {
+  default: {
     bg: '#F5F4FA',
     text: colors.text,
     sub: colors.textSecondary,
@@ -65,13 +84,94 @@ const CARD_THEMES: Record<
     sub: 'rgba(255,255,255,0.6)',
     brand: 'rgba(255,255,255,0.35)',
   },
+  purple: {
+    bg: '#947AFF',
+    text: '#FFFFFF',
+    sub: 'rgba(255,255,255,0.7)',
+    brand: 'rgba(255,255,255,0.4)',
+  },
   white: {
     bg: '#FFFFFF',
     text: colors.text,
     sub: colors.textSecondary,
     brand: colors.textTertiary,
   },
+  transparent: {
+    bg: 'transparent',
+    text: '#1A1A1A',
+    sub: '#666666',
+    brand: '#999999',
+  },
 };
+
+const THEME_LABELS: Record<CardBackground, string> = {
+  default: 'Default',
+  dark: 'Dark',
+  purple: 'Purple',
+  white: 'White',
+  transparent: 'None',
+};
+
+const THEME_LABEL_COLORS: Record<CardBackground, string> = {
+  default: colors.text,
+  dark: '#FFFFFF',
+  purple: '#FFFFFF',
+  white: colors.text,
+  transparent: colors.text,
+};
+
+const CARD_INDICES = [0, 1, 2, 3];
+
+// Font families per card: title font, value font, label font, brand font
+const CARD_FONTS: { title: string; value: string; label: string; brand: string }[] = [
+  { title: fonts.bold, value: fonts.bold, label: fonts.medium, brand: fonts.semiBold },
+  {
+    title: 'CormorantGaramond-Bold',
+    value: 'CormorantGaramond-Bold',
+    label: 'CormorantGaramond-Medium',
+    brand: 'CormorantGaramond-SemiBold',
+  },
+  { title: 'Lora-Bold', value: 'Lora-Bold', label: 'Lora-Medium', brand: 'Lora-SemiBold' },
+  {
+    title: 'GochiHand-Regular',
+    value: 'GochiHand-Regular',
+    label: 'GochiHand-Regular',
+    brand: 'GochiHand-Regular',
+  },
+];
+
+function AnimatedDot({ isActive }: { isActive: boolean }) {
+  const widthAnim = useRef(new Animated.Value(isActive ? 24 : 8)).current;
+  const opacityAnim = useRef(new Animated.Value(isActive ? 1 : 0.4)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(widthAnim, {
+        toValue: isActive ? 24 : 8,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: isActive ? 1 : 0.4,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [isActive, widthAnim, opacityAnim]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.dot,
+        {
+          width: widthAnim,
+          backgroundColor: isActive ? colors.primary : colors.border,
+          opacity: opacityAnim,
+        },
+      ]}
+    />
+  );
+}
 
 export default function WorkoutCompleteScreen() {
   const { t } = useTranslation();
@@ -86,11 +186,27 @@ export default function WorkoutCompleteScreen() {
   const totalSets = (params.totalSets as string) || '0';
   const userId = params.userId as string;
 
+  const completionDate = useMemo(() => {
+    const now = new Date();
+    const month = now.toLocaleDateString('en-US', { month: 'short' });
+    const day = now.getDate();
+    const time = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    return `${month} ${day} at ${time}`;
+  }, []);
+
   const [workoutNumber, setWorkoutNumber] = useState<number | null>(null);
-  const [cardBg, setCardBg] = useState<CardBackground>('light');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [selectedTheme, setSelectedTheme] = useState<CardBackground>('default');
   const [showBgPicker, setShowBgPicker] = useState(false);
 
-  const theme = CARD_THEMES[cardBg];
+  const flatListRef = useRef<FlatList>(null);
+  const cardRefs = useRef<(View | null)[]>([]);
+  const activeIndexRef = useRef(0);
+  activeIndexRef.current = activeIndex;
 
   const shareText = `Just finished my workout - ${workoutTitle}! ${formatDuration(durationSeconds)} | ${Number(totalVolume).toLocaleString()} ${volumeUnit} @align_tracker`;
 
@@ -106,102 +222,421 @@ export default function WorkoutCompleteScreen() {
     }
   }, []);
 
+  // Stable viewability config for FlatList
+  const viewabilityConfigCallbackPairs = useRef([
+    {
+      viewabilityConfig: { viewAreaCoveragePercentThreshold: 50 },
+      onViewableItemsChanged: ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+        if (viewableItems.length > 0 && viewableItems[0].index != null) {
+          setActiveIndex(viewableItems[0].index);
+        }
+      },
+    },
+  ]);
+
+  // Capture the currently visible card as an image
+  const captureCard = async (
+    resultType: 'base64' | 'tmpfile' = 'base64'
+  ): Promise<string | null> => {
+    const ref = cardRefs.current[activeIndexRef.current];
+    if (!ref) return null;
+    try {
+      // Target 3x resolution for crisp sharing on all devices
+      const scale = PixelRatio.get();
+      const targetScale = Math.max(scale, 3);
+      return await captureRef(ref, {
+        format: 'png',
+        quality: 1,
+        result: resultType,
+        width: Math.round((CARD_WIDTH * targetScale) / scale),
+        height: Math.round((CARD_HEIGHT * targetScale) / scale),
+      });
+    } catch (e) {
+      console.warn('[WorkoutComplete] Card capture failed:', e);
+      return null;
+    }
+  };
+
   const shareToInstagramStories = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const canOpen = await Linking.canOpenURL('instagram://app');
-    if (canOpen) {
-      await Linking.openURL('instagram://app');
-    } else {
-      await Share.share({ message: shareText });
-    }
-  }, [shareText]);
+    const base64 = await captureCard('base64');
+    if (!base64) return;
 
-  const shareToTwitter = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const twitterUrl = `twitter://post?message=${encodeURIComponent(shareText)}`;
-    const webUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+    const imageData = `data:image/png;base64,${base64}`;
 
     try {
-      const canOpen = await Linking.canOpenURL(twitterUrl);
-      if (canOpen) {
-        await Linking.openURL(twitterUrl);
+      if (selectedTheme === 'transparent') {
+        // Send as sticker so user can overlay on their own photo
+        await RNShare.shareSingle({
+          social: Social.InstagramStories,
+          appId: 'com.aligntracker.app',
+          stickerImage: imageData,
+          backgroundTopColor: '#000000',
+          backgroundBottomColor: '#000000',
+        });
       } else {
-        await Linking.openURL(webUrl);
+        await RNShare.shareSingle({
+          social: Social.InstagramStories,
+          appId: 'com.aligntracker.app',
+          backgroundImage: imageData,
+        });
       }
     } catch {
-      await Linking.openURL(webUrl);
+      // Instagram not installed or share cancelled
     }
-  }, [shareText]);
+  }, [selectedTheme]);
+
+  const shareToX = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const uri = await captureCard('tmpfile');
+    if (!uri) return;
+
+    try {
+      await RNShare.shareSingle({
+        social: Social.Twitter,
+        url: `file://${uri}`,
+        type: 'image/png',
+      });
+    } catch {
+      // X not installed or share cancelled
+    }
+  }, []);
 
   const shareGeneral = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await Share.share({ message: shareText });
-  }, [shareText]);
+    const uri = await captureCard('tmpfile');
+    if (!uri) return;
+
+    try {
+      await RNShare.open({ url: `file://${uri}`, type: 'image/png' });
+    } catch {
+      // Share cancelled
+    }
+  }, []);
 
   const handleDone = () => {
     withLock(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       router.dismissAll();
+      router.replace('/(tabs)');
     });
   };
 
+  const renderDefaultCard = (
+    theme: (typeof CARD_THEMES)[CardBackground],
+    cardFont: (typeof CARD_FONTS)[0],
+    textShadow: object
+  ) => (
+    <>
+      <Text
+        style={[styles.cardTitle, { color: theme.text, fontFamily: cardFont.title }, textShadow]}
+      >
+        {workoutTitle}
+      </Text>
+
+      <View style={styles.statsGrid}>
+        <View style={styles.statCell}>
+          <Text
+            style={[
+              styles.statValue,
+              { color: theme.text, fontFamily: cardFont.value },
+              textShadow,
+            ]}
+          >
+            {formatDuration(durationSeconds)}
+          </Text>
+          <Text
+            style={[styles.statLabel, { color: theme.sub, fontFamily: cardFont.label }, textShadow]}
+          >
+            {t('workoutComplete.duration')}
+          </Text>
+        </View>
+        <View style={styles.statCell}>
+          <Text
+            style={[
+              styles.statValue,
+              { color: theme.text, fontFamily: cardFont.value },
+              textShadow,
+            ]}
+          >
+            {Number(totalVolume).toLocaleString()} {volumeUnit}
+          </Text>
+          <Text
+            style={[styles.statLabel, { color: theme.sub, fontFamily: cardFont.label }, textShadow]}
+          >
+            {t('workoutComplete.volume')}
+          </Text>
+        </View>
+        <View style={styles.statCell}>
+          <Text
+            style={[
+              styles.statValue,
+              { color: theme.text, fontFamily: cardFont.value },
+              textShadow,
+            ]}
+          >
+            {exerciseCount}
+          </Text>
+          <Text
+            style={[styles.statLabel, { color: theme.sub, fontFamily: cardFont.label }, textShadow]}
+          >
+            {parseInt(exerciseCount, 10) === 1 ? 'Exercise' : t('workoutComplete.exercises')}
+          </Text>
+        </View>
+        <View style={styles.statCell}>
+          <Text
+            style={[
+              styles.statValue,
+              { color: theme.text, fontFamily: cardFont.value },
+              textShadow,
+            ]}
+          >
+            {totalSets}
+          </Text>
+          <Text
+            style={[styles.statLabel, { color: theme.sub, fontFamily: cardFont.label }, textShadow]}
+          >
+            {t('workoutComplete.sets')}
+          </Text>
+        </View>
+      </View>
+      {/* Spacer to maintain space-between layout */}
+      <View />
+    </>
+  );
+
+  const renderCormorantCard = (theme: (typeof CARD_THEMES)[CardBackground], textShadow: object) => {
+    const hours = Math.floor(durationSeconds / 3600);
+    const minutes = Math.floor((durationSeconds % 3600) / 60);
+    const durationText = hours > 0 ? `${hours}h ${minutes} mins` : `${minutes} mins`;
+
+    return (
+      <View style={styles.cormorantContent}>
+        <Text style={[styles.cormorantDate, { color: theme.text }, textShadow]}>
+          {completionDate}
+        </Text>
+        <Text style={[styles.cormorantTitle, { color: theme.text }, textShadow]}>
+          {workoutTitle}
+        </Text>
+        <View style={styles.cormorantStatsRow}>
+          <View style={styles.cormorantStatCol}>
+            <Text style={[styles.cormorantStatLabel, { color: theme.text }, textShadow]}>Time</Text>
+            <Text style={[styles.cormorantStatValue, { color: theme.text }, textShadow]}>
+              {durationText}
+            </Text>
+          </View>
+          <View style={styles.cormorantStatCol}>
+            <Text style={[styles.cormorantStatLabel, { color: theme.text }, textShadow]}>
+              Volume
+            </Text>
+            <Text style={[styles.cormorantStatValue, { color: theme.text }, textShadow]}>
+              {Number(totalVolume).toLocaleString()} {volumeUnit}
+            </Text>
+          </View>
+          <View style={styles.cormorantStatCol}>
+            <Text style={[styles.cormorantStatLabel, { color: theme.text }, textShadow]}>Sets</Text>
+            <Text style={[styles.cormorantStatValue, { color: theme.text }, textShadow]}>
+              {totalSets} {parseInt(totalSets, 10) === 1 ? 'set' : 'sets'}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderLoraCard = (theme: (typeof CARD_THEMES)[CardBackground], textShadow: object) => {
+    const hours = Math.floor(durationSeconds / 3600);
+    const minutes = Math.floor((durationSeconds % 3600) / 60);
+    const durationText = hours > 0 ? `${hours}h ${minutes} mins` : `${minutes} mins`;
+
+    return (
+      <View style={styles.loraContent}>
+        <View style={styles.loraStatBlock}>
+          <Text style={[styles.loraLabel, { color: theme.text }, textShadow]}>Date</Text>
+          <Text style={[styles.loraValue, { color: theme.text }, textShadow]}>
+            {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </Text>
+        </View>
+        <View style={styles.loraStatBlock}>
+          <Text style={[styles.loraLabel, { color: theme.text }, textShadow]}>Time</Text>
+          <Text style={[styles.loraValue, { color: theme.text }, textShadow]}>{durationText}</Text>
+        </View>
+        <View style={styles.loraStatBlock}>
+          <Text style={[styles.loraLabel, { color: theme.text }, textShadow]}>Volume</Text>
+          <Text style={[styles.loraValue, { color: theme.text }, textShadow]}>
+            {Number(totalVolume).toLocaleString()} {volumeUnit}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderCaveatCard = (theme: (typeof CARD_THEMES)[CardBackground], textShadow: object) => {
+    const hours = Math.floor(durationSeconds / 3600);
+    const minutes = Math.floor((durationSeconds % 3600) / 60);
+    const durationText = hours > 0 ? `${hours}h ${minutes} mins` : `${minutes} mins`;
+
+    return (
+      <View style={styles.caveatLayout}>
+        <View style={styles.caveatRow}>
+          <View style={styles.caveatCell}>
+            <Text style={[styles.caveatLabel, { color: theme.sub }, textShadow]} numberOfLines={1}>
+              Time
+            </Text>
+            <Text
+              style={[styles.caveatValue, { color: theme.text }, textShadow]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {durationText}
+            </Text>
+          </View>
+          <View style={styles.caveatCell}>
+            <Text style={[styles.caveatLabel, { color: theme.sub }, textShadow]} numberOfLines={1}>
+              Volume
+            </Text>
+            <Text
+              style={[styles.caveatValue, { color: theme.text }, textShadow]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {Number(totalVolume).toLocaleString()} {volumeUnit}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.caveatRow}>
+          <View style={styles.caveatCell}>
+            <Text style={[styles.caveatLabel, { color: theme.sub }, textShadow]} numberOfLines={1}>
+              Exercises
+            </Text>
+            <Text
+              style={[styles.caveatValue, { color: theme.text }, textShadow]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {exerciseCount}
+            </Text>
+          </View>
+          <View style={styles.caveatCell}>
+            <Text style={[styles.caveatLabel, { color: theme.sub }, textShadow]} numberOfLines={1}>
+              Sets
+            </Text>
+            <Text
+              style={[styles.caveatValue, { color: theme.text }, textShadow]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {totalSets}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderCard = useCallback(
+    ({ item, index }: { item: number; index: number }) => {
+      const theme = CARD_THEMES[selectedTheme];
+      const cardFont = CARD_FONTS[index];
+      const isCentered = index !== 0;
+      const isTransparent = selectedTheme === 'transparent';
+
+      const textShadow = isTransparent
+        ? {
+            textShadowColor: 'rgba(0,0,0,0.3)',
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 3,
+          }
+        : {};
+
+      const renderContent = () => {
+        if (index === 1) return renderCormorantCard(theme, textShadow);
+        if (index === 2) return renderLoraCard(theme, textShadow);
+        if (index === 3) return renderCaveatCard(theme, textShadow);
+        return renderDefaultCard(theme, cardFont, textShadow);
+      };
+
+      return (
+        <View style={styles.cardPage}>
+          <View
+            style={[styles.shareCardShadow, isTransparent && { shadowOpacity: 0, elevation: 0 }]}
+          >
+            <View
+              ref={(ref) => {
+                cardRefs.current[index] = ref;
+              }}
+              collapsable={false}
+              style={[
+                styles.shareCardInner,
+                { backgroundColor: theme.bg },
+                isCentered && styles.shareCardCentered,
+              ]}
+            >
+              {renderContent()}
+              <Text style={[styles.brandText, { color: theme.brand }, textShadow]}>
+                @align.tracker
+              </Text>
+            </View>
+          </View>
+        </View>
+      );
+    },
+    [
+      workoutTitle,
+      durationSeconds,
+      totalVolume,
+      volumeUnit,
+      exerciseCount,
+      totalSets,
+      selectedTheme,
+      completionDate,
+      t,
+    ]
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.content}>
-        {/* Compliment Title */}
+      {/* Top content */}
+      <View style={styles.topSection}>
         <Text style={styles.complimentTitle}>{compliment}</Text>
-
-        {/* Workout Count Subtitle */}
         {workoutNumber !== null && (
           <Text style={styles.subtitle}>
             This is your {getOrdinalSuffix(workoutNumber)} workout
           </Text>
         )}
+      </View>
 
-        {/* Share Card */}
-        <View style={styles.cardContainer}>
-          <View style={[styles.shareCard, { backgroundColor: theme.bg }]}>
-            <Text style={[styles.cardTitle, { color: theme.text }]}>{workoutTitle}</Text>
+      {/* Card Carousel */}
+      <View style={styles.carouselContainer}>
+        <FlatList
+          ref={flatListRef}
+          data={CARD_INDICES}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          renderItem={renderCard}
+          keyExtractor={(item) => String(item)}
+          viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
+          getItemLayout={(_, index) => ({
+            length: SCREEN_WIDTH,
+            offset: SCREEN_WIDTH * index,
+            index,
+          })}
+          style={{ height: CARD_HEIGHT }}
+        />
 
-            <View style={styles.statsGrid}>
-              <View style={styles.statCell}>
-                <Text style={[styles.statValue, { color: theme.text }]}>
-                  {formatDuration(durationSeconds)}
-                </Text>
-                <Text style={[styles.statLabel, { color: theme.sub }]}>
-                  {t('workoutComplete.duration')}
-                </Text>
-              </View>
-              <View style={styles.statCell}>
-                <Text style={[styles.statValue, { color: theme.text }]}>
-                  {Number(totalVolume).toLocaleString()} {volumeUnit}
-                </Text>
-                <Text style={[styles.statLabel, { color: theme.sub }]}>
-                  {t('workoutComplete.volume')}
-                </Text>
-              </View>
-              <View style={styles.statCell}>
-                <Text style={[styles.statValue, { color: theme.text }]}>{exerciseCount}</Text>
-                <Text style={[styles.statLabel, { color: theme.sub }]}>
-                  {parseInt(exerciseCount, 10) === 1 ? 'Exercise' : t('workoutComplete.exercises')}
-                </Text>
-              </View>
-              <View style={styles.statCell}>
-                <Text style={[styles.statValue, { color: theme.text }]}>{totalSets}</Text>
-                <Text style={[styles.statLabel, { color: theme.sub }]}>
-                  {t('workoutComplete.sets')}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={[styles.brandText, { color: theme.brand }]}>align</Text>
-          </View>
+        {/* Pagination Dots */}
+        <View style={styles.paginationContainer}>
+          {CARD_INDICES.map((_, i) => (
+            <AnimatedDot key={i} isActive={i === activeIndex} />
+          ))}
         </View>
+      </View>
 
-        {/* Share CTA */}
-        <Text style={styles.shareCta}>{t('workoutComplete.shareWorkout')}</Text>
+      {/* Share CTA + Buttons */}
+      <View style={styles.shareSection}>
+        <Text style={styles.shareCta}>Share workout - Tag @align.tracker</Text>
 
-        {/* Share Buttons */}
         <View style={styles.shareRow}>
           <Pressable
             style={styles.shareButton}
@@ -211,15 +646,13 @@ export default function WorkoutCompleteScreen() {
             }}
           >
             <View style={styles.shareIconCircle}>
-              <Ionicons name="image-outline" size={24} color={colors.text} />
+              <Ionicons name="color-palette-outline" size={24} color={colors.text} />
             </View>
             <Text style={styles.shareLabel}>Background</Text>
           </Pressable>
 
           <Pressable style={styles.shareButton} onPress={shareToInstagramStories}>
-            <View style={styles.shareIconCircle}>
-              <Ionicons name="camera-outline" size={24} color={colors.text} />
-            </View>
+            <Image source={require('../assets/Insta_Icon.png')} style={styles.shareIconImage} />
             <Text style={styles.shareLabel}>Stories</Text>
           </Pressable>
 
@@ -227,17 +660,18 @@ export default function WorkoutCompleteScreen() {
             <View style={styles.shareIconCircle}>
               <Ionicons name="share-outline" size={24} color={colors.text} />
             </View>
-            <Text style={styles.shareLabel}>More</Text>
+            <Text style={styles.shareLabel}>Share</Text>
           </Pressable>
 
-          <Pressable style={styles.shareButton} onPress={shareToTwitter}>
-            <View style={styles.shareIconCircle}>
-              <Ionicons name="logo-twitter" size={24} color={colors.text} />
-            </View>
-            <Text style={styles.shareLabel}>Twitter</Text>
+          <Pressable style={styles.shareButton} onPress={shareToX}>
+            <Image source={require('../assets/X_Icon.png')} style={styles.shareIconImage} />
+            <Text style={styles.shareLabel}>X</Text>
           </Pressable>
         </View>
       </View>
+
+      {/* Spacer */}
+      <View style={{ flex: 1 }} />
 
       {/* Done Button */}
       <View style={styles.bottomSection}>
@@ -253,70 +687,56 @@ export default function WorkoutCompleteScreen() {
         animationType="fade"
         onRequestClose={() => setShowBgPicker(false)}
       >
-        <Pressable style={styles.bgPickerOverlay} onPress={() => setShowBgPicker(false)}>
+        <Pressable
+          style={styles.bgPickerOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowBgPicker(false);
+          }}
+        >
           <Pressable style={styles.bgPickerSheet} onPress={() => {}}>
             <Text style={styles.bgPickerTitle}>Card Background</Text>
 
             <View style={styles.bgPickerOptions}>
-              <Pressable
-                style={styles.bgPickerOptionWrapper}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setCardBg('light');
-                  setShowBgPicker(false);
-                }}
-              >
-                <View
-                  style={[
-                    styles.bgPickerOption,
-                    { backgroundColor: '#F5F4FA' },
-                    cardBg === 'light' && styles.bgPickerOptionSelected,
-                  ]}
+              {THEME_KEYS.map((key) => (
+                <Pressable
+                  key={key}
+                  style={styles.bgPickerOptionWrapper}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedTheme(key);
+                    setShowBgPicker(false);
+                  }}
                 >
-                  <Text style={[styles.bgPickerOptionLabel, { color: colors.text }]}>Aa</Text>
-                </View>
-                <Text style={styles.bgPickerLabelText}>Default</Text>
-              </Pressable>
-
-              <Pressable
-                style={styles.bgPickerOptionWrapper}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setCardBg('dark');
-                  setShowBgPicker(false);
-                }}
-              >
-                <View
-                  style={[
-                    styles.bgPickerOption,
-                    { backgroundColor: '#1A1A1A' },
-                    cardBg === 'dark' && styles.bgPickerOptionSelected,
-                  ]}
-                >
-                  <Text style={[styles.bgPickerOptionLabel, { color: '#FFFFFF' }]}>Aa</Text>
-                </View>
-                <Text style={styles.bgPickerLabelText}>Black</Text>
-              </Pressable>
-
-              <Pressable
-                style={styles.bgPickerOptionWrapper}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setCardBg('white');
-                  setShowBgPicker(false);
-                }}
-              >
-                <View
-                  style={[
-                    styles.bgPickerOption,
-                    { backgroundColor: '#FFFFFF' },
-                    cardBg === 'white' && styles.bgPickerOptionSelected,
-                  ]}
-                >
-                  <Text style={[styles.bgPickerOptionLabel, { color: colors.text }]}>Aa</Text>
-                </View>
-                <Text style={styles.bgPickerLabelText}>White</Text>
-              </Pressable>
+                  <View
+                    style={[
+                      styles.bgPickerOption,
+                      key !== 'transparent' && { backgroundColor: CARD_THEMES[key].bg },
+                      selectedTheme === key && styles.bgPickerOptionSelected,
+                    ]}
+                  >
+                    {key === 'transparent' ? (
+                      <View style={styles.checkerContainer}>
+                        <View style={styles.checkerRow}>
+                          <View style={[styles.checkerCell, { backgroundColor: '#E0E0E0' }]} />
+                          <View style={[styles.checkerCell, { backgroundColor: '#FFFFFF' }]} />
+                        </View>
+                        <View style={styles.checkerRow}>
+                          <View style={[styles.checkerCell, { backgroundColor: '#FFFFFF' }]} />
+                          <View style={[styles.checkerCell, { backgroundColor: '#E0E0E0' }]} />
+                        </View>
+                      </View>
+                    ) : (
+                      <Text
+                        style={[styles.bgPickerOptionLabel, { color: THEME_LABEL_COLORS[key] }]}
+                      >
+                        Aa
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.bgPickerLabelText}>{THEME_LABELS[key]}</Text>
+                </Pressable>
+              ))}
             </View>
           </Pressable>
         </Pressable>
@@ -330,8 +750,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    flex: 1,
+  topSection: {
     alignItems: 'center',
     paddingTop: spacing.xl,
   },
@@ -347,29 +766,129 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
-  cardContainer: {
-    alignItems: 'center',
-    marginBottom: spacing.lg,
+  carouselContainer: {
+    marginBottom: spacing.md,
   },
-  shareCard: {
+  cardPage: {
+    width: SCREEN_WIDTH,
+    paddingHorizontal: CARD_MARGIN,
+  },
+  shareCardShadow: {
     width: CARD_WIDTH,
+    aspectRatio: 1.3,
     borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  shareCardInner: {
+    flex: 1,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
-    ...shadows.md,
+    justifyContent: 'space-between',
   },
+  shareCardCentered: {
+    justifyContent: 'center',
+  },
+
+  // Card 2: Cormorant Garamond
+  cormorantContent: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  cormorantDate: {
+    fontFamily: 'CormorantGaramond-Regular',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  cormorantTitle: {
+    fontFamily: 'CormorantGaramond-Bold',
+    fontSize: 38,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  cormorantStatsRow: {
+    flexDirection: 'row',
+    width: '100%',
+  },
+  cormorantStatCol: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  cormorantStatLabel: {
+    fontFamily: 'CormorantGaramond-Regular',
+    fontSize: 18,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  cormorantStatValue: {
+    fontFamily: 'CormorantGaramond-Regular',
+    fontSize: 18,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
+  // Card 3: Lora
+  loraContent: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  loraStatBlock: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  loraLabel: {
+    fontFamily: 'Lora-Regular',
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  loraValue: {
+    fontFamily: 'Lora-Bold',
+    fontSize: 28,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
+  // Card 5: Caveat (handwritten 2x2 grid)
+  caveatLayout: {
+    justifyContent: 'center',
+    gap: spacing.xl,
+  },
+  caveatRow: {
+    flexDirection: 'row',
+  },
+  caveatCell: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  caveatLabel: {
+    fontFamily: 'GochiHand-Regular',
+    fontSize: 18,
+    lineHeight: 26,
+    fontStyle: 'italic',
+  },
+  caveatValue: {
+    fontFamily: 'GochiHand-Regular',
+    fontSize: 28,
+    lineHeight: 38,
+  },
+
   cardTitle: {
     fontFamily: fonts.bold,
     fontSize: fontSize.xl,
-    marginBottom: spacing.lg,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: spacing.lg,
   },
   statCell: {
     width: '50%',
@@ -385,8 +904,25 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   brandText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.sm,
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xs,
+    position: 'absolute',
+    bottom: spacing.md,
+    left: spacing.md,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: spacing.md,
+  },
+  dot: {
+    height: 8,
+    borderRadius: 4,
+  },
+  shareSection: {
+    alignItems: 'center',
   },
   shareCta: {
     fontFamily: fonts.medium,
@@ -411,6 +947,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  shareIconImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   shareLabel: {
     fontFamily: fonts.medium,
@@ -447,7 +988,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 380,
     alignItems: 'center',
   },
   bgPickerTitle: {
@@ -458,17 +999,17 @@ const styles = StyleSheet.create({
   },
   bgPickerOptions: {
     flexDirection: 'row',
-    gap: spacing.lg,
+    justifyContent: 'center',
+    gap: 12,
   },
   bgPickerOptionWrapper: {
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   bgPickerOption: {
-    width: 76,
-    height: 76,
-    borderRadius: 16,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
@@ -480,12 +1021,25 @@ const styles = StyleSheet.create({
   },
   bgPickerOptionLabel: {
     fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
   },
   bgPickerLabelText: {
     textAlign: 'center',
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,
     color: colors.textSecondary,
+  },
+  checkerContainer: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 11,
+    overflow: 'hidden',
+  },
+  checkerRow: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  checkerCell: {
+    flex: 1,
   },
 });

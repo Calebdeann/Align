@@ -297,7 +297,7 @@
     "thankYou": {
       "title": "Thank you\nfor trusting us!",
       "percentage": "94% of our users",
-      "description": "claim that using align is easy to use\nand makes it simple to stay on track"
+      "description": "claim that align is easy to use\nand makes it simple to stay on track"
     },
     "reminder": {
       "question": "Do you want to receive workout reminders?",
@@ -471,7 +471,17 @@
     "noCompletedSets": "No Completed Sets",
     "noCompletedSetsMessage": "You need at least one completed set to save.",
     "hourMinutes": "{{hours}} hour, {{minutes}} minutes",
-    "minutes": "{{minutes}} minutes"
+    "minutes": "{{minutes}} minutes",
+    "stats": "Stats",
+    "volume": "Volume",
+    "discardWorkout": "Discard Workout",
+    "discardWorkoutMessage": "Are you sure you want to discard this workout? This cannot be undone.",
+    "discard": "Discard",
+    "editExercises": "Edit Exercises",
+    "updateTemplateTitle": "Update Template?",
+    "updateTemplateMessage": "You added or removed exercises from your workout. Would you like to update your template with these changes?",
+    "updateTemplate": "Update Template",
+    "keepOriginal": "Keep Original"
   },
   "workoutComplete": {
     "shareWorkout": "Share workout - Tag @align.tracker",
@@ -596,7 +606,28 @@
     "popular": "Popular",
     "allExercises": "All Exercises",
     "resultsFor": "Results for \"{{query}}\"",
-    "muscle": "Muscle"
+    "muscle": "Muscle",
+    "create": "Create",
+    "customExercises": "Custom Exercises"
+  },
+  "createExercise": {
+    "title": "Create Exercise",
+    "save": "Save",
+    "addAsset": "Add asset",
+    "chooseFromLibrary": "Choose from Library",
+    "takePhoto": "Take Photo",
+    "exerciseName": "Exercise Name",
+    "exerciseNamePlaceholder": "e.g. Hip Thrust",
+    "equipment": "Equipment",
+    "primaryMuscle": "Primary Muscle Group",
+    "otherMuscles": "Other Muscles",
+    "otherMusclesOptional": "Optional",
+    "selectEquipment": "Select Equipment",
+    "selectMuscle": "Select Muscle Group",
+    "selectOtherMuscles": "Select Other Muscles",
+    "note": "Note",
+    "imageUploadFailed": "Image upload failed. Exercise saved without image.",
+    "saveError": "Failed to create exercise. Please try again."
   },
   "explore": {
     "title": "Explore Templates",

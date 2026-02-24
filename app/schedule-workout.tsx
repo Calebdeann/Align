@@ -12,11 +12,11 @@ import {
   Modal,
   Animated,
   Dimensions,
-  Image,
   Alert,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Rect, Circle, Polyline } from 'react-native-svg';
@@ -1674,6 +1674,8 @@ export default function ScheduleWorkoutScreen() {
                                 styles.templateImage,
                                 template.tagColor && { backgroundColor: template.tagColor + '30' },
                               ]}
+                              contentFit="cover"
+                              cachePolicy="memory-disk"
                             />
                           ) : template.image?.uri ? (
                             <Image
@@ -1682,6 +1684,8 @@ export default function ScheduleWorkoutScreen() {
                                 styles.templateImage,
                                 template.tagColor && { backgroundColor: template.tagColor + '30' },
                               ]}
+                              contentFit="cover"
+                              cachePolicy="memory-disk"
                             />
                           ) : (
                             <View
@@ -1785,6 +1789,8 @@ export default function ScheduleWorkoutScreen() {
                                             backgroundColor: template.tagColor + '30',
                                           },
                                         ]}
+                                        contentFit="cover"
+                                        cachePolicy="memory-disk"
                                       />
                                     ) : template.image?.uri ? (
                                       <Image
@@ -1795,6 +1801,8 @@ export default function ScheduleWorkoutScreen() {
                                             backgroundColor: template.tagColor + '30',
                                           },
                                         ]}
+                                        contentFit="cover"
+                                        cachePolicy="memory-disk"
                                       />
                                     ) : (
                                       <View
@@ -1854,7 +1862,12 @@ export default function ScheduleWorkoutScreen() {
                             }}
                           >
                             {heroImage ? (
-                              <Image source={heroImage} style={styles.categoryCardImage} />
+                              <Image
+                                source={heroImage}
+                                style={styles.categoryCardImage}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                              />
                             ) : (
                               <View
                                 style={[styles.categoryCardImage, styles.categoryCardPlaceholder]}
@@ -2391,7 +2404,6 @@ const styles = StyleSheet.create({
   categoryCardImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   categoryCardPlaceholder: {
     backgroundColor: colors.surfaceSecondary,

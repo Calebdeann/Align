@@ -1,0 +1,1097 @@
+{
+  "renames": [
+    {
+      "id": "cf218ded-e1ab-4ed8-b800-c2178edf3a5d",
+      "name": "sled 45° leg wide press",
+      "old_display": "Leg Press (Machine)",
+      "new_display": "Leg Press (Machine)"
+    },
+    {
+      "id": "d7a7ced2-6cc5-46c5-83f6-b95c694497eb",
+      "name": "lever alternate leg press",
+      "old_display": "Single Leg Press (Horizontal Machine)",
+      "new_display": "Single Leg Press (Horizontal Machine)"
+    },
+    {
+      "id": "26e2f90a-6a78-4d9c-b884-04f3e445c3c9",
+      "name": "lever horizontal one leg press",
+      "old_display": "Single Leg Press (Horizontal Machine)",
+      "new_display": "Single Leg Press (Horizontal Machine)"
+    },
+    {
+      "id": "c285569c-c46e-4045-870b-7cc58b01451f",
+      "name": "wheel rollout",
+      "old_display": "Ab Wheel Rollout",
+      "new_display": "Ab Wheel Rollout"
+    },
+    {
+      "id": "19c35376-7e4f-4636-8ebc-ebda3f031da4",
+      "name": "weighted pull-up",
+      "old_display": "Weighted Pull Up",
+      "new_display": "Weighted Pull Up"
+    },
+    {
+      "id": "378714b4-4dfd-4529-910c-dd4c588da531",
+      "name": "band assisted pull-up",
+      "old_display": "Band-Assisted Pull Up",
+      "new_display": "Band-Assisted Pull Up"
+    },
+    {
+      "id": "90756a63-64a7-4c4f-b835-d566f38c6aaf",
+      "name": "assisted pull-up",
+      "old_display": "Assisted Pull Up",
+      "new_display": "Assisted Pull Up"
+    },
+    {
+      "id": "77150d85-170c-47e3-a0ae-ad5239a0cf01",
+      "name": "close-grip push-up",
+      "old_display": "Close Grip Push Up",
+      "new_display": "Close Grip Push Up"
+    },
+    {
+      "id": "b7273d08-2817-45f8-bfbf-f398c4861262",
+      "name": "spider crawl push up",
+      "old_display": "Spiderman Plank",
+      "new_display": "Spiderman Plank"
+    },
+    {
+      "id": "eb99e6fa-43dc-41a9-be37-fffde1b127ea",
+      "name": "wide hand push up",
+      "old_display": "Wide Grip Push Up",
+      "new_display": "Wide Grip Push Up"
+    },
+    {
+      "id": "a01130bc-03bd-4afa-82a9-7632dda04066",
+      "name": "single arm push-up",
+      "old_display": "Single Arm Push Up",
+      "new_display": "Single Arm Push Up"
+    },
+    {
+      "id": "3ebbc1a3-4dad-4b0d-83f2-2a5e74a777ee",
+      "name": "dumbbell seated palms up wrist curl",
+      "old_display": "Seated Palm Up Wrist Curl (Dumbbell)",
+      "new_display": "Seated Palm Up Wrist Curl (Dumbbell)"
+    },
+    {
+      "id": "e0a5f442-29ee-44be-8ed4-9e20283de183",
+      "name": "burpee",
+      "old_display": "Burpees",
+      "new_display": "Burpees"
+    },
+    {
+      "id": "0d5655fd-b618-41f0-b26b-ed8dc5f82004",
+      "name": "stationary bike run v. 3",
+      "old_display": "Spin Bike",
+      "new_display": "Spin Bike"
+    },
+    {
+      "id": "21fbdc01-3ea9-4f22-b9b7-e4613ef83ef5",
+      "name": "stationary bike walk",
+      "old_display": "Stationary Bike",
+      "new_display": "Stationary Bike"
+    },
+    {
+      "id": "4ba6b2e4-e543-4611-9da6-5dbae9dbec0f",
+      "name": "run (Equipment)",
+      "old_display": "Treadmill Running",
+      "new_display": "Treadmill Running"
+    },
+    {
+      "id": "6043b921-edbc-4ef9-9edf-558f86b3d112",
+      "name": "walking high knees lunge",
+      "old_display": "Walking High Knee Lunges",
+      "new_display": "Walking High Knee Lunges"
+    },
+    {
+      "id": "44762178-8769-4c0a-bc98-e0d6ba6742f1",
+      "name": "walking on incline treadmill",
+      "old_display": "Incline Treadmill Walking",
+      "new_display": "Incline Treadmill Walking"
+    },
+    {
+      "id": "afdf70a6-a7b6-404f-9e0b-fe26fa27ca6d",
+      "name": "walking on stepmill",
+      "old_display": "Stairmaster",
+      "new_display": "Stairmaster"
+    },
+    {
+      "id": "09df18b0-b6ab-4c63-ada2-f2662b4057aa",
+      "name": "bayesian curl",
+      "old_display": "Single Arm Bicep Curl (Cable)",
+      "new_display": "Single Arm Bicep Curl (Cable)"
+    },
+    {
+      "id": "e9c20799-9523-4f21-9c40-13c9bb5b8ec5",
+      "name": "dumbbell alternate biceps curl",
+      "old_display": "Alternating Bicep Curl (Dumbbell)",
+      "new_display": "Alternating Bicep Curl (Dumbbell)"
+    },
+    {
+      "id": "d6231999-8ddd-4a39-8f0a-66ba5ff63f7f",
+      "name": "cable overhead curl",
+      "old_display": "Overhead Bicep Curl (Cable)",
+      "new_display": "Overhead Bicep Curl (Cable)"
+    },
+    {
+      "id": "38607e5a-c8ab-4402-ae8d-798a55a803a9",
+      "name": "dumbbell alternate preacher curl",
+      "old_display": "Single Arm Preacher Curl (Dumbbell)",
+      "new_display": "Single Arm Preacher Curl (Dumbbell)"
+    },
+    {
+      "id": "4dfb32ea-bdcd-4a61-b738-010d23f768f8",
+      "name": "dumbbell standing biceps curl",
+      "old_display": "Standing Bicep Curl (Dumbbell)",
+      "new_display": "Standing Bicep Curl (Dumbbell)"
+    },
+    {
+      "id": "126e61bd-3af3-4f57-8a8a-9a6fd0a31593",
+      "name": "triceps dips floor",
+      "old_display": "Floor Triceps Dip",
+      "new_display": "Floor Triceps Dip"
+    },
+    {
+      "id": "8cbef202-37fa-4bd5-a4b5-cd587aebda02",
+      "name": "assisted triceps dip (Kneeling)",
+      "old_display": "Assisted Triceps Dip",
+      "new_display": "Assisted Triceps Dip"
+    },
+    {
+      "id": "e3468fc2-cd0d-4c8e-9b9e-25d76ecb2f5d",
+      "name": "weighted tricep dips",
+      "old_display": "Weighted Triceps Dip",
+      "new_display": "Weighted Triceps Dip"
+    },
+    {
+      "id": "d902e2e0-77d6-4c00-87aa-c6bfb395ccda",
+      "name": "dumbbell one arm kickback",
+      "old_display": "Standing Triceps Kickback (Dumbbell)",
+      "new_display": "Standing Triceps Kickback (Dumbbell)"
+    },
+    {
+      "id": "afac1002-6d79-4974-9482-9a9e36c1f04e",
+      "name": "lever overhand triceps dip",
+      "old_display": "Seated Tricep Push",
+      "new_display": "Seated Tricep Push"
+    },
+    {
+      "id": "916d7040-dcf3-4a3d-b7a3-08d79e5152d3",
+      "name": "dumbbell standing triceps extension",
+      "old_display": "Triceps Extension (Dumbbell)",
+      "new_display": "Triceps Extension (Dumbbell)"
+    },
+    {
+      "id": "2c49c582-03a7-4889-a496-5d3dab9a9736",
+      "name": "barbell standing overhead triceps extension",
+      "old_display": "Triceps Extension (Barbell)",
+      "new_display": "Triceps Extension (Barbell)"
+    },
+    {
+      "id": "d2d89037-92d2-448c-9eec-15de502b4968",
+      "name": "dumbbell step-up",
+      "old_display": "Step Up (Dumbbell)",
+      "new_display": "Step Up (Dumbbell)"
+    },
+    {
+      "id": "f32bbb98-2239-4d9f-bb7a-ce79e7fc26bc",
+      "name": "smith standing leg calf raise",
+      "old_display": "Standing Calf Raise (Smith Machine)",
+      "new_display": "Standing Calf Raise (Smith Machine)"
+    },
+    {
+      "id": "af54fca9-2c50-48b4-924b-2fb3b7350e3b",
+      "name": "dumbbell bench squat",
+      "old_display": "Bench Squat (Dumbbell)",
+      "new_display": "Bench Squat (Dumbbell)"
+    },
+    {
+      "id": "e74eed60-5461-44c1-9cc3-8e2e983d7a45",
+      "name": "smith single leg split squat",
+      "old_display": "Bulgarian Split Squat (Smith Machine)",
+      "new_display": "Bulgarian Split Squat (Smith Machine)"
+    },
+    {
+      "id": "0d18f551-624d-4028-aeff-8a0ad15029f4",
+      "name": "dumbbell single leg deadlift with stepbox support",
+      "old_display": "B-Stance Single Leg Deadlift (Dumbbell)",
+      "new_display": "B-Stance Single Leg Deadlift (Dumbbell)"
+    },
+    {
+      "id": "0f2d25c5-3ab9-474a-98fa-df36ef43a52c",
+      "name": "side hip abduction",
+      "old_display": "Side Lying Hip Abduction",
+      "new_display": "Side Lying Hip Abduction"
+    },
+    {
+      "id": "cde15e95-9f32-4c85-856e-58366d807230",
+      "name": "side bridge hip abduction",
+      "old_display": "Side Plank Hip Abduction",
+      "new_display": "Side Plank Hip Abduction"
+    },
+    {
+      "id": "2133c1c8-5df6-48c9-a6cb-994d4f03ec9d",
+      "name": "self assisted inverse leg curl (On floor)",
+      "old_display": "Self Assisted Nordic Hamstring Curl",
+      "new_display": "Self Assisted Nordic Hamstring Curl"
+    },
+    {
+      "id": "98c2c8e2-c78b-4f55-af4a-1050edc40506",
+      "name": "lever seated squat calf raise on leg press machine",
+      "old_display": "Squat Calf Raise on Leg Press Machine",
+      "new_display": "Squat Calf Raise on Leg Press Machine"
+    },
+    {
+      "id": "7a6a3b7e-0086-4906-a71e-3a77f55cd0ba",
+      "name": "lever seated calf raise",
+      "old_display": "Seated Calf Raise (Machine)",
+      "new_display": "Seated Calf Raise (Machine)"
+    },
+    {
+      "id": "aba3b5c8-5f82-4ac9-942f-92acd7577895",
+      "name": "barbell rear lunge v. 2",
+      "old_display": "Deficit Reverse Lunge",
+      "new_display": "Deficit Reverse Lunge"
+    },
+    {
+      "id": "d1a92a03-afb0-48d0-a3ad-a532a90742a5",
+      "name": "glute bridge two legs on bench",
+      "old_display": "Elevated Glute Bridge",
+      "new_display": "Elevated Glute Bridge"
+    },
+    {
+      "id": "85129ca6-eaa7-49d4-a9e3-3879a9922c8b",
+      "name": "rear decline bridge",
+      "old_display": "Bridge",
+      "new_display": "Bridge"
+    },
+    {
+      "id": "eef143af-12b8-4532-b51f-48d61ee5200c",
+      "name": "smith one leg floor calf raise",
+      "old_display": "Single Leg Calf Raise (Smith Machine)",
+      "new_display": "Single Leg Calf Raise (Smith Machine)"
+    },
+    {
+      "id": "fc16618a-ad09-4110-b825-864e83644b0c",
+      "name": "glute-ham raise",
+      "old_display": "Nordic Curls (Machine)",
+      "new_display": "Nordic Curls (Machine)"
+    },
+    {
+      "id": "93be5199-858b-44ea-8c88-b4bb72c0fadd",
+      "name": "lever kneeling leg curl",
+      "old_display": "Kneeling Leg Curl (Machine)",
+      "new_display": "Kneeling Leg Curl (Machine)"
+    },
+    {
+      "id": "0123cb79-cbcf-4f39-bdd4-e615d7b5fe82",
+      "name": "dumbbell goblet squat",
+      "old_display": "Goblet Squat (Dumbbell)",
+      "new_display": "Goblet Squat (Dumbbell)"
+    },
+    {
+      "id": "23a2e585-0ebc-4362-b7ec-acca6bdc3d3c",
+      "name": "smith bent knee good morning",
+      "old_display": "Good Morning (Smith Machine)",
+      "new_display": "Good Morning (Smith Machine)"
+    },
+    {
+      "id": "fa3a79a5-ffde-4479-ba9b-0dab2a95c6b5",
+      "name": "box jump down with one leg stabilization",
+      "old_display": "Single Leg Drop Down",
+      "new_display": "Single Leg Drop Down"
+    },
+    {
+      "id": "7f9991aa-b817-438d-a6c8-6e6176819bbc",
+      "name": "barbell one leg squat",
+      "old_display": "Bulgarian Split Squat (Barbell)",
+      "new_display": "Bulgarian Split Squat (Barbell)"
+    },
+    {
+      "id": "3691e9c2-6a11-4533-99a2-5a64fe962ecc",
+      "name": "quads (Bodyweight squat)",
+      "old_display": "Bulgarian Split Squat",
+      "new_display": "Bulgarian Split Squat"
+    },
+    {
+      "id": "57b083d8-b1e8-4bc5-b748-b0580d83abb7",
+      "name": "lever rotary calf",
+      "old_display": "Calf Press (Machine)",
+      "new_display": "Calf Press (Machine)"
+    },
+    {
+      "id": "e277d6cf-c7fe-4db6-af1f-b8d5ad56df49",
+      "name": "barbell clean-grip front squat",
+      "old_display": "Front Squat (Barbell)",
+      "new_display": "Front Squat (Barbell)"
+    },
+    {
+      "id": "4d9a5d1f-0cab-4e6f-90f4-f0b920b0aab5",
+      "name": "flutter kicks",
+      "old_display": "Flutter Kicks (Prone)",
+      "new_display": "Flutter Kicks (Prone)"
+    },
+    {
+      "id": "a4cbc11e-8671-4d9c-b8ed-3c61b07de8ba",
+      "name": "smith front squat (Clean grip)",
+      "old_display": "Front Squat (Smith Machine)",
+      "new_display": "Front Squat (Smith Machine)"
+    },
+    {
+      "id": "6ec6b967-27de-446b-85ec-c548f2e2d5ce",
+      "name": "barbell full squat",
+      "old_display": "Back Squat (Barbell)",
+      "new_display": "Back Squat (Barbell)"
+    },
+    {
+      "id": "7af5d0a7-ca08-4dd2-a501-576de697475f",
+      "name": "smith full squat",
+      "old_display": "Back Squat (Smith Machine)",
+      "new_display": "Back Squat (Smith Machine)"
+    },
+    {
+      "id": "ebf48635-f2fe-4ca3-bfe6-b7466e7f177f",
+      "name": "barbell full zercher squat",
+      "old_display": "Zercher Squat (Barbell)",
+      "new_display": "Zercher Squat (Barbell)"
+    },
+    {
+      "id": "61684449-ed56-43fb-8f57-0744766cf0c9",
+      "name": "bulgarian split squat",
+      "old_display": "Reverse Lunge (Dumbbell)",
+      "new_display": "Reverse Lunge (Dumbbell)"
+    },
+    {
+      "id": "5d4573e0-a25c-4bf9-991d-8343f01d7217",
+      "name": "dumbbell single leg split squat",
+      "old_display": "Bulgarian Split Squat (Dumbbell)",
+      "new_display": "Bulgarian Split Squat (Dumbbell)"
+    },
+    {
+      "id": "3b8c7d5c-fa87-4b24-b6c0-151ac25a2f9a",
+      "name": "kettlebell goblet squat",
+      "old_display": "Goblet Squat (Kettlebell)",
+      "new_display": "Goblet Squat (Kettlebell)"
+    },
+    {
+      "id": "e65ab7fe-4cf1-4f38-9d8b-d95d379211e8",
+      "name": "lever bent over row",
+      "old_display": "Landmine Bent Over Row",
+      "new_display": "Landmine Bent Over Row"
+    },
+    {
+      "id": "139796b1-7fff-461d-9761-2c01d6287203",
+      "name": "cable pulldown (pro lat bar)",
+      "old_display": "Wide-Grip Lat Pulldown (Cable)",
+      "new_display": "Wide-Grip Lat Pulldown (Cable)"
+    },
+    {
+      "id": "4b4ae9ff-a88d-4a5e-8e68-b5a2160a28ef",
+      "name": "cable lateral pulldown (With rope attachment)",
+      "old_display": "Lateral Pulldown (Rope Attachment)",
+      "new_display": "Lateral Pulldown (Rope Attachment)"
+    },
+    {
+      "id": "e4f90a6f-b17e-4930-8208-688815aaa3f8",
+      "name": "barbell pullover",
+      "old_display": "Lat Pullover (Barbell)",
+      "new_display": "Pullover (Barbell)"
+    },
+    {
+      "id": "d5467f76-80dd-4022-9fd0-1ccec2e10096",
+      "name": "lever pullover",
+      "old_display": "Lat Pullover (Machine)",
+      "new_display": "Pullover (Machine)"
+    },
+    {
+      "id": "f2002905-879f-4832-82e6-b53e92731179",
+      "name": "cable pushdown (Straight arm) v. 2",
+      "old_display": "Straight Arm Pulldown (Cable)",
+      "new_display": "Straight Arm Pulldown (Cable)"
+    },
+    {
+      "id": "e62b2f62-2930-48e2-a9bc-87f24fd92a05",
+      "name": "cable rear pulldown",
+      "old_display": "Rear Lat Pulldown (Cable)",
+      "new_display": "Rear Lat Pulldown (Cable)"
+    },
+    {
+      "id": "4e829531-8615-44a6-9a43-0030c138a9a8",
+      "name": "cable straight arm pulldown (with rope)",
+      "old_display": "Straight Arm Pulldown (Rope)",
+      "new_display": "Straight Arm Pulldown (Rope)"
+    },
+    {
+      "id": "91a2dcfa-2069-4da2-8a17-3a3217a8ee0c",
+      "name": "cable seated one arm alternate row",
+      "old_display": "Seated Single Arm Row (Cable)",
+      "new_display": "Seated Single Arm Row (Cable)"
+    },
+    {
+      "id": "3b4df1d1-ef86-4d84-8120-347c8806e2ea",
+      "name": "dumbbell side plank with rear fly",
+      "old_display": "Side Plank Twist with Rear Fly (Dumbbell)",
+      "new_display": "Side Plank Twist with Rear Fly (Dumbbell)"
+    },
+    {
+      "id": "4f823cc4-f828-4882-9752-010eac95017c",
+      "name": "side-to-side chin",
+      "old_display": "Side to Side Chin Up",
+      "new_display": "Side to Side Chin Up"
+    },
+    {
+      "id": "e53f19f5-3ade-412a-bdf1-04b8418aa7e8",
+      "name": "cable one arm bent over row",
+      "old_display": "Single Arm Low Cable Row",
+      "new_display": "Single Arm Low Row (Cable)"
+    },
+    {
+      "id": "1b2046e8-9295-4ba3-907e-8d73e5459b27",
+      "name": "dumbbell rear delt row (Shoulder)",
+      "old_display": "Bent Over Row (Dumbbell)",
+      "new_display": "Single Arm Row (Dumbbell)"
+    },
+    {
+      "id": "7ae9c6c4-f8f4-4042-89ce-14ab109fb5a0",
+      "name": "cable rear delt row (With rope)",
+      "old_display": "Face Pull",
+      "new_display": "Standing Face Pull"
+    },
+    {
+      "id": "b3cfe89d-ee51-47fe-9055-31f559e54b25",
+      "name": "cable forward raise",
+      "old_display": "Forward Raise (Cable)",
+      "new_display": "Single Arm Front Raise (Cable)"
+    },
+    {
+      "id": "5ef11525-d2e2-4b67-9d36-5375a2a4d63e",
+      "name": "dumbbell incline raise",
+      "old_display": "Incline Raise (Dumbbell)",
+      "new_display": "Incline Front Raise (Dumbbell)"
+    },
+    {
+      "id": "c2b970b6-dc6d-4a41-bb1f-84c798813954",
+      "name": "kettlebell one arm military press to the side",
+      "old_display": "Kettlebell Shoulder Press",
+      "new_display": "Shoulder Press (Kettlebell)"
+    },
+    {
+      "id": "bd3aadac-3075-4b1f-8bfe-06a23787f0b9",
+      "name": "cable kneeling rear delt row (With rope)",
+      "old_display": "Kneeling Rear Delt Row (Cable)",
+      "new_display": "Kneeling Face Pull"
+    },
+    {
+      "id": "ed303030-6c10-4fa1-8f29-4627480c2dcf",
+      "name": "plate front raise",
+      "old_display": "Plate Front Raise",
+      "new_display": "Front Raise (Plate)"
+    },
+    {
+      "id": "eb200ebc-2d57-4acc-85fb-6edc7f01f4c9",
+      "name": "lever military press",
+      "old_display": "Military Press (Machine)",
+      "new_display": "Shoulder Press (Machine)"
+    },
+    {
+      "id": "71d8c39d-3173-49a9-ba19-b396d47dacd9",
+      "name": "dumbbell push press",
+      "old_display": "Push Press",
+      "new_display": "Push Press (Dumbbell)"
+    },
+    {
+      "id": "eee105bd-86c7-4039-963e-476d0c022135",
+      "name": "dumbbell raise",
+      "old_display": "Raise (Dumbbell)",
+      "new_display": "Monkey Shrug (Dumbbell)"
+    },
+    {
+      "id": "1d101c97-2473-4398-934f-9ff45a50f575",
+      "name": "dumbbell seated bent arm lateral raise",
+      "old_display": "Seated Bent Arm Lateral Raise (Dumbbell)",
+      "new_display": "Seated Lateral Raise (Dumbbell)"
+    },
+    {
+      "id": "bc57a92a-9b5a-414b-a4f9-4861de313629",
+      "name": "dumbbell bench seated press",
+      "old_display": "Seated Overhead Press (Dumbbell)",
+      "new_display": "Seated Shoulder Press (Dumbbell)"
+    },
+    {
+      "id": "97c23981-8db1-48d1-a32d-eee85eb18785",
+      "name": "dumbbell seated alternate press",
+      "old_display": "Seated Press (Dumbbell)",
+      "new_display": "Single Arm Seated Press (Dumbbell)"
+    },
+    {
+      "id": "36712316-9f74-4f78-b688-3b655cef7df7",
+      "name": "dumbbell one arm shoulder press",
+      "old_display": "Shoulder Press (Dumbbell)",
+      "new_display": "Standing Shoulder Press (Dumbbell)"
+    },
+    {
+      "id": "4ac526ec-20d8-419c-8c8d-1ce87d9d1a0f",
+      "name": "band standing rear delt row",
+      "old_display": "Standing Rear Delt Row (Band)",
+      "new_display": "Face Pull (Band)"
+    },
+    {
+      "id": "117d202d-618c-4727-913b-8e2f39210b05",
+      "name": "dumbbell incline rear lateral raise",
+      "old_display": "Incline Lateral Raise (Dumbbell)",
+      "new_display": "Chest Supported Reverse Fly (Dumbbell)"
+    },
+    {
+      "id": "0163ff80-7170-4205-b9f7-31a7fc17df0f",
+      "name": "dumbbell straight arm pullover",
+      "old_display": "Straight Arm Pullover (Dumbbell)",
+      "new_display": "Pullover (Dumbbell)"
+    },
+    {
+      "id": "1cf28740-b71a-4f3a-b215-a7cf67600d08",
+      "name": "superman push-up",
+      "old_display": "Superman",
+      "new_display": "Superman Push Up"
+    },
+    {
+      "id": "ade2badf-72c0-43ed-a668-67b276087f07",
+      "name": "cable standing fly",
+      "old_display": "Standing Fly (Cable)",
+      "new_display": "Standing Fly Crossovers (Cable)"
+    },
+    {
+      "id": "732cd5e2-f9f0-4c55-8293-7963e5e4f1ba",
+      "name": "cable decline press",
+      "old_display": "Decline Press (Cable)",
+      "new_display": "Decline Bench Press (Cable)"
+    },
+    {
+      "id": "4f633c7a-d9ae-4f96-9060-232d5e7c0d93",
+      "name": "hyght dumbbell fly",
+      "old_display": "Hyght Dumbbell Fly (Dumbbell)",
+      "new_display": "Hyght Fly (Dumbbell)"
+    },
+    {
+      "id": "21630e39-fe40-44a5-81d6-0280209c1646",
+      "name": "lever decline chest press",
+      "old_display": "Decline Bench Press (Machine)",
+      "new_display": "Incline Chest Press (Machine)"
+    },
+    {
+      "id": "5cbba88a-0737-4816-8349-36aa80c14736",
+      "name": "dumbbell incline alternate press",
+      "old_display": "Incline Press (Dumbbell)",
+      "new_display": "Incline Bench Press (Dumbbell)"
+    },
+    {
+      "id": "173cd3e6-71ef-44d2-b564-8bed032463bb",
+      "name": "cable fly",
+      "old_display": "Standing Fly Press (Cable)",
+      "new_display": "Standing Fly (Cable)"
+    },
+    {
+      "id": "755508fe-82b9-4c0a-8170-514bfbf8b6c9",
+      "name": "cable low fly",
+      "old_display": "Low Cable Fly Crossovers",
+      "new_display": "Low Fly (Cable)"
+    },
+    {
+      "id": "97c60e33-c608-42e4-ba8c-b65b06219b2a",
+      "name": "cable seated chest press",
+      "old_display": "Seated Chest Flys (Cable)",
+      "new_display": "Seated Chest Press (Cable)"
+    },
+    {
+      "id": "6efea143-beec-4f87-b8cf-11bc62693d15",
+      "name": "cable incline fly",
+      "old_display": "Incline Fly (Cable)",
+      "new_display": "Incline Chest Fly (Cable)"
+    },
+    {
+      "id": "65613229-6fba-4ad3-9d7a-5983f6ca5660",
+      "name": "lever seated fly",
+      "old_display": "Seated Peck Fly (Machine)",
+      "new_display": "Chest Peck Fly"
+    },
+    {
+      "id": "9bc374ff-8991-44ea-81b0-84f31d98cd99",
+      "name": "band underhand pulldown",
+      "old_display": "Underhand Pulldown (Band)",
+      "new_display": "Reverse Grip Lat Pulldown (Band)"
+    },
+    {
+      "id": "af5f042a-1510-400b-9bb8-fe2e878aff42",
+      "name": "cable lat pulldown full range of motion",
+      "old_display": "Standing Cross Over Lat Pulldown (Cable)",
+      "new_display": "Standing Cross Over Lat Pulldown (Bar)"
+    },
+    {
+      "id": "4863d58e-d1db-4a19-b83b-f433a79331d3",
+      "name": "cable incline bench row",
+      "old_display": "Incline Bench Row (Cable)",
+      "new_display": "Incline Chest Supported Row (Cable)"
+    },
+    {
+      "id": "2b4bd7fb-4344-4d5b-909f-ce74aea393e5",
+      "name": "chest supported row",
+      "old_display": "Chest Supported Row (Dumbbell)",
+      "new_display": "Incline Chest Supported Row (Dumbbell)"
+    },
+    {
+      "id": "0d64e898-9fb2-4aef-96fc-afc978251c5d",
+      "name": "arms overhead full sit-up",
+      "old_display": "Arms Overhead Full Sit Up",
+      "new_display": "Arms Overhead Sit Up"
+    },
+    {
+      "id": "8cceeb36-68ef-4b16-91f1-3c28f23ea12f",
+      "name": "air bike",
+      "old_display": "Bicycle Crunch Raised Legs",
+      "new_display": "Bicycle Crunch Raise"
+    },
+    {
+      "id": "c1c7c1ff-aefc-4029-9ae1-c5980bc2278c",
+      "name": "roller body saw",
+      "old_display": "Body Saw (Roller)",
+      "new_display": "Foam Rolling"
+    },
+    {
+      "id": "42d8b41c-3f53-4f53-87d8-a7f8dca5224f",
+      "name": "vertical leg raise (on parallel bars)",
+      "old_display": "Vertical Leg Raise (Machine)",
+      "new_display": "Knee Raise (Parallel Bars)"
+    },
+    {
+      "id": "386aa2d2-91da-45a5-9840-4f60f9eafa67",
+      "name": "cable twist",
+      "old_display": "Twist (Cable)",
+      "new_display": "Rotations (Cable)"
+    },
+    {
+      "id": "7604b28f-8787-43fe-b9b5-5729b0aeeccd",
+      "name": "tuck crunch",
+      "old_display": "Tuck Crunch",
+      "new_display": "Table Top Crunch"
+    },
+    {
+      "id": "3171da4b-e0d8-4b3d-8a8d-763314cc4c49",
+      "name": "bodyweight incline side plank",
+      "old_display": "Side Plank",
+      "new_display": "Incline Side Plank"
+    },
+    {
+      "id": "10c021e8-9b44-4f6a-9d86-9bab5cd1687f",
+      "name": "side bridge v. 2",
+      "old_display": "Side Bridge",
+      "new_display": "Side Plank"
+    },
+    {
+      "id": "c7e9810c-baa1-4cc6-9aba-2c1a3f3eef19",
+      "name": "45° side bend",
+      "old_display": "Side Bend",
+      "new_display": "Side Bend (Machine)"
+    },
+    {
+      "id": "2262d4d3-5656-4d65-bfa8-44daffea913e",
+      "name": "russian twist",
+      "old_display": "Russian Twist (Bodyweight)",
+      "new_display": "Russian Twist"
+    },
+    {
+      "id": "94f3652e-7fa7-4d9c-a1be-34037d7b66d9",
+      "name": "elbow-to-knee",
+      "old_display": "Elbow to Knee (Bicycle Kicks)",
+      "new_display": "Bicycle Crunch Raised Legs"
+    },
+    {
+      "id": "ee478962-5787-4e10-a879-9f67331321c1",
+      "name": "weighted crunch",
+      "old_display": "Crunch (Weighted)",
+      "new_display": "Table Top Crunch (Weighted)"
+    },
+    {
+      "id": "fb8cec64-067e-4982-9506-1d5429bc9283",
+      "name": "lever seated crunch (chest pad)",
+      "old_display": "Crunch (Machine)",
+      "new_display": "Ab Crunch (Machine)"
+    },
+    {
+      "id": "5d3e9d07-4666-4e86-9d73-08e095b23e31",
+      "name": "3/4 sit-up",
+      "old_display": "Crunch",
+      "new_display": "Ab Crunch"
+    },
+    {
+      "id": "bda5aa7c-96bf-4314-b148-f5208ae83ed5",
+      "name": "cross body crunch",
+      "old_display": "Cross Body Crunch",
+      "new_display": "Elbow to Knee Crunch"
+    },
+    {
+      "id": "8bdb2e61-2cea-479c-9459-3225c5a205e5",
+      "name": "cable twist (Up-down)",
+      "old_display": "Cable Twist (Up to Down)",
+      "new_display": "Cable Rotations (High to Low)"
+    },
+    {
+      "id": "17538922-0fce-4403-be34-4c69678388ec",
+      "name": "cable kneeling crunch",
+      "old_display": "Cable Crunch",
+      "new_display": "Ab Crunch (Cable)"
+    },
+    {
+      "id": "f112b291-34d0-46b9-a07a-052f656d28db",
+      "name": "bottoms-up",
+      "old_display": "Bottoms Up",
+      "new_display": "Lying Knee Raise"
+    },
+    {
+      "id": "7e66927e-1b49-4731-81f7-52fd6da90906",
+      "name": "bridge - mountain climber (Cross body)",
+      "old_display": "Bridge Mountain Climber (Cross Body)",
+      "new_display": "Mountain Climber"
+    },
+    {
+      "id": "af34e400-585e-4aa9-ba3d-2f0dbf0f223e",
+      "name": "front plank with twist",
+      "old_display": "Front Plank with Twist",
+      "new_display": "Plank with Twist"
+    },
+    {
+      "id": "66e6e053-e5f1-467f-a53e-dbb0562c0fd2",
+      "name": "lever kneeling twist",
+      "old_display": "Kneeling Twist (Machine)",
+      "new_display": "Kneeling Rotation (Machine)"
+    },
+    {
+      "id": "ae7a9b3e-7757-4313-a1cc-4e1e90270cc6",
+      "name": "twisted leg raise",
+      "old_display": "Twisted Leg Raise",
+      "new_display": "Twisted Leg Raise (Parallel Bars)"
+    },
+    {
+      "id": "d3f5f185-d85c-45e3-abff-c892646f1e0f",
+      "name": "dumbbell standing one arm curl over incline bench",
+      "old_display": "Standing One Arm Curl Over Incline Bench (Dumbbell)",
+      "new_display": "Single Arm Curl Over Incline Bench (Dumbbell)"
+    }
+  ],
+  "binned": [
+    {
+      "id": "4965bb81-263c-4b22-940f-465350325a0e"
+    },
+    {
+      "id": "d7e69984-886d-4f66-92b7-e9d50e4bd60b"
+    },
+    {
+      "id": "19074f00-ceab-4366-a222-7c7036c4532f"
+    },
+    {
+      "id": "32f0ab63-61d0-47f2-91ab-756a5fa3c0e7"
+    },
+    {
+      "id": "b7742a07-849b-4683-bbac-cfaeda3b2828"
+    },
+    {
+      "id": "4fd17fc4-a2d4-40e8-b2ae-a8c3118588ca"
+    },
+    {
+      "id": "1a72ac15-03a5-4e19-84e9-2232b7bfa6e4"
+    },
+    {
+      "id": "6ea5010e-7d1f-41e3-b76a-94549cd2e2f3"
+    },
+    {
+      "id": "ee16a75d-7a61-4a52-90c7-d394c859efdb"
+    },
+    {
+      "id": "3ac88c5e-a95c-4fe4-bd37-e2a768c19062"
+    },
+    {
+      "id": "104769bc-36be-424c-8fd0-509dc1491224"
+    },
+    {
+      "id": "b107141e-ce2e-4998-b978-d52f97e785c0"
+    },
+    {
+      "id": "7f352ef2-1503-40d9-8a57-566126ceed48"
+    },
+    {
+      "id": "aa5fe9ab-7feb-4b75-94b9-2a94f725b894"
+    },
+    {
+      "id": "e582a5af-cc9c-4422-8b98-9620a6f6a167"
+    },
+    {
+      "id": "ffe4eb9c-0ed1-4de0-9af5-0f7cca9a3ec6"
+    },
+    {
+      "id": "ebcefe2b-c7b8-4053-9321-20e0a5d3d9b8"
+    },
+    {
+      "id": "082c0cb2-6aa0-4454-a0a3-fff0c5258f8d"
+    },
+    {
+      "id": "44b9c32e-bdaf-44fd-8f6f-8569e29f155a"
+    },
+    {
+      "id": "89df000d-49b5-4d74-9706-af069b3e55a3"
+    },
+    {
+      "id": "058a77a5-80d5-44c5-be1a-3b60266e3365"
+    },
+    {
+      "id": "579b971b-6799-486d-a04d-fff8453d1768"
+    },
+    {
+      "id": "946f827d-9f6b-4599-b0e2-b1a55441ec4d"
+    },
+    {
+      "id": "cd681207-6e9a-480b-ab72-4dc03e6c1230"
+    },
+    {
+      "id": "2f56edeb-3759-4c29-8648-cb1f5cde905a"
+    },
+    {
+      "id": "b97ce5d8-5dac-49cb-ac62-11b751b7fb2f"
+    },
+    {
+      "id": "923a42f0-5476-4b4c-abd2-35dd11a62019"
+    },
+    {
+      "id": "a96d96c3-0d89-4858-ba49-0f98b5059c95"
+    },
+    {
+      "id": "c09832a7-4427-407e-b978-1c41ad95db1c"
+    },
+    {
+      "id": "f9dbbc17-2a21-4488-a062-d717e36adcab"
+    },
+    {
+      "id": "7a450a0d-856a-4b89-9474-d8723f855a30"
+    },
+    {
+      "id": "570969f5-7d67-46d7-8e81-94de78442203"
+    },
+    {
+      "id": "4fbefb0b-4196-4e13-86e4-ec67d07c2ff3"
+    },
+    {
+      "id": "1a292cd7-5bfb-4bae-ac01-da1946e3748f"
+    },
+    {
+      "id": "19fbf784-339e-4ecb-b66d-1f8082ba48c3"
+    },
+    {
+      "id": "3ef52bd8-0316-4d9b-bfd5-ce21eb8c21a6"
+    },
+    {
+      "id": "4d25c9b7-75ee-4b06-a8b7-3a2261617c7d"
+    },
+    {
+      "id": "5273baf1-f084-45e3-82f4-4dcd8266a107"
+    },
+    {
+      "id": "eb1cdbb3-2c8e-407d-a0a3-e66631c579eb"
+    },
+    {
+      "id": "06c304f5-17ce-4f69-94d7-37c39d7ae30d",
+      "name": "battle ropes",
+      "display_name": "Battle Ropes"
+    },
+    {
+      "id": "93bbe248-2c57-4f24-9868-e2c7e60a477c",
+      "name": "dumbbell cuban press",
+      "display_name": "Cuban Press (Dumbbell)"
+    },
+    {
+      "id": "616f8ad5-69f3-4228-a44b-1ac4378eac79",
+      "name": "cable front shoulder raise",
+      "display_name": "Front Shoulder Raise (Cable)"
+    },
+    {
+      "id": "49426d5e-57e0-45cb-9731-bac8179db54e",
+      "name": "band pull apart",
+      "display_name": "Pull Apart (Band)"
+    },
+    {
+      "id": "abe304f6-56de-4cd1-b2ec-620667297813",
+      "name": "dumbbell rotation reverse fly",
+      "display_name": "Rotation Reverse Fly (Dumbbell)"
+    },
+    {
+      "id": "237e95d9-c7f5-4254-8fdb-0e1368bc2536",
+      "name": "barbell seated behind head military press",
+      "display_name": "Seated Behind Head Military Press (Barbell)"
+    },
+    {
+      "id": "d768df3e-5270-456d-bc41-e09ac8527653",
+      "name": "dumbbell seated lateral raise",
+      "display_name": "Seated Lateral Raise (Dumbbell)"
+    },
+    {
+      "id": "61fed239-1d2b-4121-893e-7ff6693ed528",
+      "name": "dumbbell rear fly",
+      "display_name": "Seated Rear Fly (Dumbbell)"
+    },
+    {
+      "id": "b34b004d-d7bc-498f-bafb-3c9779ce2038",
+      "name": "rear delt reverse fly",
+      "display_name": "Rear Delt Reverse Fly (Machine)"
+    },
+    {
+      "id": "8d0568f5-3314-4223-800d-cb79a16c473c",
+      "name": "lever seated reverse fly (parallel grip)",
+      "display_name": "Seated Reverse Fly (Parallel Grip)"
+    },
+    {
+      "id": "f4bbae11-b063-4c74-b8bc-f588862ac846",
+      "name": "band y-raise",
+      "display_name": "Y Raise (Band)"
+    },
+    {
+      "id": "91f598f7-da33-4637-821b-059b7923ff06",
+      "name": "cable standing rear delt row (With rope)",
+      "display_name": "Standing Rear Delt Row (Cable)"
+    },
+    {
+      "id": "10e47efd-6b6f-439e-92cc-4f03ccf42919",
+      "name": "dumbbell standing alternate raise",
+      "display_name": "Standing Raise (Dumbbell)"
+    },
+    {
+      "id": "6058f2b6-0e7b-4635-9b72-303816d6bba2",
+      "name": "barbell standing front raise over head",
+      "display_name": "Standing Front Raise Over Head (Barbell)"
+    },
+    {
+      "id": "7492df11-e231-4a7f-8db7-eb403d2389f3",
+      "name": "dumbbell standing front raise above head",
+      "display_name": "Standing Front Raise Above Head (Dumbbell)"
+    },
+    {
+      "id": "50a62863-4efb-4b89-b303-81e6ccbeb01a",
+      "name": "barbell standing bradford press",
+      "display_name": "Standing Bradford Press (Barbell)"
+    },
+    {
+      "id": "7afa373e-785e-40ff-bd8a-4cc2fb249293",
+      "name": "dumbbell rear lateral raise",
+      "display_name": "Rear Delt Reverse Fly (Dumbbell)"
+    },
+    {
+      "id": "bb2e6716-154f-4064-887d-b62bdf5aad73",
+      "name": "dumbbell reverse fly",
+      "display_name": "Chest Supported Reverse Fly (Dumbbell)"
+    },
+    {
+      "id": "a1ade56b-0c2a-4c08-a5fe-7b6fad9795bb",
+      "name": "smith shoulder press",
+      "display_name": "Shoulder Press (Smith Machine)"
+    },
+    {
+      "id": "b5537172-5250-420f-bef0-327e4dc775bb",
+      "name": "dumbbell around pullover",
+      "display_name": "Around the World"
+    },
+    {
+      "id": "a57edf5c-2313-4c86-84e0-2e7320d85989",
+      "name": "cable upper chest crossovers",
+      "display_name": "Upper Chest Crossovers (Cable)"
+    },
+    {
+      "id": "ea9e5879-c170-4106-8c6c-f35192c06498",
+      "name": "cable middle fly",
+      "display_name": "Middle Fly (Cable)"
+    },
+    {
+      "id": "08422ff3-a638-4b12-b861-78541c015df4",
+      "name": "dumbbell lying hammer press",
+      "display_name": "Lying Hammer Press (Dumbbell)"
+    },
+    {
+      "id": "b590aa8b-dbfa-4deb-8808-a6ced27350ed",
+      "name": "cable lying fly",
+      "display_name": "Lying Fly (Cable)"
+    },
+    {
+      "id": "a5ddd812-c631-4b02-ab5a-63fac4c65d57",
+      "name": "dumbbell incline hammer press",
+      "display_name": "Incline Hammer Press (Dumbbell)"
+    },
+    {
+      "id": "2a664c87-9929-4ccb-bfb3-61ac3b022026",
+      "name": "dumbbell decline hammer press",
+      "display_name": "Decline Hammer Press (Dumbbell)"
+    },
+    {
+      "id": "114e0847-f57d-44f0-ae21-02f1c6a22031",
+      "name": "lever incline chest press v. 2",
+      "display_name": "Incline Chest Press (Machine)"
+    },
+    {
+      "id": "bc5bfa4a-1eb5-48f5-84aa-5e6f7d2b1b19",
+      "name": "chest fly",
+      "display_name": "Chest Fly (Machine)"
+    },
+    {
+      "id": "c5ebb5e4-b01a-412b-801b-65ae7124277d",
+      "name": "cable cross-over variation",
+      "display_name": "Cable Fly Crossovers"
+    },
+    {
+      "id": "489a3e86-b32b-4bd1-81fc-1513b14d864b",
+      "name": "lever unilateral row",
+      "display_name": "Unilateral Row (Machine)"
+    },
+    {
+      "id": "623147e2-26e8-46e6-9081-cc4b2e953f9a",
+      "name": "dumbbell lying rear delt row",
+      "display_name": "Lying Rear Delt Row (Dumbbell)"
+    },
+    {
+      "id": "21f00779-5802-43de-aba9-b83a1cfab31b",
+      "name": "band bicycle crunch",
+      "display_name": "Bicycle Crunch (Band)"
+    },
+    {
+      "id": "07079d2a-0745-4c2f-b226-9c0d0f412a45",
+      "name": "band alternating v-up",
+      "display_name": "V Up"
+    },
+    {
+      "id": "93ad79bb-4ba1-47bd-8108-266e08920424",
+      "name": "spine twist",
+      "display_name": "Spine Twist"
+    },
+    {
+      "id": "885a98a0-64ca-403b-9423-d027e6a9a9bb",
+      "name": "lying leg-hip raise",
+      "display_name": "Lying Leg Hip Raise"
+    },
+    {
+      "id": "3bef2501-7bb8-41e6-8d52-1997905e2681",
+      "name": "lunge with twist",
+      "display_name": "Lunge with Twist"
+    },
+    {
+      "id": "288fbe38-a9e3-497f-a9d1-42a5e2bca904",
+      "name": "crunch (Hands overhead)",
+      "display_name": "Crunch (Hands Overhead)"
+    },
+    {
+      "id": "59a2ba2b-4cfd-43f2-a286-bff077d24cef",
+      "name": "crab twist toe touch",
+      "display_name": "Crab Twist Toe Touch"
+    },
+    {
+      "id": "99a7f2e3-70c7-45ce-9f4b-4922f0e59437",
+      "name": "cocoons",
+      "display_name": "Cocoons"
+    },
+    {
+      "id": "aa49e952-b68b-45ca-ae13-7e7587040784",
+      "name": "oblique crunch v. 2",
+      "display_name": "Oblique Crunch (Bench)"
+    }
+  ]
+}

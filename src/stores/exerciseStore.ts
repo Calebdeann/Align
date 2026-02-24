@@ -2,7 +2,12 @@ import { create } from 'zustand';
 import { Image } from 'expo-image';
 import { supabase } from '@/services/supabase';
 import { Exercise, ExerciseTranslation, fetchExerciseTranslations } from '@/services/api/exercises';
-import { formatExerciseDisplayName, toTitleCase } from '@/utils/textFormatters';
+import { fetchCustomExercises } from '@/services/api/customExercises';
+import {
+  formatExerciseDisplayName,
+  formatExerciseNameString,
+  toTitleCase,
+} from '@/utils/textFormatters';
 
 // 25 popular exercises for women (16-30) - names to match against DB
 const POPULAR_EXERCISE_NAMES = [
@@ -42,11 +47,21 @@ interface ExerciseStore {
   isLoading: boolean;
   error: string | null;
 
+  // Custom exercises
+  customExercises: Exercise[];
+  customExercisesLoaded: boolean;
+
   // Translation state
   translations: Map<string, ExerciseTranslation>;
   translationsLanguage: string | null;
 
+  // ID of the most recently created custom exercise (for auto-select in add-exercise)
+  lastCreatedExerciseId: string | null;
+
   loadExercises: (forceRefresh?: boolean) => Promise<void>;
+  loadCustomExercises: (userId: string) => Promise<void>;
+  addCustomExercise: (exercise: Exercise) => void;
+  clearLastCreatedExerciseId: () => void;
   loadTranslations: (language: string) => Promise<void>;
   getPopularExercises: () => Exercise[];
   getAllExercisesSorted: () => Exercise[];
@@ -61,11 +76,23 @@ interface ExerciseStore {
   getTranslatedInstructions: (exerciseId: string) => string[] | null;
 }
 
+// Helper to sort exercises by display name
+function sortByDisplayName(exercises: Exercise[]): Exercise[] {
+  return [...exercises].sort((a, b) => {
+    const nameA = (a.display_name || a.name).toLowerCase();
+    const nameB = (b.display_name || b.name).toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+}
+
 export const useExerciseStore = create<ExerciseStore>((set, get) => ({
   allExercises: [],
   isLoaded: false,
   isLoading: false,
   error: null,
+  customExercises: [],
+  customExercisesLoaded: false,
+  lastCreatedExerciseId: null,
   translations: new Map(),
   translationsLanguage: null,
 
@@ -124,6 +151,34 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => ({
         isLoading: false,
       });
     }
+  },
+
+  loadCustomExercises: async (userId: string) => {
+    if (get().customExercisesLoaded) return;
+
+    try {
+      const customs = await fetchCustomExercises(userId);
+      set((state) => ({
+        customExercises: customs,
+        customExercisesLoaded: true,
+        allExercises: sortByDisplayName([...state.allExercises, ...customs]),
+      }));
+    } catch (error) {
+      // Mark as loaded even on error to prevent infinite retry loops
+      set({ customExercisesLoaded: true });
+    }
+  },
+
+  addCustomExercise: (exercise: Exercise) => {
+    set((state) => ({
+      customExercises: [...state.customExercises, exercise],
+      allExercises: sortByDisplayName([...state.allExercises, exercise]),
+      lastCreatedExerciseId: exercise.id,
+    }));
+  },
+
+  clearLastCreatedExerciseId: () => {
+    set({ lastCreatedExerciseId: null });
   },
 
   loadTranslations: async (language: string) => {
@@ -215,4 +270,18 @@ export function getExerciseDisplayName(exercise: {
   equipment?: string[];
 }): string {
   return useExerciseStore.getState().getTranslatedDisplayName(exercise);
+}
+
+/**
+ * Resolves the display name for an exercise by looking it up in the store.
+ * Use this when you only have an exerciseId and a fallback name string
+ * (e.g., from templates, saved workouts, or preset data).
+ */
+export function resolveExerciseDisplayName(exerciseId: string, fallbackName: string): string {
+  const state = useExerciseStore.getState();
+  const exercise = state.allExercises.find((e) => e.id === exerciseId);
+  if (exercise) {
+    return state.getTranslatedDisplayName(exercise);
+  }
+  return formatExerciseNameString(fallbackName);
 }

@@ -167,31 +167,23 @@ export async function saveOnboardingData(
 // Upload avatar image to Supabase Storage and return the public URL
 export async function uploadAvatar(userId: string, imageUri: string): Promise<string | null> {
   try {
-    // Fetch the image as a blob
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
-
-    // Validate file size (max 5MB)
-    const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
-    if (blob.size > MAX_AVATAR_SIZE) {
-      logger.warn('Avatar too large', { size: blob.size });
-      return null;
-    }
-
-    // Validate content type
-    const validImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (blob.type && !validImageTypes.includes(blob.type)) {
-      logger.warn('Invalid avatar type', { type: blob.type });
-      return null;
-    }
-
     const filePath = `${userId}/avatar.jpg`;
 
+    // Use FormData for reliable React Native file uploads
+    const formData = new FormData();
+    formData.append('', {
+      uri: imageUri,
+      name: 'avatar.jpg',
+      type: 'image/jpeg',
+    } as any);
+
     // Upload to Supabase Storage (upsert to replace existing)
-    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, blob, {
-      contentType: 'image/jpeg',
-      upsert: true,
-    });
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, formData, {
+        contentType: 'multipart/form-data',
+        upsert: true,
+      });
 
     if (uploadError) {
       logger.warn('Error uploading avatar', { error: uploadError });

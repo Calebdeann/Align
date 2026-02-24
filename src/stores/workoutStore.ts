@@ -59,6 +59,7 @@ export interface PendingExercise {
   muscle: string;
   gifUrl?: string;
   thumbnailUrl?: string;
+  is_custom?: boolean;
 }
 
 export interface ScheduledWorkout {
@@ -695,9 +696,19 @@ export const useWorkoutStore = create<WorkoutStore>()(
           });
         }
 
-        // Defer until template store is also rehydrated
-        setTimeout(() => {
+        // Wait for template store to rehydrate before checking for orphans.
+        // setTimeout(0) is NOT enough because template store reads from AsyncStorage.
+        let orphanAttempts = 0;
+        const orphanInterval = setInterval(() => {
+          orphanAttempts++;
           const { useTemplateStore } = require('@/stores/templateStore');
+          const templatePersist = (useTemplateStore as any).persist;
+
+          // Wait until template store has finished loading from storage
+          if (!templatePersist?.hasHydrated?.() && orphanAttempts < 30) return;
+
+          clearInterval(orphanInterval);
+
           const { getTemplateById } = useTemplateStore.getState();
           const workoutState = useWorkoutStore.getState();
           const orphaned = workoutState.scheduledWorkouts.filter(
@@ -714,7 +725,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
               `Detached ${orphaned.length} orphaned scheduled workout(s) from deleted templates`
             );
           }
-        }, 0);
+        }, 100);
       },
     }
   )

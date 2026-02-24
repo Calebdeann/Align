@@ -4,6 +4,7 @@ export default function OnboardingLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="intro" />
+      <Stack.Screen name="name" />
       <Stack.Screen name="experience" />
       <Stack.Screen name="tried-apps" />
       <Stack.Screen name="goals" />
@@ -15,7 +16,6 @@ export default function OnboardingLayout() {
       <Stack.Screen name="obstacles" />
       <Stack.Screen name="obstacle-response" />
       <Stack.Screen name="energy-fluctuation" />
-      <Stack.Screen name="name" />
       <Stack.Screen name="age" />
       <Stack.Screen name="height" />
       <Stack.Screen name="weight" />

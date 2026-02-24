@@ -36,14 +36,26 @@ class AuthStateManager {
       this.currentUserId = session?.user?.id ?? null;
     } catch (error) {
       logger.error('[AuthState] Failed to get initial session', { error });
+      // If stored tokens are invalid/corrupt, clear them so the app doesn't get stuck
+      try {
+        await supabase.auth.signOut();
+      } catch {}
     } finally {
       this.initialized = true;
     }
 
     // Register listener OUTSIDE try/catch - must always run even if initial
     // fetch failed, otherwise auth can never recover and stores never rehydrate
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
       const newUserId = session?.user?.id ?? null;
+
+      // Handle invalid refresh token: Supabase fires TOKEN_REFRESHED with null session
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        logger.warn('[AuthState] Token refresh failed, signing out to clear stale tokens');
+        try {
+          await supabase.auth.signOut();
+        } catch {}
+      }
 
       // Only notify if userId actually changed
       if (newUserId !== this.currentUserId) {

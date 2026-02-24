@@ -11,7 +11,7 @@ import {
   Animated,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -60,11 +60,11 @@ const ALL_CATEGORY_IDS: CategoryId[] = [
   'lower-body',
   'pull',
   'push',
-  'upper-body',
+  // 'upper-body', // temporarily removed
   'at-home',
-  'travel',
+  'full-body',
   'cardio',
-  'rehab',
+  // 'rehab',      // temporarily removed
 ];
 
 type CategoryId =
@@ -75,7 +75,7 @@ type CategoryId =
   | 'push'
   | 'upper-body'
   | 'at-home'
-  | 'travel'
+  | 'full-body'
   | 'cardio'
   | 'rehab';
 
@@ -108,9 +108,19 @@ function TemplateRow({
     >
       <View style={styles.templateImageContainer}>
         {template.localImage ? (
-          <Image source={template.localImage} style={styles.templateImage} />
+          <Image
+            source={template.localImage}
+            style={styles.templateImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : template.image?.uri ? (
-          <Image source={{ uri: template.image.uri }} style={styles.templateImage} />
+          <Image
+            source={{ uri: template.image.uri }}
+            style={styles.templateImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : (
           <View style={[styles.templateImage, styles.templateImagePlaceholder]}>
             <Ionicons name="barbell-outline" size={24} color={colors.textSecondary} />
@@ -246,7 +256,7 @@ function CategoryModal({
             <ScrollView
               style={styles.modalScrollView}
               showsVerticalScrollIndicator={false}
-              bounces={false}
+              bounces={true}
             >
               <View style={styles.modalTemplateList}>
                 {templates.map((template) => (
@@ -297,8 +307,8 @@ export default function ExploreTemplatesScreen() {
       push: t('templateCategories.push'),
       'upper-body': t('templateCategories.upperBody'),
       'at-home': t('templateCategories.atHome'),
-      travel: t('templateCategories.travel'),
-      cardio: t('templateCategories.cardio'),
+      'full-body': 'Full Body',
+      cardio: 'Cardio',
       rehab: t('templateCategories.noEquipment'),
     };
     return ALL_CATEGORY_IDS.map((id) => ({ id, label: labelMap[id] || id }));
@@ -307,6 +317,7 @@ export default function ExploreTemplatesScreen() {
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const shouldReopenModalRef = useRef(false);
+  const [importDropdownOpen, setImportDropdownOpen] = useState(false);
 
   // Reopen the category modal when returning from template-detail
   useFocusEffect(
@@ -369,10 +380,10 @@ export default function ExploreTemplatesScreen() {
   };
 
   const confirmAddWithColour = () => {
-    if (!pendingTemplate) return;
+    if (!pendingTemplate || !userId) return;
     const colour = WORKOUT_COLOURS.find((c) => c.id === addColourId);
     const tagColor = colour?.color || colors.primary;
-    const added = addTemplate({ ...pendingTemplate, userId: userId || undefined }, tagColor);
+    const added = addTemplate({ ...pendingTemplate, userId }, tagColor);
 
     // Navigate only after animation completes to avoid iOS freeze
     Animated.timing(colourSlideAnim, {
@@ -412,26 +423,87 @@ export default function ExploreTemplatesScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>{t('explore.title')}</Text>
-        <View style={styles.headerSpacer} />
+        <View style={styles.importAnchor}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setImportDropdownOpen(!importDropdownOpen);
+            }}
+            style={styles.backButton}
+          >
+            <Image
+              source={require('../assets/images/social_import.png')}
+              style={styles.socialImportIcon}
+              contentFit="contain"
+            />
+          </Pressable>
+
+          {importDropdownOpen && (
+            <View style={styles.importDropdown}>
+              <Pressable
+                style={styles.importDropdownRow}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setImportDropdownOpen(false);
+                  router.push({ pathname: '/import-guide', params: { platform: 'tiktok' } });
+                }}
+              >
+                <Image
+                  source={require('../assets/images/Onboarding Icons/6. Hear us/tiktok-icon.png')}
+                  style={styles.importDropdownIcon}
+                  contentFit="contain"
+                />
+                <Text style={styles.importDropdownText}>TikTok</Text>
+              </Pressable>
+              <View style={styles.importDropdownDivider} />
+              <Pressable
+                style={styles.importDropdownRow}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setImportDropdownOpen(false);
+                  router.push({ pathname: '/import-guide', params: { platform: 'instagram' } });
+                }}
+              >
+                <Image
+                  source={require('../assets/images/Onboarding Icons/6. Hear us/instagram-icon.png')}
+                  style={styles.importDropdownIcon}
+                  contentFit="contain"
+                />
+                <Text style={styles.importDropdownText}>Instagram</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
       </View>
+
+      {importDropdownOpen && (
+        <Pressable style={styles.importBackdrop} onPress={() => setImportDropdownOpen(false)} />
+      )}
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={[styles.cardGrid, { marginTop: spacing.lg }]}>
           {ALL_CATEGORIES.map((category) => {
             const count = getCategoryCount(category.id);
             const heroImage = CATEGORY_HERO_IMAGES[category.id];
+            const isComingSoon = category.id === 'cardio';
             return (
               <Pressable
                 key={category.id}
-                style={styles.categoryCard}
+                style={[styles.categoryCard, isComingSoon && { opacity: 0.85 }]}
                 onPress={() => {
+                  if (isComingSoon) return;
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setSelectedCategory(category.id);
                   setShowCategoryModal(true);
                 }}
               >
                 {heroImage ? (
-                  <Image source={heroImage} style={styles.categoryCardImage} />
+                  <Image
+                    source={heroImage}
+                    style={styles.categoryCardImage}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
                 ) : (
                   <View style={[styles.categoryCardImage, styles.categoryCardPlaceholder]}>
                     <Ionicons name="barbell-outline" size={32} color={colors.textSecondary} />
@@ -442,9 +514,13 @@ export default function ExploreTemplatesScreen() {
                   style={styles.categoryCardGradient}
                 >
                   <Text style={styles.categoryCardLabel}>{category.label}</Text>
-                  <Text style={styles.categoryCardCount}>
-                    {t('explore.countWorkouts', { count })}
-                  </Text>
+                  {isComingSoon ? (
+                    <Text style={styles.categoryCardCount}>Coming soon</Text>
+                  ) : (
+                    <Text style={styles.categoryCardCount}>
+                      {t('explore.countWorkouts', { count })}
+                    </Text>
+                  )}
                 </LinearGradient>
               </Pressable>
             );
@@ -560,6 +636,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    zIndex: 100,
   },
   backButton: {
     width: 40,
@@ -567,8 +644,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerSpacer: {
-    width: 40,
+  importAnchor: {
+    position: 'relative',
+    zIndex: 100,
+  },
+  socialImportIcon: {
+    width: 29,
+    height: 29,
+  },
+  importDropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 4,
+    width: 180,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  importDropdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  importDropdownIcon: {
+    width: 22,
+    height: 22,
+    marginRight: 12,
+  },
+  importDropdownText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  importDropdownDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    marginHorizontal: 16,
+  },
+  importBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   headerTitle: {
     fontFamily: fonts.semiBold,
@@ -594,7 +716,6 @@ const styles = StyleSheet.create({
   categoryCardImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   categoryCardPlaceholder: {
     backgroundColor: colors.card,
@@ -736,6 +857,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   modalScrollView: {
+    maxHeight: SCREEN_HEIGHT * 0.75 - 100,
     paddingHorizontal: spacing.lg,
   },
   modalTemplateList: {

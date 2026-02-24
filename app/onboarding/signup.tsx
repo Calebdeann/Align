@@ -39,10 +39,6 @@ export default function SignUpScreen() {
   const handleAppleSignUp = async () => {
     try {
       setIsAppleLoading(true);
-      console.log('[Auth:SignUp] Starting Apple sign-up...');
-
-      // Sign out any existing session to prevent stale data
-      await supabase.auth.signOut();
 
       // Generate nonce for Supabase token verification
       const rawNonce = Crypto.randomUUID();
@@ -61,12 +57,12 @@ export default function SignUpScreen() {
       });
 
       if (!credential.identityToken) {
-        console.warn('[Auth:SignUp] Apple credential missing identityToken');
         Alert.alert(t('auth.signInFailed'), t('auth.appleTokenError'));
         return;
       }
 
-      console.log('[Auth:SignUp] Apple credential received, signing into Supabase...');
+      // Sign out any existing session now that we have a valid Apple credential
+      await supabase.auth.signOut();
 
       // Sign in with Supabase using the Apple ID token + raw nonce
       const { data, error } = await supabase.auth.signInWithIdToken({
@@ -75,18 +71,12 @@ export default function SignUpScreen() {
         nonce: rawNonce,
       });
 
-      if (error) {
-        console.error('[Auth:SignUp] Supabase signInWithIdToken error:', error.message);
-        throw error;
-      }
+      if (error) throw error;
 
       if (!data.user) {
-        console.warn('[Auth:SignUp] Supabase returned no user after Apple sign-in');
         Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
         return;
       }
-
-      console.log(`[Auth:SignUp] Supabase auth success, userId: ${data.user.id.slice(0, 8)}...`);
 
       // Check if user already has an account (prevent overwriting existing profile)
       const { data: existingProfile } = await supabase
@@ -95,31 +85,21 @@ export default function SignUpScreen() {
         .eq('id', data.user.id)
         .single();
 
-      if (existingProfile) {
-        console.log('[Auth:SignUp] Profile already exists, redirecting to app');
-        router.replace('/(tabs)');
-        return;
-      }
-
-      // New user - link onboarding data to the authenticated user
-      console.log('[Auth:SignUp] Linking onboarding data...');
+      // Link onboarding data to the user profile (creates or updates)
       const linked = await linkOnboardingToUser(data.user.id);
       if (!linked) {
-        console.warn('[Auth:SignUp] linkOnboardingToUser returned false, continuing anyway');
+        Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
+        await supabase.auth.signOut();
+        return;
       }
       await clearAnonymousSession();
 
       // Navigate to main app
-      console.log('[Auth:SignUp] Navigating to main app...');
       router.replace('/(tabs)');
     } catch (error: any) {
       // Don't show error if user cancelled
-      if (error.code === 'ERR_REQUEST_CANCELED') {
-        console.log('[Auth:SignUp] Apple sign-up cancelled by user');
-        return;
-      }
-      console.error('[Auth:SignUp] Apple sign-up error:', error);
-      Alert.alert(t('auth.signInFailed'), t('auth.appleSignInError'));
+      if (error.code === 'ERR_REQUEST_CANCELED') return;
+      Alert.alert(t('auth.signInFailed'), error?.message || t('auth.appleSignInError'));
     } finally {
       setIsAppleLoading(false);
     }
@@ -128,9 +108,9 @@ export default function SignUpScreen() {
   const handleGoogleSignUp = async () => {
     try {
       setIsGoogleLoading(true);
-      console.log('[Auth:SignUp] Starting Google sign-up...');
 
       // Sign out any existing session to prevent stale data
+      // (safe here because Google OAuth opens a browser - user won't cancel before this)
       await supabase.auth.signOut();
 
       const redirectTo = 'align://auth/callback';
@@ -147,52 +127,36 @@ export default function SignUpScreen() {
       if (error) throw error;
 
       if (!data.url) {
-        console.warn('[Auth:SignUp] Supabase did not return an OAuth URL');
         Alert.alert(t('auth.signInFailed'), t('auth.googleStartError'));
         return;
       }
 
-      console.log('[Auth:SignUp] Opening Google OAuth browser...');
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-      console.log(`[Auth:SignUp] Browser result type: ${result.type}`);
 
       if (result.type !== 'success') {
-        // User dismissed/cancelled the browser, or redirect failed
-        if (result.type === 'dismiss' || result.type === 'cancel') {
-          console.log('[Auth:SignUp] Google sign-up cancelled by user');
-        } else {
-          console.warn(`[Auth:SignUp] Unexpected browser result type: ${result.type}`);
+        if (result.type !== 'dismiss' && result.type !== 'cancel') {
           Alert.alert(t('auth.signInFailed'), t('auth.googleInterruptedError'));
         }
         return;
       }
 
       if (!result.url) {
-        console.warn('[Auth:SignUp] Browser success but no URL returned');
         Alert.alert(t('auth.signInFailed'), t('auth.googleNoResponse'));
         return;
       }
 
       // Extract the tokens from the redirect URL
-      console.log(`[Auth:SignUp] Extracting tokens from callback URL...`);
       const url = new URL(result.url);
       const params = new URLSearchParams(url.hash.substring(1));
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
 
       if (!accessToken) {
-        // Check if there's an error in the URL params
-        const errorParam = params.get('error') || url.searchParams.get('error');
         const errorDesc =
           params.get('error_description') || url.searchParams.get('error_description');
-        console.error(
-          `[Auth:SignUp] No access_token in callback URL. error=${errorParam}, desc=${errorDesc}, url=${result.url}`
-        );
         Alert.alert(t('auth.signInFailed'), errorDesc || t('auth.googleSignInError'));
         return;
       }
-
-      console.log('[Auth:SignUp] Tokens extracted, setting Supabase session...');
 
       // Set the session in Supabase
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
@@ -203,39 +167,22 @@ export default function SignUpScreen() {
       if (sessionError) throw sessionError;
 
       if (!sessionData.user) {
-        console.warn('[Auth:SignUp] Supabase setSession returned no user');
         Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
         return;
       }
 
-      console.log(`[Auth:SignUp] Session set, userId: ${sessionData.user.id.slice(0, 8)}...`);
-
-      // Check if user already has an account (prevent overwriting existing profile)
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', sessionData.user.id)
-        .single();
-
-      if (existingProfile) {
-        console.log('[Auth:SignUp] Profile already exists, redirecting to app');
-        router.replace('/(tabs)');
-        return;
-      }
-
-      // New user - link onboarding data to the authenticated user
-      console.log('[Auth:SignUp] Linking onboarding data...');
+      // Link onboarding data to the user profile (creates or updates)
       const linked = await linkOnboardingToUser(sessionData.user.id);
       if (!linked) {
-        console.warn('[Auth:SignUp] linkOnboardingToUser returned false, continuing anyway');
+        Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
+        await supabase.auth.signOut();
+        return;
       }
       await clearAnonymousSession();
 
       // Navigate to main app
-      console.log('[Auth:SignUp] Navigating to main app...');
       router.replace('/(tabs)');
     } catch (error: any) {
-      console.error('[Auth:SignUp] Google sign-up error:', error);
       Alert.alert(t('auth.signInFailed'), t('auth.googleSignInError'));
     } finally {
       setIsGoogleLoading(false);
@@ -273,7 +220,7 @@ export default function SignUpScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               handleAppleSignUp();
             }}
-            disabled={isAppleLoading}
+            disabled={isAppleLoading || isGoogleLoading}
           >
             {isAppleLoading ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -292,7 +239,7 @@ export default function SignUpScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               handleGoogleSignUp();
             }}
-            disabled={isGoogleLoading}
+            disabled={isAppleLoading || isGoogleLoading}
           >
             {isGoogleLoading ? (
               <ActivityIndicator color="#000000" />

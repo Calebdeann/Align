@@ -49,15 +49,17 @@ struct LiveActivityAttributes: ActivityAttributes {
 }
 
 private let alignPurple = Color(hex: "#947AFF")
-private let workoutDeepLink = URL(string: "align://active-workout")
 
 struct LiveActivityWidget: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: LiveActivityAttributes.self) { context in
+      let deepLink = context.state.title.isEmpty
+        ? URL(string: "align://active-workout?addExercise=1")
+        : URL(string: "align://active-workout")
       LiveActivityView(contentState: context.state, attributes: context.attributes)
         .activityBackgroundTint(Color.black)
         .activitySystemActionForegroundColor(Color.white)
-        .widgetURL(workoutDeepLink)
+        .widgetURL(deepLink)
     } dynamicIsland: { context in
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
@@ -71,6 +73,63 @@ struct LiveActivityWidget: Widget {
               .font(.system(size: 14, weight: .semibold))
               .foregroundStyle(.white)
               .multilineTextAlignment(.trailing)
+          }
+        }
+        DynamicIslandExpandedRegion(.bottom) {
+          let addUrl = URL(string: "align://active-workout?addExercise=1")!
+          if context.state.title.isEmpty {
+            Link(destination: addUrl) {
+              Text("Add an exercise")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(.white)
+            }
+          } else {
+            let subtitle = context.state.subtitle ?? ""
+            let parts = subtitle.components(separatedBy: " \u{00B7} ")
+            let setInfo = parts.first ?? ""
+            let weightReps = parts.count > 1 ? parts[1] : ""
+
+            HStack(alignment: .top, spacing: 10) {
+              if let imageName = context.state.imageName, !imageName.isEmpty {
+                Image.dynamic(assetNameOrPath: imageName)
+                  .resizable()
+                  .aspectRatio(contentMode: .fill)
+                  .frame(width: 32, height: 32)
+                  .clipShape(Circle())
+              }
+              VStack(alignment: .leading, spacing: 2) {
+                Text(context.state.title)
+                  .font(.system(size: 14, weight: .semibold))
+                  .foregroundStyle(.white)
+                  .lineLimit(1)
+                if !setInfo.isEmpty {
+                  Text(setInfo)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
+                }
+                if !weightReps.isEmpty {
+                  Text(weightReps)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .padding(.top, 8)
+                }
+              }
+
+              Spacer()
+
+              // Add exercise button
+              Link(destination: addUrl) {
+                Image(systemName: "plus")
+                  .font(.system(size: 14, weight: .semibold))
+                  .foregroundStyle(.white)
+                  .frame(width: 28, height: 28)
+                  .background(alignPurple)
+                  .clipShape(Circle())
+              }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
           }
         }
       } compactLeading: {

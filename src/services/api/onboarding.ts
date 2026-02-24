@@ -4,6 +4,7 @@ import { getAnonymousSessionId, clearAnonymousSession } from '../anonymousSessio
 // Field mapping from store property names to database column names
 // Also used to identify which field was skipped
 const fieldToColumn: Record<string, string> = {
+  name: 'name',
   experienceLevel: 'experience_level',
   triedOtherApps: 'tried_other_apps',
   mainGoal: 'main_goal',
@@ -89,6 +90,7 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
     {
       id: userId,
       email: user?.email,
+      name: session.name || null,
       full_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
       avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture,
       experience_level: session.experience_level,

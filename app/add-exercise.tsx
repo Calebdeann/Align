@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   View,
@@ -7,11 +7,7 @@ import {
   Pressable,
   TextInput,
   ActivityIndicator,
-  Modal,
-  Animated,
-  Dimensions,
   SectionList,
-  ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,15 +25,15 @@ import {
   getExerciseDisplayName,
 } from '@/stores/exerciseStore';
 import { useRecentExercisesStore } from '@/stores/recentExercisesStore';
+import { useUserProfileStore } from '@/stores/userProfileStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { FilterModal } from '@/components/FilterModal';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
 import {
   SIMPLIFIED_MUSCLE_GROUPS,
   getSimplifiedMuscleI18nKey,
   expandMuscleFilter,
 } from '@/constants/muscleGroups';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const MUSCLE_GROUP_ICONS: Record<string, any> = {
   all: require('../assets/Body Graph Icons/AllMuscles_BodyGraph.png'),
@@ -65,37 +61,7 @@ const EQUIPMENT_ICONS: Record<string, any> = {
   other: require('../assets/Body Graph Icons/Other_BodyGraph.png'),
 };
 
-// Equipment and muscle option IDs - labels are resolved via i18n inside the component
-
 // SVG Icons
-function CloseIcon() {
-  return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M18 6L6 18M6 6l12 12"
-        stroke={colors.text}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M20 6L9 17l-5-5"
-        stroke={colors.primary}
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
 function ChevronDownIcon() {
   return (
     <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -161,7 +127,7 @@ function ExerciseItem({
         <ExerciseImage
           gifUrl={exercise.image_url}
           thumbnailUrl={exercise.thumbnail_url}
-          size={44}
+          size={50}
           borderRadius={8}
           backgroundColor={colors.background}
         />
@@ -184,9 +150,16 @@ function ExerciseItem({
         >
           {getExerciseDisplayName(exercise)}
         </Text>
-        <Text style={styles.exerciseMuscle}>
-          {isAlreadyAdded ? alreadyInWorkoutLabel : muscleLabel}
-        </Text>
+        <View style={styles.exerciseMuscleRow}>
+          <Text style={styles.exerciseMuscle}>
+            {isAlreadyAdded ? alreadyInWorkoutLabel : muscleLabel}
+          </Text>
+          {exercise.is_custom && (
+            <View style={styles.customBadge}>
+              <Text style={styles.customBadgeText}>Custom</Text>
+            </View>
+          )}
+        </View>
       </View>
       <View
         style={[
@@ -198,125 +171,6 @@ function ExerciseItem({
         {showSelected && <Ionicons name="checkmark" size={14} color={colors.textInverse} />}
       </View>
     </Pressable>
-  );
-}
-
-interface FilterOption {
-  id: string;
-  label: string;
-}
-
-interface FilterModalProps {
-  visible: boolean;
-  title: string;
-  options: FilterOption[];
-  selectedId: string;
-  icons?: Record<string, any>;
-  iconSizes?: Record<string, number>;
-  onSelect: (id: string) => void;
-  onClose: () => void;
-}
-
-function FilterModal({
-  visible,
-  title,
-  options,
-  selectedId,
-  icons,
-  iconSizes,
-  onSelect,
-  onClose,
-}: FilterModalProps) {
-  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: SCREEN_HEIGHT,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [visible]);
-
-  return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable
-        style={styles.modalOverlay}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onClose();
-        }}
-      >
-        <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
-          <Pressable onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modalHandle} />
-
-            <View style={styles.modalHeader}>
-              <Pressable
-                style={styles.modalCloseButton}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onClose();
-                }}
-              >
-                <CloseIcon />
-              </Pressable>
-              <Text style={styles.modalTitle}>{title}</Text>
-              <View style={styles.modalCloseButton} />
-            </View>
-
-            <ScrollView style={styles.filterOptionsScroll} showsVerticalScrollIndicator={true}>
-              {options.map((option) => (
-                <Pressable
-                  key={option.id}
-                  style={styles.filterOptionItem}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    onSelect(option.id);
-                    onClose();
-                  }}
-                >
-                  <View style={styles.filterOptionLeft}>
-                    <View style={styles.filterOptionCircle}>
-                      {icons?.[option.id] && (
-                        <Image
-                          source={icons[option.id]}
-                          style={[
-                            styles.filterOptionIcon,
-                            iconSizes?.[option.id] && {
-                              width: iconSizes[option.id],
-                              height: iconSizes[option.id],
-                            },
-                          ]}
-                          contentFit="contain"
-                        />
-                      )}
-                    </View>
-                    <Text
-                      style={[
-                        styles.filterOptionText,
-                        selectedId === option.id && styles.filterOptionTextSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </View>
-                  {selectedId === option.id && <CheckIcon />}
-                </Pressable>
-              ))}
-            </ScrollView>
-          </Pressable>
-        </Animated.View>
-      </Pressable>
-    </Modal>
   );
 }
 
@@ -344,10 +198,23 @@ export default function AddExerciseScreen() {
   const [showEquipmentModal, setShowEquipmentModal] = useState(false);
 
   // Exercise store (cached exercises)
-  const { allExercises, isLoaded, isLoading, error, loadExercises } = useExerciseStore();
+  const {
+    allExercises,
+    isLoaded,
+    isLoading,
+    error,
+    loadExercises,
+    customExercises,
+    loadCustomExercises,
+  } = useExerciseStore();
+  const lastCreatedExerciseId = useExerciseStore((state) => state.lastCreatedExerciseId);
+  const clearLastCreatedExerciseId = useExerciseStore((state) => state.clearLastCreatedExerciseId);
   // Subscribe to translation changes so exercise names re-render in the selected language
   const translationsLanguage = useExerciseStore((state) => state.translationsLanguage);
   const { getRecentExercises, addRecentExercises } = useRecentExercisesStore();
+  const { userId } = useUserProfileStore();
+
+  const sectionListRef = useRef<SectionList<any>>(null);
 
   // Translatable filter options
   const EQUIPMENT_OPTIONS = useMemo(
@@ -381,7 +248,8 @@ export default function AddExerciseScreen() {
   // Load exercises on mount (will use cache if already loaded)
   useEffect(() => {
     loadExercises();
-  }, []);
+    if (userId) loadCustomExercises(userId);
+  }, [userId]);
 
   // Debounced search
   useEffect(() => {
@@ -418,9 +286,12 @@ export default function AddExerciseScreen() {
       equipment: selectedEquipment !== 'all' ? selectedEquipment : undefined,
     });
 
-    // Deduplication: Recent > All
+    // Deduplication: Recent > Custom > All
     const recentIds = new Set(recent.map((e) => e.id));
-    const allWithoutRecent = allFiltered.filter((e) => !recentIds.has(e.id));
+    const customFiltered = allFiltered.filter((e) => e.is_custom);
+    const customIds = new Set(customFiltered.map((e) => e.id));
+    const excludeIds = new Set([...recentIds, ...customIds]);
+    const allWithoutRecentAndCustom = allFiltered.filter((e) => !excludeIds.has(e.id));
 
     const result = [];
 
@@ -431,10 +302,15 @@ export default function AddExerciseScreen() {
       }
     }
 
-    if (allWithoutRecent.length > 0 || hasActiveFilters) {
+    // Show custom exercises section
+    if (customFiltered.length > 0) {
+      result.push({ title: t('addExercise.customExercises'), data: customFiltered });
+    }
+
+    if (allWithoutRecentAndCustom.length > 0 || hasActiveFilters) {
       result.push({
         title: t('addExercise.allExercises'),
-        data: hasActiveFilters ? allFiltered : allWithoutRecent,
+        data: hasActiveFilters ? allWithoutRecentAndCustom : allWithoutRecentAndCustom,
       });
     }
 
@@ -448,6 +324,33 @@ export default function AddExerciseScreen() {
     hasActiveFilters,
     t,
   ]);
+
+  // Auto-select and scroll to newly created custom exercise
+  useEffect(() => {
+    if (lastCreatedExerciseId && isLoaded) {
+      setSelectedExercises((prev) =>
+        prev.includes(lastCreatedExerciseId) ? prev : [...prev, lastCreatedExerciseId]
+      );
+      clearLastCreatedExerciseId();
+      // Scroll to the custom exercises section after a short delay for layout
+      setTimeout(() => {
+        const customSectionIndex = sections.findIndex((s) =>
+          s.data.some((e) => e.id === lastCreatedExerciseId)
+        );
+        if (customSectionIndex >= 0 && sectionListRef.current) {
+          const itemIndex = sections[customSectionIndex].data.findIndex(
+            (e) => e.id === lastCreatedExerciseId
+          );
+          sectionListRef.current.scrollToLocation({
+            sectionIndex: customSectionIndex,
+            itemIndex: Math.max(0, itemIndex),
+            viewPosition: 0.5,
+            animated: true,
+          });
+        }
+      }, 300);
+    }
+  }, [lastCreatedExerciseId, isLoaded]);
 
   // Prefetch GIFs for Recent + Popular exercises so detail view loads instantly
   useEffect(() => {
@@ -478,7 +381,9 @@ export default function AddExerciseScreen() {
   const setPendingExercises = useWorkoutStore((state) => state.setPendingExercises);
 
   const handleAddExercises = () => {
-    const selected = allExercises.filter((e) => selectedExercises.includes(e.id));
+    const selected = selectedExercises
+      .map((id) => allExercises.find((e) => e.id === id))
+      .filter(Boolean) as Exercise[];
     // Track as recent exercises for quick access next time
     addRecentExercises(selected.map((e) => e.id));
     setPendingExercises(
@@ -488,6 +393,7 @@ export default function AddExerciseScreen() {
         muscle: e.muscle_group || 'Unknown',
         gifUrl: e.image_url || '',
         thumbnailUrl: e.thumbnail_url || '',
+        is_custom: e.is_custom,
       }))
     );
     router.back();
@@ -537,7 +443,7 @@ export default function AddExerciseScreen() {
 
   // Render section header
   const renderSectionHeader = useCallback(
-    ({ section }: { section: { title: string } }) => <SectionHeader title={section.title} />,
+    ({ section }: any) => <SectionHeader title={section.title} />,
     []
   );
 
@@ -558,7 +464,15 @@ export default function AddExerciseScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>{t('addExercise.title')}</Text>
-        <View style={{ width: 50 }} />
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/create-exercise');
+          }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.createText}>{t('addExercise.create')}</Text>
+        </Pressable>
       </View>
 
       {/* Search Bar */}
@@ -653,6 +567,7 @@ export default function AddExerciseScreen() {
         <View style={styles.listContainer}>
           {!isEmpty ? (
             <SectionList
+              ref={sectionListRef}
               sections={sections}
               renderItem={renderItem}
               renderSectionHeader={renderSectionHeader}
@@ -727,15 +642,15 @@ export default function AddExerciseScreen() {
         selectedId={selectedEquipment}
         icons={EQUIPMENT_ICONS}
         iconSizes={{
-          all: 45,
-          none: 49,
-          barbell: 45,
-          dumbbell: 45,
-          kettlebell: 45,
-          machine: 45,
-          'weighted plate': 45,
-          band: 45,
-          other: 45,
+          all: 52,
+          none: 56,
+          barbell: 52,
+          dumbbell: 52,
+          kettlebell: 52,
+          machine: 52,
+          'weighted plate': 52,
+          band: 52,
+          other: 52,
         }}
         onSelect={setSelectedEquipment}
         onClose={() => setShowEquipmentModal(false)}
@@ -904,12 +819,29 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.primary,
   },
+  exerciseMuscleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: spacing.sm,
+    marginTop: 2,
+  },
   exerciseMuscle: {
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
     textTransform: 'capitalize',
+  },
+  customBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  customBadgeText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: colors.textInverse,
+    letterSpacing: 0.2,
   },
   checkbox: {
     width: 24,
@@ -955,84 +887,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textSecondary,
     borderColor: colors.textSecondary,
   },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: SCREEN_HEIGHT * 0.95,
-    paddingBottom: 40,
-  },
-  modalHandle: {
-    width: 36,
-    height: 4,
-    backgroundColor: colors.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md + 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalCloseButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalTitle: {
+  createText: {
     fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
-    color: colors.text,
-  },
-  filterOptionsScroll: {
-    maxHeight: SCREEN_HEIGHT * 0.8,
-  },
-  filterOptionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border + '30',
-  },
-  filterOptionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  filterOptionCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  filterOptionIcon: {
-    width: 43,
-    height: 43,
-  },
-  filterOptionText: {
-    fontFamily: fonts.medium,
     fontSize: fontSize.md,
-    color: colors.text,
-  },
-  filterOptionTextSelected: {
     color: colors.primary,
-    fontFamily: fonts.semiBold,
   },
 });

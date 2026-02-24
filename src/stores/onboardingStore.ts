@@ -31,6 +31,7 @@ async function saveWithRetry<T>(
 // NOTE: All weights (currentWeight, targetWeight) are stored in kg
 // Height is stored in inches
 export interface OnboardingData {
+  name: string | null;
   experienceLevel: string | null;
   triedOtherApps: string | null;
   mainGoal: string | null;
@@ -54,6 +55,7 @@ export interface OnboardingData {
 
 interface OnboardingState extends OnboardingData {
   // Individual setters (for local state without saving)
+  setName: (name: string) => void;
   setExperienceLevel: (level: string) => void;
   setTriedOtherApps: (value: string) => void;
   setMainGoal: (goal: string) => void;
@@ -93,6 +95,7 @@ interface OnboardingState extends OnboardingData {
 }
 
 const initialState: OnboardingData = {
+  name: null,
   experienceLevel: null,
   triedOtherApps: null,
   mainGoal: null,
@@ -118,6 +121,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   ...initialState,
 
   // Individual setters
+  setName: (name) => set({ name }),
   setExperienceLevel: (level) => set({ experienceLevel: level }),
   setTriedOtherApps: (value) => set({ triedOtherApps: value }),
   setMainGoal: (goal) => set({ mainGoal: goal }),
@@ -143,8 +147,8 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
     // Update local state
     set({ [field]: value } as Partial<OnboardingData>);
 
-    // Save to Supabase with retry (don't block UI, but retry on failure)
-    saveWithRetry(() => saveOnboardingField(field, value));
+    // Save to Supabase with retry (await so data is persisted before navigation)
+    await saveWithRetry(() => saveOnboardingField(field, value));
   },
 
   // Link to authenticated user

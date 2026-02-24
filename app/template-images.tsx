@@ -1,6 +1,8 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import Svg, { Path } from 'react-native-svg';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { TEMPLATE_IMAGE_CATEGORIES, TemplateImageItem } from '@/constants/templateImages';
@@ -31,6 +33,7 @@ function BackIcon() {
 
 export default function TemplateImagesScreen() {
   const handleSelectImage = (image: TemplateImageItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPendingTemplateImage({ id: image.id, source: image.source });
     router.back();
   };
@@ -38,7 +41,13 @@ export default function TemplateImagesScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          style={styles.backButton}
+        >
           <BackIcon />
         </Pressable>
         <Text style={styles.headerTitle}>Choose Image</Text>
@@ -60,7 +69,12 @@ export default function TemplateImagesScreen() {
                   style={styles.imageWrapper}
                   onPress={() => handleSelectImage(image)}
                 >
-                  <Image source={image.source} style={styles.image} />
+                  <Image
+                    source={image.source}
+                    style={styles.image}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
                 </Pressable>
               ))}
             </View>
@@ -125,7 +139,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   bottomSpacer: {
     height: 40,

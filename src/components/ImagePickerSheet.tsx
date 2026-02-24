@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Svg, { Path, Rect } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
@@ -110,6 +111,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
   }, [visible]);
 
   const close = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Animated.timing(slideAnim, {
       toValue: SCREEN_HEIGHT,
       duration: 250,
@@ -134,6 +136,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
   };
 
   const handleChooseFromLibrary = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await closeAndWait();
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -159,6 +162,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
   };
 
   const handleTakePhoto = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await closeAndWait();
       const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -183,6 +187,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
   };
 
   const handleOpenTemplates = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await closeAndWait();
       router.push('/template-images');

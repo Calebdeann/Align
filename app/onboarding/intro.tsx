@@ -150,7 +150,7 @@ export default function IntroScreen() {
   const handleSkip = useCallback(() => {
     withLock(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      router.push('/onboarding/experience');
+      router.push('/onboarding/name');
     });
   }, [withLock]);
 
@@ -159,7 +159,7 @@ export default function IntroScreen() {
     if (currentPage >= slides.length - 1) {
       withLock(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        router.push('/onboarding/experience');
+        router.push('/onboarding/name');
       });
     } else {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);

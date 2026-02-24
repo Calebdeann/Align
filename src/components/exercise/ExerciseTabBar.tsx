@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 
 export type ExerciseDetailTab = 'summary' | 'history' | 'howto';
@@ -13,7 +14,10 @@ export default function ExerciseTabBar({ activeTab, onTabChange }: ExerciseTabBa
     <View style={styles.container}>
       <Pressable
         style={[styles.tab, activeTab === 'summary' && styles.tabActive]}
-        onPress={() => onTabChange('summary')}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onTabChange('summary');
+        }}
       >
         <Text style={[styles.tabText, activeTab === 'summary' && styles.tabTextActive]}>
           Summary
@@ -21,7 +25,10 @@ export default function ExerciseTabBar({ activeTab, onTabChange }: ExerciseTabBa
       </Pressable>
       <Pressable
         style={[styles.tab, activeTab === 'history' && styles.tabActive]}
-        onPress={() => onTabChange('history')}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onTabChange('history');
+        }}
       >
         <Text style={[styles.tabText, activeTab === 'history' && styles.tabTextActive]}>
           History
@@ -29,7 +36,10 @@ export default function ExerciseTabBar({ activeTab, onTabChange }: ExerciseTabBa
       </Pressable>
       <Pressable
         style={[styles.tab, activeTab === 'howto' && styles.tabActive]}
-        onPress={() => onTabChange('howto')}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onTabChange('howto');
+        }}
       >
         <Text style={[styles.tabText, activeTab === 'howto' && styles.tabTextActive]}>How-to</Text>
       </Pressable>

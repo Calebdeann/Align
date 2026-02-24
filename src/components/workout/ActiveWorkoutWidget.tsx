@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -67,6 +68,7 @@ export default function ActiveWorkoutWidget() {
   }
 
   const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;

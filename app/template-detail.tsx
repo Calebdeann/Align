@@ -5,17 +5,14 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Image,
   TextInput,
-  LayoutAnimation,
-  Platform,
-  UIManager,
   Alert,
   Modal,
   Animated,
   Dimensions,
   ImageSourcePropType,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -25,13 +22,10 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise } from '@/stores/templateStore';
-import { getWeightUnit, fromKgForDisplay } from '@/utils/units';
-import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useWorkoutStore, WorkoutImage } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { prefetchExerciseGif } from '@/stores/exerciseStore';
-import { formatExerciseNameString } from '@/utils/textFormatters';
+import { prefetchExerciseGif, resolveExerciseDisplayName } from '@/stores/exerciseStore';
 import { getTemplateImageById } from '@/constants/templateImages';
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 import {
@@ -42,11 +36,6 @@ import {
 import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // Colour options (matching save-template)
 const WORKOUT_COLOURS = [
@@ -74,39 +63,40 @@ function CloseIcon() {
   );
 }
 
-// Exercise row component with expandable sets
+// Exercise row component
 function ExerciseRow({
   exercise,
-  isExpanded,
-  onToggle,
-  weightLabel,
-  units,
   withLock,
 }: {
   exercise: TemplateExercise;
-  isExpanded: boolean;
-  onToggle: () => void;
-  weightLabel: string;
-  units: string;
   withLock: (callback: () => void) => void;
 }) {
-  const { t } = useTranslation();
-  const formatWeight = (weightKg?: number) => {
-    if (weightKg == null) return '-';
-    const display = units === 'imperial' ? fromKgForDisplay(weightKg, 'imperial') : weightKg;
-    return `${Math.round(display)}`;
-  };
-
   return (
-    <View>
+    <View style={styles.exerciseRow}>
       <Pressable
-        style={styles.exerciseRow}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onToggle();
-        }}
+        onPress={
+          exercise.gifUrl || exercise.thumbnailUrl
+            ? () => {
+                withLock(() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  prefetchExerciseGif(exercise.exerciseId);
+                  router.push(`/exercise/${exercise.exerciseId}`);
+                });
+              }
+            : undefined
+        }
+        disabled={!exercise.gifUrl && !exercise.thumbnailUrl}
       >
-        <Pressable
+        <ExerciseImage
+          gifUrl={exercise.gifUrl}
+          thumbnailUrl={exercise.thumbnailUrl}
+          size={46}
+          borderRadius={8}
+        />
+      </Pressable>
+      <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
+        <Text
+          style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
           onPress={
             exercise.gifUrl || exercise.thumbnailUrl
               ? () => {
@@ -118,69 +108,10 @@ function ExerciseRow({
                 }
               : undefined
           }
-          disabled={!exercise.gifUrl && !exercise.thumbnailUrl}
         >
-          <ExerciseImage
-            gifUrl={exercise.gifUrl}
-            thumbnailUrl={exercise.thumbnailUrl}
-            size={40}
-            borderRadius={8}
-          />
-        </Pressable>
-        <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
-          <Text
-            style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
-            onPress={
-              exercise.gifUrl || exercise.thumbnailUrl
-                ? () => {
-                    withLock(() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      prefetchExerciseGif(exercise.exerciseId);
-                      router.push(`/exercise/${exercise.exerciseId}`);
-                    });
-                  }
-                : undefined
-            }
-          >
-            {formatExerciseNameString(exercise.exerciseName)}
-          </Text>
-        </View>
-        <Ionicons
-          name={isExpanded ? 'chevron-down' : 'chevron-forward'}
-          size={20}
-          color={colors.textSecondary}
-        />
-      </Pressable>
-
-      {/* Expanded Sets Details */}
-      {isExpanded && (
-        <View style={styles.setsContainer}>
-          {exercise.notes?.trim() ? (
-            <Text style={styles.exerciseNotesText}>{exercise.notes}</Text>
-          ) : null}
-          {/* Sets Header */}
-          <View style={styles.setsHeader}>
-            <Text style={[styles.setHeaderText, styles.setColumn]}>{t('template.set')}</Text>
-            <Text style={styles.setHeaderText}>{t('template.weightAndReps')}</Text>
-          </View>
-
-          {/* Sets Rows */}
-          {exercise.sets.map((set) => (
-            <View key={set.setNumber} style={styles.setRow}>
-              <Text style={[styles.setNumber, styles.setColumn]}>{set.setNumber}</Text>
-              <Text style={styles.setText}>
-                {set.targetWeight && set.targetReps
-                  ? `${formatWeight(set.targetWeight)} ${weightLabel} x ${set.targetReps} reps`
-                  : set.targetWeight
-                    ? `${formatWeight(set.targetWeight)} ${weightLabel} x - reps`
-                    : set.targetReps
-                      ? `- x ${set.targetReps} reps`
-                      : '- x -'}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
+          {resolveExerciseDisplayName(exercise.exerciseId, exercise.exerciseName)}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -206,9 +137,6 @@ export default function TemplateDetailScreen() {
     (state) => state.removeScheduledWorkoutsForTemplate
   );
 
-  const units = useUserPreferencesStore((s) => s.getUnitSystem());
-  const weightLabel = getWeightUnit(units).toLowerCase();
-
   const template = templateId ? getTemplateById(templateId) : null;
   const isSaved = templateId ? isTemplateSaved(templateId, userId) : false;
 
@@ -218,9 +146,6 @@ export default function TemplateDetailScreen() {
   const [editDescription, setEditDescription] = useState('');
   const [editColourId, setEditColourId] = useState('purple');
   const [editImage, setEditImage] = useState<SelectedImageData | null>(null);
-
-  // Track which exercises are expanded
-  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
 
   // Colour modal state (edit mode)
   const [showColourModal, setShowColourModal] = useState(false);
@@ -233,19 +158,6 @@ export default function TemplateDetailScreen() {
 
   // Image picker state
   const [showImagePicker, setShowImagePicker] = useState(false);
-
-  const toggleExercise = (exerciseId: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedExercises((prev) => {
-      const next = new Set(prev);
-      if (next.has(exerciseId)) {
-        next.delete(exerciseId);
-      } else {
-        next.add(exerciseId);
-      }
-      return next;
-    });
-  };
 
   // Pick up template image selection when returning from template-images screen
   useFocusEffect(
@@ -506,9 +418,19 @@ export default function TemplateDetailScreen() {
         >
           {editImage ? (
             editImage.localSource ? (
-              <Image source={editImage.localSource} style={styles.selectedImage} />
+              <Image
+                source={editImage.localSource}
+                style={styles.selectedImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
             ) : (
-              <Image source={{ uri: editImage.uri }} style={styles.selectedImage} />
+              <Image
+                source={{ uri: editImage.uri }}
+                style={styles.selectedImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
             )
           ) : (
             <ImagePlaceholderIcon />
@@ -519,10 +441,24 @@ export default function TemplateDetailScreen() {
 
     // View mode
     if (template.localImage) {
-      return <Image source={template.localImage} style={styles.templateImage} />;
+      return (
+        <Image
+          source={template.localImage}
+          style={styles.templateImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      );
     }
     if (template.image?.uri) {
-      return <Image source={{ uri: template.image.uri }} style={styles.templateImage} />;
+      return (
+        <Image
+          source={{ uri: template.image.uri }}
+          style={styles.templateImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      );
     }
     return (
       <View style={[styles.templateImage, styles.templateImagePlaceholder]}>
@@ -692,14 +628,7 @@ export default function TemplateDetailScreen() {
         <View style={styles.exercisesCard}>
           {template.exercises.map((exercise, index) => (
             <View key={exercise.id}>
-              <ExerciseRow
-                exercise={exercise}
-                isExpanded={expandedExercises.has(exercise.id)}
-                onToggle={() => toggleExercise(exercise.id)}
-                weightLabel={weightLabel}
-                units={units}
-                withLock={withLock}
-              />
+              <ExerciseRow exercise={exercise} withLock={withLock} />
               {index < template.exercises.length - 1 && <View style={styles.exerciseDivider} />}
             </View>
           ))}
@@ -1095,50 +1024,6 @@ const styles = StyleSheet.create({
   exerciseDivider: {
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
-  },
-  exerciseNotesText: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  // Sets display styles
-  setsContainer: {
-    paddingTop: 12,
-    paddingBottom: spacing.sm,
-  },
-  setsHeader: {
-    flexDirection: 'row',
-    paddingBottom: spacing.sm,
-  },
-  setHeaderText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.xs,
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
-  setColumn: {
-    width: 40,
-    marginRight: spacing.md,
-    textAlign: 'center',
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  setNumber: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.sm,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  setText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
   },
   deleteTextButton: {
     alignItems: 'center',

@@ -59,6 +59,41 @@ class WorkoutWidgetBridge: RCTEventEmitter {
     resolve(actions)
   }
 
+  // MARK: - Read pending video import (written by Share Extension)
+
+  @objc(readPendingVideoImport:rejecter:)
+  func readPendingVideoImport(_ resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+    guard let defaults = UserDefaults(suiteName: WorkoutWidgetBridge.appGroupId) else {
+      resolve(nil)
+      return
+    }
+
+    // Try new JSON format first (pendingVideoImport)
+    if let jsonString = defaults.string(forKey: "pendingVideoImport") {
+      defaults.removeObject(forKey: "pendingVideoImport")
+      defaults.synchronize()
+      resolve(jsonString)
+      return
+    }
+
+    // Fallback: read legacy key for in-flight shares from old extension version
+    if let url = defaults.string(forKey: "pendingTikTokUrl") {
+      defaults.removeObject(forKey: "pendingTikTokUrl")
+      defaults.synchronize()
+      // Return JSON format for consistency
+      let payload: [String: String] = ["url": url, "platform": "tiktok"]
+      if let jsonData = try? JSONSerialization.data(withJSONObject: payload),
+         let result = String(data: jsonData, encoding: .utf8) {
+        resolve(result)
+      } else {
+        resolve(nil)
+      }
+      return
+    }
+
+    resolve(nil)
+  }
+
   // MARK: - Darwin notification (widget -> app)
 
   private func registerDarwinNotification() {

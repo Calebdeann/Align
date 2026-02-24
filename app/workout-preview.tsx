@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,15 +12,13 @@ import { useWorkoutStore, type ScheduledWorkout } from '@/stores/workoutStore';
 import {
   useTemplateStore,
   type WorkoutTemplate,
+  estimateTemplateDuration,
   formatTemplateDuration,
   getTemplateTotalSets,
 } from '@/stores/templateStore';
 import { getCurrentUser } from '@/services/api/user';
-import { formatExerciseNameString } from '@/utils/textFormatters';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { prefetchExerciseGif } from '@/stores/exerciseStore';
-import { getWeightUnit, fromKgForDisplay } from '@/utils/units';
-import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { prefetchExerciseGif, resolveExerciseDisplayName } from '@/stores/exerciseStore';
 import * as Haptics from 'expo-haptics';
 import { useState, useEffect } from 'react';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
@@ -135,11 +134,6 @@ export default function WorkoutPreviewScreen() {
 
   const { isNavigating, withLock } = useNavigationLock();
   const [userId, setUserId] = useState<string | null>(null);
-  const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
-
-  const units = useUserPreferencesStore((s) => s.getUnitSystem());
-  const weightLabel = getWeightUnit(units).toLowerCase();
-
   // Get workout from store
   const scheduledWorkouts = useWorkoutStore((state) => state.scheduledWorkouts);
   const startWorkoutFromTemplate = useWorkoutStore((state) => state.startWorkoutFromTemplate);
@@ -174,18 +168,6 @@ export default function WorkoutPreviewScreen() {
     if (!workout?.templateId) return null;
     return getTemplateById(workout.templateId);
   }, [workout, getTemplateById]);
-
-  const toggleExercise = (exerciseId: string) => {
-    setExpandedExercises((prev) => {
-      const next = new Set(prev);
-      if (next.has(exerciseId)) {
-        next.delete(exerciseId);
-      } else {
-        next.add(exerciseId);
-      }
-      return next;
-    });
-  };
 
   // Handle delete workout
   const handleDeleteWorkout = () => {
@@ -415,9 +397,19 @@ export default function WorkoutPreviewScreen() {
                 {/* Template Header */}
                 <View style={styles.templateHeader}>
                   {template.localImage ? (
-                    <Image source={template.localImage} style={styles.templateImage} />
+                    <Image
+                      source={template.localImage}
+                      style={styles.templateImage}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
                   ) : template.image?.uri ? (
-                    <Image source={{ uri: template.image.uri }} style={styles.templateImage} />
+                    <Image
+                      source={{ uri: template.image.uri }}
+                      style={styles.templateImage}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
                   ) : (
                     <View
                       style={[styles.templateIcon, { backgroundColor: template.tagColor + '20' }]}
@@ -428,7 +420,7 @@ export default function WorkoutPreviewScreen() {
                   <View style={styles.templateInfo}>
                     <Text style={styles.templateName}>{template.name}</Text>
                     <Text style={styles.templateMeta}>
-                      {formatTemplateDuration(template.estimatedDuration)} •{' '}
+                      {formatTemplateDuration(estimateTemplateDuration(template))} •{' '}
                       {getTemplateTotalSets(template)} {t('workoutDetails.sets').toLowerCase()} •{' '}
                       {template.exercises.length} {t('workoutDetails.exercises').toLowerCase()}
                     </Text>
@@ -446,18 +438,36 @@ export default function WorkoutPreviewScreen() {
 
                 {/* Exercise List */}
                 <View style={styles.exerciseList}>
-                  {template.exercises.map((ex, index) => {
-                    const isExpanded = expandedExercises.has(ex.id);
-                    return (
-                      <View key={ex.id}>
+                  {template.exercises.map((ex, index) => (
+                    <View key={ex.id}>
+                      <View style={styles.exerciseRow}>
                         <Pressable
-                          style={styles.exerciseRow}
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            toggleExercise(ex.id);
-                          }}
+                          onPress={
+                            ex.gifUrl || ex.thumbnailUrl
+                              ? () => {
+                                  withLock(() => {
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    prefetchExerciseGif(ex.exerciseId);
+                                    router.push(`/exercise/${ex.exerciseId}`);
+                                  });
+                                }
+                              : undefined
+                          }
+                          disabled={!ex.gifUrl && !ex.thumbnailUrl}
                         >
-                          <Pressable
+                          <ExerciseImage
+                            gifUrl={ex.gifUrl}
+                            thumbnailUrl={ex.thumbnailUrl}
+                            size={46}
+                            borderRadius={8}
+                          />
+                        </Pressable>
+                        <View
+                          style={{ flex: 1, justifyContent: 'center' }}
+                          pointerEvents="box-none"
+                        >
+                          <Text
+                            style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
                             onPress={
                               ex.gifUrl || ex.thumbnailUrl
                                 ? () => {
@@ -469,78 +479,17 @@ export default function WorkoutPreviewScreen() {
                                   }
                                 : undefined
                             }
-                            disabled={!ex.gifUrl && !ex.thumbnailUrl}
                           >
-                            <ExerciseImage
-                              gifUrl={ex.gifUrl}
-                              thumbnailUrl={ex.thumbnailUrl}
-                              size={40}
-                              borderRadius={8}
-                            />
-                          </Pressable>
-                          <View
-                            style={{ flex: 1, justifyContent: 'center' }}
-                            pointerEvents="box-none"
-                          >
-                            <Text
-                              style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
-                              onPress={
-                                ex.gifUrl || ex.thumbnailUrl
-                                  ? () => {
-                                      withLock(() => {
-                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                        prefetchExerciseGif(ex.exerciseId);
-                                        router.push(`/exercise/${ex.exerciseId}`);
-                                      });
-                                    }
-                                  : undefined
-                              }
-                            >
-                              {formatExerciseNameString(ex.exerciseName)}
-                            </Text>
-                          </View>
-                          <Ionicons
-                            name={isExpanded ? 'chevron-down' : 'chevron-forward'}
-                            size={20}
-                            color={colors.textSecondary}
-                          />
-                        </Pressable>
-
-                        {isExpanded && (
-                          <View style={styles.setsContainer}>
-                            <View style={styles.setsHeader}>
-                              <Text style={[styles.setHeaderText, styles.setColumn]}>
-                                {t('template.set')}
-                              </Text>
-                              <Text style={styles.setHeaderText}>
-                                {t('template.weightAndReps')}
-                              </Text>
-                            </View>
-                            {ex.sets.map((set) => (
-                              <View key={set.setNumber} style={styles.setRow}>
-                                <Text style={[styles.setNumber, styles.setColumn]}>
-                                  {set.setNumber}
-                                </Text>
-                                <Text style={styles.setText}>
-                                  {set.targetWeight && set.targetReps
-                                    ? `${units === 'imperial' ? Math.round(fromKgForDisplay(set.targetWeight, 'imperial')) : set.targetWeight} ${weightLabel} x ${set.targetReps} reps`
-                                    : set.targetWeight
-                                      ? `${units === 'imperial' ? Math.round(fromKgForDisplay(set.targetWeight, 'imperial')) : set.targetWeight} ${weightLabel} x - reps`
-                                      : set.targetReps
-                                        ? `- x ${set.targetReps} reps`
-                                        : '- x -'}
-                                </Text>
-                              </View>
-                            ))}
-                          </View>
-                        )}
-
-                        {index < template.exercises.length - 1 && (
-                          <View style={styles.exerciseDivider} />
-                        )}
+                            {resolveExerciseDisplayName(ex.exerciseId, ex.exerciseName)}
+                          </Text>
+                        </View>
                       </View>
-                    );
-                  })}
+
+                      {index < template.exercises.length - 1 && (
+                        <View style={styles.exerciseDivider} />
+                      )}
+                    </View>
+                  ))}
                 </View>
               </View>
             ) : (
@@ -777,42 +726,6 @@ const styles = StyleSheet.create({
   exerciseDivider: {
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.15)',
-  },
-  setsContainer: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-  },
-  setsHeader: {
-    flexDirection: 'row',
-    paddingBottom: spacing.sm,
-  },
-  setHeaderText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.xs,
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  setNumber: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.sm,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  setText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.text,
-  },
-  setColumn: {
-    width: 40,
-    marginRight: spacing.md,
-    textAlign: 'center',
   },
   noTemplateContainer: {
     alignItems: 'center',

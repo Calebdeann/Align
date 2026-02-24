@@ -36,11 +36,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-notifications",
       "expo-secure-store",
       "expo-web-browser",
       "expo-router",
       "expo-font",
       "expo-apple-authentication",
+      "expo-live-activity",
+      "./plugins/withWorkoutWidget.js",
       [
         "expo-build-properties",
         {
@@ -54,6 +57,12 @@
         {
           "photosPermission": "Allow Align to access your photos to add images to your workout templates.",
           "cameraPermission": "Allow Align to take photos for your workout templates."
+        }
+      ],
+      [
+        "react-native-share",
+        {
+          "ios": ["instagram-stories", "instagram", "twitter"]
         }
       ]
     ],
