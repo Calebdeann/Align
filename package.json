@@ -57,7 +57,7 @@
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-store-review": "~9.0.9",
-    "expo-superwall": "^1.0.1",
+    "expo-superwall": "^1.0.8",
     "expo-video-thumbnails": "~10.0.8",
     "expo-web-browser": "~15.0.10",
     "i18next": "^25.8.0",

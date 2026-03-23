@@ -26,7 +26,14 @@ interface AscendResponse<T> {
 async function safeFetch<T>(url: string, retries: number = 2): Promise<AscendResponse<T>> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      let res: Response;
+      try {
+        res = await fetch(url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
       const text = await res.text();
 
       // Check if response is JSON (rate limited responses return HTML/text)

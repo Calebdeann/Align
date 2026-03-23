@@ -1,5 +1,9 @@
 import { create } from 'zustand';
+import Constants from 'expo-constants';
 import { supabase } from '@/services/supabase';
+
+// Get app version from expo config
+const APP_VERSION = Constants.expoConfig?.version ?? 'unknown';
 
 // Get high-resolution avatar URL (Google returns small images by default)
 export function getHighResAvatarUrl(
@@ -49,6 +53,8 @@ export interface UserProfile {
   reminder_time?: string;
   referral_code?: string;
   referred_by?: string;
+  app_version?: string;
+  last_active_at?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -131,18 +137,46 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
             return;
           }
           // Profile doesn't exist and couldn't be created - expected for sign-in attempts without an account
-          set({ isLoading: false });
+          set({ isLoading: false, lastFetchedAt: null });
           return;
         }
         console.error('Error fetching profile:', error);
-        set({ isLoading: false });
+        set({ isLoading: false, lastFetchedAt: null });
         return;
       }
 
       set({ profile: data, isLoading: false, lastFetchedAt: Date.now() });
+
+      // Silently update app version and last active timestamp
+      if (data.app_version !== APP_VERSION) {
+        supabase
+          .from('profiles')
+          .update({ app_version: APP_VERSION, last_active_at: new Date().toISOString() })
+          .eq('id', user.id)
+          .then(({ error: updateError }) => {
+            if (!updateError) {
+              set((state) => ({
+                profile: state.profile
+                  ? {
+                      ...state.profile,
+                      app_version: APP_VERSION,
+                      last_active_at: new Date().toISOString(),
+                    }
+                  : null,
+              }));
+            }
+          });
+      } else {
+        // Just update last_active_at
+        supabase
+          .from('profiles')
+          .update({ last_active_at: new Date().toISOString() })
+          .eq('id', user.id)
+          .then(() => {});
+      }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
-      set({ isLoading: false });
+      set({ isLoading: false, lastFetchedAt: null });
     }
   },
 

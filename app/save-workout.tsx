@@ -591,8 +591,11 @@ export default function SaveWorkoutScreen() {
 
       if (isEditMode) {
         // Update existing workout
-        const success = await updateCompletedWorkout(editWorkoutId, saveInput);
-        if (success) {
+        const updateResult = await updateCompletedWorkout(editWorkoutId, saveInput);
+        if ('success' in updateResult) {
+          if (updateResult.partialWarning) {
+            Alert.alert('Partial Save', updateResult.partialWarning);
+          }
           Alert.alert(
             i18n.t('saveWorkout.workoutUpdated'),
             i18n.t('saveWorkout.workoutUpdatedMessage'),
@@ -610,16 +613,16 @@ export default function SaveWorkoutScreen() {
             ]
           );
         } else {
-          Alert.alert(
-            i18n.t('saveWorkout.updateFailed'),
-            i18n.t('saveWorkout.updateFailedMessage')
-          );
+          Alert.alert(i18n.t('saveWorkout.updateFailed'), updateResult.error);
         }
       } else {
         // Save new workout
-        const workoutId = await saveCompletedWorkout(saveInput);
+        const saveResult = await saveCompletedWorkout(saveInput);
 
-        if (workoutId) {
+        if ('workoutId' in saveResult) {
+          if (saveResult.partialWarning) {
+            Alert.alert('Partial Save', saveResult.partialWarning);
+          }
           // Clear active workout now that save is confirmed
           cancelWorkoutInProgressReminder();
           endWorkoutLiveActivity();
@@ -656,7 +659,7 @@ export default function SaveWorkoutScreen() {
             },
           });
         } else {
-          Alert.alert(i18n.t('saveWorkout.saveFailed'), i18n.t('saveWorkout.saveFailedMessage'));
+          Alert.alert(i18n.t('saveWorkout.saveFailed'), saveResult.error);
         }
       }
     } catch (error: any) {

@@ -51,6 +51,7 @@ interface ProcessResult {
   error?: string;
   confidence: number;
   path?: 'fast' | 'caption' | 'fallback' | 'frames';
+  ocrFoundText?: boolean;
 }
 
 interface StickerEntry {
@@ -145,6 +146,32 @@ serve(async (req: Request) => {
       scraped = await extractInstagramData(videoUrl);
     }
 
+    // Always supplement with oEmbed for TikTok - it reliably returns the full caption
+    // which often contains structured exercise lists that client WebView data misses
+    if (scraped && platform === 'tiktok') {
+      try {
+        const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(videoUrl)}`;
+        const oembedResp = await fetch(oembedUrl, {
+          headers: { 'User-Agent': 'AlignApp/1.0' },
+        });
+        if (oembedResp.ok) {
+          const oembedData = await oembedResp.json();
+          if (oembedData.title && !scraped.captionText.includes(oembedData.title)) {
+            console.log(
+              '[process-tiktok] Supplementing with oEmbed title:',
+              oembedData.title.substring(0, 200)
+            );
+            scraped = {
+              ...scraped,
+              captionText: `Title: ${oembedData.title}\n${scraped.captionText}`,
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('[process-tiktok] oEmbed supplement failed:', e);
+      }
+    }
+
     if (!scraped) {
       console.log('[process-tiktok] No data extracted');
       return jsonResponse({
@@ -207,12 +234,68 @@ serve(async (req: Request) => {
 
     const platformName = platform === 'instagram' ? 'Instagram Reel' : 'TikTok';
     let result: ProcessResult;
+    let ocrFoundText: boolean | null = null;
+
+    // Check if caption has structured exercise data (numbered list, set/rep patterns, etc.)
+    const captionIsStructured = captionHasStructuredExercises(scraped.captionText);
+    const captionHasExerciseData = isWorkoutRelevantText(scraped.captionText);
+
+    console.log(
+      '[process-tiktok] Caption analysis:',
+      JSON.stringify({ captionIsStructured, captionHasExerciseData })
+    );
 
     // Only use text-only fast path when we have abundant sticker data (5+ stickers)
-    // Instagram won't have stickers, so this path is TikTok-only
     const hasRichStickers = scraped.rawStickers.length >= 5 && scraped.hasStickerText;
 
-    if (hasRichStickers) {
+    // === PATH SELECTION (priority order) ===
+
+    // 1. CAPTION-FIRST: If caption clearly lists exercises, use it directly
+    if (captionIsStructured) {
+      console.log('[process-tiktok] Caption-first path: caption has structured exercise list');
+      result = await parseExercisesFromCaption(scraped.captionText);
+      result.path = 'caption';
+
+      // If caption-first yields good results, we're done
+      if (!result.success || (result.exercises?.length || 0) < 2) {
+        console.log('[process-tiktok] Caption-first yielded few results, trying other paths');
+        // Fall through to other paths, keep caption result for cross-validation
+        const captionResult = result;
+
+        if (hasRichStickers) {
+          result = await parseExercisesWithClaudeFastPath(
+            scraped.captionText,
+            scraped.stickerText,
+            platformName
+          );
+          result.path = 'fast';
+        } else if (hasClientFrames) {
+          const { ocrText, hasReadableText } = await ocrFrameText(clientFrameImages, coverImages);
+          ocrFoundText = hasReadableText;
+          if (hasReadableText || scraped.hasStickerText) {
+            result = await parseExercisesFromOcrText(
+              ocrText,
+              scraped.captionText,
+              scraped.stickerText,
+              platformName
+            );
+          } else {
+            result = captionResult; // Nothing better available, stick with caption
+          }
+          result.path = 'frames';
+        } else {
+          result = await parseExercisesUnified(
+            scraped.captionText,
+            scraped.stickerText,
+            coverImages,
+            platformName
+          );
+          result.path = coverImages.length > 0 ? 'fallback' : 'caption';
+        }
+      }
+    }
+    // 2. FAST PATH: Rich sticker data (5+ stickers with exercise-relevant text)
+    else if (hasRichStickers) {
       console.log(
         '[process-tiktok] Fast path: rich sticker data (' +
           scraped.rawStickers.length +
@@ -224,21 +307,39 @@ serve(async (req: Request) => {
         platformName
       );
       result.path = 'fast';
-    } else if (hasClientFrames) {
-      // Frames path: read on-screen text from sequential video frames
+    }
+    // 3. FRAMES PATH (two-pass): Extract text via OCR, then parse exercises from text
+    else if (hasClientFrames) {
       console.log(
-        `[process-tiktok] Frames path: ${clientFrameImages.length} frames + ${coverImages.length} covers (${platform})`
+        `[process-tiktok] Frames path (two-pass): ${clientFrameImages.length} frames + ${coverImages.length} covers (${platform})`
       );
-      result = await parseExercisesFromFrames(
-        scraped.captionText,
-        scraped.stickerText,
-        clientFrameImages,
-        coverImages,
-        platformName
-      );
+
+      // Pass 1: Pure OCR - extract all visible text from frames
+      const { ocrText, hasReadableText } = await ocrFrameText(clientFrameImages, coverImages);
+      ocrFoundText = hasReadableText;
+
+      if (!hasReadableText && !scraped.hasStickerText && !captionHasExerciseData) {
+        // No text found anywhere
+        console.warn('[process-tiktok] No text found in frames, stickers, or caption');
+        result = {
+          success: false,
+          error:
+            'Could not find exercise text in this video. Try a video with exercise names shown on screen or in the caption.',
+          confidence: 0.1,
+        };
+      } else {
+        // Pass 2: Parse exercises from all text sources
+        result = await parseExercisesFromOcrText(
+          ocrText,
+          scraped.captionText,
+          scraped.stickerText,
+          platformName
+        );
+      }
       result.path = 'frames';
-    } else {
-      // Unified path: combine ALL available data (stickers + caption + cover images)
+    }
+    // 4. UNIFIED PATH: Combine all available data (stickers + caption + cover images)
+    else {
       console.log(`[process-tiktok] Unified path: combining all data sources (${platform})`);
       result = await parseExercisesUnified(
         scraped.captionText,
@@ -248,6 +349,47 @@ serve(async (req: Request) => {
       );
       result.path =
         coverImages.length > 0 ? 'fallback' : scraped.hasStickerText ? 'fast' : 'caption';
+    }
+
+    // === POST-PROCESSING ===
+
+    // Cross-validate against caption (if caption has exercise info and we used a different path)
+    if (result.success && result.path !== 'caption' && captionHasExerciseData) {
+      const validated = crossValidateResults(result, scraped.captionText, result.path || '');
+
+      // If cross-validation dropped confidence, try caption path as fallback
+      if (validated.confidence < 0.4 && captionIsStructured) {
+        console.log('[process-tiktok] Cross-validation failed, falling back to caption path');
+        const captionFallback = await parseExercisesFromCaption(scraped.captionText);
+        if (captionFallback.success && (captionFallback.exercises?.length || 0) >= 2) {
+          result = captionFallback;
+          result.path = 'caption';
+        } else {
+          result = validated;
+        }
+      } else {
+        result = validated;
+      }
+    }
+
+    // Calibrate confidence based on objective signals (replace Claude's self-reported confidence)
+    if (result.success) {
+      result.confidence = calibrateConfidence(
+        result,
+        result.path || 'fallback',
+        ocrFoundText,
+        captionHasExerciseData
+      );
+      if (ocrFoundText !== null) {
+        result.ocrFoundText = ocrFoundText;
+      }
+      console.log(
+        '[process-tiktok] Calibrated confidence:',
+        result.confidence,
+        '(path:',
+        result.path,
+        ')'
+      );
     }
 
     // Cache successful results in memory only (no DB storage)
@@ -927,6 +1069,35 @@ const EXERCISE_SIGNALS = [
   'chest fly',
 ];
 
+/** Check if caption text contains a clearly structured exercise list (numbered list, explicit exercise names with set/rep info) */
+function captionHasStructuredExercises(text: string): boolean {
+  const lower = text.toLowerCase();
+
+  // Pattern 1: Numbered list with exercise names (e.g., "1. Bulgarian Split Squats 2. Barbell Squats")
+  // Use non-greedy match with lookahead so "1. X 2. Y 3. Z" on one line splits correctly
+  const numberedLines = text.match(/\d+[\.\)]\s*[A-Za-z].+?(?=\s*\d+[\.\)]|$)/g) || [];
+  const numberedWithExercise = numberedLines.filter((line) => {
+    const lineLower = line.toLowerCase();
+    return EXERCISE_SIGNALS.some((s) => lineLower.includes(s));
+  });
+  if (numberedWithExercise.length >= 3) return true;
+
+  // Pattern 2: "exercises:" or "workout:" header followed by exercise names
+  if (/(?:exercises|workout|routine)\s*[:\-|]/i.test(text)) {
+    let exerciseCount = 0;
+    for (const signal of EXERCISE_SIGNALS) {
+      if (lower.includes(signal)) exerciseCount++;
+    }
+    if (exerciseCount >= 3) return true;
+  }
+
+  // Pattern 3: Multiple set/rep patterns paired with exercise names
+  const setRepMatches = text.match(/[A-Za-z][\w\s]{2,30}\d\s*[x×]\s*\d/gi) || [];
+  if (setRepMatches.length >= 3) return true;
+
+  return false;
+}
+
 /** Check if sticker text contains workout-relevant content */
 function isWorkoutRelevantStickerText(stickers: StickerEntry[]): boolean {
   const combined = stickers
@@ -1295,8 +1466,16 @@ Rules:
 - If a rep range is given like "8-12", use the higher number for reps.
 - IMPORTANT: For pyramid/descending/ascending rep patterns like "3x10,8,6" or "4x12,10,8,6", set "sets" to the number of sets (3 or 4), "reps" to the first rep count (10 or 12), and "repsPerSet" to the full array e.g. [10,8,6] or [12,10,8,6]. If all sets have the same reps, set "repsPerSet" to null.
 - Return exercises in the order they appear (by timestamp if available).
-- confidence should be 0.8-1.0 when exercises are clearly listed in sticker text.
-- Only set isWorkout to false if the content is clearly NOT fitness-related.`;
+- Set confidence based on how clearly exercises are listed. If you are unsure about any exercise names, lower the confidence.
+- Only set isWorkout to false if the content is clearly NOT fitness-related.
+
+CRITICAL - DO NOT HALLUCINATE:
+- ONLY return exercises that are explicitly written as text. NEVER guess or infer exercises.
+- NEVER infer exercises from physical movements, body positions, or equipment.
+- NEVER generate "default" or "common" exercises that are not explicitly mentioned in the text.
+- If the text only mentions a body part (e.g., "leg day") without listing specific exercises, set isWorkout to false.
+- If you are uncertain whether a word is an exercise name, DO NOT include it.
+- It is BETTER to return fewer exercises or isWorkout: false than to guess.`;
 
   console.log('[process-tiktok] Calling Claude fast path (text-only)');
 
@@ -1395,18 +1574,25 @@ Respond with ONLY valid JSON (no markdown, no code fences) in this exact format:
 }
 
 Rules:
-- Workout videos typically have 4-8 exercises. If you only found 1-2, look harder at ALL data sources.
 - Cover/thumbnail images often show a COMPLETE LIST of all exercises. Read every piece of text in the images.
 - Text stickers may only show exercises for one segment of the video, not the full workout.
 - The caption may list exercises not shown in stickers or images. Include them.
-- Extract the MAXIMUM number of unique exercises across ALL sources. Combine duplicates.
+- Extract unique exercises across ALL sources. DEDUPLICATE: if the same exercise appears across sources with slight name differences (e.g., "leg extension" in one source and "single leg extension" in another), count it as ONE exercise. Use the most specific name.
 - Normalize exercise names to standard gym terminology (e.g. "Barbell Hip Thrust" not "hip thrusts").
 - If sets/reps are not specified, use reasonable defaults (3 sets, 10 reps).
 - If a rep range is given like "8-12", use the higher number.
 - IMPORTANT: For pyramid/descending/ascending rep patterns like "3x10,8,6" or "4x12,10,8,6", set "sets" to the number of sets (3 or 4), "reps" to the first rep count (10 or 12), and "repsPerSet" to the full array e.g. [10,8,6] or [12,10,8,6]. If all sets have the same reps, set "repsPerSet" to null.
 - Return exercises in the order they appear.
-- Only set isWorkout to false if the content is clearly NOT fitness-related.
-- Do NOT identify exercises by looking at physical movements in images. Only extract from WRITTEN TEXT.`,
+- Do NOT identify exercises by looking at physical movements in images. Only extract from WRITTEN TEXT.
+
+CRITICAL - DO NOT HALLUCINATE:
+- ONLY return exercises that are explicitly written as text. NEVER guess or infer exercises.
+- NEVER infer exercises from physical movements, body positions, or equipment visible in images.
+- NEVER generate "default" or "common" exercises that are not explicitly mentioned in the text.
+- If the text only mentions a body part (e.g., "leg day") without listing specific exercises, set isWorkout to false.
+- If you are uncertain whether a word is an exercise name, DO NOT include it.
+- It is BETTER to return fewer exercises or isWorkout: false than to guess.
+- Only set isWorkout to true if you found explicit exercise names in text.`,
   });
 
   // Use Sonnet when we have images (better OCR), Haiku for text-only
@@ -1483,7 +1669,13 @@ Rules:
 - Normalize exercise names to standard gym terminology (e.g. "Barbell Hip Thrust" not "hip thrusts").
 - If the caption only has hashtags and a general description without specific exercise names, set isWorkout to false.
 - Keep the exercise type EXACT. Do not substitute similar exercises (e.g. "wide grip row" must stay as a row, not become "push ups").
-- IMPORTANT: For pyramid/descending/ascending rep patterns like "3x10,8,6" or "4x12,10,8,6", set "sets" to the number of sets (3 or 4), "reps" to the first rep count (10 or 12), and "repsPerSet" to the full array e.g. [10,8,6] or [12,10,8,6]. If all sets have the same reps, set "repsPerSet" to null.`;
+- IMPORTANT: For pyramid/descending/ascending rep patterns like "3x10,8,6" or "4x12,10,8,6", set "sets" to the number of sets (3 or 4), "reps" to the first rep count (10 or 12), and "repsPerSet" to the full array e.g. [10,8,6] or [12,10,8,6]. If all sets have the same reps, set "repsPerSet" to null.
+
+CRITICAL - DO NOT HALLUCINATE:
+- ONLY return exercises that are explicitly written in the caption. NEVER guess or infer exercises.
+- NEVER generate "default" or "common" exercises that are not explicitly mentioned.
+- If you are uncertain whether a word is an exercise name, DO NOT include it.
+- It is BETTER to return fewer exercises or isWorkout: false than to guess.`;
 
   console.log('[process-tiktok] Calling Claude caption path (text-only)');
 
@@ -1580,8 +1772,15 @@ Rules:
 - If a rep range is given like "8-12", use the higher number for reps.
 - IMPORTANT: For pyramid/descending/ascending rep patterns like "3x10,8,6" or "4x12,10,8,6", set "sets" to the number of sets (3 or 4), "reps" to the first rep count (10 or 12), and "repsPerSet" to the full array e.g. [10,8,6] or [12,10,8,6]. If all sets have the same reps, set "repsPerSet" to null.
 - Return exercises in the order they appear.
-- confidence should be 0.0-1.0. Use 0.3 or lower if uncertain. Use 0.1 if you're guessing from visual movement only.
-- Only set isWorkout to true if you found explicit exercise names in text.`,
+- confidence should be 0.0-1.0. Use 0.3 or lower if uncertain.
+- Only set isWorkout to true if you found explicit exercise names in text.
+
+CRITICAL - DO NOT HALLUCINATE:
+- ONLY return exercises that are explicitly written as text. NEVER guess or infer exercises.
+- NEVER infer exercises from physical movements, body positions, or equipment visible in images.
+- NEVER generate "default" or "common" exercises that are not explicitly mentioned in the text.
+- If you are uncertain whether a word is an exercise name, DO NOT include it.
+- It is BETTER to return fewer exercises or isWorkout: false than to guess.`,
   });
 
   console.log(
@@ -1617,12 +1816,125 @@ Rules:
   return parseClaudeResponse(text);
 }
 
-/** FRAMES PATH: Extract exercises from sequential video frames using Claude Vision */
-async function parseExercisesFromFrames(
+/**
+ * FRAMES PATH - PASS 1: Pure OCR. Extract all visible text from video frames.
+ * Does NOT interpret exercises. Just transcribes what text is visible.
+ */
+async function ocrFrameText(
+  frameImages: DownloadedImage[],
+  coverImages: DownloadedImage[]
+): Promise<{ ocrText: string; hasReadableText: boolean }> {
+  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!apiKey) {
+    console.error('[process-tiktok] ANTHROPIC_API_KEY not set');
+    return { ocrText: '', hasReadableText: false };
+  }
+
+  const contentBlocks: any[] = [];
+
+  const maxFrames = 10;
+  const framesToSend = frameImages.slice(0, maxFrames);
+  for (const img of framesToSend) {
+    contentBlocks.push({
+      type: 'image',
+      source: { type: 'base64', media_type: img.mediaType, data: img.data },
+    });
+  }
+
+  for (const img of coverImages.slice(0, 2)) {
+    contentBlocks.push({
+      type: 'image',
+      source: { type: 'base64', media_type: img.mediaType, data: img.data },
+    });
+  }
+
+  const totalImages = framesToSend.length + Math.min(coverImages.length, 2);
+
+  contentBlocks.push({
+    type: 'text',
+    text: `You are an OCR assistant. You have been given ${framesToSend.length} sequential frames from a workout video${coverImages.length > 0 ? ` and ${Math.min(coverImages.length, 2)} cover/thumbnail image(s)` : ''}.
+
+Your ONLY job is to transcribe ALL text visible in these images EXACTLY as written.
+
+For each image that contains text, list the text you can read. Include:
+- Exercise names
+- Numbers (sets, reps, weights)
+- Any other text overlays or captions
+
+Format your response as:
+Frame 1: [exact text found, or "NO TEXT VISIBLE"]
+Frame 2: [exact text found, or "NO TEXT VISIBLE"]
+...
+${coverImages.length > 0 ? 'Cover 1: [exact text found, or "NO TEXT VISIBLE"]\n...' : ''}
+
+CRITICAL RULES:
+- ONLY transcribe text that is actually written/displayed as text overlays in the images.
+- If an image shows a person exercising but has NO written text, write "NO TEXT VISIBLE".
+- Do NOT describe what people are doing physically.
+- Do NOT guess exercise names from body positions or equipment.
+- Do NOT infer or generate exercise names that are not literally written as text in the image.
+- It is completely fine to report "NO TEXT VISIBLE" for most or all frames. Many workout videos have no on-screen text.
+- Transcribe text EXACTLY as it appears, even if misspelled or abbreviated.`,
+  });
+
+  console.log(
+    '[process-tiktok] OCR Pass 1: sending',
+    totalImages,
+    'images to Claude Sonnet for text extraction'
+  );
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: contentBlocks }],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('[process-tiktok] OCR Pass 1 error:', response.status, errorText);
+    return { ocrText: '', hasReadableText: false };
+  }
+
+  const data = await response.json();
+  const ocrText = data.content?.[0]?.text || '';
+  console.log('[process-tiktok] OCR Pass 1 response:', ocrText.substring(0, 500));
+
+  // Check if any frames actually had readable text
+  const lines = ocrText.split('\n').filter((l: string) => l.trim().length > 0);
+  const noTextCount = lines.filter((l: string) =>
+    l.toUpperCase().includes('NO TEXT VISIBLE')
+  ).length;
+  const hasReadableText = lines.length > 0 && noTextCount < lines.length;
+
+  console.log(
+    '[process-tiktok] OCR Pass 1 summary:',
+    lines.length,
+    'lines,',
+    noTextCount,
+    '"NO TEXT VISIBLE",',
+    'hasReadableText:',
+    hasReadableText
+  );
+
+  return { ocrText, hasReadableText };
+}
+
+/**
+ * FRAMES PATH - PASS 2: Parse exercises from OCR-extracted text + caption + stickers.
+ * Text-only call, no images. Separates OCR from interpretation to prevent hallucination.
+ */
+async function parseExercisesFromOcrText(
+  ocrText: string,
   captionText: string,
   stickerText: string,
-  frameImages: DownloadedImage[],
-  coverImages: DownloadedImage[],
   platformName: string = 'TikTok'
 ): Promise<ProcessResult> {
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -1631,38 +1943,11 @@ async function parseExercisesFromFrames(
     return { success: false, error: 'AI service not configured', confidence: 0 };
   }
 
-  const contentBlocks: any[] = [];
-
-  // Add frame images first (in chronological order)
-  const maxFrames = 10;
-  const framesToSend = frameImages.slice(0, maxFrames);
-  for (const img of framesToSend) {
-    contentBlocks.push({
-      type: 'image',
-      source: {
-        type: 'base64',
-        media_type: img.mediaType,
-        data: img.data,
-      },
-    });
-  }
-
-  // Add up to 2 cover images as supplement
-  for (const img of coverImages.slice(0, 2)) {
-    contentBlocks.push({
-      type: 'image',
-      source: {
-        type: 'base64',
-        media_type: img.mediaType,
-        data: img.data,
-      },
-    });
-  }
-
-  const totalImages = framesToSend.length + Math.min(coverImages.length, 2);
-
-  // Build supplementary text sections
   const textSections: string[] = [];
+
+  if (ocrText.length > 0) {
+    textSections.push(`=== TEXT EXTRACTED FROM VIDEO FRAMES (OCR) ===\n${ocrText}`);
+  }
   if (stickerText.length > 0) {
     textSections.push(`=== ON-SCREEN TEXT STICKERS ===\n${stickerText}`);
   }
@@ -1670,26 +1955,9 @@ async function parseExercisesFromFrames(
     textSections.push(`=== VIDEO CAPTION & METADATA ===\n${captionText}`);
   }
 
-  const supplementaryText =
-    textSections.length > 0
-      ? `\n\nAdditional context from the video page:\n${textSections.join('\n\n')}`
-      : '';
+  const prompt = `You are extracting exercises from a ${platformName} fitness/workout video. You have been given text from multiple sources. Use ALL of them to find every exercise.
 
-  contentBlocks.push({
-    type: 'text',
-    text: `You are extracting exercises from a ${platformName} fitness/workout video.
-
-You have been given ${framesToSend.length} frames extracted at regular intervals throughout the video${coverImages.length > 0 ? `, plus ${Math.min(coverImages.length, 2)} cover/thumbnail image(s)` : ''}.
-
-IMPORTANT: This video displays exercises as ON-SCREEN TEXT OVERLAYS that change throughout the video. Each frame may show a different exercise name, set/rep count, or instruction. You need to read the text from ALL ${totalImages} images and compile a complete exercise list.
-
-Look for:
-- Exercise names shown as large text overlays (often stylized, bold, or colored)
-- Set/rep information (e.g., "3x12", "4 sets", "10 reps")
-- Numbered lists of exercises
-- Any text that appears to be part of a workout routine
-
-The frames are in chronological order. The same exercise may appear in multiple consecutive frames. Count it only ONCE.${supplementaryText}
+${textSections.join('\n\n')}
 
 Respond with ONLY valid JSON (no markdown, no code fences) in this exact format:
 {
@@ -1709,24 +1977,24 @@ Respond with ONLY valid JSON (no markdown, no code fences) in this exact format:
 }
 
 Rules:
-- Read ALL text visible in ALL frames. Different exercises appear on different frames.
-- Workout videos typically have 4-8 exercises. If you only found 1-2, look harder at ALL frames.
+- Extract exercises from ALL text sources. The OCR section contains text read from video frames, stickers are text overlays, and caption is the video description.
+- If the caption clearly lists exercises (e.g., numbered list), prioritize those as they are the most reliable.
+- If the exact same exercise appears in multiple sources, only include it once. But do NOT merge exercises that are similar but different (e.g., "leg extension" and "single leg extension" are DIFFERENT exercises, "bench press" and "close grip bench press" are DIFFERENT exercises). When in doubt, keep them separate.
 - Normalize exercise names to standard gym terminology (e.g. "Barbell Hip Thrust" not "hip thrusts").
 - If sets/reps are not specified, use reasonable defaults (3 sets, 10 reps).
 - If a rep range is given like "8-12", use the higher number.
 - IMPORTANT: For pyramid/descending/ascending rep patterns like "3x10,8,6" or "4x12,10,8,6", set "sets" to the number of sets (3 or 4), "reps" to the first rep count (10 or 12), and "repsPerSet" to the full array e.g. [10,8,6] or [12,10,8,6]. If all sets have the same reps, set "repsPerSet" to null.
-- Return exercises in the order they appear (by frame order).
-- Do NOT identify exercises by looking at physical movements. Only extract from WRITTEN TEXT.
-- Only set isWorkout to false if NO frames contain exercise text.`,
-  });
+- Return exercises in the order they appear.
 
-  const model = 'claude-sonnet-4-5-20250929';
-  console.log(
-    '[process-tiktok] Calling Claude frames path with',
-    contentBlocks.length,
-    'blocks (' + totalImages + ' images), model:',
-    model
-  );
+CRITICAL - DO NOT HALLUCINATE:
+- ONLY return exercises that are explicitly written in the provided text. NEVER guess or infer exercises.
+- If the OCR text says "NO TEXT VISIBLE" for all frames, do NOT invent exercises from that.
+- NEVER generate "default" or "common" exercises that are not explicitly mentioned.
+- If the text only mentions a body part (e.g., "leg day") without listing specific exercises, set isWorkout to false.
+- If you are uncertain whether a word is an exercise name, DO NOT include it.
+- It is BETTER to return fewer exercises or isWorkout: false than to guess.`;
+
+  console.log('[process-tiktok] Parse Pass 2: sending text-only to Claude Haiku');
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -1736,26 +2004,123 @@ Rules:
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model,
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
-      messages: [{ role: 'user', content: contentBlocks }],
+      messages: [{ role: 'user', content: prompt }],
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[process-tiktok] Claude API error:', response.status, errorText);
+    console.error('[process-tiktok] Parse Pass 2 error:', response.status, errorText);
     return { success: false, error: 'AI processing failed', confidence: 0 };
   }
 
   const data = await response.json();
   const text = data.content?.[0]?.text || '';
-  console.log('[process-tiktok] Claude frames path response:', text.substring(0, 500));
+  console.log('[process-tiktok] Parse Pass 2 response:', text.substring(0, 500));
 
   return parseClaudeResponse(text);
 }
 
-/** Shared response parser for both fast and fallback paths */
+/**
+ * Cross-validate primary results against caption text.
+ * If caption has exercise info and primary results have zero overlap, the primary results
+ * are likely hallucinated. Returns result with reduced confidence if no overlap found.
+ */
+function crossValidateResults(
+  primaryResult: ProcessResult,
+  captionText: string,
+  primaryPath: string
+): ProcessResult {
+  // Only cross-validate if we have both primary results and caption with exercise info
+  if (!primaryResult.success || !primaryResult.exercises?.length) return primaryResult;
+  if (!isWorkoutRelevantText(captionText)) return primaryResult;
+  // Don't cross-validate caption-first results against themselves
+  if (primaryPath === 'caption') return primaryResult;
+
+  // Extract exercise-like words from caption
+  const captionLower = captionText.toLowerCase();
+  const captionSignals = EXERCISE_SIGNALS.filter((s) => captionLower.includes(s));
+
+  if (captionSignals.length < 2) return primaryResult; // Not enough caption data to validate
+
+  // Check overlap: do any primary exercises match caption signals?
+  const primaryNames = primaryResult.exercises!.map((e) => e.name.toLowerCase());
+  const hasOverlap = primaryNames.some((name) =>
+    captionSignals.some((signal) => name.includes(signal))
+  );
+
+  if (hasOverlap) {
+    console.log('[process-tiktok] Cross-validation: primary results overlap with caption signals');
+    return primaryResult;
+  }
+
+  // No overlap -- primary results may be hallucinated
+  console.warn(
+    '[process-tiktok] Cross-validation FAILED: primary exercises have no overlap with caption'
+  );
+  console.warn('[process-tiktok] Primary exercises:', primaryNames);
+  console.warn('[process-tiktok] Caption signals:', captionSignals);
+
+  return {
+    ...primaryResult,
+    confidence: Math.min(primaryResult.confidence, 0.3),
+  };
+}
+
+/**
+ * Calculate confidence based on objective signals rather than Claude's self-reported confidence.
+ */
+function calibrateConfidence(
+  result: ProcessResult,
+  path: string,
+  ocrFoundText: boolean | null,
+  captionHasExercises: boolean
+): number {
+  if (!result.success || !result.exercises?.length) return 0;
+
+  const exerciseCount = result.exercises.length;
+  let confidence = 0.5; // Base
+
+  // Path-based adjustments
+  if (path === 'fast') {
+    // Rich sticker data is highly reliable
+    confidence = 0.85;
+  } else if (path === 'caption') {
+    // Caption-only depends on how structured the caption was
+    confidence = captionHasExercises ? 0.8 : 0.55;
+  } else if (path === 'frames') {
+    if (ocrFoundText === true) {
+      confidence = 0.7; // OCR found text, parsing is likely good
+    } else if (ocrFoundText === false) {
+      confidence = 0.15; // OCR found no text but we still got exercises - very suspicious
+    } else {
+      confidence = 0.5;
+    }
+  } else {
+    // Unified/fallback
+    confidence = 0.55;
+  }
+
+  // Exercise count adjustments
+  if (exerciseCount >= 3 && exerciseCount <= 10) {
+    confidence += 0.05; // Reasonable count
+  } else if (exerciseCount === 1) {
+    confidence -= 0.1; // Suspiciously few
+  } else if (exerciseCount > 12) {
+    confidence -= 0.1; // Suspiciously many
+  }
+
+  // Caption corroboration bonus (for non-caption paths)
+  if (path !== 'caption' && captionHasExercises) {
+    confidence += 0.1;
+  }
+
+  return Math.max(0, Math.min(1, confidence));
+}
+
+/** Shared response parser for all Claude paths */
 function parseClaudeResponse(text: string): ProcessResult {
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
@@ -1766,7 +2131,9 @@ function parseClaudeResponse(text: string): ProcessResult {
   try {
     const parsed = JSON.parse(jsonMatch[0]);
 
-    if (!parsed.isWorkout || (parsed.confidence || 0) < 0.4) {
+    // Only reject if Claude explicitly says this is not a workout
+    // Confidence thresholds are handled by calibrateConfidence in the main handler
+    if (!parsed.isWorkout) {
       return {
         success: false,
         error: 'This video does not appear to contain a workout',

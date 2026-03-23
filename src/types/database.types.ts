@@ -8,6 +8,48 @@ export type Database = {
   };
   public: {
     Tables: {
+      custom_exercises: {
+        Row: {
+          created_at: string | null;
+          display_name: string;
+          equipment: string[] | null;
+          id: string;
+          image_url: string | null;
+          muscle_group: string;
+          name: string;
+          secondary_muscles: string[] | null;
+          thumbnail_url: string | null;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          display_name: string;
+          equipment?: string[] | null;
+          id?: string;
+          image_url?: string | null;
+          muscle_group: string;
+          name: string;
+          secondary_muscles?: string[] | null;
+          thumbnail_url?: string | null;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string | null;
+          display_name?: string;
+          equipment?: string[] | null;
+          id?: string;
+          image_url?: string | null;
+          muscle_group?: string;
+          name?: string;
+          secondary_muscles?: string[] | null;
+          thumbnail_url?: string | null;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       deleted_users: {
         Row: {
           deleted_at: string | null;
@@ -264,6 +306,7 @@ export type Database = {
       profiles: {
         Row: {
           age: number | null;
+          app_version: string | null;
           avatar_url: string | null;
           body_change_goal: string | null;
           created_at: string | null;
@@ -276,6 +319,7 @@ export type Database = {
           health_situation: string | null;
           height: number | null;
           id: string;
+          last_active_at: string | null;
           main_goal: string | null;
           main_obstacle: string | null;
           measurement_unit: string | null;
@@ -298,6 +342,7 @@ export type Database = {
         };
         Insert: {
           age?: number | null;
+          app_version?: string | null;
           avatar_url?: string | null;
           body_change_goal?: string | null;
           created_at?: string | null;
@@ -310,6 +355,7 @@ export type Database = {
           health_situation?: string | null;
           height?: number | null;
           id: string;
+          last_active_at?: string | null;
           main_goal?: string | null;
           main_obstacle?: string | null;
           measurement_unit?: string | null;
@@ -332,6 +378,7 @@ export type Database = {
         };
         Update: {
           age?: number | null;
+          app_version?: string | null;
           avatar_url?: string | null;
           body_change_goal?: string | null;
           created_at?: string | null;
@@ -344,6 +391,7 @@ export type Database = {
           health_situation?: string | null;
           height?: number | null;
           id?: string;
+          last_active_at?: string | null;
           main_goal?: string | null;
           main_obstacle?: string | null;
           measurement_unit?: string | null;
@@ -465,6 +513,7 @@ export type Database = {
           created_at: string;
           id: string;
           set_number: number;
+          set_type: string;
           target_reps: number | null;
           target_weight: number | null;
           template_exercise_id: string;
@@ -473,6 +522,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           set_number: number;
+          set_type?: string;
           target_reps?: number | null;
           target_weight?: number | null;
           template_exercise_id: string;
@@ -481,6 +531,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           set_number?: number;
+          set_type?: string;
           target_reps?: number | null;
           target_weight?: number | null;
           template_exercise_id?: string;
@@ -520,15 +571,7 @@ export type Database = {
           updated_at?: string | null;
           user_id?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: 'user_exercise_preferences_exercise_id_fkey';
-            columns: ['exercise_id'];
-            isOneToOne: false;
-            referencedRelation: 'exercises';
-            referencedColumns: ['id'];
-          },
-        ];
+        Relationships: [];
       };
       workout_exercises: {
         Row: {
@@ -568,13 +611,6 @@ export type Database = {
           workout_id?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: 'workout_exercises_exercise_id_fkey';
-            columns: ['exercise_id'];
-            isOneToOne: false;
-            referencedRelation: 'exercises';
-            referencedColumns: ['id'];
-          },
           {
             foreignKeyName: 'workout_exercises_workout_id_fkey';
             columns: ['workout_id'];

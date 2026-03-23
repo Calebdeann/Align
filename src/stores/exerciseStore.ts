@@ -50,6 +50,7 @@ interface ExerciseStore {
   // Custom exercises
   customExercises: Exercise[];
   customExercisesLoaded: boolean;
+  isLoadingCustom: boolean;
 
   // Translation state
   translations: Map<string, ExerciseTranslation>;
@@ -92,6 +93,7 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => ({
   error: null,
   customExercises: [],
   customExercisesLoaded: false,
+  isLoadingCustom: false,
   lastCreatedExerciseId: null,
   translations: new Map(),
   translationsLanguage: null,
@@ -154,18 +156,20 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => ({
   },
 
   loadCustomExercises: async (userId: string) => {
-    if (get().customExercisesLoaded) return;
+    if (get().customExercisesLoaded || get().isLoadingCustom) return;
 
+    set({ isLoadingCustom: true });
     try {
       const customs = await fetchCustomExercises(userId);
       set((state) => ({
         customExercises: customs,
         customExercisesLoaded: true,
+        isLoadingCustom: false,
         allExercises: sortByDisplayName([...state.allExercises, ...customs]),
       }));
     } catch (error) {
-      // Mark as loaded even on error to prevent infinite retry loops
-      set({ customExercisesLoaded: true });
+      // Don't mark as loaded on error so retry is possible
+      set({ isLoadingCustom: false });
     }
   },
 

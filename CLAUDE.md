@@ -295,17 +295,6 @@ Google Sign-In:
 - **Bundle ID:** com.aligntracker.app
 - **Target:** iOS first
 
-## App Store Submission Checklist
-
-**IMPORTANT: When the user says they are doing the final build to submit to Apple, remind them of ALL of these items:**
-
-- [ ] Remove Google Quick Login from profile (re-gate behind `__DEV_MODE__` in `app/(tabs)/profile.tsx`)
-- [ ] Remove shortcut by pressing "for the girls"
-- [ ] Remove "align" logo shortcut to generating-plan (in `app/index.tsx`)
-- [ ] Add in notifications logic
-- [ ] Confirm 5 star rating shows up
-- [ ] Add in Superwall trigger (onboarding + app)
-
 ## Response Format
 
 At the end of every response after completing a task, include:

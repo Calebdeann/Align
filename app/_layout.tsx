@@ -123,6 +123,10 @@ export default function RootLayout() {
   async function checkPendingVideoImport() {
     if (Platform.OS !== 'ios' || !WorkoutWidgetBridge?.readPendingVideoImport) return;
     try {
+      // Only allow import for signed-in users
+      const profile = useUserProfileStore.getState().profile;
+      if (!profile) return;
+
       const jsonString = await WorkoutWidgetBridge.readPendingVideoImport();
       if (jsonString) {
         const data = JSON.parse(jsonString);
@@ -184,6 +188,9 @@ export default function RootLayout() {
             gestureEnabled: false,
           }}
         />
+        <Stack.Screen name="exercise" />
+        <Stack.Screen name="create-exercise" />
+        <Stack.Screen name="workout-preview" />
         <Stack.Screen name="import-guide" />
         <Stack.Screen name="shortcut-guide" />
       </Stack>

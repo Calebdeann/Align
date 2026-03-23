@@ -1,3 +1,4 @@
+import { supabase } from '../supabase';
 import { logger } from '@/utils/logger';
 
 interface ImportedExercise {
@@ -52,15 +53,24 @@ export async function processVideoImport(
       body.videoFrames = videoFrames;
     }
 
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: EDGE_FUNCTION_APIKEY,
-        Authorization: `Bearer ${EDGE_FUNCTION_APIKEY}`,
-      },
-      body: JSON.stringify(body),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    let response: Response;
+    try {
+      response = await fetch(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: EDGE_FUNCTION_APIKEY,
+          Authorization: `Bearer ${EDGE_FUNCTION_APIKEY}`,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const data = await response.json();
 
@@ -92,3 +102,69 @@ export async function processVideoImport(
 // Keep old function name as alias for backward compatibility
 export const processTikTokVideo = (url: string, clientData?: any) =>
   processVideoImport(url, 'tiktok', clientData);
+
+/**
+ * Extract the video ID from a TikTok or Instagram URL.
+ * TikTok: /video/1234567890 → "1234567890"
+ * Instagram: /reel/ABC123 or /p/ABC123 → "ABC123"
+ */
+export function extractVideoId(url: string): string | null {
+  const tiktokMatch = url.match(/\/video\/(\d+)/);
+  if (tiktokMatch) return tiktokMatch[1];
+  const igMatch = url.match(/\/(reel|p)\/([A-Za-z0-9_-]+)/);
+  if (igMatch) return igMatch[2];
+  return null;
+}
+
+/**
+ * Check if a video import result is already cached in Supabase.
+ */
+export async function getCachedImport(
+  platform: VideoPlatform,
+  videoId: string
+): Promise<VideoImportResult | null> {
+  try {
+    const { data, error } = await supabase
+      .from('imported_workout_cache')
+      .select('workout_name, exercises, confidence')
+      .eq('platform', platform)
+      .eq('video_id', videoId)
+      .single();
+
+    if (error || !data) return null;
+
+    return {
+      success: true,
+      workoutName: data.workout_name,
+      exercises: data.exercises as ImportedExercise[],
+      confidence: Number(data.confidence),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save a successful video import result to the shared cache.
+ * Uses upsert so duplicate inserts are safe.
+ */
+export async function saveCachedImport(
+  platform: VideoPlatform,
+  videoId: string,
+  result: VideoImportResult
+): Promise<void> {
+  try {
+    await supabase.from('imported_workout_cache').upsert(
+      {
+        platform,
+        video_id: videoId,
+        workout_name: result.workoutName || null,
+        exercises: result.exercises || [],
+        confidence: result.confidence,
+      },
+      { onConflict: 'platform,video_id' }
+    );
+  } catch {
+    // Cache save is best-effort, don't break the import flow
+  }
+}

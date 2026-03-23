@@ -47,17 +47,18 @@ const TIME_VISIBLE_ITEMS = 5;
 const TIME_PICKER_HEIGHT = TIME_ITEM_HEIGHT * TIME_VISIBLE_ITEMS;
 
 // Category IDs - labels resolved via i18n inside component
+// Must match explore-templates.tsx categories exactly
 const ALL_CATEGORY_IDS = [
   'core',
   'glutes',
   'lower-body',
   'pull',
   'push',
-  'upper-body',
+  // 'upper-body', // temporarily removed
   'at-home',
-  'travel',
+  'full-body',
   'cardio',
-  'rehab',
+  // 'rehab',      // temporarily removed
 ] as const;
 
 // Calendar/day constants resolved via i18n inside component
@@ -375,8 +376,8 @@ export default function ScheduleWorkoutScreen() {
           push: t('templateCategories.push'),
           'upper-body': t('templateCategories.upperBody'),
           'at-home': t('templateCategories.atHome'),
-          travel: t('templateCategories.travel'),
-          cardio: t('templateCategories.cardio'),
+          'full-body': 'Full Body',
+          cardio: 'Cardio',
           rehab: t('templateCategories.noEquipment'),
         };
         return { id, label: labelMap[id] || id };
@@ -1852,11 +1853,13 @@ export default function ScheduleWorkoutScreen() {
                       {ALL_CATEGORIES.map((category) => {
                         const count = getCategoryCount(category.id);
                         const heroImage = CATEGORY_HERO_IMAGES[category.id];
+                        const isComingSoon = category.id === 'cardio';
                         return (
                           <Pressable
                             key={category.id}
-                            style={styles.categoryCard}
+                            style={[styles.categoryCard, isComingSoon && { opacity: 0.85 }]}
                             onPress={() => {
+                              if (isComingSoon) return;
                               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                               setSelectedCategory(category.id);
                             }}
@@ -1884,9 +1887,13 @@ export default function ScheduleWorkoutScreen() {
                               style={styles.categoryCardGradient}
                             >
                               <Text style={styles.categoryCardLabel}>{category.label}</Text>
-                              <Text style={styles.categoryCardCount}>
-                                {t('schedule.countWorkouts', { count })}
-                              </Text>
+                              {isComingSoon ? (
+                                <Text style={styles.categoryCardCount}>Coming soon</Text>
+                              ) : (
+                                <Text style={styles.categoryCardCount}>
+                                  {t('schedule.countWorkouts', { count })}
+                                </Text>
+                              )}
                             </LinearGradient>
                           </Pressable>
                         );

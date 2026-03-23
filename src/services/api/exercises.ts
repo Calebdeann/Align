@@ -437,11 +437,12 @@ export async function getExerciseHistory(
   exerciseId: string,
   limit: number = 20
 ): Promise<ExerciseHistoryEntry[]> {
-  // First, get all workouts for this user that contain this exercise
+  // Get this user's workouts containing this exercise using a join filter
   const { data: workoutExercises, error: weError } = await supabase
     .from('workout_exercises')
-    .select('id, workout_id')
-    .eq('exercise_id', exerciseId);
+    .select('id, workout_id, workouts!inner(id, user_id)')
+    .eq('exercise_id', exerciseId)
+    .eq('workouts.user_id', userId);
 
   if (weError || !workoutExercises || workoutExercises.length === 0) {
     if (weError) {
@@ -527,35 +528,19 @@ export async function getExercisePersonalRecords(
     bestSessionVolume: null,
   };
 
-  // First, get all workout_exercises for this exercise
+  // Get this user's workout_exercises using a join filter
   const { data: workoutExercises, error: weError } = await supabase
     .from('workout_exercises')
-    .select('id, workout_id')
-    .eq('exercise_id', exerciseId);
+    .select('id, workout_id, workouts!inner(id, user_id)')
+    .eq('exercise_id', exerciseId)
+    .eq('workouts.user_id', userId);
 
   if (weError || !workoutExercises || workoutExercises.length === 0) {
     if (weError) logger.warn('Error fetching workout exercises', { error: weError });
     return emptyResult;
   }
 
-  const workoutIds = [...new Set(workoutExercises.map((we) => we.workout_id))];
-
-  // Get workouts for this user only
-  const { data: workouts, error: wError } = await supabase
-    .from('workouts')
-    .select('id, completed_at')
-    .eq('user_id', userId)
-    .in('id', workoutIds);
-
-  if (wError || !workouts || workouts.length === 0) {
-    if (wError) logger.warn('Error fetching workouts', { error: wError });
-    return emptyResult;
-  }
-
-  // Filter workout_exercises to only those belonging to this user's workouts
-  const userWorkoutIds = new Set(workouts.map((w) => w.id));
-  const userWorkoutExercises = workoutExercises.filter((we) => userWorkoutIds.has(we.workout_id));
-  const workoutExerciseIds = userWorkoutExercises.map((we) => we.id);
+  const workoutExerciseIds = workoutExercises.map((we) => we.id);
 
   if (workoutExerciseIds.length === 0) {
     return emptyResult;
@@ -574,10 +559,10 @@ export async function getExercisePersonalRecords(
 
   // Create a map of workout_exercise_id to workout completed_at
   const workoutDateMap = new Map<string, string>();
-  userWorkoutExercises.forEach((we) => {
-    const workout = workouts.find((w) => w.id === we.workout_id);
-    if (workout) {
-      workoutDateMap.set(we.id, workout.completed_at);
+  workoutExercises.forEach((we: any) => {
+    const completedAt = we.workouts?.completed_at;
+    if (completedAt) {
+      workoutDateMap.set(we.id, completedAt);
     }
   });
 
@@ -615,7 +600,7 @@ export async function getExercisePersonalRecords(
       }
 
       // Accumulate workout volume
-      const workoutExercise = userWorkoutExercises.find((we) => we.id === set.workout_exercise_id);
+      const workoutExercise = workoutExercises.find((we: any) => we.id === set.workout_exercise_id);
       if (workoutExercise) {
         const existing = workoutVolumes.get(workoutExercise.workout_id);
         if (existing) {

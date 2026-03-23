@@ -419,10 +419,18 @@ export async function deleteUserTemplate(templateId: string): Promise<boolean> {
 
 export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[]> {
   try {
-    // 1. Fetch templates
+    // Fetch templates with nested exercises and sets in a single query
     const { data: templates, error: templatesError } = await supabase
       .from('workout_templates')
-      .select('*')
+      .select(
+        `
+        *,
+        template_exercises(
+          *,
+          template_sets(*)
+        )
+      `
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -431,42 +439,26 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
       return [];
     }
 
-    // 2. For each template, fetch exercises and sets
     const fullTemplates: WorkoutTemplate[] = [];
 
     for (const template of templates) {
-      const { data: exercises, error: exercisesError } = await supabase
-        .from('template_exercises')
-        .select('*')
-        .eq('template_id', template.id)
-        .order('order_index', { ascending: true });
+      const rawExercises = (template as any).template_exercises || [];
+      // Sort exercises by order_index
+      rawExercises.sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
-      if (exercisesError) {
-        logger.warn('Error fetching template exercises', { error: exercisesError });
-        continue;
-      }
+      const templateExercises: TemplateExercise[] = rawExercises.map((exercise: any) => {
+        const rawSets = exercise.template_sets || [];
+        // Sort sets by set_number
+        rawSets.sort((a: any, b: any) => (a.set_number ?? 0) - (b.set_number ?? 0));
 
-      const templateExercises: TemplateExercise[] = [];
-
-      for (const exercise of exercises || []) {
-        const { data: sets, error: setsError } = await supabase
-          .from('template_sets')
-          .select('*')
-          .eq('template_exercise_id', exercise.id)
-          .order('set_number', { ascending: true });
-
-        if (setsError) {
-          logger.warn('Error fetching template sets', { error: setsError });
-        }
-
-        const templateSets: TemplateSet[] = (sets || []).map((set: any) => ({
+        const templateSets: TemplateSet[] = rawSets.map((set: any) => ({
           setNumber: set.set_number,
           targetWeight: set.target_weight ?? undefined,
           targetReps: set.target_reps ?? undefined,
           setType: set.set_type ?? 'normal',
         }));
 
-        templateExercises.push({
+        return {
           id: exercise.id,
           exerciseId: exercise.exercise_id,
           exerciseName: exercise.exercise_name,
@@ -476,8 +468,8 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
           notes: exercise.notes ?? undefined,
           restTimerSeconds: exercise.rest_timer_seconds,
           sets: templateSets,
-        });
-      }
+        };
+      });
 
       // Build image object if present
       let image: WorkoutImage | undefined;
@@ -519,10 +511,18 @@ export async function getUserTemplates(userId: string): Promise<WorkoutTemplate[
 
 export async function getTemplateById(templateId: string): Promise<WorkoutTemplate | null> {
   try {
-    // 1. Fetch template
+    // Fetch template with nested exercises and sets in a single query
     const { data: template, error: templateError } = await supabase
       .from('workout_templates')
-      .select('*')
+      .select(
+        `
+        *,
+        template_exercises(
+          *,
+          template_sets(*)
+        )
+      `
+      )
       .eq('id', templateId)
       .single();
 
@@ -531,38 +531,21 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
       return null;
     }
 
-    // 2. Fetch exercises
-    const { data: exercises, error: exercisesError } = await supabase
-      .from('template_exercises')
-      .select('*')
-      .eq('template_id', templateId)
-      .order('order_index', { ascending: true });
+    const rawExercises = (template as any).template_exercises || [];
+    rawExercises.sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
-    if (exercisesError) {
-      logger.warn('Error fetching template exercises', { error: exercisesError });
-      return null;
-    }
+    const templateExercises: TemplateExercise[] = rawExercises.map((exercise: any) => {
+      const rawSets = exercise.template_sets || [];
+      rawSets.sort((a: any, b: any) => (a.set_number ?? 0) - (b.set_number ?? 0));
 
-    const templateExercises: TemplateExercise[] = [];
-
-    for (const exercise of exercises || []) {
-      const { data: sets, error: setsError } = await supabase
-        .from('template_sets')
-        .select('*')
-        .eq('template_exercise_id', exercise.id)
-        .order('set_number', { ascending: true });
-
-      if (setsError) {
-        logger.warn('Error fetching template sets', { error: setsError });
-      }
-
-      const templateSets: TemplateSet[] = (sets || []).map((set) => ({
+      const templateSets: TemplateSet[] = rawSets.map((set: any) => ({
         setNumber: set.set_number,
         targetWeight: set.target_weight ?? undefined,
         targetReps: set.target_reps ?? undefined,
+        setType: set.set_type ?? 'normal',
       }));
 
-      templateExercises.push({
+      return {
         id: exercise.id,
         exerciseId: exercise.exercise_id,
         exerciseName: exercise.exercise_name,
@@ -572,8 +555,8 @@ export async function getTemplateById(templateId: string): Promise<WorkoutTempla
         notes: exercise.notes ?? undefined,
         restTimerSeconds: exercise.rest_timer_seconds,
         sets: templateSets,
-      });
-    }
+      };
+    });
 
     // Build image object if present
     let image: WorkoutImage | undefined;

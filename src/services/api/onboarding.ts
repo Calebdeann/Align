@@ -54,8 +54,7 @@ export async function saveOnboardingField(field: string, value: unknown): Promis
   );
 
   if (error) {
-    console.warn('Error saving onboarding field:', error);
-    return false;
+    throw new Error(`Error saving onboarding field '${columnName}': ${error.message}`);
   }
   return true;
 }
@@ -165,12 +164,9 @@ export async function saveSkippedField(field: string): Promise<boolean> {
     .eq('anonymous_id', anonymousId)
     .single();
 
-  const currentSkipped = session?.skipped_fields || [];
-
-  // Add the new skipped field if not already present
-  if (!currentSkipped.includes(columnName)) {
-    currentSkipped.push(columnName);
-  }
+  const existing = session?.skipped_fields || [];
+  // Create a new array to avoid mutating the original
+  const currentSkipped = existing.includes(columnName) ? existing : [...existing, columnName];
 
   const { error } = await supabase.from('onboarding_sessions').upsert(
     {
@@ -182,8 +178,7 @@ export async function saveSkippedField(field: string): Promise<boolean> {
   );
 
   if (error) {
-    console.warn('Error saving skipped field:', error);
-    return false;
+    throw new Error(`Error saving skipped field '${columnName}': ${error.message}`);
   }
   return true;
 }

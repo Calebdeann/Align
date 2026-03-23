@@ -21,9 +21,8 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import Svg, { Path } from 'react-native-svg';
-import * as VideoThumbnails from 'expo-video-thumbnails';
-import * as FileSystem from 'expo-file-system';
 let WebView: any = null;
 type WebViewMessageEvent = any;
 try {
@@ -34,7 +33,13 @@ try {
 }
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { processVideoImport, VideoPlatform, VideoImportResult } from '@/services/api/tiktokImport';
+import {
+  processVideoImport,
+  VideoPlatform,
+  extractVideoId,
+  getCachedImport,
+  saveCachedImport,
+} from '@/services/api/tiktokImport';
 import { matchExercisesToDatabase, MatchResult } from '@/services/exerciseMatching';
 import { TemplateExercise } from '@/stores/templateStore';
 import { useExerciseStore } from '@/stores/exerciseStore';
@@ -52,76 +57,232 @@ const PLATFORM_NAMES: Record<VideoPlatform, string> = {
 };
 
 // JS injected into the hidden WebView to extract TikTok page data client-side.
+// Polls repeatedly for hydration data (videoDetail/itemModule) since TikTok may
+// inject it dynamically after page load. Also polls for video duration.
 const TIKTOK_EXTRACTION_JS = `
 (function() {
-  var result = {};
+  var result = { extractionErrors: [] };
+  var attempts = 0;
+  var maxAttempts = 20;
+  var sent = false;
 
-  // Extract __UNIVERSAL_DATA_FOR_REHYDRATION__ (modern TikTok format)
-  var uniEl = document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__');
-  if (uniEl && uniEl.textContent) {
+  function findVideoDetail(obj) {
+    // Recursively search for video detail data (stickersOnItem, itemStruct, desc)
+    if (!obj || typeof obj !== 'object') return null;
+    // Direct match: has itemInfo or itemStruct
+    if (obj.itemInfo || obj.itemStruct) return obj;
+    // Check keys for anything containing 'video' or 'detail'
+    var keys = Object.keys(obj);
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i].toLowerCase();
+      if (k.indexOf('video') !== -1 || k.indexOf('detail') !== -1 || k.indexOf('item') !== -1) {
+        var found = findVideoDetail(obj[keys[i]]);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  function tryExtractFromData(fullData, label) {
     try {
-      var fullData = JSON.parse(uniEl.textContent);
+      // Log top-level keys for debugging
+      var topKeys = Object.keys(fullData);
+      result._hydrationKeys = topKeys;
+
       var scope = fullData['__DEFAULT_SCOPE__'];
       if (scope) {
-        var detail = scope['webapp.video-detail'] || scope['webapp.video-detail-non-ssr'];
-        if (detail) result.videoDetail = detail;
+        var scopeKeys = Object.keys(scope);
+        result._scopeKeys = scopeKeys;
+
+        // Try known keys first (TikTok renamed to webapp.reflow.video.detail in 2025)
+        var detail = scope['webapp.video-detail'] || scope['webapp.video-detail-non-ssr'] || scope['webapp.reflow.video.detail'];
+        if (detail) { result.videoDetail = detail; return true; }
+
+        // Try any key containing 'video' or 'detail'
+        for (var i = 0; i < scopeKeys.length; i++) {
+          var k = scopeKeys[i].toLowerCase();
+          if (k.indexOf('video') !== -1 || k.indexOf('detail') !== -1) {
+            result.videoDetail = scope[scopeKeys[i]];
+            result._matchedKey = scopeKeys[i];
+            return true;
+          }
+        }
+
+        // Deep search for itemInfo/itemStruct in any scope value
+        for (var j = 0; j < scopeKeys.length; j++) {
+          var found = findVideoDetail(scope[scopeKeys[j]]);
+          if (found) {
+            result.videoDetail = found;
+            result._matchedKey = scopeKeys[j] + ' (deep)';
+            return true;
+          }
+        }
       }
-    } catch(e) {}
-  }
 
-  // Extract SIGI_STATE (older TikTok format)
-  var sigiEl = document.getElementById('SIGI_STATE');
-  if (sigiEl && sigiEl.textContent) {
-    try {
-      var sigiData = JSON.parse(sigiEl.textContent);
-      if (sigiData.ItemModule) result.itemModule = sigiData.ItemModule;
-    } catch(e) {}
-  }
-
-  // Meta tags as additional data
-  var ogDesc = document.querySelector('meta[property="og:description"]');
-  result.ogDescription = ogDesc ? (ogDesc.getAttribute('content') || '') : '';
-
-  var ogImage = document.querySelector('meta[property="og:image"]');
-  result.ogImage = ogImage ? (ogImage.getAttribute('content') || '') : '';
-
-  var metaDesc = document.querySelector('meta[name="description"]');
-  result.metaDescription = metaDesc ? (metaDesc.getAttribute('content') || '') : '';
-
-  // JSON-LD structured data
-  var jsonLdEl = document.querySelector('script[type="application/ld+json"]');
-  if (jsonLdEl && jsonLdEl.textContent) {
-    try { result.jsonLd = JSON.parse(jsonLdEl.textContent); } catch(e) {}
-  }
-
-  result.hasData = !!(result.videoDetail || result.itemModule || result.ogDescription);
-
-  // Extract video play URL from hydration data for frame extraction
-  if (result.videoDetail) {
-    try {
-      var item = result.videoDetail.itemInfo && result.videoDetail.itemInfo.itemStruct;
-      if (item && item.video) {
-        var v = item.video;
-        result.videoPlayUrl = v.playAddr || v.downloadAddr || '';
-        result.videoDuration = v.duration || 0;
+      // No __DEFAULT_SCOPE__, try deep search on full data
+      var found = findVideoDetail(fullData);
+      if (found) {
+        result.videoDetail = found;
+        result._matchedKey = label + ' (deep-root)';
+        return true;
       }
-    } catch(e) {}
+    } catch(e) { result.extractionErrors.push(label + ': ' + e.message); }
+    return false;
   }
-  // Fallback: try DOM video element
-  var videoEl = document.querySelector('video');
-  if (videoEl) {
-    if (!result.videoPlayUrl) {
-      var src = videoEl.src || videoEl.currentSrc || '';
-      if (src && !src.startsWith('blob:')) {
-        result.videoPlayUrl = src;
+
+  function tryExtractHydrationById() {
+    var uniEl = document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__');
+    if (uniEl && uniEl.textContent) {
+      try {
+        var fullData = JSON.parse(uniEl.textContent);
+        return tryExtractFromData(fullData, 'uni_el');
+      } catch(e) { result.extractionErrors.push('uni_parse: ' + e.message); }
+    }
+    return false;
+  }
+
+  function tryExtractHydrationFromWindow() {
+    try {
+      if (window.__UNIVERSAL_DATA_FOR_REHYDRATION__) {
+        return tryExtractFromData(window.__UNIVERSAL_DATA_FOR_REHYDRATION__, 'win');
+      }
+    } catch(e) { result.extractionErrors.push('win_parse: ' + e.message); }
+    return false;
+  }
+
+  function tryExtractHydrationFromScripts() {
+    try {
+      var scripts = document.querySelectorAll('script');
+      for (var i = 0; i < scripts.length; i++) {
+        var text = scripts[i].textContent || '';
+        if (text.length > 500 && (text.indexOf('video') !== -1 && text.indexOf('sticker') !== -1)) {
+          try {
+            var parsed = JSON.parse(text);
+            if (tryExtractFromData(parsed, 'script_' + i)) return true;
+          } catch(e2) {}
+        }
+      }
+    } catch(e) { result.extractionErrors.push('scripts_scan: ' + e.message); }
+    return false;
+  }
+
+  function tryExtractSigiState() {
+    var sigiEl = document.getElementById('SIGI_STATE');
+    if (sigiEl && sigiEl.textContent) {
+      try {
+        var sigiData = JSON.parse(sigiEl.textContent);
+        if (sigiData.ItemModule) { result.itemModule = sigiData.ItemModule; return true; }
+      } catch(e) { result.extractionErrors.push('sigi_parse: ' + e.message); }
+    }
+    return false;
+  }
+
+  function extractMetaTags() {
+    var ogDesc = document.querySelector('meta[property="og:description"]');
+    result.ogDescription = ogDesc ? (ogDesc.getAttribute('content') || '') : '';
+
+    var ogImage = document.querySelector('meta[property="og:image"]');
+    result.ogImage = ogImage ? (ogImage.getAttribute('content') || '') : '';
+
+    var metaDesc = document.querySelector('meta[name="description"]');
+    result.metaDescription = metaDesc ? (metaDesc.getAttribute('content') || '') : '';
+  }
+
+  function extractJsonLd() {
+    var jsonLdEls = document.querySelectorAll('script[type="application/ld+json"]');
+    for (var j = 0; j < jsonLdEls.length; j++) {
+      try {
+        var parsed = JSON.parse(jsonLdEls[j].textContent);
+        result.jsonLd = parsed;
+        if (parsed.duration) {
+          var dur = parsed.duration;
+          var match = dur.match(/PT(?:(\\d+)M)?(?:(\\d+)S)?/);
+          if (match) {
+            var mins = parseInt(match[1] || '0', 10);
+            var secs = parseInt(match[2] || '0', 10);
+            result.videoDuration = mins * 60 + secs;
+          }
+        }
+        if (parsed.contentUrl && !parsed.contentUrl.startsWith('blob:')) {
+          result.videoPlayUrl = parsed.contentUrl;
+        }
+        break;
+      } catch(e) { result.extractionErrors.push('jsonld: ' + e.message); }
+    }
+  }
+
+  function extractVideoUrl() {
+    if (result.videoDetail) {
+      try {
+        var item = result.videoDetail.itemInfo && result.videoDetail.itemInfo.itemStruct;
+        if (item && item.video) {
+          var v = item.video;
+          result.videoPlayUrl = v.playAddr || v.downloadAddr || result.videoPlayUrl || '';
+          if (v.duration) result.videoDuration = v.duration;
+        }
+      } catch(e) { result.extractionErrors.push('video_url: ' + e.message); }
+    }
+
+    var videoEl = document.querySelector('video');
+    if (videoEl) {
+      if (!result.videoPlayUrl) {
+        var src = videoEl.src || videoEl.currentSrc || '';
+        if (src && !src.startsWith('blob:')) result.videoPlayUrl = src;
+      }
+      if (videoEl.duration && isFinite(videoEl.duration)) {
+        result.videoDuration = videoEl.duration;
       }
     }
-    if (!result.videoDuration && videoEl.duration && isFinite(videoEl.duration)) {
-      result.videoDuration = videoEl.duration;
-    }
   }
 
-  window.ReactNativeWebView.postMessage(JSON.stringify(result));
+  function sendResult() {
+    if (sent) return;
+    sent = true;
+    result.hasData = !!(result.videoDetail || result.itemModule || result.ogDescription);
+    result._debug = {
+      url: window.location.href,
+      scriptTagCount: document.querySelectorAll('script').length,
+      hasUniElement: !!document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__'),
+      hasUniWindow: !!window.__UNIVERSAL_DATA_FOR_REHYDRATION__,
+      hasSigiElement: !!document.getElementById('SIGI_STATE'),
+      videoElementCount: document.querySelectorAll('video').length,
+      attemptsTaken: attempts,
+      extractionErrors: result.extractionErrors
+    };
+    window.ReactNativeWebView.postMessage(JSON.stringify(result));
+  }
+
+  function poll() {
+    attempts++;
+
+    // Try all hydration extraction strategies
+    var hasHydration = result.videoDetail || result.itemModule;
+    if (!hasHydration) {
+      hasHydration = tryExtractHydrationById() || tryExtractHydrationFromWindow() || tryExtractHydrationFromScripts() || tryExtractSigiState();
+    }
+
+    // Always refresh meta tags and JSON-LD
+    extractMetaTags();
+    extractJsonLd();
+    extractVideoUrl();
+
+    // If we got rich hydration data, send immediately
+    if (result.videoDetail || result.itemModule) {
+      sendResult();
+      return;
+    }
+
+    // Keep polling until max attempts
+    if (attempts >= maxAttempts) {
+      sendResult();
+      return;
+    }
+
+    setTimeout(poll, 500);
+  }
+
+  // Start polling immediately
+  poll();
   true;
 })();
 `;
@@ -261,6 +422,149 @@ const EXTRACTION_SCRIPTS: Record<VideoPlatform, string> = {
   instagram: INSTAGRAM_EXTRACTION_JS,
 };
 
+// JS injected into WebView to extract frames using canvas.
+// Self-contained: finds the video, computes timestamps, captures frames.
+// If canvas is tainted by CORS, falls back to fetching the video via XHR
+// (which carries the WebView's cookies) and creating a same-origin blob URL.
+// Captures frames from a playing video at intervals.
+// No seeking needed - just lets the video play and grabs frames as it goes.
+// TikTok/Instagram autoplay, so we wait for playback then capture periodically.
+const CANVAS_FRAME_EXTRACTION_JS = `
+(function() {
+  var pollAttempts = 0;
+  var maxPollAttempts = 30;
+
+  function tryCaptureStillFrame(video) {
+    // Fallback: capture a single frame from a loaded but non-playing video
+    try {
+      var canvas = document.createElement('canvas');
+      var vw = video.videoWidth || video.clientWidth || 360;
+      var vh = video.videoHeight || video.clientHeight || 640;
+      var scale = Math.min(1, 480 / Math.max(vw, vh));
+      canvas.width = Math.round(vw * scale);
+      canvas.height = Math.round(vh * scale);
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      var url = canvas.toDataURL('image/jpeg', 0.6);
+      var b64 = url.split(',')[1];
+      if (b64 && b64.length > 1000 && b64.length < 200000) return [b64];
+    } catch(e) {}
+    return [];
+  }
+
+  function waitForPlaying() {
+    var video = document.querySelector('video');
+    if (video) {
+      video.muted = true;
+      video.setAttribute('playsinline', '');
+      video.play().catch(function(){});
+    }
+    // Wait until video is actually playing (has current time > 0 or is not paused)
+    if (video && !video.paused && video.currentTime > 0) {
+      captureWhilePlaying(video);
+      return;
+    }
+    pollAttempts++;
+    if (pollAttempts >= maxPollAttempts) {
+      // Last resort: try to capture a still frame if video has loaded data
+      var stillFrames = [];
+      if (video && video.readyState >= 2) {
+        stillFrames = tryCaptureStillFrame(video);
+      }
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'frames_done',
+        frames: stillFrames,
+        error: video ? 'video_not_playing' : 'no_video_element',
+        readyState: video ? video.readyState : -1,
+        paused: video ? video.paused : true,
+        stillFallback: stillFrames.length > 0
+      }));
+      return;
+    }
+    setTimeout(waitForPlaying, 500);
+  }
+
+  waitForPlaying();
+
+  function captureWhilePlaying(video) {
+    var canvas = document.createElement('canvas');
+    var vw = video.videoWidth || video.clientWidth || 360;
+    var vh = video.videoHeight || video.clientHeight || 640;
+    var scale = Math.min(1, 480 / Math.max(vw, vh));
+    canvas.width = Math.round(vw * scale);
+    canvas.height = Math.round(vh * scale);
+    var ctx = canvas.getContext('2d');
+
+    var duration = video.duration;
+    if (!duration || !isFinite(duration) || duration <= 0) duration = 30;
+
+    var frames = [];
+    var lastCaptureTime = -999;
+    var tainted = false;
+    var captureInterval = 1.5; // seconds between captures
+    var maxFrames = Math.min(16, Math.max(4, Math.ceil(duration * 0.8 / captureInterval)));
+
+    // Keep video playing and looping
+    video.loop = true;
+    video.muted = true;
+    video.play().catch(function(){});
+
+    function tryCapture() {
+      if (tainted || frames.length >= maxFrames) {
+        finish();
+        return;
+      }
+
+      var ct = video.currentTime;
+      // Only capture if we've moved at least 1.5s since last capture
+      // and we're in the middle 80% of the video (skip 10% edges)
+      var trimStart = duration * 0.1;
+      var trimEnd = duration * 0.9;
+
+      if (ct >= trimStart && ct <= trimEnd && (ct - lastCaptureTime) >= captureInterval) {
+        try {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          var url = canvas.toDataURL('image/jpeg', 0.6);
+          var b64 = url.split(',')[1];
+          if (b64 && b64.length > 1000 && b64.length < 200000) {
+            frames.push(b64);
+            lastCaptureTime = ct;
+          }
+        } catch(e) {
+          tainted = true;
+          finish();
+          return;
+        }
+      }
+
+      // Check again in 200ms
+      if (frames.length < maxFrames) {
+        setTimeout(tryCapture, 200);
+      } else {
+        finish();
+      }
+    }
+
+    function finish() {
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'frames_done',
+        frames: frames,
+        duration: duration,
+        capturedCount: frames.length,
+        tainted: tainted
+      }));
+    }
+
+    // Start capturing
+    tryCapture();
+
+    // Safety timeout - finish with whatever we have after 35s
+    setTimeout(function() { if (frames.length < maxFrames) finish(); }, 35000);
+  }
+  true;
+})();
+`;
+
 function CloseIcon() {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -329,6 +633,9 @@ export default function ImportVideoScreen() {
   const extractionResolveRef = useRef<((data: any) => void) | null>(null);
   const extractionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bestExtractionRef = useRef<any>(null);
+  // Canvas frame extraction state
+  const frameResolveRef = useRef<((frames: string[]) => void) | null>(null);
+  const frameTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track which exercise index is being replaced via add-exercise
   const replacingIndexRef = useRef<number | null>(null);
@@ -451,6 +758,15 @@ export default function ImportVideoScreen() {
     }, [])
   );
 
+  // Haptic pulse during loading - feels like the app is actively searching
+  useEffect(() => {
+    if (state !== 'loading') return;
+    const interval = setInterval(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }, 800);
+    return () => clearInterval(interval);
+  }, [state]);
+
   // Main init: get URL and process
   useEffect(() => {
     async function init() {
@@ -504,7 +820,7 @@ export default function ImportVideoScreen() {
         const best = bestExtractionRef.current;
         bestExtractionRef.current = null;
         extractionResolveRef.current = null;
-        setWebviewUrl(null);
+        // Don't close WebView - we still need it for canvas frame extraction
         resolve(best);
       }, timeout);
     });
@@ -524,27 +840,46 @@ export default function ImportVideoScreen() {
       data = JSON.parse(event.nativeEvent.data);
     } catch {}
 
+    // Handle canvas frame extraction messages
+    if (data?.type === 'frames_done') {
+      if (frameTimeoutRef.current) {
+        clearTimeout(frameTimeoutRef.current);
+        frameTimeoutRef.current = null;
+      }
+      console.log(
+        `[import-video] Canvas extracted ${data.frames?.length || 0} frames${data.error ? ' (error: ' + data.error + ')' : ''}${data.duration ? ' (duration: ' + data.duration + 's)' : ''}`
+      );
+      setWebviewUrl(null);
+      frameResolveRef.current?.(data.frames || []);
+      frameResolveRef.current = null;
+      return;
+    }
+    if (data?.type === 'frames_progress') {
+      console.log(`[import-video] Frame progress: ${data.count}/${data.total}`);
+      return;
+    }
+
     // TikTok: Got the rich data (video detail JSON), resolve immediately
+    // NOTE: Don't close WebView yet - we may need it for frame extraction
     if (platform === 'tiktok' && (data?.videoDetail || data?.itemModule)) {
       if (extractionTimeoutRef.current) {
         clearTimeout(extractionTimeoutRef.current);
         extractionTimeoutRef.current = null;
       }
       bestExtractionRef.current = null;
-      setWebviewUrl(null);
       extractionResolveRef.current?.(data);
       extractionResolveRef.current = null;
       return;
     }
 
     // Instagram: Caption extracted or all attempts exhausted, resolve
+    // NOTE: Don't close WebView yet - we may need it for frame extraction
     if (platform === 'instagram' && data?.hasData) {
       if (extractionTimeoutRef.current) {
         clearTimeout(extractionTimeoutRef.current);
         extractionTimeoutRef.current = null;
       }
       bestExtractionRef.current = null;
-      setWebviewUrl(null);
       extractionResolveRef.current?.(data);
       extractionResolveRef.current = null;
       return;
@@ -563,46 +898,38 @@ export default function ImportVideoScreen() {
     }
     const best = bestExtractionRef.current;
     bestExtractionRef.current = null;
-    setWebviewUrl(null);
-    extractionResolveRef.current?.(best);
-    extractionResolveRef.current = null;
+    // Resolve metadata extraction but keep WebView open for frame attempt
+    if (extractionResolveRef.current) {
+      extractionResolveRef.current(best);
+      extractionResolveRef.current = null;
+    } else {
+      // Error during frame extraction phase - resolve frames as empty
+      setWebviewUrl(null);
+      frameResolveRef.current?.([]);
+      frameResolveRef.current = null;
+    }
   }
 
-  // Extract frames from a video URL at regular intervals for Claude Vision OCR
-  async function extractFramesFromVideo(
-    videoSrcUrl: string,
-    durationSeconds: number
-  ): Promise<string[]> {
-    const targetFrames = Math.min(10, Math.max(4, Math.ceil(durationSeconds / 5)));
-    const intervalMs = (durationSeconds * 1000) / (targetFrames + 1);
+  // Extract frames via canvas inside the still-open WebView.
+  // The WebView has cookies/auth so the video is accessible.
+  function extractFramesViaCanvas(): Promise<string[]> {
+    return new Promise((resolve) => {
+      frameResolveRef.current = resolve;
 
-    const base64Frames: string[] = [];
+      // Timeout for frame extraction
+      frameTimeoutRef.current = setTimeout(() => {
+        console.log('[import-video] Canvas frame extraction timed out');
+        setWebviewUrl(null);
+        const r = frameResolveRef.current;
+        frameResolveRef.current = null;
+        r?.([]);
+      }, 45000);
 
-    for (let i = 1; i <= targetFrames; i++) {
-      const timeMs = Math.floor(intervalMs * i);
-      try {
-        const { uri } = await VideoThumbnails.getThumbnailAsync(videoSrcUrl, {
-          time: timeMs,
-          quality: 0.6,
-        });
-
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        // Skip frames that are too large (> ~150KB image)
-        if (base64.length < 200_000) {
-          base64Frames.push(base64);
-        }
-
-        // Clean up temp file
-        FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
-      } catch (e) {
-        console.warn(`[import-video] Frame extraction failed at ${timeMs}ms:`, e);
-      }
-    }
-
-    return base64Frames;
+      // Inject the self-contained frame extraction script (delay to let video load)
+      setTimeout(() => {
+        webviewRef.current?.injectJavaScript(CANVAS_FRAME_EXTRACTION_JS);
+      }, 1500);
+    });
   }
 
   async function processUrl(url: string, plat: VideoPlatform) {
@@ -610,35 +937,130 @@ export default function ImportVideoScreen() {
     setLoadingStep('extracting');
     const startTime = Date.now();
 
-    // Step 1: Extract data client-side via hidden WebView
+    // Step 0: Check shared cache first (by video ID from URL)
+    let videoId = extractVideoId(url);
+    if (videoId) {
+      console.log(`[import-video] Checking cache for ${plat} video ${videoId}`);
+      const cached = await getCachedImport(plat, videoId);
+      if (cached) {
+        console.log(`[import-video] Cache hit! ${cached.exercises?.length} exercises`);
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 1000) await new Promise((r) => setTimeout(r, 1000 - elapsed));
+
+        if (cached.success && cached.exercises?.length) {
+          const matched = matchExercisesToDatabase(cached.exercises);
+          setExercises(matched);
+          setWorkoutName(cached.workoutName || 'Imported Workout');
+          setState('review');
+          return;
+        }
+      }
+      console.log('[import-video] Cache miss, proceeding with extraction');
+    }
+
+    // Step 1: Extract metadata via hidden WebView (keeps WebView open for frames)
     const extractedData = await extractDataFromWebView(url);
 
-    // Step 2: Extract video frames if we have a video URL
-    let videoFrames: string[] = [];
-    const videoSrcUrl = extractedData?.videoSrcUrl || extractedData?.videoPlayUrl;
-    const videoDuration = extractedData?.videoDuration;
+    console.log(
+      '[import-video] WebView extracted data:',
+      JSON.stringify(
+        {
+          hasData: extractedData?.hasData,
+          hasVideoDetail: !!extractedData?.videoDetail,
+          hasItemModule: !!extractedData?.itemModule,
+          ogDescription: extractedData?.ogDescription?.substring(0, 200),
+          videoDuration: extractedData?.videoDuration,
+          caption: extractedData?.caption?.substring(0, 200),
+        },
+        null,
+        2
+      )
+    );
 
-    if (videoSrcUrl && videoDuration && videoDuration > 0) {
-      // Instagram: frames are primary (exercises shown as on-screen text overlays)
-      // TikTok: only extract frames if sticker data is insufficient
-      const hasRichStickers =
-        extractedData?.videoDetail?.itemInfo?.itemStruct?.stickersOnItem?.length >= 5;
-      const shouldExtractFrames = plat === 'instagram' || !hasRichStickers;
+    if (extractedData?._debug) {
+      console.log(
+        '[import-video] Extraction debug:',
+        JSON.stringify(extractedData._debug, null, 2)
+      );
+    }
+    if (extractedData?._hydrationKeys) {
+      console.log(
+        '[import-video] Hydration top keys:',
+        JSON.stringify(extractedData._hydrationKeys)
+      );
+    }
+    if (extractedData?._scopeKeys) {
+      console.log('[import-video] Scope keys:', JSON.stringify(extractedData._scopeKeys));
+    }
+    if (extractedData?._matchedKey) {
+      console.log('[import-video] Matched key:', extractedData._matchedKey);
+    }
 
-      if (shouldExtractFrames) {
-        try {
-          setLoadingStep('frames');
-          videoFrames = await extractFramesFromVideo(videoSrcUrl, videoDuration);
-          console.log(`[import-video] Extracted ${videoFrames.length} frames`);
-        } catch (e) {
-          console.warn('[import-video] Frame extraction failed:', e);
+    // Try to get video ID from canonical URL if we didn't have it from the input URL
+    if (!videoId && extractedData?._debug?.url) {
+      videoId = extractVideoId(extractedData._debug.url);
+      if (videoId) {
+        console.log(`[import-video] Got video ID from canonical URL: ${videoId}`);
+        // Check cache again with the resolved ID
+        const cached = await getCachedImport(plat, videoId);
+        if (cached?.success && cached.exercises?.length) {
+          console.log(
+            `[import-video] Cache hit (after redirect)! ${cached.exercises?.length} exercises`
+          );
+          setWebviewUrl(null);
+          const elapsed = Date.now() - startTime;
+          if (elapsed < 1000) await new Promise((r) => setTimeout(r, 1000 - elapsed));
+          const matched = matchExercisesToDatabase(cached.exercises);
+          setExercises(matched);
+          setWorkoutName(cached.workoutName || 'Imported Workout');
+          setState('review');
+          return;
         }
       }
     }
 
+    // Step 2: Extract frames via canvas inside the still-open WebView
+    let videoFrames: string[] = [];
+    if (webviewRef.current && WebView) {
+      try {
+        setLoadingStep('frames');
+        videoFrames = await extractFramesViaCanvas();
+        const totalSizeKB = videoFrames.reduce((sum, f) => sum + f.length, 0) / 1024;
+        console.log(
+          `[import-video] Canvas extracted ${videoFrames.length} frames, total size: ${Math.round(totalSizeKB)}KB`
+        );
+      } catch (e) {
+        console.warn('[import-video] Canvas frame extraction failed:', e);
+      }
+    } else {
+      console.warn('[import-video] WebView not available for frame extraction');
+    }
+
+    // Close WebView now that we're done with both phases
+    setWebviewUrl(null);
+
     // Step 3: Send to edge function
     setLoadingStep('analyzing');
+    console.log(
+      `[import-video] Sending to edge function: ${videoFrames.length} frames, platform: ${plat}`
+    );
     const result = await processVideoImport(url, plat, extractedData, videoFrames);
+
+    console.log(
+      '[import-video] Edge function result:',
+      JSON.stringify(
+        {
+          success: result.success,
+          confidence: result.confidence,
+          workoutName: result.workoutName,
+          exerciseCount: result.exercises?.length,
+          exercises: result.exercises?.map((e) => e.name),
+          error: result.error,
+        },
+        null,
+        2
+      )
+    );
 
     // Ensure loading shows for at least 1s
     const elapsed = Date.now() - startTime;
@@ -652,6 +1074,22 @@ export default function ImportVideoScreen() {
         result.error || 'Could not find any exercises in this video. Try a different workout video.'
       );
       return;
+    }
+
+    // Reject low-confidence results - better to show nothing than wrong exercises
+    if (result.confidence !== undefined && result.confidence < 0.5) {
+      setState('error');
+      setErrorMessage(
+        'Could not reliably identify exercises in this video. Try a video with clear exercise names on screen.'
+      );
+      return;
+    }
+
+    // Save to shared cache for future imports (best-effort, don't await)
+    if (videoId && result.success && result.exercises?.length) {
+      saveCachedImport(plat, videoId, result).then(() => {
+        console.log(`[import-video] Saved to cache: ${plat} video ${videoId}`);
+      });
     }
 
     const matched = matchExercisesToDatabase(result.exercises);
@@ -741,37 +1179,59 @@ export default function ImportVideoScreen() {
 
   if (state === 'loading') {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <View style={styles.loadingContent}>
-          {/* Scanning frame with animated magnifying glass */}
-          <View style={styles.scanFrame}>
-            <View style={[styles.cornerBracket, styles.cornerTopLeft]} />
-            <View style={[styles.cornerBracket, styles.cornerTopRight]} />
-            <View style={[styles.cornerBracket, styles.cornerBottomLeft]} />
-            <View style={[styles.cornerBracket, styles.cornerBottomRight]} />
-            <Animated.Text style={[styles.magnifyingGlass, magnifyingGlassStyle]}>🔍</Animated.Text>
-          </View>
-          <Text style={styles.loadingTitle}>Analyzing workout...</Text>
-          <Text style={styles.loadingSubtitle}>Extracting exercises from {platformName}</Text>
-        </View>
-        {/* Hidden WebView: loads video page on user's phone to extract data client-side */}
+      <View style={{ flex: 1, backgroundColor: colors.primary }}>
+        {/* Hidden WebView — rendered first, fully outside flex layout */}
         {webviewUrl && WebView && (
-          <WebView
-            ref={webviewRef}
-            source={{ uri: webviewUrl }}
-            style={{ height: 0, width: 0, opacity: 0, position: 'absolute' }}
-            onLoadEnd={handleWebViewLoadEnd}
-            onMessage={handleWebViewMessage}
-            onError={handleWebViewError}
-            onHttpError={handleWebViewError}
-            javaScriptEnabled
-            domStorageEnabled
-            sharedCookiesEnabled={platform === 'instagram'}
-            userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
-            onShouldStartLoadWithRequest={(request: any) => request.url.startsWith('http')}
-          />
+          <View
+            style={{ position: 'absolute', width: 1, height: 1, opacity: 0, overflow: 'hidden' }}
+            pointerEvents="none"
+          >
+            <WebView
+              ref={webviewRef}
+              source={{ uri: webviewUrl }}
+              style={{ width: 1, height: 1 }}
+              onLoadEnd={handleWebViewLoadEnd}
+              onMessage={handleWebViewMessage}
+              onError={handleWebViewError}
+              onHttpError={handleWebViewError}
+              javaScriptEnabled
+              domStorageEnabled
+              allowsInlineMediaPlayback={true}
+              mediaPlaybackRequiresUserAction={false}
+              sharedCookiesEnabled={platform === 'instagram'}
+              userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+              onShouldStartLoadWithRequest={(request: any) => request.url.startsWith('http')}
+            />
+          </View>
         )}
-      </SafeAreaView>
+        <SafeAreaView style={styles.loadingContainer}>
+          <View style={styles.loadingContent}>
+            <Text style={styles.loadingLogo}>ALIGN</Text>
+            {/* Scanning frame with animated magnifying glass */}
+            <View style={styles.scanArea}>
+              <View style={styles.scanFrame}>
+                <View style={[styles.cornerBracket, styles.cornerTopLeft]} />
+                <View style={[styles.cornerBracket, styles.cornerTopRight]} />
+                <View style={[styles.cornerBracket, styles.cornerBottomLeft]} />
+                <View style={[styles.cornerBracket, styles.cornerBottomRight]} />
+                <Animated.Text style={[styles.magnifyingGlass, magnifyingGlassStyle]}>
+                  🔍
+                </Animated.Text>
+              </View>
+              <Text style={styles.loadingTitle}>
+                {loadingStep === 'extracting'
+                  ? 'Analyzing video...'
+                  : loadingStep === 'frames'
+                    ? 'Identifying exercises...'
+                    : 'Creating workout...'}
+              </Text>
+              <Text style={styles.loadingSubtitle}>
+                {`Extracting exercises from ${platformName}`}
+              </Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
@@ -963,15 +1423,27 @@ const styles = StyleSheet.create({
   loadingContent: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: '50%',
+    justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingBottom: 120,
+  },
+  loadingLogo: {
+    fontFamily: fonts.canela,
+    fontSize: 50,
+    color: '#FFFFFF',
+    letterSpacing: 6,
+    fontStyle: 'italic',
+    marginBottom: 48,
+  },
+  scanArea: {
+    alignItems: 'center',
   },
   scanFrame: {
     width: 130,
     height: 130,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   cornerBracket: {
     position: 'absolute',

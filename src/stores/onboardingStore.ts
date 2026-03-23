@@ -148,7 +148,10 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
     set({ [field]: value } as Partial<OnboardingData>);
 
     // Save to Supabase with retry (await so data is persisted before navigation)
-    await saveWithRetry(() => saveOnboardingField(field, value));
+    const result = await saveWithRetry(() => saveOnboardingField(field, value));
+    if (result === null) {
+      console.warn(`Onboarding field '${field}' failed to save to Supabase after retries`);
+    }
   },
 
   // Link to authenticated user

@@ -988,6 +988,7 @@ export default function ActiveWorkoutScreen() {
       }
       if (restTimerRef.current) {
         clearInterval(restTimerRef.current);
+        restTimerRef.current = null;
       }
     };
   }, []);
@@ -1507,6 +1508,7 @@ export default function ActiveWorkoutScreen() {
         reps: s.reps,
         completed: s.completed,
         setType: s.setType,
+        rpe: s.rpe ?? null,
       })),
       previousSets:
         ex.previousSets?.map((ps) => ({
@@ -1770,7 +1772,10 @@ export default function ActiveWorkoutScreen() {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
-          if (restTimerRef.current) clearInterval(restTimerRef.current);
+          if (restTimerRef.current) {
+            clearInterval(restTimerRef.current);
+            restTimerRef.current = null;
+          }
           cancelWorkoutInProgressReminder();
           endWorkoutLiveActivity();
           if (!isEditMode) {
@@ -1935,10 +1940,6 @@ export default function ActiveWorkoutScreen() {
       }
 
       exercise.sets = exercise.sets.filter((_, index) => index !== setTypeModalSetIndex);
-      // Re-number the sets
-      exercise.sets.forEach((set, index) => {
-        set.id = (index + 1).toString();
-      });
       return updated;
     });
     closeSetTypeModal();

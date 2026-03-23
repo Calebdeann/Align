@@ -138,13 +138,16 @@ export interface PreviousSetData {
 // SAVE COMPLETED WORKOUT
 // =============================================
 
-export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<string | null> {
+export async function saveCompletedWorkout(
+  input: SaveWorkoutInput
+): Promise<{ workoutId: string; partialWarning?: string } | { error: string }> {
   // Validate input before any database operations
   const parseResult = SaveWorkoutInputSchema.safeParse(input);
   if (!parseResult.success) {
+    const firstIssue = parseResult.error.issues[0];
+    const detail = firstIssue ? `${firstIssue.path.join('.')}: ${firstIssue.message}` : 'Unknown';
     logger.warn('Invalid workout input', { error: parseResult.error.flatten() });
-    Alert.alert('Save Error', 'Unable to save workout. Please try again.');
-    return null;
+    return { error: `Validation failed (${detail})` };
   }
 
   // Use validated input from here on
@@ -165,7 +168,15 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
       completed_at: validatedInput.completedAt.toISOString(),
       duration_seconds: validatedInput.durationSeconds,
       notes: validatedInput.notes || null,
-      source_template_id: validatedInput.sourceTemplateId || null,
+      // Only store UUID template IDs — preset templates use slug IDs (e.g. "preset-fullbody-bang")
+      // which are not valid UUIDs and would cause a DB error
+      source_template_id:
+        validatedInput.sourceTemplateId &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          validatedInput.sourceTemplateId
+        )
+          ? validatedInput.sourceTemplateId
+          : null,
     };
 
     // Add optional image columns when an image was selected
@@ -199,14 +210,12 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
 
       if (retryError || !retryAttempt) {
         logger.warn('Error saving workout (retry without image)', { error: retryError });
-        Alert.alert('Save Error', 'Unable to save workout. Please try again.');
-        return null;
+        return { error: retryError?.message || 'Database insert failed (retry)' };
       }
       workout = retryAttempt;
     } else if (firstError || !firstAttempt) {
       logger.warn('Error saving workout', { error: firstError });
-      Alert.alert('Save Error', 'Unable to save workout. Please try again.');
-      return null;
+      return { error: firstError?.message || 'Database insert failed' };
     } else {
       workout = firstAttempt;
     }
@@ -215,7 +224,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
 
     // Track muscles worked for aggregate storage
     const muscleSetCounts = new Map<string, { primary: number; secondary: number }>();
-    let failedExerciseCount = 0;
+    const failedExercises: { name: string; error: string }[] = [];
     let failedSetsCount = 0;
 
     // 2. Insert workout_exercises for each exercise
@@ -223,7 +232,7 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
       const exercise = validatedInput.exercises[i];
       const completedSetsCount = exercise.sets.filter((s) => s.completed).length;
 
-      const { data: workoutExercise, error: exerciseError } = await supabase
+      let { data: workoutExercise, error: exerciseError } = await supabase
         .from('workout_exercises')
         .insert({
           workout_id: workoutId,
@@ -238,9 +247,40 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
         .select('id')
         .single();
 
-      if (exerciseError || !workoutExercise) {
-        logger.warn('Error saving workout exercise', { error: exerciseError });
-        failedExerciseCount++;
+      // If first attempt fails, retry with minimum columns
+      if (exerciseError) {
+        logger.warn('Error saving workout exercise, retrying with minimal columns', {
+          exerciseName: exercise.exerciseName,
+          error: exerciseError,
+        });
+        const { data: retryExercise, error: retryError } = await supabase
+          .from('workout_exercises')
+          .insert({
+            workout_id: workoutId,
+            exercise_id: exercise.exerciseId,
+            exercise_name: exercise.exerciseName,
+            order_index: i + 1,
+          })
+          .select('id')
+          .single();
+
+        if (retryError || !retryExercise) {
+          logger.warn('Error saving workout exercise (retry failed)', {
+            exerciseName: exercise.exerciseName,
+            error: retryError,
+            originalError: exerciseError,
+          });
+          failedExercises.push({
+            name: exercise.exerciseName,
+            error: retryError?.message || exerciseError.message,
+          });
+          continue;
+        }
+        workoutExercise = retryExercise;
+      }
+
+      if (!workoutExercise) {
+        failedExercises.push({ name: exercise.exerciseName, error: 'No data returned' });
         continue;
       }
 
@@ -258,7 +298,19 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
       if (setsToInsert.length > 0) {
         const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert);
 
-        if (setsError) {
+        if (setsError && isSchemaError(setsError)) {
+          // set_type column may not exist yet (migration 028) - retry without it
+          const setsWithoutSetType = setsToInsert.map(({ set_type, ...rest }) => rest);
+          const { error: retryError } = await supabase
+            .from('workout_sets')
+            .insert(setsWithoutSetType);
+          if (retryError) {
+            logger.warn('Error saving workout sets (retry without set_type)', {
+              error: retryError,
+            });
+            failedSetsCount++;
+          }
+        } else if (setsError) {
           logger.warn('Error saving workout sets', { error: setsError });
           failedSetsCount++;
         }
@@ -321,22 +373,23 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
       }
     }
 
-    // Warn user if some exercises or sets failed to save
-    if (failedExerciseCount > 0 || failedSetsCount > 0) {
+    // Build partial save warning if some exercises or sets failed
+    let partialWarning: string | undefined;
+    if (failedExercises.length > 0 || failedSetsCount > 0) {
       const parts: string[] = [];
-      if (failedExerciseCount > 0) parts.push(`${failedExerciseCount} exercise(s)`);
+      if (failedExercises.length > 0) {
+        const names = failedExercises.map((f) => f.name).join(', ');
+        parts.push(`${failedExercises.length} exercise(s) (${names})`);
+      }
       if (failedSetsCount > 0) parts.push(`set data for ${failedSetsCount} exercise(s)`);
-      Alert.alert(
-        'Partial Save',
-        `Your workout was saved, but ${parts.join(' and ')} could not be saved. You may want to check the workout details.`
-      );
+      const errorDetail = failedExercises[0]?.error ? `\n\nError: ${failedExercises[0].error}` : '';
+      partialWarning = `Workout saved, but ${parts.join(' and ')} could not be saved.${errorDetail}`;
     }
 
-    return workoutId;
+    return { workoutId, partialWarning };
   } catch (error) {
     logger.warn('Error in saveCompletedWorkout', { error });
-    Alert.alert('Save Error', 'Unable to save workout. Please try again.');
-    return null;
+    return { error: error instanceof Error ? error.message : 'Unknown error saving workout' };
   }
 }
 
@@ -347,13 +400,14 @@ export async function saveCompletedWorkout(input: SaveWorkoutInput): Promise<str
 export async function updateCompletedWorkout(
   workoutId: string,
   input: SaveWorkoutInput
-): Promise<boolean> {
+): Promise<{ success: true; partialWarning?: string } | { error: string }> {
   // Validate input before any database operations
   const parseResult = SaveWorkoutInputSchema.safeParse(input);
   if (!parseResult.success) {
+    const firstIssue = parseResult.error.issues[0];
+    const detail = firstIssue ? `${firstIssue.path.join('.')}: ${firstIssue.message}` : 'Unknown';
     logger.warn('Invalid workout input', { error: parseResult.error.flatten() });
-    Alert.alert('Save Error', 'Unable to update workout. Please try again.');
-    return false;
+    return { error: `Validation failed (${detail})` };
   }
 
   const validatedInput = parseResult.data;
@@ -394,14 +448,12 @@ export async function updateCompletedWorkout(
 
       if (retryError) {
         logger.warn('Error updating workout (retry)', { error: retryError });
-        Alert.alert('Save Error', 'Unable to update workout. Please try again.');
-        return false;
+        return { error: retryError?.message || 'Database update failed (retry)' };
       }
       updateSuccess = true;
     } else if (updateError) {
       logger.warn('Error updating workout', { error: updateError });
-      Alert.alert('Save Error', 'Unable to update workout. Please try again.');
-      return false;
+      return { error: updateError?.message || 'Database update failed' };
     } else {
       updateSuccess = true;
     }
@@ -414,8 +466,7 @@ export async function updateCompletedWorkout(
 
     if (deleteExError) {
       logger.warn('Error deleting existing exercises', { error: deleteExError });
-      Alert.alert('Save Error', 'Unable to update workout exercises. Please try again.');
-      return false;
+      return { error: deleteExError?.message || 'Failed to clear existing exercises' };
     }
 
     // 3. Delete existing muscle data
@@ -431,14 +482,14 @@ export async function updateCompletedWorkout(
 
     // 4. Re-insert exercises, sets, and muscles (same logic as saveCompletedWorkout)
     const muscleSetCounts = new Map<string, { primary: number; secondary: number }>();
-    let failedExerciseCount = 0;
+    const failedExercises: { name: string; error: string }[] = [];
     let failedSetsCount = 0;
 
     for (let i = 0; i < validatedInput.exercises.length; i++) {
       const exercise = validatedInput.exercises[i];
       const completedSetsCount = exercise.sets.filter((s) => s.completed).length;
 
-      const { data: workoutExercise, error: exerciseError } = await supabase
+      let { data: workoutExercise, error: exerciseError } = await supabase
         .from('workout_exercises')
         .insert({
           workout_id: workoutId,
@@ -453,9 +504,40 @@ export async function updateCompletedWorkout(
         .select('id')
         .single();
 
-      if (exerciseError || !workoutExercise) {
-        logger.warn('Error saving workout exercise', { error: exerciseError });
-        failedExerciseCount++;
+      // If first attempt fails, retry with minimum columns
+      if (exerciseError) {
+        logger.warn('Error saving workout exercise, retrying with minimal columns', {
+          exerciseName: exercise.exerciseName,
+          error: exerciseError,
+        });
+        const { data: retryExercise, error: retryError } = await supabase
+          .from('workout_exercises')
+          .insert({
+            workout_id: workoutId,
+            exercise_id: exercise.exerciseId,
+            exercise_name: exercise.exerciseName,
+            order_index: i + 1,
+          })
+          .select('id')
+          .single();
+
+        if (retryError || !retryExercise) {
+          logger.warn('Error saving workout exercise (retry failed)', {
+            exerciseName: exercise.exerciseName,
+            error: retryError,
+            originalError: exerciseError,
+          });
+          failedExercises.push({
+            name: exercise.exerciseName,
+            error: retryError?.message || exerciseError.message,
+          });
+          continue;
+        }
+        workoutExercise = retryExercise;
+      }
+
+      if (!workoutExercise) {
+        failedExercises.push({ name: exercise.exerciseName, error: 'No data returned' });
         continue;
       }
 
@@ -471,7 +553,19 @@ export async function updateCompletedWorkout(
 
       if (setsToInsert.length > 0) {
         const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert);
-        if (setsError) {
+
+        if (setsError && isSchemaError(setsError)) {
+          const setsWithoutSetType = setsToInsert.map(({ set_type, ...rest }) => rest);
+          const { error: retryError } = await supabase
+            .from('workout_sets')
+            .insert(setsWithoutSetType);
+          if (retryError) {
+            logger.warn('Error saving workout sets (retry without set_type)', {
+              error: retryError,
+            });
+            failedSetsCount++;
+          }
+        } else if (setsError) {
           logger.warn('Error saving workout sets', { error: setsError });
           failedSetsCount++;
         }
@@ -532,22 +626,23 @@ export async function updateCompletedWorkout(
       }
     }
 
-    // Warn user if some exercises or sets failed to save
-    if (failedExerciseCount > 0 || failedSetsCount > 0) {
+    // Build partial save warning if some exercises or sets failed
+    let partialWarning: string | undefined;
+    if (failedExercises.length > 0 || failedSetsCount > 0) {
       const parts: string[] = [];
-      if (failedExerciseCount > 0) parts.push(`${failedExerciseCount} exercise(s)`);
+      if (failedExercises.length > 0) {
+        const names = failedExercises.map((f) => f.name).join(', ');
+        parts.push(`${failedExercises.length} exercise(s) (${names})`);
+      }
       if (failedSetsCount > 0) parts.push(`set data for ${failedSetsCount} exercise(s)`);
-      Alert.alert(
-        'Partial Save',
-        `Your workout was updated, but ${parts.join(' and ')} could not be saved. You may want to check the workout details.`
-      );
+      const errorDetail = failedExercises[0]?.error ? `\n\nError: ${failedExercises[0].error}` : '';
+      partialWarning = `Workout updated, but ${parts.join(' and ')} could not be saved.${errorDetail}`;
     }
 
-    return true;
+    return { success: true, partialWarning };
   } catch (error) {
     logger.warn('Error in updateCompletedWorkout', { error });
-    Alert.alert('Save Error', 'Unable to update workout. Please try again.');
-    return false;
+    return { error: error instanceof Error ? error.message : 'Unknown error updating workout' };
   }
 }
 
@@ -687,16 +782,17 @@ export async function getWorkoutHistory(userId: string, limit = 20): Promise<Wor
 // GET SINGLE WORKOUT WITH FULL DETAILS
 // =============================================
 
-export async function getWorkoutById(workoutId: string): Promise<{
+export async function getWorkoutById(
+  workoutId: string,
+  userId?: string
+): Promise<{
   workout: DbWorkout;
   exercises: (DbWorkoutExercise & { sets: DbWorkoutSet[] })[];
 } | null> {
   try {
-    const { data: workout, error: workoutError } = await supabase
-      .from('workouts')
-      .select('*')
-      .eq('id', workoutId)
-      .single();
+    let query = supabase.from('workouts').select('*').eq('id', workoutId);
+    if (userId) query = query.eq('user_id', userId);
+    const { data: workout, error: workoutError } = await query.single();
 
     if (workoutError || !workout) {
       return null;
@@ -704,13 +800,7 @@ export async function getWorkoutById(workoutId: string): Promise<{
 
     const { data: exercises, error: exercisesError } = await supabase
       .from('workout_exercises')
-      .select(
-        `
-        *,
-        workout_sets(*),
-        exercises(image_url, thumbnail_url)
-      `
-      )
+      .select('*, workout_sets(*)')
       .eq('workout_id', workoutId)
       .order('order_index');
 
@@ -719,13 +809,30 @@ export async function getWorkoutById(workoutId: string): Promise<{
       return { workout, exercises: [] };
     }
 
+    // Fetch image data from both library and custom exercises
+    const exerciseIds = exercises.map((e: any) => e.exercise_id);
+    const imageMap = new Map<string, { image_url: string | null; thumbnail_url: string | null }>();
+
+    if (exerciseIds.length > 0) {
+      const [libraryResult, customResult] = await Promise.all([
+        supabase.from('exercises').select('id, image_url, thumbnail_url').in('id', exerciseIds),
+        supabase
+          .from('custom_exercises')
+          .select('id, image_url, thumbnail_url')
+          .in('id', exerciseIds),
+      ]);
+
+      libraryResult.data?.forEach((e: any) => imageMap.set(e.id, e));
+      customResult.data?.forEach((e: any) => imageMap.set(e.id, e));
+    }
+
     return {
       workout,
       exercises: exercises.map((ex: any) => ({
         ...ex,
         sets: ex.workout_sets || [],
-        image_url: ex.exercises?.image_url || null,
-        thumbnail_url: ex.exercises?.thumbnail_url || null,
+        image_url: imageMap.get(ex.exercise_id)?.image_url || null,
+        thumbnail_url: imageMap.get(ex.exercise_id)?.thumbnail_url || null,
       })),
     };
   } catch (error) {
@@ -738,9 +845,11 @@ export async function getWorkoutById(workoutId: string): Promise<{
 // DELETE WORKOUT
 // =============================================
 
-export async function deleteWorkout(workoutId: string): Promise<boolean> {
+export async function deleteWorkout(workoutId: string, userId?: string): Promise<boolean> {
   try {
-    const { error } = await supabase.from('workouts').delete().eq('id', workoutId);
+    let query = supabase.from('workouts').delete().eq('id', workoutId);
+    if (userId) query = query.eq('user_id', userId);
+    const { error } = await query;
 
     if (error) {
       logger.warn('Error deleting workout', { error });

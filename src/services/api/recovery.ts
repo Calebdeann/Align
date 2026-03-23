@@ -32,20 +32,16 @@ function getDateRangeForTimeframe(
 
   switch (timeframe) {
     case 'today': {
-      const start = new Date(now);
-      start.setHours(0, 0, 0, 0);
+      // Use local midnight as the start of "today" for the user's timezone
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       return { start: start.toISOString(), end };
     }
     case 'week': {
-      const start = new Date(now);
-      start.setDate(start.getDate() - 7);
-      start.setHours(0, 0, 0, 0);
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
       return { start: start.toISOString(), end };
     }
     case 'month': {
-      const start = new Date(now);
-      start.setMonth(start.getMonth() - 1);
-      start.setHours(0, 0, 0, 0);
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
       return { start: start.toISOString(), end };
     }
     case 'total':

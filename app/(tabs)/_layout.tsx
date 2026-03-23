@@ -122,6 +122,8 @@ export default function TabsLayout() {
   return <TabsContent />;
 }
 
+const TAB_BAR_HEIGHT = 80;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -130,7 +132,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopWidth: 0,
     elevation: 0,
-    height: 80,
+    height: TAB_BAR_HEIGHT,
     paddingTop: 8,
   },
   tabLabel: {
@@ -140,7 +142,7 @@ const styles = StyleSheet.create({
   },
   widgetContainer: {
     position: 'absolute',
-    bottom: 80,
+    bottom: TAB_BAR_HEIGHT,
     left: 0,
     right: 0,
   },

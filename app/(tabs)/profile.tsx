@@ -15,6 +15,7 @@ import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { CommonActions, useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
@@ -520,6 +521,9 @@ export default function ProfileScreen() {
           </>
         )}
 
+        {/* App Version */}
+        <Text style={styles.versionText}>v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
+
         {/* Bottom spacing */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -621,6 +625,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
     color: colors.text,
+  },
+  versionText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.lg,
   },
   bottomSpacer: {
     height: 80,

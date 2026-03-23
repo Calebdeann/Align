@@ -2,7 +2,7 @@
   "expo": {
     "name": "Align",
     "slug": "align",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "scheme": "align",
     "orientation": "portrait",
     "icon": "./assets/images/AlignLogo.png",

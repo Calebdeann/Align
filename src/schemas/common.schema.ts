@@ -14,8 +14,8 @@ export const PositiveIntSchema = z.number().int().positive();
 // Non-negative number (for weights, reps, etc.)
 export const NonNegativeNumberSchema = z.number().min(0);
 
-// Duration in seconds (max 24 hours)
-export const DurationSecondsSchema = z.number().int().min(0).max(86400);
+// Duration in seconds (max 7 days)
+export const DurationSecondsSchema = z.number().int().min(0).max(604800);
 
 // Rest timer (0-10 minutes)
 export const RestTimerSchema = z.number().int().min(0).max(600).default(90);

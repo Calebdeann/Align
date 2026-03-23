@@ -78,36 +78,85 @@ export function matchExercisesToDatabase(aiExercises: AIExercise[]): MatchResult
   });
 }
 
+// Strip trailing 's' for basic plural handling
+function depluralize(word: string): string {
+  if (word.endsWith('s') && word.length > 3) return word.slice(0, -1);
+  return word;
+}
+
+// Count how many query words appear in a target string
+function countWordOverlap(query: string, target: string): number {
+  const queryWords = query.toLowerCase().split(/\s+/).map(depluralize);
+  const targetWords = target
+    .toLowerCase()
+    .split(/[\s(),-]+/)
+    .map(depluralize);
+  return queryWords.filter((qw) => targetWords.some((tw) => tw.includes(qw) || qw.includes(tw)))
+    .length;
+}
+
 function findBestMatch(
   aiName: string,
   exercises: Exercise[]
 ): { exercise: Exercise | null; confidence: number } {
   const normalized = aiName.toLowerCase().trim();
+  const depluralized = depluralize(normalized);
 
-  // Strategy 1: Exact match on name or display_name
-  const exact = exercises.find(
-    (e) => e.name.toLowerCase() === normalized || e.display_name?.toLowerCase() === normalized
-  );
+  // Strategy 1: Exact match on name or display_name (with plural handling)
+  const exact = exercises.find((e) => {
+    const eName = e.name.toLowerCase();
+    const eDisplay = (e.display_name || '').toLowerCase();
+    return (
+      eName === normalized ||
+      eName === depluralized ||
+      depluralize(eName) === depluralized ||
+      eDisplay === normalized ||
+      eDisplay === depluralized ||
+      depluralize(eDisplay) === depluralized
+    );
+  });
   if (exact) return { exercise: exact, confidence: 1.0 };
 
-  // Strategy 2: Keyword match
+  // Strategy 2: Keyword match (with plural handling)
   const keywordMatch = exercises.find((e) =>
-    e.keywords?.some((k) => k.toLowerCase() === normalized)
+    e.keywords?.some((k) => {
+      const kLower = k.toLowerCase();
+      return (
+        kLower === normalized || kLower === depluralized || depluralize(kLower) === depluralized
+      );
+    })
   );
   if (keywordMatch) return { exercise: keywordMatch, confidence: 0.9 };
 
-  // Strategy 3: Use existing search scoring (leverages multi-word scoring)
-  const ranked = searchAndRankExercises(exercises, aiName);
-  if (ranked.length > 0) {
-    const topResult = ranked[0];
-    // Heuristic: check how many query words appear in the result name
-    const queryWords = normalized.split(/\s+/);
-    const nameWords = (topResult.display_name || topResult.name).toLowerCase().split(/\s+/);
-    const matchedWords = queryWords.filter((qw) =>
-      nameWords.some((nw) => nw.includes(qw) || qw.includes(nw))
+  // Strategy 3: Score ALL exercises by word overlap, prefer matches where most query words appear
+  const queryWords = normalized.split(/\s+/);
+  const queryWordCount = queryWords.length;
+
+  // Score each exercise by how many query words match in name, display_name, and keywords
+  const scored = exercises.map((e) => {
+    const nameOverlap = countWordOverlap(normalized, e.name);
+    const displayOverlap = countWordOverlap(normalized, e.display_name || '');
+    const keywordOverlap = Math.max(
+      ...(e.keywords || []).map((k) => countWordOverlap(normalized, k)),
+      0
     );
-    const confidence = Math.min(0.95, 0.5 + (matchedWords.length / queryWords.length) * 0.45);
-    return { exercise: topResult, confidence };
+    const bestOverlap = Math.max(nameOverlap, displayOverlap, keywordOverlap);
+    return { exercise: e, overlap: bestOverlap };
+  });
+
+  // Sort by most words matched, then filter to best group
+  scored.sort((a, b) => b.overlap - a.overlap);
+
+  if (scored.length > 0 && scored[0].overlap > 0) {
+    const bestOverlap = scored[0].overlap;
+    // Get all exercises tied for best overlap
+    const topCandidates = scored.filter((s) => s.overlap === bestOverlap).map((s) => s.exercise);
+
+    // Among top candidates, use search ranking to pick the best one
+    const ranked = searchAndRankExercises(topCandidates, aiName);
+    const winner = ranked.length > 0 ? ranked[0] : topCandidates[0];
+    const confidence = Math.min(0.95, 0.5 + (bestOverlap / queryWordCount) * 0.45);
+    return { exercise: winner, confidence };
   }
 
   // Strategy 4: Try with abbreviation expansion
@@ -117,9 +166,16 @@ function findBestMatch(
   }
 
   if (expanded !== normalized) {
-    const expandedRanked = searchAndRankExercises(exercises, expanded);
-    if (expandedRanked.length > 0) {
-      return { exercise: expandedRanked[0], confidence: 0.75 };
+    const expandedScored = exercises.map((e) => {
+      const overlap = Math.max(
+        countWordOverlap(expanded, e.name),
+        countWordOverlap(expanded, e.display_name || '')
+      );
+      return { exercise: e, overlap };
+    });
+    expandedScored.sort((a, b) => b.overlap - a.overlap);
+    if (expandedScored.length > 0 && expandedScored[0].overlap > 0) {
+      return { exercise: expandedScored[0].exercise, confidence: 0.75 };
     }
   }
 

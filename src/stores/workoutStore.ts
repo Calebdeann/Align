@@ -16,7 +16,8 @@ export interface ActiveExerciseSet {
   kg: string;
   reps: string;
   completed: boolean;
-  rpe?: number | null;
+  setType?: string;
+  rpe: number | null;
 }
 
 export interface ActiveExercise {
@@ -25,9 +26,11 @@ export interface ActiveExercise {
   muscle: string;
   gifUrl?: string;
   thumbnailUrl?: string;
+  is_custom?: boolean;
 }
 
 export interface PreviousSetData {
+  setNumber?: number;
   weightKg: number | null;
   reps: number | null;
 }
@@ -176,7 +179,8 @@ interface WorkoutStore {
       gifUrl?: string;
       thumbnailUrl?: string;
       notes?: string;
-      sets: { targetWeight?: number; targetReps?: number }[];
+      is_custom?: boolean;
+      sets: { targetWeight?: number; targetReps?: number; setType?: string }[];
       restTimerSeconds: number;
     }[],
     userId: string | null,
@@ -306,6 +310,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
             muscle: te.muscle,
             gifUrl: te.gifUrl,
             thumbnailUrl: te.thumbnailUrl,
+            is_custom: te.is_custom,
           },
           notes: te.notes || '',
           restTimerSeconds: te.restTimerSeconds,
@@ -316,6 +321,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
             kg: s.targetWeight?.toString() || '',
             reps: s.targetReps?.toString() || '',
             completed: false,
+            setType: s.setType || 'normal',
+            rpe: null,
           })),
           previousSets: te.sets.map((s) => ({
             weightKg: s.targetWeight || null,
@@ -700,30 +707,34 @@ export const useWorkoutStore = create<WorkoutStore>()(
         // setTimeout(0) is NOT enough because template store reads from AsyncStorage.
         let orphanAttempts = 0;
         const orphanInterval = setInterval(() => {
-          orphanAttempts++;
-          const { useTemplateStore } = require('@/stores/templateStore');
-          const templatePersist = (useTemplateStore as any).persist;
+          try {
+            orphanAttempts++;
+            const { useTemplateStore } = require('@/stores/templateStore');
+            const templatePersist = (useTemplateStore as any).persist;
 
-          // Wait until template store has finished loading from storage
-          if (!templatePersist?.hasHydrated?.() && orphanAttempts < 30) return;
+            // Wait until template store has finished loading from storage
+            if (!templatePersist?.hasHydrated?.() && orphanAttempts < 30) return;
 
-          clearInterval(orphanInterval);
+            clearInterval(orphanInterval);
 
-          const { getTemplateById } = useTemplateStore.getState();
-          const workoutState = useWorkoutStore.getState();
-          const orphaned = workoutState.scheduledWorkouts.filter(
-            (w: ScheduledWorkout) => w.templateId && !getTemplateById(w.templateId)
-          );
-          if (orphaned.length > 0) {
-            useWorkoutStore.setState((prev: { scheduledWorkouts: ScheduledWorkout[] }) => ({
-              scheduledWorkouts: prev.scheduledWorkouts.map((w: ScheduledWorkout) => {
-                if (!w.templateId || getTemplateById(w.templateId)) return w;
-                return { ...w, templateId: undefined, templateName: null };
-              }),
-            }));
-            logger.info(
-              `Detached ${orphaned.length} orphaned scheduled workout(s) from deleted templates`
+            const { getTemplateById } = useTemplateStore.getState();
+            const workoutState = useWorkoutStore.getState();
+            const orphaned = workoutState.scheduledWorkouts.filter(
+              (w: ScheduledWorkout) => w.templateId && !getTemplateById(w.templateId)
             );
+            if (orphaned.length > 0) {
+              useWorkoutStore.setState((prev: { scheduledWorkouts: ScheduledWorkout[] }) => ({
+                scheduledWorkouts: prev.scheduledWorkouts.map((w: ScheduledWorkout) => {
+                  if (!w.templateId || getTemplateById(w.templateId)) return w;
+                  return { ...w, templateId: undefined, templateName: null };
+                }),
+              }));
+              logger.info(
+                `Detached ${orphaned.length} orphaned scheduled workout(s) from deleted templates`
+              );
+            }
+          } catch (err) {
+            clearInterval(orphanInterval);
           }
         }, 100);
       },
