@@ -34,3 +34,17 @@ export function ProfileIcon({ color }: { color: string }) {
     </Svg>
   );
 }
+
+export function RecoveryIcon({ color }: { color: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 12h3.5l2-7 4 14 2-7 2 4H21"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}

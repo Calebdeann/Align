@@ -119,7 +119,7 @@ export default function GoalComparisonScreen() {
         <View style={styles.barsContainer}>
           {/* Without Align */}
           <View style={styles.barColumn}>
-            <Text style={styles.barLabel}>{t('onboarding.goalComparison.withoutAlign')}</Text>
+            <Text style={styles.barLabel}>{t('onboarding.goalComparison.withoutAlyne')}</Text>
             <View style={styles.barWrapper}>
               <Animated.View style={[styles.barGray, { height: grayBarHeight }]} />
               <Animated.Text style={[styles.barValue, { opacity: grayTextOpacity }]}>
@@ -130,7 +130,7 @@ export default function GoalComparisonScreen() {
 
           {/* With Align */}
           <View style={styles.barColumn}>
-            <Text style={styles.barLabel}>{t('onboarding.goalComparison.withAlign')}</Text>
+            <Text style={styles.barLabel}>{t('onboarding.goalComparison.withAlyne')}</Text>
             <View style={styles.barWrapper}>
               <Animated.View style={[styles.barPurple, { height: purpleBarHeight }]} />
               <Animated.Text style={[styles.barValuePurple, { opacity: purpleTextOpacity }]}>

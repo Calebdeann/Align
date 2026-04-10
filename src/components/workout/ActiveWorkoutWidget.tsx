@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, AppState } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -23,7 +23,7 @@ export default function ActiveWorkoutWidget() {
 
   // Use local display time to avoid reading from store each tick.
   // This prevents compounding if any other timer also writes to the store.
-  const [displaySeconds, setDisplaySeconds] = useState(activeWorkout?.elapsedSeconds ?? 0);
+  const [displaySeconds, setDisplaySeconds] = useState(0);
 
   const exercises = activeWorkout?.exercises ?? [];
   const exerciseCount = exercises.length;
@@ -34,33 +34,41 @@ export default function ActiveWorkoutWidget() {
 
   useEffect(() => {
     if (isMinimized) {
-      // Sync local display time with store value when we start
-      const storeSeconds = useWorkoutStore.getState().activeWorkout?.elapsedSeconds ?? 0;
-      setDisplaySeconds(storeSeconds);
-      let localTime = storeSeconds;
+      const startedAt = useWorkoutStore.getState().activeWorkout?.startedAt;
+      if (!startedAt) return;
+      const startedAtMs = new Date(startedAt).getTime();
 
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      // Wall-clock based calculation — same strategy as active-workout.tsx.
+      // Elapsed = floor((now - startedAt) / 1000), so it never drifts behind.
+      const calcElapsed = () => Math.floor((Date.now() - startedAtMs) / 1000);
+
+      setDisplaySeconds(calcElapsed());
+
+      if (intervalRef.current) clearInterval(intervalRef.current);
       intervalRef.current = setInterval(() => {
-        localTime += 1;
-        setDisplaySeconds(localTime);
-        // Sync to store so it persists if the app closes
-        useWorkoutStore.getState().updateActiveWorkoutTime(localTime);
+        setDisplaySeconds(calcElapsed());
       }, 1000);
+
+      // Resync immediately when app comes back to foreground after backgrounding
+      const appStateSub = AppState.addEventListener('change', (state) => {
+        if (state === 'active') {
+          setDisplaySeconds(calcElapsed());
+        }
+      });
+
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        appStateSub.remove();
+      };
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
   }, [isMinimized]);
 
   if (!activeWorkout || !activeWorkout.isMinimized) {

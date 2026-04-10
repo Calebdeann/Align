@@ -93,7 +93,7 @@ export default function SignInScreen() {
     try {
       setIsGoogleLoading(true);
 
-      const redirectTo = 'align://auth/callback';
+      const redirectTo = 'alyne://auth/callback';
 
       // Start OAuth flow with Supabase
       const { data, error } = await supabase.auth.signInWithOAuth({

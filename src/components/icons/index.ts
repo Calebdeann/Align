@@ -1,1 +1,1 @@
-export { CalendarIcon, WorkoutIcon, ProfileIcon } from './TabBarIcons';
+export { CalendarIcon, WorkoutIcon, ProfileIcon, RecoveryIcon } from './TabBarIcons';

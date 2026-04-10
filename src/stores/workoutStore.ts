@@ -2,6 +2,16 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { createUserNamespacedStorage } from '@/lib/userNamespacedStorage';
 import { logger } from '@/utils/logger';
+import {
+  saveScheduledWorkoutToBackend,
+  updateScheduledWorkoutInBackend,
+  deleteScheduledWorkoutFromBackend,
+  getScheduledWorkoutsFromBackend,
+} from '@/services/api/scheduledWorkouts';
+
+// UUID v4 format check - local IDs like "workout_123_abc" are not valid UUIDs
+const isValidUuid = (id: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
 export interface WorkoutImage {
   type: 'template' | 'camera' | 'gallery';
@@ -155,6 +165,9 @@ interface WorkoutStore {
     templateId?: string,
     workoutName?: string
   ) => void;
+
+  // Sync scheduled workouts from Supabase (called on login/rehydrate)
+  syncScheduledWorkoutsFromBackend: (userId: string) => Promise<void>;
 
   // Cached completed workouts from Supabase (for instant loading)
   cachedCompletedWorkouts: CachedCompletedWorkout[];
@@ -383,15 +396,31 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
       // Scheduled workout methods
       addWorkout: (workout) => {
+        const localId = generateId();
         const newWorkout: ScheduledWorkout = {
           ...workout,
-          id: generateId(),
+          id: localId,
           createdAt: new Date().toISOString(),
           completedDates: [],
         };
         set((state) => ({
           scheduledWorkouts: [...state.scheduledWorkouts, newWorkout],
         }));
+
+        // Background sync to Supabase
+        if (workout.userId) {
+          saveScheduledWorkoutToBackend(newWorkout)
+            .then((backendId) => {
+              if (backendId) {
+                set((state) => ({
+                  scheduledWorkouts: state.scheduledWorkouts.map((w) =>
+                    w.id === localId ? { ...w, id: backendId } : w
+                  ),
+                }));
+              }
+            })
+            .catch(() => {});
+        }
       },
 
       updateWorkout: (id, updates) => {
@@ -401,9 +430,14 @@ export const useWorkoutStore = create<WorkoutStore>()(
             return { ...w, ...updates };
           }),
         }));
+
+        // Background sync
+        updateScheduledWorkoutInBackend(id, updates).catch(() => {});
       },
 
       updateScheduledWorkoutsForTemplate: (templateId, updates) => {
+        const affected = get().scheduledWorkouts.filter((w) => w.templateId === templateId);
+
         set((state) => ({
           scheduledWorkouts: state.scheduledWorkouts.map((w) => {
             if (w.templateId !== templateId) return w;
@@ -413,7 +447,6 @@ export const useWorkoutStore = create<WorkoutStore>()(
             if (updates.name) {
               const oldTemplateName = result.templateName;
               result.templateName = updates.name;
-              // Only update workout name if user didn't customize it
               if (result.name === oldTemplateName) {
                 result.name = updates.name;
               }
@@ -430,6 +463,18 @@ export const useWorkoutStore = create<WorkoutStore>()(
             return result;
           }),
         }));
+
+        // Background sync each affected workout
+        for (const w of affected) {
+          const dbUpdates: Partial<ScheduledWorkout> = {};
+          if (updates.name) {
+            dbUpdates.templateName = updates.name;
+            if (w.name === w.templateName) dbUpdates.name = updates.name;
+          }
+          if (updates.tagColor) dbUpdates.tagColor = updates.tagColor;
+          if (updates.image !== undefined) dbUpdates.image = updates.image;
+          updateScheduledWorkoutInBackend(w.id, dbUpdates).catch(() => {});
+        }
       },
 
       getScheduledWorkoutsForTemplate: (templateId) => {
@@ -437,67 +482,101 @@ export const useWorkoutStore = create<WorkoutStore>()(
       },
 
       detachScheduledWorkoutsFromTemplate: (templateId) => {
+        const affected = get().scheduledWorkouts.filter((w) => w.templateId === templateId);
+
         set((state) => ({
           scheduledWorkouts: state.scheduledWorkouts.map((w) => {
             if (w.templateId !== templateId) return w;
             return { ...w, templateId: undefined, templateName: null };
           }),
         }));
+
+        // Background sync
+        for (const w of affected) {
+          updateScheduledWorkoutInBackend(w.id, {
+            templateId: undefined,
+            templateName: null,
+          }).catch(() => {});
+        }
       },
 
       removeScheduledWorkoutsForTemplate: (templateId) => {
+        const toDelete = get().scheduledWorkouts.filter((w) => w.templateId === templateId);
+
         set((state) => ({
           scheduledWorkouts: state.scheduledWorkouts.filter((w) => w.templateId !== templateId),
         }));
+
+        // Background sync
+        for (const w of toDelete) {
+          deleteScheduledWorkoutFromBackend(w.id).catch(() => {});
+        }
       },
 
       editSingleOccurrence: (originalId, originalDateKey, newWorkoutData) => {
         const original = get().scheduledWorkouts.find((w) => w.id === originalId);
         if (!original) return;
 
-        // Transfer completion status for this date if it was completed
         const wasCompleted = original.completedDates.includes(originalDateKey);
+        const localId = generateId();
 
         const newWorkout: ScheduledWorkout = {
           ...newWorkoutData,
           repeat: { type: 'never' },
-          id: generateId(),
+          id: localId,
           createdAt: new Date().toISOString(),
           completedDates: wasCompleted ? [newWorkoutData.date] : [],
         };
+
+        const updatedExcludedDates = [...(original.excludedDates || [])];
+        if (!updatedExcludedDates.includes(originalDateKey)) {
+          updatedExcludedDates.push(originalDateKey);
+        }
 
         set((state) => ({
           scheduledWorkouts: state.scheduledWorkouts
             .map((w) => {
               if (w.id !== originalId) return w;
-              // Add the original date to excludedDates
-              const excludedDates = w.excludedDates || [];
-              if (excludedDates.includes(originalDateKey)) return w;
-              return {
-                ...w,
-                excludedDates: [...excludedDates, originalDateKey],
-              };
+              return { ...w, excludedDates: updatedExcludedDates };
             })
             .concat(newWorkout),
         }));
+
+        // Background sync: update original's excludedDates + save new workout
+        updateScheduledWorkoutInBackend(originalId, { excludedDates: updatedExcludedDates }).catch(
+          () => {}
+        );
+        if (newWorkoutData.userId) {
+          saveScheduledWorkoutToBackend(newWorkout)
+            .then((backendId) => {
+              if (backendId) {
+                set((state) => ({
+                  scheduledWorkouts: state.scheduledWorkouts.map((w) =>
+                    w.id === localId ? { ...w, id: backendId } : w
+                  ),
+                }));
+              }
+            })
+            .catch(() => {});
+        }
       },
 
       editFromDateForward: (originalId, fromDateKey, newWorkoutData) => {
         const original = get().scheduledWorkouts.find((w) => w.id === originalId);
         if (!original) return;
 
-        // Calculate the day before fromDateKey as the endDate for the original
         const fromDate = new Date(fromDateKey);
         const dayBefore = new Date(fromDate);
         dayBefore.setDate(dayBefore.getDate() - 1);
         const endDateKey = formatDateKey(dayBefore);
 
-        // Split completed dates: keep those before fromDateKey on original, rest on new
         const futureCompletedDates = original.completedDates.filter((d) => d >= fromDateKey);
+        const pastCompletedDates = original.completedDates.filter((d) => d < fromDateKey);
+        const localId = generateId();
 
         const newWorkout: ScheduledWorkout = {
           ...newWorkoutData,
-          id: generateId(),
+          id: localId,
           createdAt: new Date().toISOString(),
           completedDates: futureCompletedDates,
         };
@@ -509,18 +588,39 @@ export const useWorkoutStore = create<WorkoutStore>()(
               return {
                 ...w,
                 endDate: endDateKey,
-                // Remove future completed dates from the original
-                completedDates: w.completedDates.filter((d) => d < fromDateKey),
+                completedDates: pastCompletedDates,
               };
             })
             .concat(newWorkout),
         }));
+
+        // Background sync: update original + save new
+        updateScheduledWorkoutInBackend(originalId, {
+          endDate: endDateKey,
+          completedDates: pastCompletedDates,
+        }).catch(() => {});
+        if (newWorkoutData.userId) {
+          saveScheduledWorkoutToBackend(newWorkout)
+            .then((backendId) => {
+              if (backendId) {
+                set((state) => ({
+                  scheduledWorkouts: state.scheduledWorkouts.map((w) =>
+                    w.id === localId ? { ...w, id: backendId } : w
+                  ),
+                }));
+              }
+            })
+            .catch(() => {});
+        }
       },
 
       removeWorkout: (id) => {
         set((state) => ({
           scheduledWorkouts: state.scheduledWorkouts.filter((w) => w.id !== id),
         }));
+
+        // Background sync
+        deleteScheduledWorkoutFromBackend(id).catch(() => {});
       },
 
       // Remove a single occurrence from a recurring workout by adding to excludedDates
@@ -529,24 +629,27 @@ export const useWorkoutStore = create<WorkoutStore>()(
         const workout = get().scheduledWorkouts.find((w) => w.id === id);
         if (!workout) return;
 
-        // If it's a non-recurring workout or it's the original date, just delete the whole workout
         if (workout.repeat.type === 'never' || workout.date === dateKey) {
           set((state) => ({
             scheduledWorkouts: state.scheduledWorkouts.filter((w) => w.id !== id),
           }));
+          // Background sync
+          deleteScheduledWorkoutFromBackend(id).catch(() => {});
         } else {
-          // For recurring workouts, add this date to excludedDates
+          const updatedExcludedDates = [...(workout.excludedDates || [])];
+          if (!updatedExcludedDates.includes(dateKey)) {
+            updatedExcludedDates.push(dateKey);
+          }
           set((state) => ({
             scheduledWorkouts: state.scheduledWorkouts.map((w) => {
               if (w.id !== id) return w;
-              const excludedDates = w.excludedDates || [];
-              if (excludedDates.includes(dateKey)) return w;
-              return {
-                ...w,
-                excludedDates: [...excludedDates, dateKey],
-              };
+              return { ...w, excludedDates: updatedExcludedDates };
             }),
           }));
+          // Background sync
+          updateScheduledWorkoutInBackend(id, { excludedDates: updatedExcludedDates }).catch(
+            () => {}
+          );
         }
       },
 
@@ -559,19 +662,25 @@ export const useWorkoutStore = create<WorkoutStore>()(
       },
 
       toggleWorkoutCompletion: (workoutId, dateKey) => {
-        set((state) => ({
-          scheduledWorkouts: state.scheduledWorkouts.map((workout) => {
-            if (workout.id !== workoutId) return workout;
+        const workout = get().scheduledWorkouts.find((w) => w.id === workoutId);
+        if (!workout) return;
 
-            const isCompleted = workout.completedDates.includes(dateKey);
-            return {
-              ...workout,
-              completedDates: isCompleted
-                ? workout.completedDates.filter((d) => d !== dateKey)
-                : [...workout.completedDates, dateKey],
-            };
+        const isCompleted = workout.completedDates.includes(dateKey);
+        const newCompletedDates = isCompleted
+          ? workout.completedDates.filter((d) => d !== dateKey)
+          : [...workout.completedDates, dateKey];
+
+        set((state) => ({
+          scheduledWorkouts: state.scheduledWorkouts.map((w) => {
+            if (w.id !== workoutId) return w;
+            return { ...w, completedDates: newCompletedDates };
           }),
         }));
+
+        // Background sync
+        updateScheduledWorkoutInBackend(workoutId, { completedDates: newCompletedDates }).catch(
+          () => {}
+        );
       },
 
       isWorkoutCompleted: (workoutId, dateKey) => {
@@ -645,15 +754,55 @@ export const useWorkoutStore = create<WorkoutStore>()(
         }
 
         if (matchedWorkout && !matchedWorkout.completedDates.includes(dateKey)) {
+          const newCompletedDates = [...matchedWorkout.completedDates, dateKey];
           set((state) => ({
             scheduledWorkouts: state.scheduledWorkouts.map((workout) => {
               if (workout.id !== matchedWorkout!.id) return workout;
-              return {
-                ...workout,
-                completedDates: [...workout.completedDates, dateKey],
-              };
+              return { ...workout, completedDates: newCompletedDates };
             }),
           }));
+
+          // Background sync
+          updateScheduledWorkoutInBackend(matchedWorkout.id, {
+            completedDates: newCompletedDates,
+          }).catch(() => {});
+        }
+      },
+
+      // Sync scheduled workouts from Supabase on login/rehydrate
+      syncScheduledWorkoutsFromBackend: async (userId) => {
+        try {
+          const backendWorkouts = await getScheduledWorkoutsFromBackend(userId);
+
+          // Get current local-only workouts (not yet synced to Supabase)
+          const currentLocal = get().scheduledWorkouts;
+          const localOnly = currentLocal.filter((w) => !isValidUuid(w.id));
+
+          if (backendWorkouts.length > 0 || localOnly.length > 0) {
+            // Backend workouts take precedence; keep local-only ones that aren't in backend
+            set({ scheduledWorkouts: [...backendWorkouts, ...localOnly] });
+          }
+
+          // Upload any local-only workouts to Supabase
+          for (const w of localOnly) {
+            if (w.userId !== userId) continue;
+            const backendId = await saveScheduledWorkoutToBackend(w);
+            if (backendId) {
+              set((state) => ({
+                scheduledWorkouts: state.scheduledWorkouts.map((sw) =>
+                  sw.id === w.id ? { ...sw, id: backendId } : sw
+                ),
+              }));
+            }
+          }
+
+          if (backendWorkouts.length > 0) {
+            logger.info(
+              `[WorkoutStore] Synced ${backendWorkouts.length} scheduled workouts from backend`
+            );
+          }
+        } catch (error) {
+          logger.warn('[WorkoutStore] Failed to sync scheduled workouts from backend', { error });
         }
       },
 

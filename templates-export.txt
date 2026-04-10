@@ -1,0 +1,1168 @@
+ALIGN APP - ALL WORKOUT TEMPLATES
+============================================================
+Total: 34 preset templates
+Generated: 2026-03-04
+============================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY: CORE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Machines
+   ID: preset-core-machines
+   Duration: 30 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Ab Crunch (Cable) (Core)
+        Set 1: 15 reps @ 20 kg
+        Set 2: 12 reps @ 25 kg
+        Set 3: 12 reps @ 25 kg
+        Rest: 60s
+     2. Pallof Press (Cable) (Core)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 10 reps @ 12 kg
+        Rest: 60s
+     3. Rotations (Cable) (Core)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 10 reps @ 12 kg
+        Rest: 60s
+     4. Decline Crunch (Core)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     5. Hanging Knee Raise (Core)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+2. Weighted
+   ID: preset-core-weighted
+   Description: Challenge yourself with these weighted exercises to build a strong core.
+   Duration: 30 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Side Bend (Dumbbell) (Core)
+        Set 1: 12 reps @ 8 kg
+        Set 2: 12 reps @ 10 kg
+        Set 3: 10 reps @ 10 kg
+        Rest: 60s
+     2. Otis Up (Weighted) (Core)
+        Set 1: 12 reps @ 5 kg
+        Set 2: 10 reps @ 8 kg
+        Set 3: 10 reps @ 8 kg
+        Rest: 60s
+     3. Farmers Walk (Core)
+        Set 1: 40 reps @ 10 kg
+        Set 2: 40 reps @ 12 kg
+        Set 3: 30 reps @ 12 kg
+        Rest: 60s
+     4. Plank (Weighted) (Core)
+        Set 1: 30 reps
+        Set 2: 30 reps
+        Set 3: 45 reps
+        Rest: 60s
+     5. Russian Twist (Weighted) (Core)
+        Set 1: 20 reps @ 5 kg
+        Set 2: 16 reps @ 8 kg
+        Set 3: 16 reps @ 8 kg
+        Rest: 60s
+
+3. Mat
+   ID: preset-core-mat
+   Description: No equipment? No worries. Try these mat exercises for a slow burn.
+   Duration: 25 min | Difficulty: Beginner | Equipment: No Equipment
+   Exercises:
+     1. Dead Bug (Core)
+        Set 1: 12 reps
+        Set 2: 12 reps
+        Set 3: 10 reps
+        Rest: 30s
+     2. Heel Taps (Core)
+        Set 1: 20 reps
+        Set 2: 16 reps
+        Set 3: 16 reps
+        Rest: 30s
+     3. Reverse Crunch (Core)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 30s
+     4. Lying Leg Raise (Core)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 30s
+     5. Bicycle Crunch Raise (Core)
+        Set 1: 20 reps
+        Set 2: 16 reps
+        Set 3: 16 reps
+        Rest: 30s
+
+4. Mix
+   ID: preset-core-mix
+   Description: This workout targets all the core muscles as well as your endurance.
+   Duration: 30 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Hanging Knee Raise (Core)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     2. Side Plank Hip Adduction (Core)
+        Set 1: 30 reps
+        Set 2: 30 reps
+        Set 3: 30 reps
+        Rest: 45s
+     3. Mountain Climber (Core)
+        Set 1: 30 reps
+        Set 2: 25 reps
+        Set 3: 25 reps
+        Rest: 45s
+     4. Ab Wheel Rollout (Core)
+        Set 1: 10 reps
+        Set 2: 8 reps
+        Set 3: 8 reps
+        Rest: 60s
+     5. Heel Taps (Core)
+        Set 1: 20 reps
+        Set 2: 15 reps
+        Set 3: 15 reps
+        Rest: 45s
+
+5. Advanced
+   ID: preset-core-advanced
+   Duration: 35 min | Difficulty: Advanced | Equipment: Gym
+   Exercises:
+     1. Ab Crunch (Cable) (Core)
+        Set 1: 15 reps @ 25 kg
+        Set 2: 12 reps @ 30 kg
+        Set 3: 12 reps @ 30 kg
+        Rest: 60s
+     2. Dragon Flag (Core)
+        Set 1: 8 reps
+        Set 2: 6 reps
+        Set 3: 6 reps
+        Rest: 60s
+     3. Hanging Straight Leg Raise (Core)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Plank (Weighted) (Core)
+        Set 1: 45 reps
+        Set 2: 45 reps
+        Set 3: 60 reps
+        Rest: 60s
+     5. Side Plank Hip Adduction (Core)
+        Set 1: 30 reps
+        Set 2: 30 reps
+        Set 3: 30 reps
+        Rest: 60s
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY: GLUTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6. Go-to Glute Day
+   ID: preset-glutes-1
+   Duration: 45 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Hip Thrust (Barbell) (Glutes)
+        Set 1: 12 reps @ 40 kg
+        Set 2: 10 reps @ 50 kg
+        Set 3: 10 reps @ 50 kg
+        Rest: 60s
+     2. Bulgarian Split Squat (Dumbbell) (Glutes)
+        Set 1: 10 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 8 reps @ 12 kg
+        Rest: 60s
+     3. Romanian Deadlift (Barbell) (Glutes)
+        Set 1: 12 reps @ 30 kg
+        Set 2: 10 reps @ 35 kg
+        Set 3: 10 reps @ 35 kg
+        Rest: 60s
+     4. Standing Cable Glute Kickbacks (Glutes)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 12 reps @ 12 kg
+        Set 3: 10 reps @ 12 kg
+        Rest: 60s
+     5. Back Extension (Hyperextension) (Glutes)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+
+7. Booty Builder
+   ID: preset-glutes-2
+   Description: Build a booty with this workout targeting your glute muscles.
+   Duration: 45 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Hip Thrust (Machine) (Glutes)
+        Set 1: 12 reps @ 40 kg
+        Set 2: 10 reps @ 50 kg
+        Set 3: 10 reps @ 50 kg
+        Rest: 60s
+     2. Sumo Squat (Dumbbell) (Glutes)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 10 reps @ 14 kg
+        Rest: 60s
+     3. Deficit Reverse Lunge (Glutes)
+        Set 1: 10 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 8 reps @ 25 kg
+        Rest: 60s
+     4. Good Morning (Barbell) (Glutes)
+        Set 1: 12 reps @ 15 kg
+        Set 2: 10 reps @ 20 kg
+        Set 3: 10 reps @ 20 kg
+        Rest: 60s
+     5. Seated Hip Abduction (Machine) (Glutes)
+        Set 1: 15 reps @ 30 kg
+        Set 2: 12 reps @ 35 kg
+        Set 3: 12 reps @ 35 kg
+        Rest: 60s
+
+8. Dumbbells
+   ID: preset-glutes-3
+   Duration: 40 min | Difficulty: Intermediate | Equipment: Dumbbells
+   Exercises:
+     1. Single Leg Hip Thrust (Dumbbell) (Glutes)
+        Set 1: 10 reps
+        Set 2: 10 reps
+        Set 3: 8 reps
+        Rest: 45s
+     2. Bulgarian Split Squat (Dumbbell) (Glutes)
+        Set 1: 10 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 8 reps @ 10 kg
+        Rest: 60s
+     3. Romanian Deadlift (Dumbbell) (Glutes)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 10 reps @ 12 kg
+        Rest: 60s
+     4. Sumo Squat (Dumbbell) (Glutes)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 10 reps @ 12 kg
+        Rest: 60s
+     5. Step Up (Dumbbell) (Glutes)
+        Set 1: 10 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 8 reps @ 10 kg
+        Rest: 60s
+
+9. Single Leg Exercises
+   ID: preset-glutes-4
+   Duration: 45 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Step Up (Dumbbell) (Glutes)
+        Set 1: 10 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 8 reps @ 10 kg
+        Rest: 60s
+     2. Single Leg Romanian Deadlift (Dumbbell) (Glutes)
+        Set 1: 10 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 8 reps @ 10 kg
+        Rest: 60s
+     3. Bulgarian Split Squat (Dumbbell) (Glutes)
+        Set 1: 10 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 8 reps @ 12 kg
+        Rest: 60s
+     4. Standing Cable Glute Kickbacks (Glutes)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 12 reps @ 12 kg
+        Set 3: 10 reps @ 12 kg
+        Rest: 60s
+     5. Single Leg Press (Horizontal Machine) (Glutes)
+        Set 1: 10 reps @ 30 kg
+        Set 2: 10 reps @ 35 kg
+        Set 3: 8 reps @ 35 kg
+        Rest: 60s
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY: LOWER-BODY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+10. All Rounder
+   ID: preset-lower-1
+   Duration: 50 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Back Squat (Barbell) (Legs)
+        Set 1: 10 reps @ 30 kg
+        Set 2: 10 reps @ 35 kg
+        Set 3: 8 reps @ 40 kg
+        Rest: 60s
+     2. Deadlift (Barbell) (Legs)
+        Set 1: 10 reps @ 40 kg
+        Set 2: 8 reps @ 50 kg
+        Set 3: 8 reps @ 50 kg
+        Rest: 60s
+     3. Lying Leg Curl (Machine) (Legs)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 25 kg
+        Rest: 60s
+     4. Leg Extension (Machine) (Legs)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 25 kg
+        Rest: 60s
+     5. Standing Calf Raise (Smith Machine) (Legs)
+        Set 1: 15 reps @ 20 kg
+        Set 2: 15 reps @ 25 kg
+        Set 3: 12 reps @ 25 kg
+        Rest: 60s
+
+11. Compound Workout
+   ID: preset-lower-2
+   Duration: 55 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Leg Press (Machine) (Legs)
+        Set 1: 12 reps @ 60 kg
+        Set 2: 10 reps @ 70 kg
+        Set 3: 10 reps @ 80 kg
+        Rest: 60s
+     2. Lunge (Dumbbell) (Legs)
+        Set 1: 12 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 10 reps @ 10 kg
+        Rest: 60s
+     3. Pendulum Squat (Machine) (Legs)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 30 kg
+        Rest: 60s
+     4. Step Up (Dumbbell) (Legs)
+        Set 1: 10 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 8 reps @ 10 kg
+        Rest: 60s
+     5. Standing Calf Raise (Machine) (Legs)
+        Set 1: 15 reps @ 20 kg
+        Set 2: 15 reps @ 25 kg
+        Set 3: 12 reps @ 25 kg
+        Rest: 60s
+     6. Romanian Deadlift (Barbell) (Legs)
+        Set 1: 12 reps @ 30 kg
+        Set 2: 10 reps @ 35 kg
+        Set 3: 10 reps @ 40 kg
+        Rest: 60s
+
+12. Lower Body Machines
+   ID: preset-lower-3
+   Duration: 50 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Hack Squat (Legs)
+        Set 1: 12 reps @ 30 kg
+        Set 2: 10 reps @ 40 kg
+        Set 3: 10 reps @ 40 kg
+        Rest: 60s
+     2. Hack Calf Raise (Legs)
+        Set 1: 15 reps @ 30 kg
+        Set 2: 15 reps @ 35 kg
+        Set 3: 12 reps @ 35 kg
+        Rest: 60s
+     3. Single Leg Press (Machine) (Legs)
+        Set 1: 10 reps @ 30 kg
+        Set 2: 10 reps @ 35 kg
+        Set 3: 8 reps @ 35 kg
+        Rest: 60s
+     4. Leg Extension (Machine) (Legs)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 25 kg
+        Rest: 60s
+     5. Seated Leg Curl (Machine) (Legs)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 25 kg
+        Rest: 60s
+
+13. Quads and Calves
+   ID: preset-lower-quad-calf
+   Description: For those who prefer to hit quads and calves together, this one is for you!
+   Duration: 50 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Goblet Squat (Dumbbell) (Legs)
+        Set 1: 12 reps @ 12 kg
+        Set 2: 10 reps @ 14 kg
+        Set 3: 10 reps @ 16 kg
+        Rest: 60s
+     2. Leg Press (Machine) (Legs)
+        Set 1: 12 reps @ 60 kg
+        Set 2: 10 reps @ 70 kg
+        Set 3: 10 reps @ 80 kg
+        Rest: 60s
+     3. Lunge (Dumbbell) (Legs)
+        Set 1: 12 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 10 reps @ 10 kg
+        Rest: 60s
+     4. Leg Extension (Machine) (Legs)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 25 kg
+        Rest: 60s
+     5. Standing Calf Raise (Dumbbell) (Legs)
+        Set 1: 15 reps @ 10 kg
+        Set 2: 15 reps @ 12 kg
+        Set 3: 12 reps @ 12 kg
+        Rest: 60s
+     6. Seated Calf Raise (Machine) (Legs)
+        Set 1: 15 reps @ 20 kg
+        Set 2: 15 reps @ 25 kg
+        Set 3: 12 reps @ 25 kg
+        Rest: 60s
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY: PULL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+14. Pull Day
+   ID: preset-pull-1
+   Description: A classic back and bicep workout to help build that hourglass figure.
+   Duration: 45 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Wide-Grip Lat Pulldown (Cable) (Back)
+        Set 1: 12 reps @ 25 kg
+        Set 2: 10 reps @ 30 kg
+        Set 3: 10 reps @ 30 kg
+        Rest: 60s
+     2. Single Arm Row (Dumbbell) (Back)
+        Set 1: 10 reps @ 12 kg
+        Set 2: 10 reps @ 14 kg
+        Set 3: 8 reps @ 14 kg
+        Rest: 60s
+     3. Standing Face Pull (Back)
+        Set 1: 15 reps @ 10 kg
+        Set 2: 12 reps @ 12 kg
+        Set 3: 12 reps @ 12 kg
+        Rest: 60s
+     4. Bicep Curl (Barbell) (Arms)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 10 reps @ 12 kg
+        Rest: 60s
+     5. Hammer Curl (Dumbbell) (Arms)
+        Set 1: 12 reps @ 6 kg
+        Set 2: 10 reps @ 8 kg
+        Set 3: 10 reps @ 8 kg
+        Rest: 60s
+
+15. Pull and Curl
+   ID: preset-pull-2
+   Description: This program is curated to help build the strongest back.
+   Duration: 50 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Assisted Chin Up (Machine) (Back)
+        Set 1: 10 reps
+        Set 2: 8 reps
+        Set 3: 8 reps
+        Rest: 60s
+     2. Seated Row (Cable) (Back)
+        Set 1: 12 reps @ 25 kg
+        Set 2: 10 reps @ 30 kg
+        Set 3: 10 reps @ 30 kg
+        Rest: 60s
+     3. Iso Lateral High Row (Machine) (Back)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 25 kg
+        Rest: 60s
+     4. Straight Arm Pulldown (Rope) (Back)
+        Set 1: 12 reps @ 15 kg
+        Set 2: 10 reps @ 20 kg
+        Set 3: 10 reps @ 20 kg
+        Rest: 60s
+     5. Alternating Bicep Curl (Dumbbell) (Arms)
+        Set 1: 12 reps @ 6 kg
+        Set 2: 10 reps @ 8 kg
+        Set 3: 10 reps @ 8 kg
+        Rest: 60s
+     6. Bicep Curl (Cable) (Arms)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 10 reps @ 12 kg
+        Rest: 60s
+
+16. Back and Bicep Builder
+   ID: preset-pull-3
+   Description: Warning! Doing these exercises will result in a sexy back.
+   Duration: 45 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Lat Pulldown (Machine) (Back)
+        Set 1: 12 reps @ 25 kg
+        Set 2: 10 reps @ 30 kg
+        Set 3: 10 reps @ 30 kg
+        Rest: 60s
+     2. Assisted Pull Up (Back)
+        Set 1: 10 reps
+        Set 2: 8 reps
+        Set 3: 8 reps
+        Rest: 60s
+     3. Single Arm Lat Pulldown (Back)
+        Set 1: 10 reps @ 15 kg
+        Set 2: 10 reps @ 18 kg
+        Set 3: 8 reps @ 18 kg
+        Rest: 60s
+     4. Kneeling Face Pull (Cable) (Back)
+        Set 1: 15 reps @ 10 kg
+        Set 2: 12 reps @ 12 kg
+        Set 3: 12 reps @ 12 kg
+        Rest: 60s
+     5. Incline Hammer Curl (Dumbbell) (Arms)
+        Set 1: 12 reps @ 6 kg
+        Set 2: 10 reps @ 8 kg
+        Set 3: 10 reps @ 8 kg
+        Rest: 60s
+     6. Drag Curl (Arms)
+        Set 1: 12 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 10 reps @ 10 kg
+        Rest: 60s
+
+17. Short Back and Bi Workout
+   ID: preset-pull-4
+   Description: A quick 40 minute workout to help you build your back and bicep muscles.
+   Duration: 40 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Band-Assisted Pull Up (Back)
+        Set 1: 10 reps
+        Set 2: 8 reps
+        Set 3: 8 reps
+        Rest: 60s
+     2. Iso Lateral Row (Machine) (Back)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 25 kg
+        Rest: 60s
+     3. Landmine Bent Over Row (Back)
+        Set 1: 10 reps @ 15 kg
+        Set 2: 10 reps @ 20 kg
+        Set 3: 8 reps @ 20 kg
+        Rest: 60s
+     4. Seated Reverse Fly (Machine) (Back)
+        Set 1: 15 reps @ 4 kg
+        Set 2: 12 reps @ 5 kg
+        Set 3: 12 reps @ 5 kg
+        Rest: 60s
+     5. Preacher Curl (Barbell) (Arms)
+        Set 1: 12 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 10 reps @ 10 kg
+        Rest: 60s
+     6. Cross Body Hammer Curl (Dumbbell) (Arms)
+        Set 1: 12 reps @ 6 kg
+        Set 2: 10 reps @ 8 kg
+        Set 3: 10 reps @ 8 kg
+        Rest: 60s
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY: PUSH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+18. Push Day
+   ID: preset-push-1
+   Description: A mix of push exercises to tone up your arms.
+   Duration: 45 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Standing Military Press (Barbell) (Shoulders)
+        Set 1: 10 reps @ 15 kg
+        Set 2: 10 reps @ 20 kg
+        Set 3: 8 reps @ 20 kg
+        Rest: 60s
+     2. Lateral to Front Raise (Dumbbell) (Shoulders)
+        Set 1: 12 reps @ 4 kg
+        Set 2: 12 reps @ 5 kg
+        Set 3: 10 reps @ 5 kg
+        Rest: 60s
+     3. Chest Fly (Dumbbell) (Chest)
+        Set 1: 12 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 10 reps @ 10 kg
+        Rest: 60s
+     4. Triceps Pushdown (Arms)
+        Set 1: 12 reps @ 15 kg
+        Set 2: 10 reps @ 18 kg
+        Set 3: 10 reps @ 18 kg
+        Rest: 60s
+     5. Tricep Kickback (Dumbbell) (Arms)
+        Set 1: 12 reps @ 4 kg
+        Set 2: 10 reps @ 5 kg
+        Set 3: 10 reps @ 5 kg
+        Rest: 60s
+
+19. Boulder Shoulders
+   ID: preset-push-2
+   Description: Push workout with a focus on shoulders and triceps.
+   Duration: 50 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Shoulder Press (Machine) (Shoulders)
+        Set 1: 10 reps @ 15 kg
+        Set 2: 10 reps @ 20 kg
+        Set 3: 8 reps @ 20 kg
+        Rest: 60s
+     2. Lateral Raise (Machine) (Shoulders)
+        Set 1: 12 reps @ 8 kg
+        Set 2: 12 reps @ 10 kg
+        Set 3: 10 reps @ 10 kg
+        Rest: 60s
+     3. Incline Front Raise (Dumbbell) (Shoulders)
+        Set 1: 12 reps @ 4 kg
+        Set 2: 10 reps @ 5 kg
+        Set 3: 10 reps @ 5 kg
+        Rest: 60s
+     4. Seated Reverse Fly (Machine) (Shoulders)
+        Set 1: 15 reps @ 4 kg
+        Set 2: 12 reps @ 5 kg
+        Set 3: 12 reps @ 5 kg
+        Rest: 60s
+     5. Overhead Triceps Extension (Cable) (Arms)
+        Set 1: 12 reps @ 10 kg
+        Set 2: 10 reps @ 12 kg
+        Set 3: 10 reps @ 12 kg
+        Rest: 60s
+     6. Single Arm Triceps Pushdown (Cable) (Arms)
+        Set 1: 12 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 10 reps @ 10 kg
+        Rest: 60s
+
+20. Shoulders, Chest and Tris
+   ID: preset-push-3
+   Description: All the main push movements in one workout, guaranteed to make you work.
+   Duration: 50 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Single Arm Lateral Raise (Cable) (Shoulders)
+        Set 1: 12 reps @ 4 kg
+        Set 2: 12 reps @ 5 kg
+        Set 3: 10 reps @ 5 kg
+        Rest: 60s
+     2. Seated Shoulder Press (Dumbbell) (Shoulders)
+        Set 1: 10 reps @ 8 kg
+        Set 2: 10 reps @ 10 kg
+        Set 3: 8 reps @ 10 kg
+        Rest: 60s
+     3. Bench Press (Barbell) (Chest)
+        Set 1: 10 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 8 reps @ 25 kg
+        Rest: 60s
+     4. Seated Lateral Raise (Dumbbell) (Shoulders)
+        Set 1: 12 reps @ 4 kg
+        Set 2: 10 reps @ 5 kg
+        Set 3: 10 reps @ 5 kg
+        Rest: 60s
+     5. Chest Fly (Dumbbell) (Chest)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 25 kg
+        Rest: 60s
+     6. Assisted Triceps Dip (Arms)
+        Set 1: 10 reps
+        Set 2: 10 reps
+        Set 3: 8 reps
+        Rest: 60s
+
+21. Machine Push
+   ID: preset-push-4
+   Description: Majority done on machines for stability and heavy resistance.
+   Duration: 45 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Chest Press (Machine) (Chest)
+        Set 1: 12 reps @ 20 kg
+        Set 2: 10 reps @ 25 kg
+        Set 3: 10 reps @ 30 kg
+        Rest: 60s
+     2. Shoulder Press (Machine) (Shoulders)
+        Set 1: 10 reps @ 15 kg
+        Set 2: 10 reps @ 20 kg
+        Set 3: 8 reps @ 20 kg
+        Rest: 60s
+     3. Lateral to Front Raise (Dumbbell) (Shoulders)
+        Set 1: 12 reps @ 4 kg
+        Set 2: 12 reps @ 5 kg
+        Set 3: 10 reps @ 5 kg
+        Rest: 60s
+     4. Seated Tricep Push (Arms)
+        Set 1: 12 reps @ 15 kg
+        Set 2: 10 reps @ 18 kg
+        Set 3: 10 reps @ 18 kg
+        Rest: 60s
+     5. Single Arm Tricep Extension (Dumbbell) (Arms)
+        Set 1: 12 reps @ 4 kg
+        Set 2: 10 reps @ 5 kg
+        Set 3: 10 reps @ 5 kg
+        Rest: 60s
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY: AT-HOME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+22. Full Body (No Equipment)
+   ID: preset-home-fullbody-bw
+   Description: Full Body, No Equipment Necessary.
+   Duration: 30 min | Difficulty: Beginner | Equipment: No Equipment
+   Exercises:
+     1. Squat (Bodyweight) (Legs)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     2. Wall Sit (Legs)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     3. Lunge (Dumbbell) (Legs)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     4. Push Up (Chest)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     5. Floor Triceps Dip (Arms)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     6. Shoulder Taps (Shoulders)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     7. Side Plank Hip Abduction (Glutes)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+
+23. Lower Body (No Equipment)
+   ID: preset-home-lower-bw
+   Duration: 25 min | Difficulty: Beginner | Equipment: No Equipment
+   Exercises:
+     1. Squat (Bodyweight) (Legs)
+        Set 1: 15 reps
+        Set 2: 15 reps
+        Set 3: 15 reps
+        Rest: 60s
+     2. Lunge (Dumbbell) (Legs)
+        Set 1: 15 reps
+        Set 2: 15 reps
+        Set 3: 15 reps
+        Rest: 60s
+     3. Standing Calf Raise (Machine) (Legs)
+        Set 1: 15 reps
+        Set 2: 15 reps
+        Set 3: 15 reps
+        Rest: 60s
+     4. Single Leg Glute Bridge (Glutes)
+        Set 1: 15 reps
+        Set 2: 15 reps
+        Set 3: 15 reps
+        Rest: 60s
+     5. Fire Hydrants (Glutes)
+        Set 1: 15 reps
+        Set 2: 15 reps
+        Set 3: 15 reps
+        Rest: 60s
+
+24. Upper Body (No Equipment)
+   ID: preset-home-upper-bw
+   Description: Upper body burn with purely body weight.
+   Duration: 25 min | Difficulty: Beginner | Equipment: No Equipment
+   Exercises:
+     1. Body Up (Arms)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     2. Floor Triceps Dip (Arms)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     3. Push Up (Chest)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Scapular Push Up (Shoulders)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     5. Side Push Up (Chest)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+25. Upper Body (Dumbbells)
+   ID: preset-home-upper-db
+   Description: Upper Body workout with dumbbells only.
+   Duration: 35 min | Difficulty: Intermediate | Equipment: Dumbbells
+   Exercises:
+     1. Seated Shoulder Press (Dumbbell) (Shoulders)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     2. Tricep Kickback (Dumbbell) (Arms)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     3. Front Raise (Dumbbell) (Shoulders)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Lateral Raise (Dumbbell) (Shoulders)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     5. Single Arm Row (Dumbbell) (Back)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     6. Chest Supported Reverse Fly (Dumbbell) (Back)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     7. Standing Bicep Curl (Dumbbell) (Arms)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+26. Lower Body (Dumbbells)
+   ID: preset-home-lower-db
+   Description: Lower body workout with dumbbells only.
+   Duration: 30 min | Difficulty: Intermediate | Equipment: Dumbbells
+   Exercises:
+     1. Goblet Squat (Dumbbell) (Legs)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     2. Single Leg Hip Thrust (Dumbbell) (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     3. Lunge (Dumbbell) (Legs)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Standing Calf Raise (Machine) (Legs)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     5. Romanian Deadlift (Dumbbell) (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+27. Glutes (Dumbbells)
+   ID: preset-home-glutes-db
+   Description: Glute workout with dumbbells only.
+   Duration: 25 min | Difficulty: Intermediate | Equipment: Dumbbells
+   Exercises:
+     1. Sumo Squat (Dumbbell) (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     2. Romanian Deadlift (Dumbbell) (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     3. Reverse Lunge (Dumbbell) (Legs)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Single Leg Hip Thrust (Dumbbell) (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+28. Upper Body (Bands)
+   ID: preset-home-upper-bands
+   Description: Upper body workout with resistance bands only.
+   Duration: 25 min | Difficulty: Beginner | Equipment: Resistance Band
+   Exercises:
+     1. Reverse Grip Lat Pulldown (Band) (Back)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     2. Band Pullaparts (Back)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     3. Front Raise (Band) (Shoulders)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Lateral Raise (Band) (Shoulders)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     5. Chest Press (Band) (Chest)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+29. Glutes (No Equipment)
+   ID: preset-home-glutes-bw
+   Description: Glute Bridge and Hinge Home Exercise Workout.
+   Duration: 25 min | Difficulty: Beginner | Equipment: No Equipment
+   Exercises:
+     1. Squat (Bodyweight) (Legs)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     2. Bulgarian Split Squat (Dumbbell) (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     3. Side Plank Hip Abduction (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Elevated Glute Bridge (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     5. Single Leg Hip Thrust (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  CATEGORY: FULL-BODY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+30. Full Body Blast
+   ID: preset-fullbody-blast
+   Duration: 30 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Sumo Deadlift (Barbell) (Legs)
+        Set 1: 10 reps
+        Set 2: 10 reps
+        Set 3: 8 reps
+        Rest: 90s
+     2. Band-Assisted Pull Up (Back)
+        Set 1: 8 reps
+        Set 2: 8 reps
+        Set 3: 6 reps
+        Rest: 90s
+     3. Hip Thrust (Machine) (Glutes)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Ab Crunch (Cable) (Core)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     5. Lying Leg Curl (Machine) (Legs)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     6. Chest Press (Machine) (Chest)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+31. Full Body Burn
+   ID: preset-fullbody-burn
+   Description: Destroy your whole body in one single workout.
+   Duration: 40 min | Difficulty: Advanced | Equipment: Gym
+   Exercises:
+     1. Reverse Grip Lat Pulldown (Cable) (Back)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     2. Standing Military Press (Barbell) (Shoulders)
+        Set 1: 10 reps
+        Set 2: 8 reps
+        Set 3: 8 reps
+        Rest: 90s
+     3. Deadlift (Barbell) (Legs)
+        Set 1: 8 reps
+        Set 2: 8 reps
+        Set 3: 6 reps
+        Rest: 120s
+     4. Leg Press (Machine) (Legs)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 90s
+     5. Back Extension (Hyperextension) (Glutes)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     6. Seated Tricep Overhead Extension (Dumbbell) (Arms)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     7. Bicep Curl (Dumbbell) (Arms)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+32. Bang for your Buck
+   ID: preset-fullbody-bang
+   Duration: 30 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Clean and Jerk (Barbell) (Shoulders)
+        Set 1: 6 reps
+        Set 2: 5 reps
+        Set 3: 5 reps
+        Rest: 120s
+     2. Pendlay Row (Barbell) (Back)
+        Set 1: 10 reps
+        Set 2: 8 reps
+        Set 3: 8 reps
+        Rest: 90s
+     3. Walking Lunge (Legs)
+        Set 1: 12 reps
+        Set 2: 12 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Assisted Chin Up (Machine) (Back)
+        Set 1: 8 reps
+        Set 2: 8 reps
+        Set 3: 6 reps
+        Rest: 90s
+     5. Standing Hammer Curl and Press (Arms)
+        Set 1: 10 reps
+        Set 2: 10 reps
+        Set 3: 8 reps
+        Rest: 60s
+
+33. Full Body
+   ID: preset-fullbody-balanced
+   Description: A nice balance of upper, lower and core exercises.
+   Duration: 35 min | Difficulty: Intermediate | Equipment: Gym
+   Exercises:
+     1. Front Squat (Smith Machine) (Legs)
+        Set 1: 10 reps
+        Set 2: 10 reps
+        Set 3: 8 reps
+        Rest: 90s
+     2. Calf Raise on Leg Press (Legs)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     3. Lying Leg Curl (Machine) (Legs)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Bench Press (Dumbbell) (Chest)
+        Set 1: 10 reps
+        Set 2: 10 reps
+        Set 3: 8 reps
+        Rest: 90s
+     5. Shoulder Press (Machine) (Shoulders)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     6. Tricep Kickback (Dumbbell) (Arms)
+        Set 1: 12 reps
+        Set 2: 12 reps
+        Set 3: 10 reps
+        Rest: 60s
+     7. Pallof Press (Cable) (Core)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+
+34. Accessory Movements
+   ID: preset-fullbody-accessory
+   Duration: 30 min | Difficulty: Beginner | Equipment: Gym
+   Exercises:
+     1. Leg Extension (Machine) (Legs)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     2. Seated Hip Abduction (Machine) (Glutes)
+        Set 1: 15 reps
+        Set 2: 12 reps
+        Set 3: 12 reps
+        Rest: 60s
+     3. Standing Cable Glute Kickbacks (Glutes)
+        Set 1: 12 reps
+        Set 2: 12 reps
+        Set 3: 10 reps
+        Rest: 60s
+     4. Seated Row (Cable) (Back)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     5. Bicep Curl (Barbell) (Arms)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+     6. Assisted Triceps Dip (Arms)
+        Set 1: 10 reps
+        Set 2: 10 reps
+        Set 3: 8 reps
+        Rest: 60s
+     7. Skullcrusher (Barbell) (Arms)
+        Set 1: 12 reps
+        Set 2: 10 reps
+        Set 3: 10 reps
+        Rest: 60s
+

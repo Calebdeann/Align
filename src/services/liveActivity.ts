@@ -137,7 +137,7 @@ export async function startWorkoutLiveActivity(
         subtitleColor: '#666666',
         progressViewTint: '#947AFF',
         progressViewLabelColor: '#947AFF',
-        deepLinkUrl: 'align://active-workout',
+        deepLinkUrl: 'alyne://active-workout',
         timerType: 'digital' as const,
       }
     );

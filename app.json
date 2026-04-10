@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Align",
+    "name": "Alyne",
     "slug": "align",
-    "version": "1.0.3",
-    "scheme": "align",
+    "version": "1.0.5",
+    "scheme": "alyne",
     "orientation": "portrait",
-    "icon": "./assets/images/AlignLogo.png",
+    "icon": "./assets/images/AlyneLogo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -55,8 +55,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Align to access your photos to add images to your workout templates.",
-          "cameraPermission": "Allow Align to take photos for your workout templates."
+          "photosPermission": "Allow Alyne to access your photos to add images to your workout templates.",
+          "cameraPermission": "Allow Alyne to take photos for your workout templates."
         }
       ],
       [

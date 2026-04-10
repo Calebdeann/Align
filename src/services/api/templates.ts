@@ -62,6 +62,41 @@ export interface DbTemplateSet {
 }
 
 // =============================================
+// IMAGE UPLOAD
+// =============================================
+
+// Uploads a local camera/gallery image to Supabase Storage and returns the public URL.
+// Returns null if upload fails — callers should treat null as "no image" and continue saving.
+async function uploadTemplateImage(userId: string, localUri: string): Promise<string | null> {
+  try {
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    const ext = blob.type === 'image/png' ? 'png' : 'jpg';
+    const path = `${userId}/${Date.now()}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from('template-images')
+      .upload(path, blob, { contentType: blob.type, upsert: false });
+
+    if (error) {
+      logger.warn('Failed to upload template image', { error });
+      return null;
+    }
+
+    const { data } = supabase.storage.from('template-images').getPublicUrl(path);
+    return data.publicUrl;
+  } catch (error) {
+    logger.warn('Error uploading template image', { error });
+    return null;
+  }
+}
+
+// Returns true if the URI is a local device path that needs uploading
+function isLocalUri(uri: string): boolean {
+  return uri.startsWith('file://') || uri.startsWith('/');
+}
+
+// =============================================
 // SAVE USER TEMPLATE
 // =============================================
 
@@ -100,6 +135,18 @@ export async function saveUserTemplate(
   }
 
   try {
+    // Upload camera/gallery images to Supabase Storage so the URI persists across sessions
+    let imageUri = template.image?.uri || null;
+    if (
+      template.image &&
+      (template.image.type === 'camera' || template.image.type === 'gallery') &&
+      imageUri &&
+      isLocalUri(imageUri)
+    ) {
+      const uploadedUrl = await uploadTemplateImage(userId, imageUri);
+      imageUri = uploadedUrl; // null if upload failed — image won't be saved, but template will
+    }
+
     // 1. Insert the template record
     const { data: savedTemplate, error: templateError } = await supabase
       .from('workout_templates')
@@ -107,8 +154,8 @@ export async function saveUserTemplate(
         user_id: userId,
         name: template.name,
         description: template.description || null,
-        image_type: template.image?.type || null,
-        image_uri: template.image?.uri || null,
+        image_type: imageUri ? template.image?.type || null : null,
+        image_uri: imageUri,
         image_template_id: template.image?.templateId || null,
         tag_ids: template.tagIds,
         tag_color: template.tagColor,
@@ -266,8 +313,27 @@ export async function updateUserTemplate(
     if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.description !== undefined) updateData.description = updates.description;
     if (updates.image !== undefined) {
-      updateData.image_type = updates.image?.type || null;
-      updateData.image_uri = updates.image?.uri || null;
+      let imageUri = updates.image?.uri || null;
+      // Upload local camera/gallery images to Supabase Storage before updating
+      if (
+        updates.image &&
+        (updates.image.type === 'camera' || updates.image.type === 'gallery') &&
+        imageUri &&
+        isLocalUri(imageUri)
+      ) {
+        // Need userId from the template record for the storage path
+        const { data: existing } = await supabase
+          .from('workout_templates')
+          .select('user_id')
+          .eq('id', templateId)
+          .single();
+        if (existing?.user_id) {
+          const uploadedUrl = await uploadTemplateImage(existing.user_id, imageUri);
+          imageUri = uploadedUrl;
+        }
+      }
+      updateData.image_type = imageUri ? updates.image?.type || null : null;
+      updateData.image_uri = imageUri;
       updateData.image_template_id = updates.image?.templateId || null;
     }
     if (updates.tagIds !== undefined) updateData.tag_ids = updates.tagIds;

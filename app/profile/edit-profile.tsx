@@ -106,16 +106,25 @@ export default function EditProfileScreen() {
     setIsUploadingPhoto(true);
     try {
       const publicUrl = await uploadAvatar(userId, uri);
-      if (publicUrl) {
-        await updateProfile({ avatar_url: publicUrl });
-      } else {
+      if (!publicUrl) {
         Alert.alert('Upload Failed', 'Could not upload photo. Please try again.');
+        return;
+      }
+      const saved = await updateProfile({ avatar_url: publicUrl });
+      if (!saved) {
+        // Photo made it to Storage but the profile row update failed — user would lose
+        // the avatar on next launch since the URL was never written to the DB.
+        Alert.alert(
+          'Upload Failed',
+          'Photo uploaded but could not be saved to your profile. Please try again.'
+        );
       }
     } catch (error) {
       console.warn('Error uploading avatar:', error);
       Alert.alert('Upload Failed', 'Could not upload photo. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
     }
-    setIsUploadingPhoto(false);
   }
 
   async function handleChooseFromLibrary() {

@@ -227,6 +227,20 @@ export async function saveCompletedWorkout(
     const failedExercises: { name: string; error: string }[] = [];
     let failedSetsCount = 0;
 
+    // Batch-fetch target_muscles + secondary_muscles for all exercises in one query
+    const allExerciseIds = validatedInput.exercises.map((e) => e.exerciseId);
+    const { data: exerciseDetails } = await supabase
+      .from('exercises')
+      .select('id, target_muscles, secondary_muscles')
+      .in('id', allExerciseIds);
+    const exerciseMuscleMap = new Map<string, { target: string[]; secondary: string[] }>();
+    exerciseDetails?.forEach((e) => {
+      exerciseMuscleMap.set(e.id, {
+        target: e.target_muscles || [],
+        secondary: e.secondary_muscles || [],
+      });
+    });
+
     // 2. Insert workout_exercises for each exercise
     for (let i = 0; i < validatedInput.exercises.length; i++) {
       const exercise = validatedInput.exercises[i];
@@ -316,23 +330,33 @@ export async function saveCompletedWorkout(
         }
       }
 
-      // 4. Fetch muscle mappings for this exercise and aggregate
+      // 4. Aggregate muscle data using target_muscles + secondary_muscles from exercises table
       if (completedSetsCount > 0) {
-        const { data: exerciseMuscles } = await supabase
-          .from('exercise_muscles')
-          .select('muscle, activation')
-          .eq('exercise_id', exercise.exerciseId);
+        const muscleDetail = exerciseMuscleMap.get(exercise.exerciseId);
+        const targetMuscles = muscleDetail?.target ?? [];
+        const secondaryMuscles = muscleDetail?.secondary ?? [];
 
-        if (exerciseMuscles) {
-          exerciseMuscles.forEach((em) => {
-            const current = muscleSetCounts.get(em.muscle) || { primary: 0, secondary: 0 };
-            if (em.activation === 'primary') {
-              current.primary += completedSetsCount;
-            } else {
-              current.secondary += completedSetsCount;
-            }
-            muscleSetCounts.set(em.muscle, current);
+        if (targetMuscles.length > 0 || secondaryMuscles.length > 0) {
+          targetMuscles.forEach((muscle) => {
+            const current = muscleSetCounts.get(muscle) || { primary: 0, secondary: 0 };
+            current.primary += completedSetsCount;
+            muscleSetCounts.set(muscle, current);
           });
+          secondaryMuscles.forEach((muscle) => {
+            // Skip if already counted as primary to avoid 1.5x inflation
+            if (targetMuscles.includes(muscle)) return;
+            const current = muscleSetCounts.get(muscle) || { primary: 0, secondary: 0 };
+            current.secondary += completedSetsCount;
+            muscleSetCounts.set(muscle, current);
+          });
+        } else if (exercise.exerciseMuscle) {
+          // Fallback: exercise has no muscle arrays — use the generic muscle field.
+          const current = muscleSetCounts.get(exercise.exerciseMuscle) || {
+            primary: 0,
+            secondary: 0,
+          };
+          current.primary += completedSetsCount;
+          muscleSetCounts.set(exercise.exerciseMuscle, current);
         }
       }
     }
@@ -485,6 +509,20 @@ export async function updateCompletedWorkout(
     const failedExercises: { name: string; error: string }[] = [];
     let failedSetsCount = 0;
 
+    // Batch-fetch target_muscles + secondary_muscles for all exercises in one query
+    const allExerciseIds = validatedInput.exercises.map((e) => e.exerciseId);
+    const { data: exerciseDetails } = await supabase
+      .from('exercises')
+      .select('id, target_muscles, secondary_muscles')
+      .in('id', allExerciseIds);
+    const exerciseMuscleMap = new Map<string, { target: string[]; secondary: string[] }>();
+    exerciseDetails?.forEach((e) => {
+      exerciseMuscleMap.set(e.id, {
+        target: e.target_muscles || [],
+        secondary: e.secondary_muscles || [],
+      });
+    });
+
     for (let i = 0; i < validatedInput.exercises.length; i++) {
       const exercise = validatedInput.exercises[i];
       const completedSetsCount = exercise.sets.filter((s) => s.completed).length;
@@ -572,21 +610,30 @@ export async function updateCompletedWorkout(
       }
 
       if (completedSetsCount > 0) {
-        const { data: exerciseMuscles } = await supabase
-          .from('exercise_muscles')
-          .select('muscle, activation')
-          .eq('exercise_id', exercise.exerciseId);
+        const muscleDetail = exerciseMuscleMap.get(exercise.exerciseId);
+        const targetMuscles = muscleDetail?.target ?? [];
+        const secondaryMuscles = muscleDetail?.secondary ?? [];
 
-        if (exerciseMuscles) {
-          exerciseMuscles.forEach((em) => {
-            const current = muscleSetCounts.get(em.muscle) || { primary: 0, secondary: 0 };
-            if (em.activation === 'primary') {
-              current.primary += completedSetsCount;
-            } else {
-              current.secondary += completedSetsCount;
-            }
-            muscleSetCounts.set(em.muscle, current);
+        if (targetMuscles.length > 0 || secondaryMuscles.length > 0) {
+          targetMuscles.forEach((muscle) => {
+            const current = muscleSetCounts.get(muscle) || { primary: 0, secondary: 0 };
+            current.primary += completedSetsCount;
+            muscleSetCounts.set(muscle, current);
           });
+          secondaryMuscles.forEach((muscle) => {
+            // Skip if already counted as primary to avoid 1.5x inflation
+            if (targetMuscles.includes(muscle)) return;
+            const current = muscleSetCounts.get(muscle) || { primary: 0, secondary: 0 };
+            current.secondary += completedSetsCount;
+            muscleSetCounts.set(muscle, current);
+          });
+        } else if (exercise.exerciseMuscle) {
+          const current = muscleSetCounts.get(exercise.exerciseMuscle) || {
+            primary: 0,
+            secondary: 0,
+          };
+          current.primary += completedSetsCount;
+          muscleSetCounts.set(exercise.exerciseMuscle, current);
         }
       }
     }

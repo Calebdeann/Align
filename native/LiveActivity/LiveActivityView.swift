@@ -25,13 +25,13 @@ import WidgetKit
       return parts.count > 1 ? parts[1] : nil
     }
 
-    private let addExerciseUrl = URL(string: "align://active-workout?addExercise=1")!
+    private let addExerciseUrl = URL(string: "alyne://active-workout?addExercise=1")!
 
     var body: some View {
       VStack(alignment: .leading, spacing: 8) {
         // Top row: Align + timer
         HStack {
-          Text("Align")
+          Text("Alyne")
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(Color.white.opacity(0.7))
 

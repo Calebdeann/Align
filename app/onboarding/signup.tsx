@@ -113,7 +113,7 @@ export default function SignUpScreen() {
       // (safe here because Google OAuth opens a browser - user won't cancel before this)
       await supabase.auth.signOut();
 
-      const redirectTo = 'align://auth/callback';
+      const redirectTo = 'alyne://auth/callback';
 
       // Start OAuth flow with Supabase
       const { data, error } = await supabase.auth.signInWithOAuth({

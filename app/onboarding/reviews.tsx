@@ -72,7 +72,7 @@ export default function ReviewsScreen() {
     if (__DEV__) {
       // Native StoreKit dialog freezes iOS Simulator, show alert instead
       Alert.alert(
-        'Rate Align',
+        'Rate Alyne',
         'Thanks for your support! The native review dialog will appear in production builds.'
       );
     } else {

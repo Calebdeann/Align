@@ -82,7 +82,7 @@
     "ft": "ft"
   },
   "welcome": {
-    "align": "ALIGN",
+    "align": "ALYNE",
     "forTheGirls": "FOR THE GIRLS",
     "getStarted": "Get Started",
     "alreadyHaveAccount": "Already have an account? ",
@@ -117,7 +117,7 @@
   },
   "onboarding": {
     "intro": {
-      "slide1Title": "Welcome to Align!",
+      "slide1Title": "Welcome to Alyne!",
       "slide1Subtitle": "Easily log your workouts, tracking each set",
       "slide2Title": "Measure Progress",
       "slide2Subtitle": "Track your progress and gains with our indepth analytics",
@@ -178,13 +178,13 @@
       "confidence": "Lack confidence"
     },
     "obstacleResponse": {
-      "scheduleTitle": "Align makes it easy to\nschedule your workouts",
+      "scheduleTitle": "Alyne makes it easy to\nschedule your workouts",
       "scheduleSubtitle": "Your week, your way!",
-      "knowledgeTitle": "Align makes it easy to\nknow exactly what to do",
+      "knowledgeTitle": "Alyne makes it easy to\nknow exactly what to do",
       "knowledgeSubtitle": "Professional workout templates, ready to go!",
-      "motivationTitle": "Align makes it easy to\nstay motivated",
+      "motivationTitle": "Alyne makes it easy to\nstay motivated",
       "motivationSubtitle": "Track your progress & watch yourself improve!",
-      "confidenceTitle": "Align makes it easy to\ntrain with confidence",
+      "confidenceTitle": "Alyne makes it easy to\ntrain with confidence",
       "confidenceSubtitle": "Every exercise explained, step by step!"
     },
     "triedApps": {
@@ -193,12 +193,12 @@
       "no": "No"
     },
     "goalComparison": {
-      "title": "{{action}} twice as much\nweight with Align\nvs on your own",
+      "title": "{{action}} twice as much\nweight with Alyne\nvs on your own",
       "lose": "Lose",
       "gain": "Gain",
-      "withoutAlign": "Without\nAlign",
-      "withAlign": "With\nAlign",
-      "comparisonText": "Align makes it easy and holds\nyou accountable"
+      "withoutAlyne": "Without\nAlyne",
+      "withAlyne": "With\nAlyne",
+      "comparisonText": "Alyne makes it easy and holds\nyou accountable"
     },
     "goalReality": {
       "realisticTarget": "{{diff}}{{unit}} is a realistic target. You can do this!"
@@ -261,8 +261,8 @@
       "title": "Help us Grow!",
       "rating": "4.8",
       "appStoreRating": "App Store Rating",
-      "sectionTitle": "Align was made for\npeople like you",
-      "usersLove": "Users LOVE Align!",
+      "sectionTitle": "Alyne was made for\npeople like you",
+      "usersLove": "Users LOVE Alyne!",
       "love": "LOVE",
       "review1Author": "Ellie Sullivan",
       "review1Text": "I lost 15 lbs in 2 months! I was about to go on Ozempic but decided to give this app a shot and it worked :)",
@@ -297,11 +297,11 @@
     "thankYou": {
       "title": "Thank you\nfor trusting us!",
       "percentage": "94% of our users",
-      "description": "claim that align is easy to use\nand makes it simple to stay on track"
+      "description": "claim that Alyne is easy to use\nand makes it simple to stay on track"
     },
     "reminder": {
       "question": "Do you want to receive workout reminders?",
-      "notificationApp": "Align",
+      "notificationApp": "Alyne",
       "notificationTime": "2h ago",
       "notificationTitle": "Today's Workout: Glutes",
       "notificationBody": "Hip Thrusts, Romanian Deadlifts, Bulgarian Split Squats",
@@ -318,7 +318,27 @@
   "tabs": {
     "schedule": "Schedule",
     "workout": "Workout",
-    "profile": "Profile"
+    "profile": "Profile",
+    "recovery": "Recovery"
+  },
+  "recovery": {
+    "title": "Recovery",
+    "muscleWorked": "Muscle Worked",
+    "mainMuscleGroups": "Main Muscle Groups",
+    "trainingStatus": "Training Status",
+    "timeframes": {
+      "day": "24H",
+      "week": "1W",
+      "month": "1M"
+    },
+    "sets": "Sets",
+    "noData": "No workout data yet",
+    "intensity": {
+      "light": "Light",
+      "moderate": "Moderate",
+      "heavy": "Heavy",
+      "overreached": "Overreached"
+    }
   },
   "planner": {
     "title": "Planner",
@@ -326,7 +346,7 @@
     "dateHeaderToday": "Today - {{dayName}}, {{month}} {{day}}",
     "dateHeader": "{{dayName}}, {{month}} {{day}}",
     "founderGreeting": "Hey {{name}}!",
-    "founderBody1": "We're Caleb & Cass, and we built Align. Thank you so much for trying our app!",
+    "founderBody1": "We're Caleb & Cass, and we built Alyne. Thank you so much for trying our app!",
     "founderBody2": "Our mission is to build the best women's workout tracker in the world, so any feedback you have would be greatly appreciated!",
     "founderBody3": "You can email us at aligntracker@gmail.com"
   },
@@ -548,7 +568,7 @@
     "noTemplate": "No Template",
     "startWithoutTemplate": "Start without a template",
     "yourTemplates": "Your Templates",
-    "alignTemplates": "Align Templates",
+    "alignTemplates": "Alyne Templates",
     "colour": "Colour",
     "dateAndTime": "Date & Time",
     "date": "Date",

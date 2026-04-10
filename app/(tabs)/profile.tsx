@@ -291,7 +291,7 @@ export default function ProfileScreen() {
     try {
       setIsDevLoginLoading(true);
 
-      const redirectTo = 'align://auth/callback';
+      const redirectTo = 'alyne://auth/callback';
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

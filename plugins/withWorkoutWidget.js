@@ -85,7 +85,7 @@ function withCustomFilesAndEntitlements(config) {
   return withInfoPlist(config, (config) => {
     const platformRoot = config.modRequest.platformProjectRoot;
     const liveActivityDir = path.join(platformRoot, 'LiveActivity');
-    const alignDir = path.join(platformRoot, 'Align');
+    const alignDir = path.join(platformRoot, 'Alyne');
     const shareExtDir = path.join(platformRoot, SHARE_EXT_TARGET_NAME);
 
     fs.mkdirSync(liveActivityDir, { recursive: true });
@@ -107,7 +107,7 @@ function withCustomFilesAndEntitlements(config) {
       }
     }
 
-    // Copy bridge files to Align directory
+    // Copy bridge files to Alyne directory
     const alignFiles = ['WorkoutWidgetBridge.swift', 'WorkoutWidgetBridge.m'];
     for (const file of alignFiles) {
       const src = path.join(NATIVE_DIR, 'Align', file);
@@ -157,7 +157,7 @@ function withCustomFilesAndEntitlements(config) {
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleDisplayName</key>
-  <string>Align</string>
+  <string>Alyne</string>
   <key>CFBundleExecutable</key>
   <string>$(EXECUTABLE_NAME)</string>
   <key>CFBundleIdentifier</key>
@@ -177,12 +177,7 @@ function withCustomFilesAndEntitlements(config) {
     <key>NSExtensionAttributes</key>
     <dict>
       <key>NSExtensionActivationRule</key>
-      <dict>
-        <key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
-        <integer>1</integer>
-        <key>NSExtensionActivationSupportsText</key>
-        <true/>
-      </dict>
+      <string>SUBQUERY(extensionItems, $extensionItem, SUBQUERY($extensionItem.attachments, $attachment, ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url" || ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.plain-text").@count >= 1).@count >= 1</string>
     </dict>
     <key>NSExtensionPointIdentifier</key>
     <string>com.apple.share-services</string>
@@ -248,20 +243,20 @@ function withCustomXcodeFiles(config) {
   return withXcodeProject(config, (config) => {
     const proj = config.modResults;
 
-    // Add WorkoutWidgetBridge files to the Align target build phase
-    const alignTarget = findNativeTarget(proj, 'Align');
+    // Add WorkoutWidgetBridge files to the Alyne target build phase
+    const alignTarget = findNativeTarget(proj, 'Alyne');
     if (alignTarget) {
       addSourceFileToTarget(proj, alignTarget, 'WorkoutWidgetBridge.swift', {
-        group: 'Align',
-        filePath: 'Align/WorkoutWidgetBridge.swift',
+        group: 'Alyne',
+        filePath: 'Alyne/WorkoutWidgetBridge.swift',
       });
       addSourceFileToTarget(proj, alignTarget, 'WorkoutWidgetBridge.m', {
-        group: 'Align',
-        filePath: 'Align/WorkoutWidgetBridge.m',
+        group: 'Alyne',
+        filePath: 'Alyne/WorkoutWidgetBridge.m',
         fileType: 'sourcecode.c.objc',
       });
     } else {
-      console.warn('[withWorkoutWidget] Could not find Align target');
+      console.warn('[withWorkoutWidget] Could not find Alyne target');
     }
 
     // Create the ShareExtension target (skip if already exists)
@@ -502,7 +497,7 @@ function createShareExtensionTarget(proj) {
   objects['PBXCopyFilesBuildPhase'][`${copyPhaseUuid}_comment`] = 'Embed Foundation Extensions';
 
   // Add copy phase to main app target
-  const alignTarget = findNativeTarget(proj, 'Align');
+  const alignTarget = findNativeTarget(proj, 'Alyne');
   if (alignTarget) {
     alignTarget.target.buildPhases.push({
       value: copyPhaseUuid,

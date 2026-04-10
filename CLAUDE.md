@@ -1,8 +1,8 @@
-# Align - Project Context
+# Alyne - Project Context
 
 ## Quick Summary
 
-Align is a women-focused workout tracker and scheduler app. Built with React Native + Expo, targeting iOS first.
+Alyne is a women-focused workout tracker and scheduler app. Built with React Native + Expo, targeting iOS first.
 
 ## Tech Stack
 
@@ -53,7 +53,7 @@ Align is a women-focused workout tracker and scheduler app. Built with React Nat
 
 - Recurring workout scheduling (weekly patterns)
 - Exercise library from Supabase
-- Workout presets and Align templates
+- Workout presets and Alyne templates
 - Color-coded by workout type (Legs, Arms, etc.)
 - Full offline support (later phase)
 

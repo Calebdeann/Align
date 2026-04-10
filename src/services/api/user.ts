@@ -59,32 +59,45 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
   return data;
 }
 
-// Create profile for user if it doesn't exist (fallback for trigger failures)
+// Create profile for user if it doesn't exist (fallback for trigger failures).
+// Uses upsert with ignoreDuplicates so existing data (weight, height, custom avatar)
+// is never overwritten if the row was already created by a concurrent call.
 async function createProfileIfMissing(userId: string): Promise<UserProfile | null> {
-  // Get user info from auth
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) return null;
 
-  const { data, error } = await supabase
+  const { data: upsertedProfile } = await supabase
     .from('profiles')
-    .insert({
-      id: userId,
-      email: user.email,
-      name: null, // Name will be set in onboarding
-      avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-    })
+    .upsert(
+      {
+        id: userId,
+        email: user.email,
+        name: null,
+        avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+      },
+      { onConflict: 'id', ignoreDuplicates: true }
+    )
     .select()
     .single();
 
-  if (error) {
-    logger.warn('Error creating profile', { error });
+  if (upsertedProfile) return upsertedProfile;
+
+  // upsert was a no-op (row already existed) — fetch the existing profile
+  const { data: existing, error: fetchError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (fetchError) {
+    logger.warn('Error fetching existing profile after upsert no-op', { error: fetchError });
     return null;
   }
 
-  return data;
+  return existing;
 }
 
 // Update user profile

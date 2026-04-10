@@ -1206,7 +1206,7 @@ export default function ImportVideoScreen() {
         )}
         <SafeAreaView style={styles.loadingContainer}>
           <View style={styles.loadingContent}>
-            <Text style={styles.loadingLogo}>ALIGN</Text>
+            <Text style={styles.loadingLogo}>ALYNE</Text>
             {/* Scanning frame with animated magnifying glass */}
             <View style={styles.scanArea}>
               <View style={styles.scanFrame}>

@@ -13,7 +13,7 @@ export const SIMPLIFIED_MUSCLE_GROUPS: SimplifiedMuscleGroup[] = [
     i18nKey: 'muscles.back',
     muscleGroupValues: ['lats', 'upper back', 'traps', 'spine'],
   },
-  { id: 'biceps', i18nKey: 'muscles.biceps', muscleGroupValues: ['biceps'] },
+  { id: 'biceps', i18nKey: 'muscles.biceps', muscleGroupValues: ['biceps', 'arms'] },
   { id: 'chest', i18nKey: 'muscles.chest', muscleGroupValues: ['pectorals'] },
   { id: 'core', i18nKey: 'muscles.core', muscleGroupValues: ['abs'] },
   { id: 'glutes', i18nKey: 'muscles.glutes', muscleGroupValues: ['glutes'] },
@@ -79,29 +79,61 @@ export function expandMuscleFilter(simplifiedId: string): string[] {
 // BODY GRAPH - Intensity visualization
 // =============================================
 
-export type IntensityTier = 0 | 1 | 2 | 3;
+export type IntensityTier = 0 | 1 | 2 | 3 | 4;
 
 export const BODY_GRAPH_COLORS: Record<IntensityTier, string> = {
   0: 'transparent',
-  1: '#E0D6FF', // Light purple - low volume
-  2: '#B8A8FF', // Medium purple - moderate volume
-  3: '#947AFF', // Full purple - high volume
+  1: '#C4B0FF', // Light
+  2: '#947AFF', // Moderate
+  3: '#B066E8', // Heavy
+  4: '#FF6AC2', // Overreached
 } as const;
 
-// Effective sets = primarySets + (secondarySets * 0.5)
-export const INTENSITY_THRESHOLDS = {
-  tier1: 1, // 1-6 effective sets
-  tier2: 7, // 7-14 effective sets
-  tier3: 15, // 15+ effective sets
-} as const;
+// Thresholds scale with the timeframe.
+// Source: weekly volume landmarks (MEV/MAV/MRV) from sports science research.
+// Weekly: MEV ~6-8 sets, MAV ~10-20, MRV ~20-30, overreaching 30+
+// Daily: divide weekly by ~4 sessions. Monthly: multiply weekly by 4.3 weeks.
+export const INTENSITY_THRESHOLDS: Record<
+  'today' | 'week' | 'month',
+  [number, number, number, number]
+> = {
+  //           tier1  tier2  tier3  tier4
+  today: [1, 5, 10, 15], // per session
+  week: [1, 10, 20, 30], // weekly volume (MEV/MAV/MRV)
+  month: [1, 40, 80, 120], // monthly volume (weekly * 4.3)
+};
 
-export function getIntensityTier(effectiveSets: number): IntensityTier {
-  if (effectiveSets >= INTENSITY_THRESHOLDS.tier3) return 3;
-  if (effectiveSets >= INTENSITY_THRESHOLDS.tier2) return 2;
-  if (effectiveSets >= INTENSITY_THRESHOLDS.tier1) return 1;
+export function getIntensityTier(
+  effectiveSets: number,
+  timeframe: 'today' | 'week' | 'month' = 'today'
+): IntensityTier {
+  const [t1, t2, t3, t4] = INTENSITY_THRESHOLDS[timeframe];
+  if (effectiveSets >= t4) return 4;
+  if (effectiveSets >= t3) return 3;
+  if (effectiveSets >= t2) return 2;
+  if (effectiveSets >= t1) return 1;
   return 0;
 }
 
-// Which simplified muscle groups appear on each body graph view
-export const BODY_GRAPH_FRONT_GROUPS = ['chest', 'core', 'biceps', 'shoulders', 'legs'] as const;
-export const BODY_GRAPH_BACK_GROUPS = ['back', 'glutes', 'triceps', 'calves'] as const;
+// Body graph image keys per view (match the asset filenames).
+// Mapping from DB group IDs to image keys happens in BodyGraph.tsx:
+//   biceps  → front "arms"  (Front_Arms shows bicep + forearm area)
+//   triceps → back "arms"   (Back_Arms shows tricep + forearm area)
+//   core    → front "abs"   (asset is named Abs)
+//   all others: same key on both views
+export const BODY_GRAPH_FRONT_GROUPS = [
+  'chest',
+  'abs',
+  'arms',
+  'shoulders',
+  'legs',
+  'calves',
+] as const;
+export const BODY_GRAPH_BACK_GROUPS = [
+  'back',
+  'glutes',
+  'arms',
+  'shoulders',
+  'legs',
+  'calves',
+] as const;

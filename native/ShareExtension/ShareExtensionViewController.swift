@@ -30,7 +30,7 @@ class ShareExtensionViewController: UIViewController {
     icon.heightAnchor.constraint(equalToConstant: 48).isActive = true
 
     let label = UILabel()
-    label.text = "Sending to Align..."
+    label.text = "Sending to Alyne..."
     label.textColor = .white
     label.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
     label.textAlignment = .center
@@ -114,19 +114,19 @@ class ShareExtensionViewController: UIViewController {
       }
     }
 
-    // Open the containing app via extensionContext.open()
+    // Open the containing app then immediately dismiss the extension.
+    // extensionContext?.open() completion handler is unreliable on iOS 13+ for Share Extensions,
+    // so we fire-and-forget the open and dismiss with a short delay instead.
     DispatchQueue.main.async {
-      let deepLink = URL(string: "align://import-video")!
-
-      self.extensionContext?.open(deepLink) { [weak self] success in
-        DispatchQueue.main.async {
-          self?.closeOnce()
-        }
+      guard let url = URL(string: "alyne://import-video") else {
+        self.closeOnce()
+        return
       }
-
-      // Safety timeout: close after 3s if completion handler never fires
-      DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
-        self?.closeOnce()
+      self.extensionContext?.open(url, completionHandler: nil)
+      // Dismiss after a short delay so the open() has time to register before the
+      // extension process is torn down
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+        self.closeOnce()
       }
     }
   }

@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
-import { CalendarIcon, WorkoutIcon, ProfileIcon } from '@/components/icons';
+import { CalendarIcon, WorkoutIcon, ProfileIcon, RecoveryIcon } from '@/components/icons';
 import { colors } from '@/constants/theme';
 import ActiveWorkoutWidget from '@/components/workout/ActiveWorkoutWidget';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -79,6 +79,24 @@ function TabsContent() {
                 style={[styles.tabLabel, { color }]}
               >
                 {t('tabs.workout')}
+              </Text>
+            ),
+            tabBarButton: (props) => <HapticTabButton {...props} />,
+          }}
+        />
+        <Tabs.Screen
+          name="recovery"
+          options={{
+            title: t('tabs.recovery'),
+            tabBarIcon: ({ color }) => <RecoveryIcon color={color} />,
+            tabBarLabel: ({ color }) => (
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                style={[styles.tabLabel, { color }]}
+              >
+                {t('tabs.recovery')}
               </Text>
             ),
             tabBarButton: (props) => <HapticTabButton {...props} />,

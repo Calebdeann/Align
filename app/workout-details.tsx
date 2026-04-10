@@ -82,23 +82,8 @@ function formatDate(dateString: string): string {
 }
 
 // Get color for muscle type
-function getMuscleColor(muscle: string): string {
-  const muscleColors: Record<string, string> = {
-    Back: colors.workout.back,
-    Biceps: colors.workout.biceps,
-    Calves: colors.workout.calves,
-    Cardio: colors.workout.cardio,
-    Chest: colors.workout.chest,
-    Core: colors.workout.core,
-    Abs: colors.workout.core,
-    Glutes: colors.workout.glutes,
-    Legs: colors.workout.legs,
-    Other: colors.workout.other,
-    Shoulders: colors.workout.shoulders,
-    Triceps: colors.workout.triceps,
-    'Full Body': colors.workout.fullBody,
-  };
-  return muscleColors[muscle] || colors.primary;
+function getMuscleColor(_muscle: string): string {
+  return colors.primary;
 }
 
 // Superset colors matching active-workout

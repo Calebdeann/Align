@@ -54,8 +54,8 @@ struct LiveActivityWidget: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: LiveActivityAttributes.self) { context in
       let deepLink = context.state.title.isEmpty
-        ? URL(string: "align://active-workout?addExercise=1")
-        : URL(string: "align://active-workout")
+        ? URL(string: "alyne://active-workout?addExercise=1")
+        : URL(string: "alyne://active-workout")
       LiveActivityView(contentState: context.state, attributes: context.attributes)
         .activityBackgroundTint(Color.black)
         .activitySystemActionForegroundColor(Color.white)
@@ -63,7 +63,7 @@ struct LiveActivityWidget: Widget {
     } dynamicIsland: { context in
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          Text("Align")
+          Text("Alyne")
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(.white.opacity(0.7))
         }
@@ -76,7 +76,7 @@ struct LiveActivityWidget: Widget {
           }
         }
         DynamicIslandExpandedRegion(.bottom) {
-          let addUrl = URL(string: "align://active-workout?addExercise=1")!
+          let addUrl = URL(string: "alyne://active-workout?addExercise=1")!
           if context.state.title.isEmpty {
             Link(destination: addUrl) {
               Text("Add an exercise")

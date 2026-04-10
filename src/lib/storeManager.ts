@@ -121,6 +121,7 @@ function resetStores() {
 /**
  * Triggers rehydration of stores from the new user's storage.
  * Zustand persist middleware handles this via the storage adapter.
+ * After local rehydration, syncs scheduled workouts from Supabase.
  */
 async function rehydrateStores() {
   logger.info('[StoreManager] Rehydrating stores from user storage...');
@@ -145,6 +146,15 @@ async function rehydrateStores() {
     }
 
     logger.info('[StoreManager] Stores rehydrated successfully');
+
+    // After local rehydration, sync scheduled workouts from Supabase (fire-and-forget)
+    const userId = authStateManager.getUserId();
+    if (userId) {
+      useWorkoutStore
+        .getState()
+        .syncScheduledWorkoutsFromBackend(userId)
+        .catch(() => {});
+    }
   } catch (error) {
     logger.error('[StoreManager] Rehydration error', { error });
   }

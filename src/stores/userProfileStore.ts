@@ -121,22 +121,44 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
       if (error) {
         // If profile doesn't exist, create it
         if (error.code === 'PGRST116') {
-          const { data: newProfile, error: createError } = await supabase
+          // Use upsert with ignoreDuplicates to handle races: if another concurrent call
+          // already created the profile, we preserve its existing data (weight, height,
+          // custom avatar_url, etc.) rather than overwriting with OAuth defaults.
+          const { data: newProfile } = await supabase
             .from('profiles')
-            .insert({
-              id: user.id,
-              email: user.email,
-              name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-              avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
-            })
+            .upsert(
+              {
+                id: user.id,
+                email: user.email,
+                name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+                avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+              },
+              { onConflict: 'id', ignoreDuplicates: true }
+            )
             .select()
             .single();
 
-          if (!createError && newProfile) {
+          if (newProfile) {
+            // Fresh insert succeeded — use the returned row
             set({ profile: newProfile, isLoading: false, lastFetchedAt: Date.now() });
             return;
           }
-          // Profile doesn't exist and couldn't be created - expected for sign-in attempts without an account
+
+          // upsert was a no-op (row already existed) — fetch the existing profile so
+          // we don't lose any data the user previously saved (weight, height, avatar, etc.)
+          const { data: existingProfile, error: refetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (!refetchError && existingProfile) {
+            set({ profile: existingProfile, isLoading: false, lastFetchedAt: Date.now() });
+            return;
+          }
+
+          // Profile doesn't exist and couldn't be created — expected for sign-in screens
+          // where the user doesn't have an account yet
           set({ isLoading: false, lastFetchedAt: null });
           return;
         }

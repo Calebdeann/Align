@@ -1,80 +1,84 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { colors, fonts, fontSize, cardStyle } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
+import { colors, fonts, fontSize } from '@/constants/theme';
 import { BODY_GRAPH_COLORS } from '@/constants/muscleGroups';
-import {
-  getMuscleDataByTimeframe,
-  type MuscleTimeframe,
-  type BodyGraphMuscleData,
-} from '@/services/api/recovery';
+import type { BodyGraphMuscleData } from '@/services/api/recovery';
 import BodyGraphFront from './BodyGraphFront';
 import BodyGraphBack from './BodyGraphBack';
-import TimeframeSelector from './TimeframeSelector';
 
 interface BodyGraphProps {
-  userId: string;
+  muscleData: BodyGraphMuscleData[];
+  isLoading?: boolean;
 }
 
-export default function BodyGraph({ userId }: BodyGraphProps) {
-  const [timeframe, setTimeframe] = useState<MuscleTimeframe>('week');
-  const [muscleData, setMuscleData] = useState<BodyGraphMuscleData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function BodyGraph({ muscleData, isLoading = false }: BodyGraphProps) {
+  const { t } = useTranslation();
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    const data = await getMuscleDataByTimeframe(userId, timeframe);
-    setMuscleData(data);
-    setIsLoading(false);
-  }, [userId, timeframe]);
+  // Build separate tiermaps for front and back views.
+  //
+  // Mapping rules:
+  //   biceps  → front "arms"  (Front_Arms image shows bicep/forearm area)
+  //   triceps → back "arms"   (Back_Arms image shows tricep/forearm area)
+  //   core    → front "abs"   (image is named Abs, not Core)
+  //   all others appear on both views under the same key
+  const frontTierMap: Record<string, number> = {};
+  const backTierMap: Record<string, number> = {};
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Convert muscle data array to color map for SVG components
-  const colorMap: Record<string, string> = {};
   muscleData.forEach((m) => {
-    colorMap[m.groupId] = m.color;
+    const tier = m.intensityTier;
+    switch (m.groupId) {
+      case 'biceps':
+        frontTierMap['arms'] = tier;
+        break;
+      case 'triceps':
+        backTierMap['arms'] = tier;
+        break;
+      case 'core':
+        frontTierMap['abs'] = tier;
+        break;
+      default:
+        frontTierMap[m.groupId] = tier;
+        backTierMap[m.groupId] = tier;
+    }
   });
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Muscle Worked</Text>
-
-      <TimeframeSelector selected={timeframe} onSelect={setTimeframe} />
-
-      <View style={styles.bodyContainer}>
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={colors.primary} />
+    <View style={styles.container}>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={colors.primary} />
+        </View>
+      ) : (
+        <View style={styles.graphRow}>
+          <View style={styles.graphView}>
+            <BodyGraphFront tierMap={frontTierMap} />
+            <Text style={styles.viewLabel}>Front</Text>
           </View>
-        ) : (
-          <View style={styles.graphRow}>
-            <View style={styles.graphView}>
-              <BodyGraphFront colorMap={colorMap} />
-              <Text style={styles.viewLabel}>Front</Text>
-            </View>
-            <View style={styles.graphView}>
-              <BodyGraphBack colorMap={colorMap} />
-              <Text style={styles.viewLabel}>Back</Text>
-            </View>
+          <View style={styles.graphView}>
+            <BodyGraphBack tierMap={backTierMap} />
+            <Text style={styles.viewLabel}>Back</Text>
           </View>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Intensity legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: BODY_GRAPH_COLORS[1] }]} />
-          <Text style={styles.legendText}>Light</Text>
+          <Text style={styles.legendText}>{t('recovery.intensity.light')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: BODY_GRAPH_COLORS[2] }]} />
-          <Text style={styles.legendText}>Moderate</Text>
+          <Text style={styles.legendText}>{t('recovery.intensity.moderate')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: BODY_GRAPH_COLORS[3] }]} />
-          <Text style={styles.legendText}>Heavy</Text>
+          <Text style={styles.legendText}>{t('recovery.intensity.heavy')}</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: BODY_GRAPH_COLORS[4] }]} />
+          <Text style={styles.legendText}>{t('recovery.intensity.overreached')}</Text>
         </View>
       </View>
     </View>
@@ -82,23 +86,11 @@ export default function BodyGraph({ userId }: BodyGraphProps) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    ...cardStyle,
-    padding: 20,
+  container: {
     gap: 16,
   },
-  title: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  bodyContainer: {
-    minHeight: 320,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   loadingContainer: {
-    flex: 1,
+    height: 320,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -120,7 +112,8 @@ const styles = StyleSheet.create({
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   legendItem: {
     flexDirection: 'row',
