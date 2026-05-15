@@ -18,11 +18,11 @@ const STEPS = [
   {
     label: 'Step 3',
     description:
-      'Find Alyne and tap the \u201C+\u201D button. If Alyne doesn\u2019t show up, try restarting your phone. This should refresh your options',
+      'Find It Girl and tap the \u201C+\u201D button. If It Girl doesn\u2019t show up, try restarting your phone. This should refresh your options',
   },
   {
     label: 'Step 4',
-    description: 'Drag Alyne to the top and tap \u201CDone\u201D \uD83C\uDF89',
+    description: 'Drag It Girl to the top and tap \u201CDone\u201D \uD83C\uDF89',
   },
 ];
 
@@ -46,7 +46,7 @@ export default function ShortcutGuideScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Add Alyne to your shortcuts</Text>
+        <Text style={styles.title}>Add It Girl to your shortcuts</Text>
 
         {STEPS.map((step) => (
           <View key={step.label} style={styles.stepContainer}>

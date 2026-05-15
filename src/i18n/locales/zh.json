@@ -82,7 +82,7 @@
     "ft": "ft"
   },
   "welcome": {
-    "align": "ALYNE",
+    "align": "SNATCHED",
     "forTheGirls": "为女孩们而生",
     "getStarted": "开始使用",
     "alreadyHaveAccount": "已有账号? ",
@@ -117,7 +117,7 @@
   },
   "onboarding": {
     "intro": {
-      "slide1Title": "欢迎来到 Alyne!",
+      "slide1Title": "欢迎来到 Snatched!",
       "slide1Subtitle": "轻松记录你的训练, 追踪每一组动作",
       "slide2Title": "衡量进步",
       "slide2Subtitle": "通过深度数据分析追踪你的进步和成果",
@@ -178,13 +178,13 @@
       "confidence": "缺乏自信"
     },
     "obstacleResponse": {
-      "scheduleTitle": "Alyne 让你轻松\n安排训练计划",
+      "scheduleTitle": "Snatched 让你轻松\n安排训练计划",
       "scheduleSubtitle": "你的一周, 你做主!",
-      "knowledgeTitle": "Alyne 让你轻松\n知道该练什么",
+      "knowledgeTitle": "Snatched 让你轻松\n知道该练什么",
       "knowledgeSubtitle": "专业训练模板, 随时可用!",
-      "motivationTitle": "Alyne 让你轻松\n保持动力",
+      "motivationTitle": "Snatched 让你轻松\n保持动力",
       "motivationSubtitle": "追踪进步, 见证自己的成长!",
-      "confidenceTitle": "Alyne 让你轻松\n自信地训练",
+      "confidenceTitle": "Snatched 让你轻松\n自信地训练",
       "confidenceSubtitle": "每个动作都有详细讲解, 一步一步来!"
     },
     "triedApps": {
@@ -193,12 +193,12 @@
       "no": "没有"
     },
     "goalComparison": {
-      "title": "使用 Alyne\n比自己练\n{{action}}两倍的体重",
+      "title": "使用 Snatched\n比自己练\n{{action}}两倍的体重",
       "lose": "减掉",
       "gain": "增加",
-      "withoutAlyne": "没有\nAlyne",
-      "withAlyne": "使用\nAlyne",
-      "comparisonText": "Alyne 让健身变得简单\n并帮你保持自律"
+      "withoutAlyne": "没有\nSnatched",
+      "withAlyne": "使用\nSnatched",
+      "comparisonText": "Snatched 让健身变得简单\n并帮你保持自律"
     },
     "goalReality": {
       "realisticTarget": "{{diff}}{{unit}} 是一个切实可行的目标。你可以做到的!"
@@ -261,8 +261,8 @@
       "title": "帮助我们成长!",
       "rating": "4.8",
       "appStoreRating": "App Store 评分",
-      "sectionTitle": "Alyne 就是为\n你这样的人打造的",
-      "usersLove": "用户超爱 Alyne!",
+      "sectionTitle": "Snatched 就是为\n你这样的人打造的",
+      "usersLove": "用户超爱 Snatched!",
       "love": "超爱",
       "review1Author": "Ellie Sullivan",
       "review1Text": "两个月减了 15 磅! 我本来都要用 Ozempic 了, 决定先试试这个应用, 结果真的有效 :)",
@@ -297,11 +297,11 @@
     "thankYou": {
       "title": "谢谢你\n信任我们!",
       "percentage": "94% 的用户",
-      "description": "认为 Alyne 简单易用\n并且能帮助她们保持规律"
+      "description": "认为 Snatched 简单易用\n并且能帮助她们保持规律"
     },
     "reminder": {
       "question": "你想接收训练提醒吗?",
-      "notificationApp": "Alyne",
+      "notificationApp": "Snatched",
       "notificationTime": "2小时前",
       "notificationTitle": "今日训练: 臀部",
       "notificationBody": "臀推, 罗马尼亚硬拉, 保加利亚分腿蹲",
@@ -346,7 +346,7 @@
     "dateHeaderToday": "今天 - {{dayName}}, {{month}} {{day}}日",
     "dateHeader": "{{dayName}}, {{month}} {{day}}日",
     "founderGreeting": "嗨 {{name}}!",
-    "founderBody1": "我们是 Caleb 和 Cass, Alyne 的创始人。非常感谢你试用我们的应用!",
+    "founderBody1": "我们是 Caleb 和 Cass, Snatched 的创始人。非常感谢你试用我们的应用!",
     "founderBody2": "我们的使命是打造全世界最好的女性健身追踪器, 所以你的任何反馈都非常宝贵!",
     "founderBody3": "你可以发邮件到 aligntracker@gmail.com 联系我们"
   },
@@ -558,7 +558,7 @@
     "noTemplate": "无模板",
     "startWithoutTemplate": "不使用模板开始",
     "yourTemplates": "你的模板",
-    "alignTemplates": "Alyne 模板",
+    "alignTemplates": "Snatched 模板",
     "colour": "颜色",
     "dateAndTime": "日期和时间",
     "date": "日期",

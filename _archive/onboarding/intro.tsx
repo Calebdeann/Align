@@ -1,0 +1,223 @@
+import { useCallback, useRef } from 'react';
+import { View, StyleSheet, useWindowDimensions, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolation,
+  SharedValue,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
+import MixedHeading from '@/components/MixedHeading';
+import { OnboardingContinueButton } from '@/components';
+
+// heightRatio = pixel height / pixel width; topOffset shifts image down; scale is uniform zoom
+const SLIDES = [
+  {
+    image: require('../../assets/Onboarding Assets/Onboarding P2/2.1.png'),
+    heightRatio: 2190 / 1276,
+    topOffset: 0,
+    scale: 1,
+    boldLine: 'Visualise',
+    italicPhrase: 'your workouts',
+  },
+  {
+    image: null,
+    heightRatio: null,
+    topOffset: 0,
+    scale: 1,
+    boldLine: 'Track',
+    italicPhrase: 'every session',
+  },
+  {
+    image: require('../../assets/Onboarding Assets/Onboarding P2/2.3.png'),
+    heightRatio: 2058 / 1354,
+    topOffset: 30,
+    scale: 1.05,
+    boldLine: 'Motivate',
+    italicPhrase: 'each other',
+  },
+];
+
+type Slide = (typeof SLIDES)[number];
+
+function SlideHeading({
+  index,
+  slide,
+  scrollX,
+  width,
+}: {
+  index: number;
+  slide: Slide;
+  scrollX: SharedValue<number>;
+  width: number;
+}) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
+    return { opacity };
+  });
+
+  return (
+    <Animated.View
+      style={[styles.headingWrapper, StyleSheet.absoluteFill, animatedStyle]}
+      pointerEvents="none"
+    >
+      <MixedHeading boldLine={slide.boldLine} italicPhrase={slide.italicPhrase} size={44} />
+    </Animated.View>
+  );
+}
+
+export default function IntroScreen() {
+  const { width } = useWindowDimensions();
+  const scrollX = useSharedValue(0);
+  const scrollViewRef = useRef<Animated.ScrollView>(null);
+  // currentPageRef is the source of truth for navigation — updated on scroll settle,
+  // not from the Reanimated shared value which can lag on the JS thread.
+  const currentPageRef = useRef(0);
+  const { isNavigating, withLock } = useNavigationLock();
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+    },
+  });
+
+  function handleScrollEnd(e: { nativeEvent: { contentOffset: { x: number } } }) {
+    currentPageRef.current = Math.round(e.nativeEvent.contentOffset.x / width);
+  }
+
+  const handleContinue = useCallback(() => {
+    const page = currentPageRef.current;
+    if (page >= SLIDES.length - 1) {
+      withLock(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        router.push('/onboarding/become');
+      });
+    } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const nextPage = page + 1;
+      currentPageRef.current = nextPage;
+      scrollViewRef.current?.scrollTo({ x: nextPage * width, animated: true });
+    }
+  }, [width, withLock]);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Image carousel with gradient overlaid on top */}
+      <View style={styles.imageSection}>
+        <Animated.ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          onMomentumScrollEnd={handleScrollEnd}
+          decelerationRate="fast"
+          bounces={false}
+          style={StyleSheet.absoluteFill}
+        >
+          {SLIDES.map((slide, index) => (
+            <View key={index} style={[styles.slide, { width }]}>
+              {slide.image && slide.heightRatio ? (
+                // Scaled width/height for uniform zoom; negative marginLeft re-centres the
+                // wider image; marginTop shifts it down. Overflow clipped by slide container.
+                <Image
+                  source={slide.image}
+                  style={{
+                    width: width * slide.scale,
+                    height: width * slide.heightRatio * slide.scale,
+                    marginLeft: -(width * slide.scale - width) / 2,
+                    marginTop: slide.topOffset,
+                  }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.imagePlaceholder} />
+              )}
+            </View>
+          ))}
+        </Animated.ScrollView>
+
+        {/* Gradient fades white over the bottom of the images */}
+        <LinearGradient
+          colors={['rgba(255,255,255,0)', '#ffffff']}
+          style={styles.imageGradient}
+          pointerEvents="none"
+        />
+      </View>
+
+      {/* Animated headings, one per slide fading in/out */}
+      <View style={styles.headingArea}>
+        {SLIDES.map((slide, index) => (
+          <SlideHeading key={index} index={index} slide={slide} scrollX={scrollX} width={width} />
+        ))}
+      </View>
+
+      {/* 50px gap between heading and button; imageSection (flex:1) absorbs this so button stays fixed at bottom */}
+      <View style={styles.headingButtonSpacer} />
+
+      {/* Continue pill button */}
+      <View style={styles.bottomSection}>
+        <OnboardingContinueButton onPress={handleContinue} disabled={isNavigating} />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  imageSection: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  slide: {
+    height: '100%',
+    overflow: 'hidden',
+  },
+  slideImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imagePlaceholder: {
+    flex: 1,
+    width: '100%',
+  },
+  imageGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 220,
+  },
+  headingArea: {
+    height: 100,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  headingWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  headingButtonSpacer: {
+    height: 20,
+  },
+  bottomSection: {
+    alignItems: 'center',
+    paddingBottom: spacing.lg,
+    paddingTop: 4,
+  },
+});

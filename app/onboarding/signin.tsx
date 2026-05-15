@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -8,15 +17,15 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { fonts, spacing } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
 import { clearAnonymousSession } from '@/services/anonymousSession';
+import { OnboardingBackButton } from '@/components';
 
-// Required for web browser auth to close properly
 WebBrowser.maybeCompleteAuthSession();
 
-// Purple login screen - for EXISTING users only (accessed from intro screen)
-// New users must create accounts after completing onboarding + paywall
+const { width, height } = Dimensions.get('screen');
+
 export default function SignInScreen() {
   const { t } = useTranslation();
   const [isAppleLoading, setIsAppleLoading] = useState(false);
@@ -25,15 +34,11 @@ export default function SignInScreen() {
   const handleAppleSignIn = async () => {
     try {
       setIsAppleLoading(true);
-
-      // Generate nonce for Supabase token verification
       const rawNonce = Crypto.randomUUID();
       const hashedNonce = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
         rawNonce
       );
-
-      // Get Apple credential with hashed nonce
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -41,47 +46,35 @@ export default function SignInScreen() {
         ],
         nonce: hashedNonce,
       });
-
       if (!credential.identityToken) {
         Alert.alert(t('auth.signInFailed'), t('auth.appleTokenError'));
         return;
       }
-
-      // Sign in with Supabase using the Apple ID token + raw nonce
       const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'apple',
         token: credential.identityToken,
         nonce: rawNonce,
       });
-
       if (error) throw error;
-
       if (!data.user) {
         Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
         return;
       }
-
-      // Check if user has completed onboarding (existing user check)
       const { data: profile } = await supabase
         .from('profiles')
         .select('id')
         .eq('id', data.user.id)
         .single();
-
       if (!profile) {
-        // No profile = new user, they need to go through onboarding first
         await supabase.auth.signOut();
         Alert.alert(t('auth.noAccountFound'), t('auth.noAccountMessage'), [
           { text: t('common.ok') },
         ]);
         return;
       }
-
-      // Existing user - clear any stale anonymous session and go to main app
       await clearAnonymousSession();
-      router.replace('/(tabs)');
+      router.replace('/onboarding/find-partner');
     } catch (error: any) {
-      // Don't show error if user cancelled
       if (error.code === 'ERR_REQUEST_CANCELED') return;
       Alert.alert(t('auth.signInFailed'), error?.message || t('auth.appleSignInError'));
     } finally {
@@ -92,72 +85,51 @@ export default function SignInScreen() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-
       const redirectTo = 'alyne://auth/callback';
-
-      // Start OAuth flow with Supabase
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true,
-        },
+        options: { redirectTo, skipBrowserRedirect: true },
       });
-
       if (error) throw error;
-
       if (!data.url) {
         Alert.alert(t('auth.signInFailed'), t('auth.googleStartError'));
         return;
       }
-
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-
       if (result.type !== 'success') {
         if (result.type !== 'dismiss' && result.type !== 'cancel') {
           Alert.alert(t('auth.signInFailed'), t('auth.googleInterruptedError'));
         }
         return;
       }
-
       if (!result.url) {
         Alert.alert(t('auth.signInFailed'), t('auth.googleNoResponse'));
         return;
       }
-
-      // Extract the tokens from the redirect URL
       const url = new URL(result.url);
       const params = new URLSearchParams(url.hash.substring(1));
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
-
       if (!accessToken) {
         const errorDesc =
           params.get('error_description') || url.searchParams.get('error_description');
         Alert.alert(t('auth.signInFailed'), errorDesc || t('auth.googleSignInError'));
         return;
       }
-
-      // Set the session in Supabase
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken || '',
       });
-
       if (sessionError) throw sessionError;
-
       if (!sessionData.user) {
         Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
         return;
       }
-
-      // Check if user has completed onboarding (existing user check)
       const { data: profile } = await supabase
         .from('profiles')
         .select('id')
         .eq('id', sessionData.user.id)
         .single();
-
       if (!profile) {
         await supabase.auth.signOut();
         Alert.alert(t('auth.noAccountFound'), t('auth.noAccountMessage'), [
@@ -165,10 +137,8 @@ export default function SignInScreen() {
         ]);
         return;
       }
-
-      // Existing user - clear any stale anonymous session and go to main app
       await clearAnonymousSession();
-      router.replace('/(tabs)');
+      router.replace('/onboarding/find-partner');
     } catch (error: any) {
       Alert.alert(t('auth.signInFailed'), t('auth.googleSignInError'));
     } finally {
@@ -178,28 +148,38 @@ export default function SignInScreen() {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Back button */}
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
-          style={styles.backButton}
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
+      {/* Full-screen background image */}
+      <Image
+        source={require('../../assets/Onboarding Assets/Onboarding P14/auth-bg.png')}
+        style={styles.bgImage}
+        resizeMode="cover"
+      />
 
-        {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.welcomeText}>{t('auth.welcomeBack')}</Text>
+      {/* Top safe area: header */}
+      <SafeAreaView edges={['top']} style={styles.topArea}>
+        <View style={styles.header}>
+          <OnboardingBackButton />
+          <View style={styles.progressCenter}>
+            <View style={styles.progressBarBg}>
+              <View style={styles.progressBarFill} />
+            </View>
+          </View>
+          <View style={{ width: 44 }} />
         </View>
 
-        {/* Sign in buttons */}
-        <View style={styles.bottomSection}>
-          {/* Apple Sign-In Button */}
+        {/* Title */}
+        <Text style={styles.title}>
+          {'Save your '}
+          <Text style={styles.titleItalic}>progress</Text>
+        </Text>
+      </SafeAreaView>
+
+      {/* Centered auth buttons */}
+      <View style={styles.buttonsArea}>
+        <View style={styles.buttons}>
+          {/* Apple */}
           <Pressable
-            style={styles.appleButton}
+            style={[styles.authButton, styles.appleButton, { marginBottom: 5 }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               handleAppleSignIn();
@@ -209,16 +189,16 @@ export default function SignInScreen() {
             {isAppleLoading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <View style={styles.buttonContent}>
-                <Ionicons name="logo-apple" size={22} color="#FFFFFF" />
+              <View style={styles.buttonRow}>
+                <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
                 <Text style={styles.appleButtonText}>{t('auth.continueWithApple')}</Text>
               </View>
             )}
           </Pressable>
 
-          {/* Google Sign-In Button */}
+          {/* Google */}
           <Pressable
-            style={styles.googleButton}
+            style={[styles.authButton, styles.googleButton]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               handleGoogleSignIn();
@@ -228,7 +208,7 @@ export default function SignInScreen() {
             {isGoogleLoading ? (
               <ActivityIndicator color="#000000" />
             ) : (
-              <View style={styles.buttonContent}>
+              <View style={styles.buttonRow}>
                 <Image
                   source={require('../../assets/images/google-logo.png')}
                   style={styles.googleLogo}
@@ -239,17 +219,17 @@ export default function SignInScreen() {
             )}
           </Pressable>
 
-          {/* Email sign-in link */}
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/onboarding/email-signin');
-            }}
-          >
-            <Text style={styles.emailLinkText}>{t('auth.signInWithEmail')}</Text>
-          </Pressable>
+          {/* DEV SKIP */}
+          {__DEV__ && (
+            <Pressable
+              onPress={() => router.replace('/onboarding/find-partner')}
+              style={styles.devButton}
+            >
+              <Text style={styles.devButtonText}>Dev: Skip Auth →</Text>
+            </Pressable>
+          )}
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
@@ -257,62 +237,106 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: '#FFFFFF',
   },
-  safeArea: {
-    flex: 1,
+  bgImage: {
+    position: 'absolute',
+    width,
+    height,
   },
-  backButton: {
-    padding: spacing.lg,
+  topArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
-  backArrow: {
-    fontSize: 24,
-    color: '#FFFFFF',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  welcomeText: {
-    fontFamily: fonts.bold,
-    fontSize: 48,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 56,
-  },
-  bottomSection: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
-    gap: spacing.md,
+    paddingTop: spacing.sm,
+    gap: 12,
+  },
+  progressCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressBarBg: {
+    width: 100,
+    height: 4,
+    backgroundColor: '#D9D9D9',
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    width: 90,
+    height: 4,
+    backgroundColor: '#000000',
+  },
+  title: {
+    fontFamily: fonts.instrumentSerif,
+    fontSize: 52,
+    color: '#000000',
+    textAlign: 'center',
+    paddingTop: spacing.xl,
+    lineHeight: 62,
+    paddingHorizontal: spacing.lg,
+  },
+  titleItalic: {
+    fontFamily: fonts.instrumentSerifItalic,
+    fontSize: 52,
+  },
+  buttonsArea: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '20%',
+    right: '20%',
+    justifyContent: 'center',
+    paddingBottom: '20%',
+  },
+  buttons: {
+    gap: spacing.sm,
+  },
+  authButton: {
+    height: 54,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   appleButton: {
     backgroundColor: '#000000',
-    paddingVertical: 16,
-    borderRadius: 30,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
+  devButton: {
+    alignSelf: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255,0,0,0.12)',
+    borderRadius: 8,
   },
-  appleButtonText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
-    color: '#FFFFFF',
+  devButtonText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: 'red',
   },
   googleButton: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 16,
-    borderRadius: 30,
-    width: '100%',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  buttonRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 10,
+  },
+  appleButtonText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 16,
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
   googleLogo: {
     width: 20,
@@ -320,14 +344,8 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
+    fontSize: 16,
     color: '#000000',
-  },
-  emailLinkText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-    paddingVertical: spacing.sm,
+    letterSpacing: -0.2,
   },
 });

@@ -1,0 +1,411 @@
+import React, { useRef, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, Pressable, Dimensions, ScrollView } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { lbsToKg, kgToLbs } from '@/utils/units';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { OnboardingBackButton, OnboardingContinueButton } from '@/components';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const TICK_SPACING = 12; // Spacing between each whole number tick - larger for easier dragging
+
+// Weight ranges
+const MIN_LBS = 60;
+const MAX_LBS = 600;
+const MIN_KG = 30;
+const MAX_KG = 250;
+
+// Starting weights
+const DEFAULT_LBS = 130;
+const DEFAULT_KG = 58;
+
+export default function WeightScreen() {
+  const { t } = useTranslation();
+  const { currentWeight, setCurrentWeight, setTargetWeight, bodyChangeGoal } = useOnboardingStore();
+  const { weightUnit, setWeightUnit } = useUserPreferencesStore();
+  const { isNavigating, withLock } = useNavigationLock();
+
+  // Derive display unit from preferences ('lbs' -> 'lb' for UI)
+  const unit = weightUnit === 'lbs' ? 'lb' : 'kg';
+
+  // Internal state stores weight in lbs for ruler calculations
+  // currentWeight from store is in kg, convert to lbs for initial value
+  const getInitialWeightLbs = () => {
+    if (currentWeight > 0) {
+      return kgToLbs(currentWeight);
+    }
+    // Default based on unit preference
+    return weightUnit === 'lbs' ? DEFAULT_LBS : kgToLbs(DEFAULT_KG);
+  };
+
+  const [weightLbs, setWeightLbs] = useState(getInitialWeightLbs);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const lastWeightRef = useRef(Math.round(getInitialWeightLbs()));
+
+  // Convert between units for display (whole numbers only)
+  const weightKg = lbsToKg(weightLbs);
+  const displayWeight = unit === 'lb' ? Math.round(weightLbs) : Math.round(weightKg);
+
+  // Update preferences when user toggles unit - reset to default for that unit
+  const handleUnitChange = (newUnit: 'kg' | 'lb') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setWeightUnit(newUnit === 'lb' ? 'lbs' : 'kg');
+
+    // Reset to default weight for the new unit
+    if (newUnit === 'lb') {
+      setWeightLbs(DEFAULT_LBS);
+      lastWeightRef.current = DEFAULT_LBS;
+      const offset = (DEFAULT_LBS - MIN_LBS) * TICK_SPACING;
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ x: offset, animated: false });
+      }, 50);
+    } else {
+      const defaultLbsFromKg = DEFAULT_KG / 0.453592;
+      setWeightLbs(defaultLbsFromKg);
+      lastWeightRef.current = DEFAULT_KG;
+      const offset = (DEFAULT_KG - MIN_KG) * TICK_SPACING;
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ x: offset, animated: false });
+      }, 50);
+    }
+  };
+
+  const handleScroll = (event: any) => {
+    const x = event.nativeEvent.contentOffset.x;
+    let newDisplayWeight: number;
+
+    if (unit === 'lb') {
+      // Each tick = 1 lb
+      const newWeight = MIN_LBS + x / TICK_SPACING;
+      const clampedWeight = Math.min(Math.max(Math.round(newWeight), MIN_LBS), MAX_LBS);
+      setWeightLbs(clampedWeight);
+      newDisplayWeight = clampedWeight;
+    } else {
+      // Each tick = 1 kg, convert back to lbs for storage
+      const newKg = MIN_KG + x / TICK_SPACING;
+      const clampedKg = Math.min(Math.max(Math.round(newKg), MIN_KG), MAX_KG);
+      const lbsValue = clampedKg / 0.453592;
+      setWeightLbs(lbsValue);
+      newDisplayWeight = clampedKg;
+    }
+
+    // Strong haptic feedback when weight value changes
+    if (newDisplayWeight !== lastWeightRef.current) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      lastWeightRef.current = newDisplayWeight;
+    }
+  };
+
+  // Generate lb ruler ticks - 1 tick per lb, major tick every 10 lbs
+  const lbRulerTicks = useMemo(() => {
+    const ticks = [];
+    const totalTicks = MAX_LBS - MIN_LBS;
+
+    for (let i = 0; i <= totalTicks; i++) {
+      const isMajorTick = i % 10 === 0;
+
+      ticks.push(
+        <View key={i} style={styles.tickColumn}>
+          <View style={[styles.tick, isMajorTick ? styles.tickMajor : styles.tickMinor]} />
+        </View>
+      );
+    }
+    return ticks;
+  }, []);
+
+  // Generate kg ruler ticks - 1 tick per kg, major tick every 10 kg
+  const kgRulerTicks = useMemo(() => {
+    const ticks = [];
+    const totalTicks = MAX_KG - MIN_KG;
+
+    for (let i = 0; i <= totalTicks; i++) {
+      const isMajorTick = i % 10 === 0;
+
+      ticks.push(
+        <View key={i} style={styles.tickColumn}>
+          <View style={[styles.tick, isMajorTick ? styles.tickMajor : styles.tickMinor]} />
+        </View>
+      );
+    }
+    return ticks;
+  }, []);
+
+  // Calculate initial offset based on current unit (1 tick per whole unit)
+  const initialOffset =
+    unit === 'lb'
+      ? (Math.round(weightLbs) - MIN_LBS) * TICK_SPACING
+      : (Math.round(weightLbs * 0.453592) - MIN_KG) * TICK_SPACING;
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <OnboardingBackButton />
+
+        <View style={styles.progressBarContainer}>
+          <View style={styles.progressBarBackground} />
+          <View style={[styles.progressBarFill, { width: '32%' }]} />
+        </View>
+
+        <Pressable
+          onPress={() =>
+            withLock(() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              useOnboardingStore.getState().skipField('currentWeight');
+              const needsTargetWeight =
+                bodyChangeGoal === 'lose_weight' || bodyChangeGoal === 'gain_weight';
+              router.push(
+                needsTargetWeight ? '/onboarding/target-weight' : '/onboarding/training-location'
+              );
+            })
+          }
+          disabled={isNavigating}
+        >
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
+        </Pressable>
+      </View>
+
+      {/* Question */}
+      <View style={styles.questionContainer}>
+        <Text style={styles.questionText}>{t('onboarding.weight.question')}</Text>
+      </View>
+
+      {/* Unit Toggle */}
+      <View style={styles.toggleContainer}>
+        <View style={styles.toggleBackground}>
+          <Pressable
+            style={[styles.toggleOption, unit === 'kg' && styles.toggleOptionActive]}
+            onPress={() => handleUnitChange('kg')}
+          >
+            <Text style={[styles.toggleText, unit === 'kg' && styles.toggleTextActive]}>
+              {t('units.kg')}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.toggleOption, unit === 'lb' && styles.toggleOptionActive]}
+            onPress={() => handleUnitChange('lb')}
+          >
+            <Text style={[styles.toggleText, unit === 'lb' && styles.toggleTextActive]}>
+              {t('units.lb')}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Weight Display */}
+      <View style={styles.weightDisplayContainer}>
+        <Text style={styles.weightNumber}>{displayWeight}</Text>
+        <Text style={styles.weightUnit}>{unit}</Text>
+      </View>
+
+      {/* Ruler section - centered */}
+      <View style={styles.rulerSection}>
+        {/* Center indicator line - pointing UP */}
+        <View style={styles.indicatorLine} />
+
+        {/* Shaded area to the right */}
+        <View style={styles.shadedRight} />
+
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          decelerationRate="normal"
+          bounces={true}
+          contentContainerStyle={{
+            paddingHorizontal: SCREEN_WIDTH / 2,
+          }}
+          contentOffset={{ x: initialOffset, y: 0 }}
+        >
+          <View style={styles.rulerContainer}>{unit === 'lb' ? lbRulerTicks : kgRulerTicks}</View>
+        </ScrollView>
+      </View>
+
+      {/* Spacer */}
+      <View style={styles.spacer} />
+
+      {/* Continue button */}
+      <View style={styles.bottomSection}>
+        <OnboardingContinueButton
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              // Always store weight in kg
+              const weightInKg = lbsToKg(weightLbs);
+              setCurrentWeight(weightInKg);
+              setTargetWeight(weightInKg);
+              // Save to Supabase (in kg)
+              useOnboardingStore.getState().setAndSave('currentWeight', weightInKg);
+              useOnboardingStore.getState().setAndSave('unit', unit === 'lb' ? 'lb' : 'kg');
+              // Only show target-weight flow for lose/gain weight goals
+              const needsTargetWeight =
+                bodyChangeGoal === 'lose_weight' || bodyChangeGoal === 'gain_weight';
+              router.push(
+                needsTargetWeight ? '/onboarding/target-weight' : '/onboarding/training-location'
+              );
+            })
+          }
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundOnboarding,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    gap: spacing.md,
+  },
+  progressBarContainer: {
+    flex: 1,
+    height: 4,
+    position: 'relative',
+  },
+  progressBarBackground: {
+    position: 'absolute',
+    width: '100%',
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+  },
+  progressBarFill: {
+    position: 'absolute',
+    height: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  skipText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  questionContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    alignItems: 'center',
+  },
+  questionText: {
+    fontFamily: fonts.bold,
+    fontSize: 28,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  toggleContainer: {
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  toggleBackground: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 25,
+    padding: 4,
+  },
+  toggleOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderRadius: 20,
+  },
+  toggleOptionActive: {
+    backgroundColor: colors.background,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+  },
+  toggleTextActive: {
+    color: colors.text,
+  },
+  weightDisplayContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    marginTop: spacing.xxl,
+    marginBottom: spacing.xl,
+  },
+  weightNumber: {
+    fontFamily: fonts.bold,
+    fontSize: 72,
+    color: colors.text,
+  },
+  weightUnit: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xl,
+    color: colors.textSecondary,
+    marginLeft: spacing.sm,
+  },
+  rulerSection: {
+    height: 80,
+    position: 'relative',
+  },
+  indicatorLine: {
+    position: 'absolute',
+    left: SCREEN_WIDTH / 2 - 1.5,
+    bottom: 0,
+    height: 60,
+    width: 3,
+    backgroundColor: colors.primary,
+    borderRadius: 1.5,
+    zIndex: 10,
+    pointerEvents: 'none',
+  },
+  shadedRight: {
+    position: 'absolute',
+    left: SCREEN_WIDTH / 2,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: colors.primary + '12',
+    zIndex: 1,
+    pointerEvents: 'none',
+  },
+  rulerContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: 80,
+  },
+  tickColumn: {
+    width: TICK_SPACING,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 1,
+  },
+  tick: {
+    backgroundColor: colors.border,
+  },
+  tickMajor: {
+    width: 2,
+    height: 30,
+  },
+  tickMinor: {
+    width: 1,
+    height: 15,
+  },
+  spacer: {
+    flex: 1,
+  },
+  bottomSection: {
+    alignItems: 'center',
+    paddingBottom: 24,
+    paddingTop: 4,
+  },
+});

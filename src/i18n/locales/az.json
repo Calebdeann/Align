@@ -82,7 +82,7 @@
     "ft": "ft"
   },
   "welcome": {
-    "align": "ALYNE",
+    "align": "SNATCHED",
     "forTheGirls": "QIZLAR ÜÇÜN",
     "getStarted": "Başla",
     "alreadyHaveAccount": "Artıq hesabın var? ",
@@ -117,7 +117,7 @@
   },
   "onboarding": {
     "intro": {
-      "slide1Title": "Alyne-a xoş gəldin!",
+      "slide1Title": "Snatched-a xoş gəldin!",
       "slide1Subtitle": "Məşqlərini asanlıqla qeyd et, hər seti izlə",
       "slide2Title": "İrəliləyişi Ölç",
       "slide2Subtitle": "Ətraflı analitikamızla irəliləyişini və nailiyyətlərini izlə",
@@ -178,13 +178,13 @@
       "confidence": "Özümə güvənmirəm"
     },
     "obstacleResponse": {
-      "scheduleTitle": "Alyne məşqlərini planlamağı\nasanlaşdırır",
+      "scheduleTitle": "Snatched məşqlərini planlamağı\nasanlaşdırır",
       "scheduleSubtitle": "Həftən, sənin qaydanla!",
-      "knowledgeTitle": "Alyne nə edəcəyini dəqiq\nbilməyi asanlaşdırır",
+      "knowledgeTitle": "Snatched nə edəcəyini dəqiq\nbilməyi asanlaşdırır",
       "knowledgeSubtitle": "Peşəkar məşq şablonları, hazırdır!",
-      "motivationTitle": "Alyne motivasiyalı qalmağı\nasanlaşdırır",
+      "motivationTitle": "Snatched motivasiyalı qalmağı\nasanlaşdırır",
       "motivationSubtitle": "İrəliləyişini izlə və inkişafını gör!",
-      "confidenceTitle": "Alyne güvənlə məşq etməyi\nasanlaşdırır",
+      "confidenceTitle": "Snatched güvənlə məşq etməyi\nasanlaşdırır",
       "confidenceSubtitle": "Hər məşq addım-addım izah olunur!"
     },
     "triedApps": {
@@ -193,12 +193,12 @@
       "no": "Xeyr"
     },
     "goalComparison": {
-      "title": "Alyne ilə tək başına\netdiyindən iki qat çox\nçəki {{action}}",
+      "title": "Snatched ilə tək başına\netdiyindən iki qat çox\nçəki {{action}}",
       "lose": "ver",
       "gain": "al",
-      "withoutAlyne": "Alyne\nolmadan",
-      "withAlyne": "Alyne\nilə",
-      "comparisonText": "Alyne bunu asanlaşdırır və səni\nməsuliyyətli tutur"
+      "withoutAlyne": "Snatched\nolmadan",
+      "withAlyne": "Snatched\nilə",
+      "comparisonText": "Snatched bunu asanlaşdırır və səni\nməsuliyyətli tutur"
     },
     "goalReality": {
       "realisticTarget": "{{diff}}{{unit}} real hədəfdir. Sən bunu bacarırsan!"
@@ -261,8 +261,8 @@
       "title": "Böyüməyimizə kömək et!",
       "rating": "4.8",
       "appStoreRating": "App Store Reytinqi",
-      "sectionTitle": "Alyne sənin kimi insanlar\nüçün yaradılıb",
-      "usersLove": "İstifadəçilər Alyne-ı SEVİR!",
+      "sectionTitle": "Snatched sənin kimi insanlar\nüçün yaradılıb",
+      "usersLove": "İstifadəçilər Snatched-ı SEVİR!",
       "love": "SEVİR",
       "review1Author": "Ellie Sullivan",
       "review1Text": "2 ayda 7 kilo verdim! Ozempic istifadə etmək istəyirdim, amma bu tətbiqi sınamağa qərar verdim və işə yaradı :)",
@@ -297,11 +297,11 @@
     "thankYou": {
       "title": "Bizə güvəndiyiniz\nüçün təşəkkürlər!",
       "percentage": "İstifadəçilərimizin 94%-i",
-      "description": "Alyne-ın istifadəsinin asan olduğunu\nvə yolunda qalmağı sadələşdirdiyini bildirir"
+      "description": "Snatched-ın istifadəsinin asan olduğunu\nvə yolunda qalmağı sadələşdirdiyini bildirir"
     },
     "reminder": {
       "question": "Məşq xatırlatmaları almaq istəyirsən?",
-      "notificationApp": "Alyne",
+      "notificationApp": "Snatched",
       "notificationTime": "2 saat əvvəl",
       "notificationTitle": "Bugünkü Məşq: Omba",
       "notificationBody": "Hip Thrust, Rumın Deadlift, Bolqar Split Squat",
@@ -346,7 +346,7 @@
     "dateHeaderToday": "Bu gün - {{dayName}}, {{month}} {{day}}",
     "dateHeader": "{{dayName}}, {{month}} {{day}}",
     "founderGreeting": "Salam {{name}}!",
-    "founderBody1": "Biz Caleb və Cass-ıq, Alyne-ı biz yaratdıq. Tətbiqimizi sınadığın üçün çox sağ ol!",
+    "founderBody1": "Biz Caleb və Cass-ıq, Snatched-ı biz yaratdıq. Tətbiqimizi sınadığın üçün çox sağ ol!",
     "founderBody2": "Missiyamız dünyanın ən yaxşı qadın məşq izləyicisini yaratmaqdır, buna görə hər hansı rəyin çox qiymətli olar!",
     "founderBody3": "Bizə aligntracker@gmail.com ünvanına yazın"
   },
@@ -558,7 +558,7 @@
     "noTemplate": "Şablon Yoxdur",
     "startWithoutTemplate": "Şablonsuz başla",
     "yourTemplates": "Sənin Şablonların",
-    "alignTemplates": "Alyne Şablonları",
+    "alignTemplates": "Snatched Şablonları",
     "colour": "Rəng",
     "dateAndTime": "Tarix və Vaxt",
     "date": "Tarix",

@@ -55,20 +55,13 @@ export default function RootLayout() {
           'Quicksand-Medium': require('../assets/fonts/Quicksand-Medium.ttf'),
           'Quicksand-SemiBold': require('../assets/fonts/Quicksand-SemiBold.ttf'),
           'Quicksand-Bold': require('../assets/fonts/Quicksand-Bold.ttf'),
-          'Canela-Medium': require('../assets/fonts/Canela-Medium-Trial.otf'),
-          'CormorantGaramond-Regular': require('@expo-google-fonts/cormorant-garamond/400Regular/CormorantGaramond_400Regular.ttf'),
-          'CormorantGaramond-Medium': require('@expo-google-fonts/cormorant-garamond/500Medium/CormorantGaramond_500Medium.ttf'),
-          'CormorantGaramond-SemiBold': require('@expo-google-fonts/cormorant-garamond/600SemiBold/CormorantGaramond_600SemiBold.ttf'),
-          'CormorantGaramond-Bold': require('@expo-google-fonts/cormorant-garamond/700Bold/CormorantGaramond_700Bold.ttf'),
-          'Lora-Regular': require('@expo-google-fonts/lora/400Regular/Lora_400Regular.ttf'),
-          'Lora-Medium': require('@expo-google-fonts/lora/500Medium/Lora_500Medium.ttf'),
-          'Lora-SemiBold': require('@expo-google-fonts/lora/600SemiBold/Lora_600SemiBold.ttf'),
-          'Lora-Bold': require('@expo-google-fonts/lora/700Bold/Lora_700Bold.ttf'),
-          'Caveat-Regular': require('@expo-google-fonts/caveat/400Regular/Caveat_400Regular.ttf'),
-          'Caveat-Medium': require('@expo-google-fonts/caveat/500Medium/Caveat_500Medium.ttf'),
-          'Caveat-SemiBold': require('@expo-google-fonts/caveat/600SemiBold/Caveat_600SemiBold.ttf'),
-          'Caveat-Bold': require('@expo-google-fonts/caveat/700Bold/Caveat_700Bold.ttf'),
-          'GochiHand-Regular': require('@expo-google-fonts/gochi-hand/400Regular/GochiHand_400Regular.ttf'),
+          'BebasNeue-Regular': require('../assets/fonts/BebasNeue-Regular.ttf'),
+          'InstrumentSerif-Regular': require('@expo-google-fonts/instrument-serif/400Regular/InstrumentSerif_400Regular.ttf'),
+          'InstrumentSerif-Italic': require('@expo-google-fonts/instrument-serif/400Regular_Italic/InstrumentSerif_400Regular_Italic.ttf'),
+          'Fraunces-Regular': require('@expo-google-fonts/fraunces/400Regular/Fraunces_400Regular.ttf'),
+          'Fraunces-Italic': require('@expo-google-fonts/fraunces/400Regular_Italic/Fraunces_400Regular_Italic.ttf'),
+          'Fraunces-SemiBold': require('@expo-google-fonts/fraunces/600SemiBold/Fraunces_600SemiBold.ttf'),
+          'Fraunces-Bold': require('@expo-google-fonts/fraunces/700Bold/Fraunces_700Bold.ttf'),
         };
         try {
           await Font.loadAsync(fontAssets);
@@ -150,7 +143,7 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="profile" />
         <Stack.Screen
@@ -200,7 +193,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
-        <SuperwallProvider apiKeys={{ ios: 'pk_vhA9Ry9TLgVUTyK_ugU0P' }}>
+        <SuperwallProvider apiKeys={{ ios: 'SUPERWALL_API_KEY_TODO' }}>
           {appContent}
         </SuperwallProvider>
       </ErrorBoundary>

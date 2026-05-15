@@ -11,10 +11,10 @@ const GUIDE_CONTENT = {
     title: 'Import from TikTok',
     step1: 'On any TikTok workout, tap on the \u201CShare\u201D button',
     step2Prefix:
-      "Scroll to the right, and tap on the \u201CMore\u201D button. If you don't see Alyne, follow ",
+      "Scroll to the right, and tap on the \u201CMore\u201D button. If you don't see It Girl, follow ",
     step2Link: 'these instructions',
     step3:
-      'Choose \u201CAlyne\u201D from the provided options. Alyne will import the workout and notify you when done!',
+      'Choose \u201CIt Girl\u201D from the provided options. It Girl will import the workout and notify you when done!',
     step1Image: require('../assets/images/TikTok_Step1.png'),
     step2Image: require('../assets/images/TikTok_Step2.png'),
     step3Image: require('../assets/images/TikTok_Step3.png'),
@@ -23,10 +23,10 @@ const GUIDE_CONTENT = {
     title: 'Import from\nInstagram',
     step1: 'On any Instagram workout, tap on the \u201CShare\u201D button',
     step2Prefix:
-      "Scroll to the right, and tap on the \u201CMore\u201D button. If you don't see Alyne, follow ",
+      "Scroll to the right, and tap on the \u201CMore\u201D button. If you don't see It Girl, follow ",
     step2Link: 'these instructions',
     step3:
-      'Choose \u201CAlyne\u201D from the provided options. Alyne will import the workout and notify you when done!',
+      'Choose \u201CIt Girl\u201D from the provided options. It Girl will import the workout and notify you when done!',
     step1Image: require('../assets/images/Instagram_Step1.png'),
     step2Image: require('../assets/images/Instagram_Step2.png'),
     step3Image: require('../assets/images/Instagram_Step3.png'),

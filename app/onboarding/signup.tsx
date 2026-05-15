@@ -32,7 +32,7 @@ export default function SignUpScreen() {
   const handleBack = () => {
     if (isNavigating) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     router.back();
   };
 

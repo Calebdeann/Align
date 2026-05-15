@@ -1,18 +1,6 @@
-import { useCallback, useRef, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  useWindowDimensions,
-  ScrollView,
-  Image,
-  ImageSourcePropType,
-  Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { useCallback, useRef } from 'react';
+import { View, StyleSheet, useWindowDimensions, Image } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, {
@@ -21,125 +9,84 @@ import Animated, {
   useAnimatedScrollHandler,
   interpolate,
   Extrapolation,
+  SharedValue,
 } from 'react-native-reanimated';
-import { useTranslation } from 'react-i18next';
-import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { spacing } from '@/constants/theme';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
+import MixedHeading from '@/components/MixedHeading';
+import { OnboardingContinueButton } from '@/components';
 
-// Carousel images
-const Screen1 = require('../../assets/images/Screen1.png');
-const Screen2 = require('../../assets/images/Screen2.png');
-const Screen3 = require('../../assets/images/Screen3.png');
-const Screen4 = require('../../assets/images/Screen4.png');
+// heightRatio = pixel height / pixel width; topOffset shifts image down; scale is uniform zoom
+const SLIDES = [
+  {
+    image: require('../../assets/Onboarding Assets/Onboarding P2/2.1.png'),
+    heightRatio: 2190 / 1276,
+    topOffset: 0,
+    scale: 1,
+    boldLine: 'Visualise',
+    italicPhrase: 'your workouts',
+  },
+  {
+    image: null,
+    heightRatio: null,
+    topOffset: 0,
+    scale: 1,
+    boldLine: 'Track',
+    italicPhrase: 'every session',
+  },
+  {
+    image: require('../../assets/Onboarding Assets/Onboarding P2/2.3.png'),
+    heightRatio: 2058 / 1354,
+    topOffset: 100,
+    scale: 1.05,
+    boldLine: 'Motivate',
+    italicPhrase: 'each other',
+  },
+];
 
-const SLIDE_IMAGES: ImageSourcePropType[] = [Screen1, Screen2, Screen3, Screen4];
+type Slide = (typeof SLIDES)[number];
 
-// Animated dot component for pagination
-function PaginationDot({
+function SlideHeading({
   index,
+  slide,
   scrollX,
   width,
 }: {
   index: number;
-  scrollX: Animated.SharedValue<number>;
+  slide: Slide;
+  scrollX: SharedValue<number>;
   width: number;
 }) {
   const animatedStyle = useAnimatedStyle(() => {
     const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-
-    const dotWidth = interpolate(scrollX.value, inputRange, [8, 24, 8], Extrapolation.CLAMP);
-
-    const opacity = interpolate(scrollX.value, inputRange, [0.4, 1, 0.4], Extrapolation.CLAMP);
-
-    return {
-      width: dotWidth,
-      opacity,
-    };
-  });
-
-  const backgroundStyle = useAnimatedStyle(() => {
-    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-
-    const isActive = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
-
-    return {
-      backgroundColor: isActive > 0.5 ? colors.primary : colors.border,
-    };
-  });
-
-  return <Animated.View style={[styles.dot, animatedStyle, backgroundStyle]} />;
-}
-
-// Individual slide component with animated text
-function Slide({
-  item,
-  index,
-  scrollX,
-  width,
-}: {
-  item: { title: string; subtitle: string; image: ImageSourcePropType };
-  index: number;
-  scrollX: Animated.SharedValue<number>;
-  width: number;
-}) {
-  const animatedStyle = useAnimatedStyle(() => {
-    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-
     const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
-
-    const translateY = interpolate(scrollX.value, inputRange, [20, 0, 20], Extrapolation.CLAMP);
-
-    return {
-      opacity,
-      transform: [{ translateY }],
-    };
+    return { opacity };
   });
 
   return (
-    <View style={[styles.slide, { width }]}>
-      <Animated.View style={[styles.slideContent, animatedStyle]}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.subtitle}>{item.subtitle}</Text>
-        <View style={styles.imageContainer}>
-          <Image source={item.image} style={styles.slideImage} resizeMode="contain" />
-        </View>
-      </Animated.View>
-    </View>
+    <Animated.View
+      style={[styles.headingWrapper, StyleSheet.absoluteFill, animatedStyle]}
+      pointerEvents="none"
+    >
+      <MixedHeading boldLine={slide.boldLine} italicPhrase={slide.italicPhrase} size={44} />
+    </Animated.View>
   );
 }
 
 export default function IntroScreen() {
-  const { t } = useTranslation();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const scrollX = useSharedValue(0);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<Animated.ScrollView>(null);
+  // currentPageRef is the source of truth for navigation — updated on scroll settle,
+  // not from the Reanimated shared value which can lag on the JS thread.
+  const currentPageRef = useRef(0);
   const { isNavigating, withLock } = useNavigationLock();
 
-  const slides = useMemo(
-    () => [
-      {
-        title: t('onboarding.intro.slide1Title'),
-        subtitle: t('onboarding.intro.slide1Subtitle'),
-        image: SLIDE_IMAGES[0],
-      },
-      {
-        title: t('onboarding.intro.slide2Title'),
-        subtitle: t('onboarding.intro.slide2Subtitle'),
-        image: SLIDE_IMAGES[1],
-      },
-      {
-        title: t('onboarding.intro.slide3Title'),
-        subtitle: t('onboarding.intro.slide3Subtitle'),
-        image: SLIDE_IMAGES[2],
-      },
-      {
-        title: t('onboarding.intro.slide4Title'),
-        subtitle: t('onboarding.intro.slide4Subtitle'),
-        image: SLIDE_IMAGES[3],
-      },
-    ],
-    [t]
-  );
+  // Slide 1: 10px below the Dynamic Island pill.
+  // edges={['bottom']} lets imageSection start at y=0; insets.top - 12 ≈ pill_height + 10px.
+  const slide1TopOffset = Math.max(0, insets.top - 12);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -147,30 +94,29 @@ export default function IntroScreen() {
     },
   });
 
-  const handleSkip = useCallback(() => {
-    withLock(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      router.push('/onboarding/name');
-    });
-  }, [withLock]);
+  function handleScrollEnd(e: { nativeEvent: { contentOffset: { x: number } } }) {
+    currentPageRef.current = Math.round(e.nativeEvent.contentOffset.x / width);
+  }
 
   const handleContinue = useCallback(() => {
-    const currentPage = Math.round(scrollX.value / width);
-    if (currentPage >= slides.length - 1) {
+    const page = currentPageRef.current;
+    if (page >= SLIDES.length - 1) {
       withLock(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-        router.push('/onboarding/name');
+        router.push('/onboarding/become');
       });
     } else {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      scrollViewRef.current?.scrollTo({ x: (currentPage + 1) * width, animated: true });
+      const nextPage = page + 1;
+      currentPageRef.current = nextPage;
+      scrollViewRef.current?.scrollTo({ x: nextPage * width, animated: true });
     }
-  }, [scrollX, width, slides.length, withLock]);
+  }, [width, withLock]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Scrollable slides */}
-      <View style={styles.carouselContainer}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      {/* Image carousel with gradient overlaid on top */}
+      <View style={styles.imageSection}>
         <Animated.ScrollView
           ref={scrollViewRef}
           horizontal
@@ -178,37 +124,55 @@ export default function IntroScreen() {
           showsHorizontalScrollIndicator={false}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
+          onMomentumScrollEnd={handleScrollEnd}
           decelerationRate="fast"
           bounces={false}
+          style={StyleSheet.absoluteFill}
         >
-          {slides.map((slide, index) => (
-            <Slide key={index} item={slide} index={index} scrollX={scrollX} width={width} />
-          ))}
+          {SLIDES.map((slide, index) => {
+            const topOffset = index === 0 ? slide1TopOffset : slide.topOffset;
+            return (
+              <View key={index} style={[styles.slide, { width }]}>
+                {slide.image && slide.heightRatio ? (
+                  <Image
+                    source={slide.image}
+                    style={{
+                      width: width * slide.scale,
+                      height: width * slide.heightRatio * slide.scale,
+                      marginLeft: -(width * slide.scale - width) / 2,
+                      marginTop: topOffset,
+                    }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.imagePlaceholder} />
+                )}
+              </View>
+            );
+          })}
         </Animated.ScrollView>
+
+        {/* Gradient fades white over the bottom of the images */}
+        <LinearGradient
+          colors={['rgba(255,255,255,0)', '#ffffff']}
+          style={styles.imageGradient}
+          pointerEvents="none"
+        />
       </View>
 
-      {/* Pagination dots */}
-      <View style={styles.pagination}>
-        {slides.map((_, index) => (
-          <PaginationDot key={index} index={index} scrollX={scrollX} width={width} />
+      {/* Animated headings, one per slide fading in/out */}
+      <View style={styles.headingArea}>
+        {SLIDES.map((slide, index) => (
+          <SlideHeading key={index} index={index} slide={slide} scrollX={scrollX} width={width} />
         ))}
       </View>
 
-      {/* Bottom buttons */}
-      <View style={styles.bottomSection}>
-        <Pressable onPress={handleSkip} disabled={isNavigating}>
-          <Text style={[styles.skipText, isNavigating && styles.skipTextDisabled]}>
-            {t('common.skip')}
-          </Text>
-        </Pressable>
+      {/* 50px gap between heading and button; imageSection (flex:1) absorbs this so button stays fixed at bottom */}
+      <View style={styles.headingButtonSpacer} />
 
-        <Pressable
-          style={[styles.continueButton, isNavigating && styles.continueButtonDisabled]}
-          onPress={handleContinue}
-          disabled={isNavigating}
-        >
-          <Text style={styles.continueText}>{t('common.continue')}</Text>
-        </Pressable>
+      {/* Continue pill button */}
+      <View style={styles.bottomSection}>
+        <OnboardingContinueButton onPress={handleContinue} disabled={isNavigating} />
       </View>
     </SafeAreaView>
   );
@@ -219,82 +183,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  carouselContainer: {
+  imageSection: {
     flex: 1,
+    overflow: 'hidden',
   },
   slide: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    paddingTop: spacing.xxl,
-  },
-  slideContent: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-  },
-  imageContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -50,
+    height: '100%',
+    overflow: 'hidden',
   },
   slideImage: {
-    width: SCREEN_WIDTH - spacing.lg * 2,
-    height: 350,
+    width: '100%',
+    height: '100%',
   },
-  title: {
-    fontFamily: fonts.bold,
-    fontSize: 32,
-    color: colors.text,
-    textAlign: 'center',
-    marginTop: 50,
-    marginBottom: spacing.sm,
+  imagePlaceholder: {
+    flex: 1,
+    width: '100%',
   },
-  subtitle: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 0,
+  imageGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 220,
   },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  headingArea: {
+    height: 100,
+    position: 'relative',
     alignItems: 'center',
-    gap: 8,
-    marginTop: -40,
-    marginBottom: spacing.xl + 40,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
   },
-  dot: {
-    height: 8,
-    borderRadius: 4,
+  headingWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  headingButtonSpacer: {
+    height: 20,
   },
   bottomSection: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
     alignItems: 'center',
-  },
-  skipText: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textTertiary,
-    marginBottom: spacing.md,
-  },
-  skipTextDisabled: {
-    opacity: 0.5,
-  },
-  continueButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 18,
-    borderRadius: 30,
-    width: '100%',
-    alignItems: 'center',
-  },
-  continueButtonDisabled: {
-    opacity: 0.7,
-  },
-  continueText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
-    color: colors.textInverse,
+    paddingBottom: spacing.lg,
+    paddingTop: 4,
   },
 });

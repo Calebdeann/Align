@@ -51,6 +51,7 @@ export interface OnboardingData {
   energyFluctuation: string | null;
   notificationsEnabled: boolean;
   reminderTime: string | null;
+  selectedPlanId: string | null;
 }
 
 interface OnboardingState extends OnboardingData {
@@ -75,6 +76,7 @@ interface OnboardingState extends OnboardingData {
   setEnergyFluctuation: (fluctuation: string) => void;
   setNotificationsEnabled: (enabled: boolean) => void;
   setReminderTime: (time: string) => void;
+  setSelectedPlanId: (id: string) => void;
 
   // Save a field to both store and Supabase
   setAndSave: <K extends keyof OnboardingData>(field: K, value: OnboardingData[K]) => Promise<void>;
@@ -115,6 +117,7 @@ const initialState: OnboardingData = {
   energyFluctuation: null,
   notificationsEnabled: false,
   reminderTime: null,
+  selectedPlanId: null,
 };
 
 export const useOnboardingStore = create<OnboardingState>((set, get) => ({
@@ -141,6 +144,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   setEnergyFluctuation: (fluctuation) => set({ energyFluctuation: fluctuation }),
   setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
   setReminderTime: (time) => set({ reminderTime: time }),
+  setSelectedPlanId: (id) => set({ selectedPlanId: id }),
 
   // Save to both store and Supabase
   setAndSave: async (field, value) => {

@@ -1,10 +1,19 @@
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ImageBackground,
+  ImageSourcePropType,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, radius } from '@/constants/theme';
+import OnboardingBackButton from './ui/OnboardingBackButton';
+import OnboardingContinueButton from './ui/OnboardingContinueButton';
 
 interface QuestionLayoutProps {
   question: string;
@@ -15,6 +24,7 @@ interface QuestionLayoutProps {
   onSkip?: () => void;
   continueDisabled?: boolean;
   navigationDisabled?: boolean;
+  backgroundImage?: ImageSourcePropType;
 }
 
 export default function QuestionLayout({
@@ -26,6 +36,7 @@ export default function QuestionLayout({
   onSkip,
   continueDisabled = false,
   navigationDisabled = false,
+  backgroundImage,
 }: QuestionLayoutProps) {
   const { t } = useTranslation();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -41,14 +52,14 @@ export default function QuestionLayout({
   const handleSkip = () => {
     if (locked) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     onSkip?.();
   };
 
   const handleBack = () => {
     if (locked) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     router.back();
   };
 
@@ -59,13 +70,11 @@ export default function QuestionLayout({
     onContinue?.();
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
+  const inner = (
+    <SafeAreaView style={[styles.container, backgroundImage && styles.containerTransparent]}>
       {/* Header with back, progress bar, skip */}
       <View style={styles.header}>
-        <Pressable onPress={handleBack} style={styles.backButton} disabled={locked}>
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
+        <OnboardingBackButton onPress={handleBack} disabled={locked} />
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
@@ -94,20 +103,24 @@ export default function QuestionLayout({
       {/* Continue button */}
       {showContinue && (
         <View style={styles.bottomSection}>
-          <Pressable
-            style={[
-              styles.continueButton,
-              (continueDisabled || locked) && styles.continueButtonDisabled,
-            ]}
+          <OnboardingContinueButton
             onPress={handleContinue}
             disabled={continueDisabled || locked}
-          >
-            <Text style={styles.continueText}>{t('common.continue')}</Text>
-          </Pressable>
+          />
         </View>
       )}
     </SafeAreaView>
   );
+
+  if (backgroundImage) {
+    return (
+      <ImageBackground source={backgroundImage} style={styles.backgroundImage} resizeMode="cover">
+        {inner}
+      </ImageBackground>
+    );
+  }
+
+  return inner;
 }
 
 export const styles = StyleSheet.create({
@@ -115,19 +128,18 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backgroundOnboarding,
   },
+  containerTransparent: {
+    backgroundColor: 'transparent',
+  },
+  backgroundImage: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     gap: spacing.md,
-  },
-  backButton: {
-    padding: spacing.xs,
-  },
-  backArrow: {
-    fontSize: 24,
-    color: colors.text,
   },
   progressBarContainer: {
     flex: 1,
@@ -171,23 +183,9 @@ export const styles = StyleSheet.create({
     paddingTop: 80,
   },
   bottomSection: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  continueButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 18,
-    borderRadius: 30,
-    width: '100%',
     alignItems: 'center',
-  },
-  continueButtonDisabled: {
-    opacity: 0.5,
-  },
-  continueText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
-    color: '#FFFFFF',
+    paddingBottom: spacing.lg,
+    paddingTop: 4,
   },
 });
 

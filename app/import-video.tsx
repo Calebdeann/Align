@@ -1206,7 +1206,7 @@ export default function ImportVideoScreen() {
         )}
         <SafeAreaView style={styles.loadingContainer}>
           <View style={styles.loadingContent}>
-            <Text style={styles.loadingLogo}>ALYNE</Text>
+            <Text style={styles.loadingLogo}>IT GIRL</Text>
             {/* Scanning frame with animated magnifying glass */}
             <View style={styles.scanArea}>
               <View style={styles.scanFrame}>
@@ -1428,11 +1428,10 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   loadingLogo: {
-    fontFamily: fonts.canela,
-    fontSize: 50,
+    fontFamily: fonts.bebasNeue,
+    fontSize: 72,
     color: '#FFFFFF',
-    letterSpacing: 6,
-    fontStyle: 'italic',
+    textAlign: 'center',
     marginBottom: 48,
   },
   scanArea: {

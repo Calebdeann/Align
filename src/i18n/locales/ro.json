@@ -82,7 +82,7 @@
     "ft": "ft"
   },
   "welcome": {
-    "align": "ALYNE",
+    "align": "SNATCHED",
     "forTheGirls": "PENTRU FETE",
     "getStarted": "Hai sa incepem",
     "alreadyHaveAccount": "Ai deja un cont? ",
@@ -117,7 +117,7 @@
   },
   "onboarding": {
     "intro": {
-      "slide1Title": "Bine ai venit in Alyne!",
+      "slide1Title": "Bine ai venit in Snatched!",
       "slide1Subtitle": "Inregistreaza-ti antrenamentele usor, urmarind fiecare set",
       "slide2Title": "Masoara-ti progresul",
       "slide2Subtitle": "Urmareste-ti progresul si castigurile cu analizele noastre detaliate",
@@ -178,13 +178,13 @@
       "confidence": "Lipsa de incredere"
     },
     "obstacleResponse": {
-      "scheduleTitle": "Alyne face usor sa-ti\nprogramezi antrenamentele",
+      "scheduleTitle": "Snatched face usor sa-ti\nprogramezi antrenamentele",
       "scheduleSubtitle": "Saptamana ta, stilul tau!",
-      "knowledgeTitle": "Alyne face usor sa\nstii exact ce sa faci",
+      "knowledgeTitle": "Snatched face usor sa\nstii exact ce sa faci",
       "knowledgeSubtitle": "Sabloane de antrenament profesionale, gata de folosit!",
-      "motivationTitle": "Alyne face usor sa\nramai motivata",
+      "motivationTitle": "Snatched face usor sa\nramai motivata",
       "motivationSubtitle": "Urmareste-ti progresul si vezi cum te imbunatatesti!",
-      "confidenceTitle": "Alyne face usor sa te\nantrezi cu incredere",
+      "confidenceTitle": "Snatched face usor sa te\nantrezi cu incredere",
       "confidenceSubtitle": "Fiecare exercitiu explicat, pas cu pas!"
     },
     "triedApps": {
@@ -193,12 +193,12 @@
       "no": "Nu"
     },
     "goalComparison": {
-      "title": "{{action}} de doua ori mai multa\ngreutate cu Alyne\nvs pe cont propriu",
+      "title": "{{action}} de doua ori mai multa\ngreutate cu Snatched\nvs pe cont propriu",
       "lose": "Pierde",
       "gain": "Castiga",
-      "withoutAlyne": "Fara\nAlyne",
-      "withAlyne": "Cu\nAlyne",
-      "comparisonText": "Alyne te face sa fie usor si te\ntine responsabila"
+      "withoutAlyne": "Fara\nSnatched",
+      "withAlyne": "Cu\nSnatched",
+      "comparisonText": "Snatched te face sa fie usor si te\ntine responsabila"
     },
     "goalReality": {
       "realisticTarget": "{{diff}}{{unit}} este o tinta realista. Poti sa reusesti!"
@@ -261,8 +261,8 @@
       "title": "Ajuta-ne sa crestem!",
       "rating": "4.8",
       "appStoreRating": "Rating App Store",
-      "sectionTitle": "Alyne a fost creat pentru\noameni ca tine",
-      "usersLove": "Utilizatorii ADORA Alyne!",
+      "sectionTitle": "Snatched a fost creat pentru\noameni ca tine",
+      "usersLove": "Utilizatorii ADORA Snatched!",
       "love": "ADORA",
       "review1Author": "Ellie Sullivan",
       "review1Text": "Am slabit 7 kg in 2 luni! Eram pe punctul de a lua Ozempic, dar am decis sa incerc aceasta aplicatie si a functionat :)",
@@ -297,11 +297,11 @@
     "thankYou": {
       "title": "Multumim\nca ai incredere in noi!",
       "percentage": "94% dintre utilizatoarele noastre",
-      "description": "spun ca Alyne este usor de folosit\nsi face simpla mentinerea pe drumul cel bun"
+      "description": "spun ca Snatched este usor de folosit\nsi face simpla mentinerea pe drumul cel bun"
     },
     "reminder": {
       "question": "Vrei sa primesti memento-uri pentru antrenamente?",
-      "notificationApp": "Alyne",
+      "notificationApp": "Snatched",
       "notificationTime": "Acum 2h",
       "notificationTitle": "Antrenamentul de azi: Fesieri",
       "notificationBody": "Hip Thrusts, Romanian Deadlifts, Bulgarian Split Squats",
@@ -346,7 +346,7 @@
     "dateHeaderToday": "Astazi - {{dayName}}, {{month}} {{day}}",
     "dateHeader": "{{dayName}}, {{month}} {{day}}",
     "founderGreeting": "Salut {{name}}!",
-    "founderBody1": "Suntem Caleb si Cass, si am creat Alyne. Iti multumim mult ca incerci aplicatia noastra!",
+    "founderBody1": "Suntem Caleb si Cass, si am creat Snatched. Iti multumim mult ca incerci aplicatia noastra!",
     "founderBody2": "Misiunea noastra este sa construim cel mai bun tracker de antrenamente pentru femei din lume, asa ca orice feedback ai avea ar fi foarte apreciat!",
     "founderBody3": "Ne poti trimite un email la aligntracker@gmail.com"
   },
@@ -558,7 +558,7 @@
     "noTemplate": "Fara sablon",
     "startWithoutTemplate": "Incepe fara sablon",
     "yourTemplates": "Sabloanele tale",
-    "alignTemplates": "Sabloane Alyne",
+    "alignTemplates": "Sabloane Snatched",
     "colour": "Culoare",
     "dateAndTime": "Data si ora",
     "date": "Data",

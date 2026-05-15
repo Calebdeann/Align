@@ -82,7 +82,7 @@
     "ft": "ft"
   },
   "welcome": {
-    "align": "ALYNE",
+    "align": "SNATCHED",
     "forTheGirls": "FÜR DIE GIRLS",
     "getStarted": "Los geht's",
     "alreadyHaveAccount": "Du hast schon ein Konto? ",
@@ -117,7 +117,7 @@
   },
   "onboarding": {
     "intro": {
-      "slide1Title": "Willkommen bei Alyne!",
+      "slide1Title": "Willkommen bei Snatched!",
       "slide1Subtitle": "Logge deine Workouts ganz einfach und tracke jeden Satz",
       "slide2Title": "Fortschritte messen",
       "slide2Subtitle": "Verfolge deinen Fortschritt und deine Erfolge mit unserer detaillierten Auswertung",
@@ -178,13 +178,13 @@
       "confidence": "Mir fehlt das Selbstvertrauen"
     },
     "obstacleResponse": {
-      "scheduleTitle": "Mit Alyne ist es einfach,\ndeine Workouts zu planen",
+      "scheduleTitle": "Mit Snatched ist es einfach,\ndeine Workouts zu planen",
       "scheduleSubtitle": "Deine Woche, dein Rhythmus!",
-      "knowledgeTitle": "Mit Alyne weißt du\nimmer genau, was zu tun ist",
+      "knowledgeTitle": "Mit Snatched weißt du\nimmer genau, was zu tun ist",
       "knowledgeSubtitle": "Professionelle Workout-Vorlagen, sofort einsatzbereit!",
-      "motivationTitle": "Mit Alyne bleibst du\nimmer motiviert",
+      "motivationTitle": "Mit Snatched bleibst du\nimmer motiviert",
       "motivationSubtitle": "Verfolge deinen Fortschritt und sieh, wie du dich verbesserst!",
-      "confidenceTitle": "Mit Alyne trainierst du\nmit Selbstvertrauen",
+      "confidenceTitle": "Mit Snatched trainierst du\nmit Selbstvertrauen",
       "confidenceSubtitle": "Jede Übung Schritt für Schritt erklärt!"
     },
     "triedApps": {
@@ -193,12 +193,12 @@
       "no": "Nein"
     },
     "goalComparison": {
-      "title": "{{action}} doppelt so viel\nGewicht mit Alyne\nals alleine",
+      "title": "{{action}} doppelt so viel\nGewicht mit Snatched\nals alleine",
       "lose": "Verliere",
       "gain": "Gewinne",
-      "withoutAlyne": "Ohne\nAlyne",
-      "withAlyne": "Mit\nAlyne",
-      "comparisonText": "Alyne macht es einfach und hält\ndich auf Kurs"
+      "withoutAlyne": "Ohne\nSnatched",
+      "withAlyne": "Mit\nSnatched",
+      "comparisonText": "Snatched macht es einfach und hält\ndich auf Kurs"
     },
     "goalReality": {
       "realisticTarget": "{{diff}}{{unit}} ist ein realistisches Ziel. Das schaffst du!"
@@ -261,8 +261,8 @@
       "title": "Hilf uns zu wachsen!",
       "rating": "4.8",
       "appStoreRating": "App Store Bewertung",
-      "sectionTitle": "Alyne wurde für\nMenschen wie dich gemacht",
-      "usersLove": "Nutzerinnen LIEBEN Alyne!",
+      "sectionTitle": "Snatched wurde für\nMenschen wie dich gemacht",
+      "usersLove": "Nutzerinnen LIEBEN Snatched!",
       "love": "LIEBEN",
       "review1Author": "Ellie Sullivan",
       "review1Text": "Ich habe in 2 Monaten 7 kg abgenommen! Ich wollte schon Ozempic nehmen, aber dann habe ich diese App ausprobiert und es hat funktioniert :)",
@@ -297,11 +297,11 @@
     "thankYou": {
       "title": "Danke für\ndein Vertrauen!",
       "percentage": "94% unserer Nutzerinnen",
-      "description": "sagen, dass Alyne einfach zu bedienen ist\nund es leicht macht, dranzubleiben"
+      "description": "sagen, dass Snatched einfach zu bedienen ist\nund es leicht macht, dranzubleiben"
     },
     "reminder": {
       "question": "Möchtest du Workout-Erinnerungen erhalten?",
-      "notificationApp": "Alyne",
+      "notificationApp": "Snatched",
       "notificationTime": "vor 2 Std.",
       "notificationTitle": "Heutiges Workout: Glutes",
       "notificationBody": "Hip Thrusts, Rumänisches Kreuzheben, Bulgarische Kniebeugen",
@@ -346,7 +346,7 @@
     "dateHeaderToday": "Heute - {{dayName}}, {{day}}. {{month}}",
     "dateHeader": "{{dayName}}, {{day}}. {{month}}",
     "founderGreeting": "Hey {{name}}!",
-    "founderBody1": "Wir sind Caleb & Cass und wir haben Alyne gebaut. Vielen Dank, dass du unsere App ausprobierst!",
+    "founderBody1": "Wir sind Caleb & Cass und wir haben Snatched gebaut. Vielen Dank, dass du unsere App ausprobierst!",
     "founderBody2": "Unsere Mission ist es, den besten Workout-Tracker für Frauen zu bauen. Deshalb freuen wir uns über jedes Feedback von dir!",
     "founderBody3": "Du kannst uns eine E-Mail schreiben an aligntracker@gmail.com"
   },
@@ -521,7 +521,7 @@
     "noTemplate": "Keine Vorlage",
     "startWithoutTemplate": "Ohne Vorlage starten",
     "yourTemplates": "Deine Vorlagen",
-    "alignTemplates": "Alyne Vorlagen",
+    "alignTemplates": "Snatched Vorlagen",
     "colour": "Farbe",
     "dateAndTime": "Datum & Uhrzeit",
     "date": "Datum",

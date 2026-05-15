@@ -1,21 +1,19 @@
 {
   "expo": {
-    "name": "Alyne",
-    "slug": "align",
-    "version": "1.0.6",
-    "scheme": "alyne",
+    "name": "It Girl",
+    "slug": "it-girl",
+    "version": "1.0.0",
+    "scheme": "itgirl",
     "orientation": "portrait",
-    "icon": "./assets/images/AlyneLogo.png",
+    "icon": "./assets/LOGO.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/SplashScreen.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#947AFF"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.aligntracker.app",
+      "bundleIdentifier": "com.itgirl.app",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -24,12 +22,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/LOGO.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.aligntracker.app",
+      "package": "com.itgirl.app",
       "permissions": ["android.permission.RECORD_AUDIO"]
     },
     "web": {
@@ -55,8 +53,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Alyne to access your photos to add images to your workout templates.",
-          "cameraPermission": "Allow Alyne to take photos for your workout templates."
+          "photosPermission": "Allow It Girl to access your photos to add images to your workout templates.",
+          "cameraPermission": "Allow It Girl to take photos for your workout templates."
         }
       ],
       [

@@ -453,17 +453,19 @@ export default function ProfileScreen() {
           <MenuItem
             icon={<Ionicons name="paper-plane-outline" size={20} color={colors.text} />}
             label={t('profile.contactUs')}
-            onPress={() => Linking.openURL('mailto:aligntracker@gmail.com')}
+            onPress={() => WebBrowser.openBrowserAsync('https://snatchedsupport.carrd.co/')}
           />
           <MenuItem
             icon={<Ionicons name="document-text-outline" size={20} color={colors.text} />}
             label={t('profile.termsAndConditions')}
-            onPress={() => WebBrowser.openBrowserAsync('https://aligntermsandconditions.carrd.co/')}
+            onPress={() =>
+              WebBrowser.openBrowserAsync('https://snatchedtermsandconditions.carrd.co/')
+            }
           />
           <MenuItem
             icon={<Ionicons name="shield-checkmark-outline" size={20} color={colors.text} />}
             label={t('profile.privacyPolicy')}
-            onPress={() => WebBrowser.openBrowserAsync('https://alignprivacypolicy.carrd.co/')}
+            onPress={() => WebBrowser.openBrowserAsync('https://snatchedprivacypolicy.carrd.co/')}
             showDivider={false}
           />
         </MenuCard>

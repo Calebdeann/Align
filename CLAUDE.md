@@ -1,8 +1,41 @@
-# Alyne - Project Context
+# It Girl - Project Context
+
+## CRITICAL: This is a Rebuild, Not a Fresh Start
+
+**It Girl is a major rebuild of the Align app.** The codebase was pulled directly from the Align GitHub repo and is being rebranded/rebuilt into It Girl. This means:
+
+- **DO NOT break any existing functionality.** 99% of the current app mechanics will carry over to It Girl.
+- Every feature that exists today (workout tracking, exercise library, templates, scheduling, social, video import, live activity, share extension, etc.) must continue to work throughout the rebuild process.
+- Changes should be additive or cosmetic unless explicitly told otherwise. When in doubt, preserve existing behavior.
+- The rebuild is primarily: new branding, new onboarding flow, new UI/design — not a rewrite of core logic.
+
+## CRITICAL: Onboarding Screen Flow (DO NOT CHANGE ROUTING WITHOUT EXPLICIT INSTRUCTION)
+
+The onboarding flow is fixed. Every screen must route EXACTLY to the next screen in this sequence. Never change a `router.push` destination in any onboarding screen unless the user explicitly asks to reorder the flow.
+
+```
+app/index.tsx                   → /onboarding/intro
+app/onboarding/intro.tsx        → /onboarding/become
+app/onboarding/become.tsx       → /onboarding/name
+app/onboarding/name.tsx         → /onboarding/traffic-source
+app/onboarding/traffic-source.tsx → /onboarding/achieve
+app/onboarding/achieve.tsx      → /onboarding/ideal-day
+app/onboarding/ideal-day.tsx    → /onboarding/challenge
+app/onboarding/challenge.tsx    → /onboarding/finding-workout
+app/onboarding/finding-workout.tsx → /onboarding/select-program
+app/onboarding/select-program.tsx  → /onboarding/program-detail (with planId param)
+app/onboarding/program-detail.tsx  → /onboarding/when-to-begin
+app/onboarding/when-to-begin.tsx   → /onboarding/reviews
+app/onboarding/reviews.tsx         → /onboarding/personalising
+app/onboarding/personalising.tsx   → /onboarding/signin
+app/onboarding/signin.tsx          → /(tabs)  (auth complete)
+```
+
+If you touch ANY file in app/onboarding/, verify after your edit that its `router.push` still points to the correct next screen from this table.
 
 ## Quick Summary
 
-Alyne is a women-focused workout tracker and scheduler app. Built with React Native + Expo, targeting iOS first.
+It Girl is a women-focused social fitness app. Built with React Native + Expo, targeting iOS first.
 
 ## Tech Stack
 
@@ -13,7 +46,7 @@ Alyne is a women-focused workout tracker and scheduler app. Built with React Nat
 - **Auth:** Apple Sign-In + Google Sign-In
 - **Validation:** Zod (API input validation)
 - **Exercise API:** Ascend API (ExerciseDB) - https://www.ascendapi.com/api/v1
-- **Bundle ID:** com.aligntracker.app
+- **Bundle ID:** com.itgirl.app
 - **Language:** TypeScript
 
 ## Exercise Library
@@ -28,32 +61,33 @@ Alyne is a women-focused workout tracker and scheduler app. Built with React Nat
 
 ## Current Phase
 
-🎯 **PHASE: Environment Setup → Onboarding**
+🎯 **PHASE: Onboarding**
 
-- Focus on onboarding flow first (30-40 screens → hard paywall)
+- Focus on onboarding flow first (hard paywall at end)
 - User has Figma designs - follow them exactly
 - Don't over-engineer, keep it simple
 - Speed > perfection
 
 ## Design System
 
-- **Primary Color:** #947AFF (purple)
-- **Font:** Quicksand (Regular, Medium, SemiBold, Bold)
+- **Colors:** Black and white primarily, minimal use of color
+- **Fonts:** Quicksand (Regular, Medium, SemiBold, Bold), Instrument Serif, Fraunces
 - **Theme File:** src/constants/theme.ts
 
 ## App Structure
 
 **3 Main Tabs:**
 
-1. **Planner** - Calendar + List view for workout scheduling
-2. **Workout** - Exercise tracking, presets, session logging
+1. **Friends** - Social feed, friends activity
+2. **Planner** - Calendar + List view for workout scheduling
 3. **Profile** - User settings
 
 **Key Features:**
 
+- Social fitness (friends, activity feed)
 - Recurring workout scheduling (weekly patterns)
 - Exercise library from Supabase
-- Workout presets and Alyne templates
+- Workout presets and It Girl templates
 - Color-coded by workout type (Legs, Arms, etc.)
 - Full offline support (later phase)
 
@@ -67,12 +101,12 @@ Alyne is a women-focused workout tracker and scheduler app. Built with React Nat
 ## File Structure
 
 ```
-align/
+it girl app/
 ├── app/                        # Expo Router screens (file-based routing)
 │   ├── (tabs)/                 # Tab navigator screens
 │   │   ├── _layout.tsx         # Tab bar configuration
+│   │   ├── friends.tsx         # Friends/social screen
 │   │   ├── index.tsx           # Planner/Calendar screen
-│   │   ├── workout.tsx         # Workout screen
 │   │   └── profile.tsx         # Profile screen
 │   ├── onboarding/             # Onboarding flow screens
 │   ├── _layout.tsx             # Root layout (fonts, splash)
@@ -167,14 +201,40 @@ On first login after upgrade, the storage adapter:
 
 ## Key Patterns
 
+### Onboarding Continue Button
+
+Every onboarding screen must use the shared `OnboardingContinueButton` component — never inline a custom continue button.
+
+```tsx
+import { OnboardingContinueButton } from '@/components';
+
+<OnboardingContinueButton onPress={handleContinue} />
+<OnboardingContinueButton onPress={handleContinue} disabled={!canContinue} />
+<OnboardingContinueButton onPress={handleContinue} label="Get Started" />
+```
+
+- **Style:** Dark gradient pill (`#2a2a2a → #000000`), `borderRadius: 500`, 33.8% of screen width, 48px tall, centered
+- **File:** `src/components/ui/OnboardingContinueButton.tsx`
+- **Do NOT** use full-width black buttons (`backgroundColor: '#000000', borderRadius: 30`) on any onboarding screen
+
+### Onboarding Haptic Feedback
+
+Every pressable element in onboarding must use `Heavy` impact feedback — no exceptions.
+
+```tsx
+Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+```
+
+This applies to: option selections, back buttons, continue buttons, skip links, auth buttons, toggles — anything the user taps. `Light` and `Medium` are banned in onboarding screens and onboarding shared components (`OnboardingContinueButton`, `OnboardingBackButton`, `QuestionLayout`).
+
 ### Onboarding Option Cards
 
 Use `QuestionLayout` component with `optionStyles` for all multi-select/single-select screens:
 
-- **Unselected:** White background (#FFFFFF), gray border (rgba(239,239,239,0.5)), black text
-- **Selected:** Purple background (#947AFF), purple border, white text
+- **Unselected:** White background (#FFFFFF), gray border, black text
+- **Selected:** Black background (#000000), black border, white text
 - **Height:** 74px fixed
-- **Checkbox (multi-select):** Circle with white border/background when selected, purple inner dot
+- **Checkbox (multi-select):** Circle with black border when unselected, filled black with white checkmark when selected
 - **Icon:** 20px emoji on left side
 - Use `optionStyles.optionCard` and `optionStyles.optionCardSelected` from QuestionLayout
 
@@ -186,11 +246,14 @@ Use `QuestionLayout` component with `optionStyles` for all multi-select/single-s
 4. Keep components small and focused
 5. All API write functions must validate input with Zod schemas before DB operations
 6. RLS policies enforce data isolation - users can only access their own data
-7. **NEVER reference "male" in the app.** This is a women's workout tracker. All exercise animations, images, and content must use female variants only. Never add male-gendered content, labels, or references in any user-facing code or new scripts.
-8. **Database columns must be backwards-compatible in code.** When adding new database columns: (a) never unconditionally include them in INSERT or UPDATE statements, (b) always provide a fallback retry path that strips new columns if the insert fails with a schema error (PGRST204), and (c) core save operations (workouts, templates, profiles) must NEVER hard-fail due to optional feature columns. See `.claude/backend-rules.md` for the full pattern and protected operations list.
-9. **Exercise row tap targets:** Exercise detail view must ONLY open when tapping the thumbnail image or the exercise name text. Never wrap entire exercise rows in a navigation Pressable. Always use `Text.onPress` with `alignSelf: 'flex-start'` on exercise name Text elements so the tap target is constrained to the visible text only (not the full row width). The parent View should use `flex: 1` + `pointerEvents="box-none"` so taps on empty space pass through harmlessly.
-10. **Workout tracker and template builder parity.** Any UX or functionality change made to the active workout tracker (`app/active-workout.tsx`) must be replicated in the template builder (`app/create-template.tsx`) unless explicitly told not to, or unless it would cause issues specific to the template context.
-11. **Superwall: always use official docs.** When implementing or modifying Superwall integration, reference the official Expo SDK docs at https://superwall.com/docs/expo/ . Do not guess APIs or invent patterns. Key docs: install (`/quickstart/install`), configure (`/quickstart/configure`), present paywall (`/quickstart/present-first-paywall`), feature gating (`/quickstart/feature-gating`), usePlacement (`/sdk-reference/hooks/usePlacement`), useSuperwall (`/sdk-reference/hooks/useSuperwall`).
+7. **Reuse before you create.** Before building any UI element (button, heading, back button, progress bar, layout, etc.), check whether an existing component already does it. For onboarding: `OnboardingContinueButton`, `OnboardingBackButton`, `QuestionLayout`, `MixedHeading` cover most cases. For styles: pull font sizes, colors, spacing, and border radii from `src/constants/theme.ts`. If a new screen needs a heading at a certain size, check what the nearest existing screen uses and match it — don't invent a new value. The goal is that every screen feels like it belongs to the same app without requiring corrections after the fact.
+8. **NEVER reference "male" in the app.** This is a women's fitness app. All exercise animations, images, and content must use female variants only. Never add male-gendered content, labels, or references in any user-facing code or new scripts.
+9. **Database columns must be backwards-compatible in code.** When adding new database columns: (a) never unconditionally include them in INSERT or UPDATE statements, (b) always provide a fallback retry path that strips new columns if the insert fails with a schema error (PGRST204), and (c) core save operations (workouts, templates, profiles) must NEVER hard-fail due to optional feature columns. See `.claude/backend-rules.md` for the full pattern and protected operations list.
+10. **Exercise row tap targets:** Exercise detail view must ONLY open when tapping the thumbnail image or the exercise name text. Never wrap entire exercise rows in a navigation Pressable. Always use `Text.onPress` with `alignSelf: 'flex-start'` on exercise name Text elements so the tap target is constrained to the visible text only (not the full row width). The parent View should use `flex: 1` + `pointerEvents="box-none"` so taps on empty space pass through harmlessly.
+11. **Workout tracker and template builder parity.** Any UX or functionality change made to the active workout tracker (`app/active-workout.tsx`) must be replicated in the template builder (`app/create-template.tsx`) unless explicitly told not to, or unless it would cause issues specific to the template context.
+12. **Onboarding continue button:** Always use `OnboardingContinueButton` from `@/components` for the continue/next action on every onboarding screen. Never create inline full-width black buttons on onboarding screens. See the Key Patterns section for usage.
+13. **Onboarding haptics: always Heavy.** Every `Pressable` in onboarding (screens and shared onboarding components) must use `Haptics.ImpactFeedbackStyle.Heavy`. Never use `Light` or `Medium` in onboarding. See Key Patterns → Onboarding Haptic Feedback.
+14. **Superwall: always use official docs.** When implementing or modifying Superwall integration, reference the official Expo SDK docs at https://superwall.com/docs/expo/ . Do not guess APIs or invent patterns. Key docs: install (`/quickstart/install`), configure (`/quickstart/configure`), present paywall (`/quickstart/present-first-paywall`), feature gating (`/quickstart/feature-gating`), usePlacement (`/sdk-reference/hooks/usePlacement`), useSuperwall (`/sdk-reference/hooks/useSuperwall`).
 
 ## Backend Security
 
@@ -248,15 +311,15 @@ npm run db:push         # Push migrations to Supabase
 
 ```
 Apple Sign-In:
-- App ID: com.aligntracker.app
-- Service ID: com.aligntracker.app.auth (for Supabase callback)
-- Key ID: 26CKNHTCMG
+- App ID: com.itgirl.app
+- Service ID: com.itgirl.app.auth (for Supabase callback)
+- Key ID: TBD (new app setup required)
 - Team ID: 26YKG8V9Q8
 - P8 Key & Secret: STORED IN SUPABASE ONLY
 
 Google Sign-In:
-- iOS Client ID: 1032254562807-29eof3svg4o8erh24t94v0nqe3l53ed8.apps.googleusercontent.com
-- Web Client ID: 1032254562807-qkr613tq0nqc07l6e23h9le715scvkrq.apps.googleusercontent.com
+- iOS Client ID: TBD (new bundle ID requires new OAuth client)
+- Web Client ID: TBD
 - Client Secret: STORED IN SUPABASE ONLY
 ```
 
@@ -279,20 +342,20 @@ Google Sign-In:
 
 ## Monetization - Superwall
 
-- Hard paywall after onboarding (triggers in `generating-plan.tsx` when loading bar hits 100%)
+- Hard paywall after onboarding
 - Monthly + Annual subscriptions via Superwall
 - Mixpanel for analytics
 - **Superwall SDK:** `expo-superwall` (Expo native module, no app.json plugin needed)
 - **Docs:** https://superwall.com/docs/expo/ (ALWAYS reference official docs for Superwall implementation)
 - **Key hooks:** `useSuperwall()` for SDK state, `usePlacement()` for paywall triggers
-- **Placement:** `onboarding_trigger`
+- **Placement:** TBD (new Superwall account)
 - **Provider:** `SuperwallProvider` wraps app in `app/_layout.tsx`
 
 ## Quick Reference
 
-- **Primary:** #947AFF
-- **Font:** Quicksand
-- **Bundle ID:** com.aligntracker.app
+- **Colors:** Black (#000000) and white (#FFFFFF)
+- **Fonts:** Quicksand, Instrument Serif, Fraunces
+- **Bundle ID:** com.itgirl.app
 - **Target:** iOS first
 
 ## Response Format

@@ -99,7 +99,7 @@ export default function EmailSignInScreen() {
         {/* Back button */}
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
           style={styles.backButton}

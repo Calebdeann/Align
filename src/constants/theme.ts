@@ -7,19 +7,19 @@
 
 // Main color palette
 export const colors = {
-  // Primary brand color (purple)
-  primary: '#947AFF',
-  primaryLight: '#B8A8FF',
-  primaryDark: '#7559E6',
+  // Primary brand colors (black & white)
+  primary: '#000000',
+  primaryLight: '#333333',
+  primaryDark: '#000000',
 
   // Backgrounds
   background: '#FFFFFF',
-  backgroundOnboarding: '#FAFAFA', // Light gray for onboarding screens
+  backgroundOnboarding: '#FAFAFA',
   surface: '#F5F5F5',
   surfaceSecondary: '#FAFAFA',
 
-  // Card backgrounds (use with cardStroke for containers)
-  card: '#F5F4FA',
+  // Card backgrounds
+  card: '#F5F5F5',
   cardStroke: '#FFFFFF',
 
   // Text
@@ -73,8 +73,15 @@ export const fonts = {
   medium: 'Quicksand-Medium',
   semiBold: 'Quicksand-SemiBold',
   bold: 'Quicksand-Bold',
-  // Display font for logo/headings
-  canela: 'Canela-Medium',
+  // Serif display fonts
+  instrumentSerif: 'InstrumentSerif-Regular',
+  instrumentSerifItalic: 'InstrumentSerif-Italic',
+  fraunces: 'Fraunces-Regular',
+  frauncesItalic: 'Fraunces-Italic',
+  frauncesSemiBold: 'Fraunces-SemiBold',
+  frauncesBold: 'Fraunces-Bold',
+  // Display font
+  bebasNeue: 'BebasNeue-Regular',
 } as const;
 
 // Consistent spacing scale (in pixels)

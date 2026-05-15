@@ -1,0 +1,165 @@
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
+import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { OnboardingBackButton, OnboardingContinueButton } from '@/components';
+
+const PurpleCheckCircle = require('../../assets/images/PurpleCheckCircle.png');
+
+export default function GeneratePlanScreen() {
+  const { t } = useTranslation();
+  const { isNavigating, withLock } = useNavigationLock();
+
+  const handleSkip = () =>
+    withLock(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push('/onboarding/generating-plan');
+    });
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <OnboardingBackButton />
+
+        <View style={styles.progressBarContainer}>
+          <View style={styles.progressBarBackground} />
+          <View style={[styles.progressBarFill, { width: '96%' }]} />
+        </View>
+
+        <Pressable onPress={handleSkip} disabled={isNavigating}>
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
+        </Pressable>
+      </View>
+
+      {/* Purple Check Circle Image */}
+      <View style={styles.imageContainer}>
+        <Image source={PurpleCheckCircle} style={styles.circleImage} resizeMode="contain" />
+      </View>
+
+      {/* All done badge */}
+      <View style={styles.badgeContainer}>
+        <View style={styles.badge}>
+          <Text style={styles.checkmark}>✓</Text>
+        </View>
+        <Text style={styles.badgeText}>{t('onboarding.generatingPlan.badge')}</Text>
+      </View>
+
+      {/* Title */}
+      <Text style={styles.titleText}>{t('onboarding.generatingPlan.title')}</Text>
+      <Text style={styles.subtitleText}>{t('onboarding.generatingPlan.subtitle')}</Text>
+
+      {/* Spacer */}
+      <View style={styles.spacer} />
+
+      {/* Continue button */}
+      <View style={styles.bottomSection}>
+        <OnboardingContinueButton
+          disabled={isNavigating}
+          onPress={() =>
+            withLock(() => {
+              router.push('/onboarding/generating-plan');
+            })
+          }
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundOnboarding,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    gap: spacing.md,
+  },
+  progressBarContainer: {
+    flex: 1,
+    height: 4,
+    position: 'relative',
+  },
+  progressBarBackground: {
+    position: 'absolute',
+    width: '100%',
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+  },
+  progressBarFill: {
+    position: 'absolute',
+    height: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  skipText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  imageContainer: {
+    alignItems: 'center',
+    marginTop: 60,
+  },
+  circleImage: {
+    width: 224,
+    height: 224,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xl,
+    gap: spacing.sm,
+  },
+  badge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  badgeText: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+  },
+  titleText: {
+    fontFamily: fonts.bold,
+    fontSize: 28,
+    color: colors.text,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    lineHeight: 36,
+  },
+  subtitleText: {
+    fontFamily: fonts.regular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    lineHeight: 22,
+  },
+  spacer: {
+    flex: 1,
+  },
+  bottomSection: {
+    alignItems: 'center',
+    paddingBottom: 24,
+    paddingTop: 4,
+  },
+});

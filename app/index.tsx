@@ -1,328 +1,186 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
-import { Image } from 'react-native';
-import { Link, router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Pressable, Image, useWindowDimensions } from 'react-native';
+import { router } from 'expo-router';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
-import i18n from '@/i18n';
 import * as SplashScreen from 'expo-splash-screen';
-import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { fonts, spacing } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
+import MixedHeading from '@/components/MixedHeading';
 
-const LANGUAGES = [
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'pt', name: 'Português', flag: '🇧🇷' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-  { code: 'ro', name: 'Română', flag: '🇷🇴' },
-  { code: 'az', name: 'Azərbaycan', flag: '🇦🇿' },
-  { code: 'nl', name: 'Nederlands', flag: '🇳🇱' },
-];
+const FULL_IMAGE = require('../assets/programs/full-programs.png');
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+// Natural aspect ratio of full-programs.png (1284×2778)
+const IMAGE_HEIGHT_RATIO = 2778 / 1284;
 
-export default function OnboardingWelcome() {
-  const { t } = useTranslation();
+export default function WelcomeScreen() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-
-  const currentLang = LANGUAGES.find((l) => l.code === i18n.language) || LANGUAGES[0];
+  const { width } = useWindowDimensions();
+  const { bottom: bottomInset } = useSafeAreaInsets();
 
   useEffect(() => {
     async function checkExistingSession() {
+      SplashScreen.hideAsync().catch(() => {});
       try {
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          // Verify profile exists (user completed onboarding)
           const { data: profile } = await supabase
             .from('profiles')
             .select('id')
             .eq('id', user.id)
             .single();
-
           if (profile) {
             router.replace('/(tabs)');
             return;
           }
-          // Auth exists but no profile, user abandoned onboarding. Sign them out and show welcome.
           await supabase.auth.signOut();
         }
-      } catch (error) {
+      } catch {
         // Session check failed, show welcome screen
       } finally {
         setIsCheckingAuth(false);
-        SplashScreen.hideAsync().catch(() => {});
       }
     }
     checkExistingSession();
   }, []);
 
-  // Keep splash screen visible while checking auth
   if (isCheckingAuth) {
-    return null;
+    return (
+      <View style={styles.splash}>
+        <Text style={styles.splashText}>It Girl</Text>
+      </View>
+    );
   }
 
+  const buttonWidth = Math.round(width * 0.338);
+
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* Language picker pill + inline dropdown */}
-        <View style={styles.languageRow}>
-          <View style={styles.languageAnchor}>
-            <Pressable
-              style={styles.languagePill}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setLanguageDropdownOpen(!languageDropdownOpen);
-              }}
-            >
-              <Ionicons name="language" size={16} color={colors.text} />
-              <Text style={styles.languageFlag}>{currentLang.flag}</Text>
-            </Pressable>
-
-            {languageDropdownOpen && (
-              <View style={styles.dropdownContainer}>
-                {LANGUAGES.map((lang, index) => (
-                  <View key={lang.code}>
-                    <Pressable
-                      style={styles.dropdownRow}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        i18n.changeLanguage(lang.code);
-                        setLanguageDropdownOpen(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownFlag}>{lang.flag}</Text>
-                      <Text
-                        style={[
-                          styles.dropdownName,
-                          lang.code === currentLang.code && styles.dropdownNameActive,
-                        ]}
-                      >
-                        {lang.name}
-                      </Text>
-                      {lang.code === currentLang.code && (
-                        <View style={styles.dropdownCheck}>
-                          <Ionicons name="checkmark" size={14} color={colors.textInverse} />
-                        </View>
-                      )}
-                    </Pressable>
-                    {index < LANGUAGES.length - 1 && <View style={styles.dropdownDivider} />}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Dismiss overlay when dropdown is open */}
-        {languageDropdownOpen && (
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setLanguageDropdownOpen(false)}
-          />
-        )}
-
-        {/* Star decorations - positioned to match Figma */}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.imageSection}>
         <Image
-          source={require('../assets/images/stars1.png')}
-          style={styles.starsTopRight}
-          resizeMode="contain"
+          source={FULL_IMAGE}
+          style={{ width, height: width * IMAGE_HEIGHT_RATIO, position: 'absolute', top: 0 }}
+          resizeMode="cover"
         />
-        <Image
-          source={require('../assets/images/stars2.png')}
-          style={styles.starsLeft}
-          resizeMode="contain"
+        <LinearGradient
+          colors={['rgba(255,255,255,0)', '#ffffff']}
+          style={styles.imageGradient}
+          pointerEvents="none"
         />
-        <Image
-          source={require('../assets/images/stars3.png')}
-          style={styles.starsBottomRight}
-          resizeMode="contain"
-        />
+      </View>
 
-        {/* Main content - positioned slightly above center */}
-        <View style={styles.content}>
-          <Text style={styles.logo}>{t('welcome.align')}</Text>
-          <Text style={styles.tagline}>{t('welcome.forTheGirls')}</Text>
-        </View>
+      <View style={styles.headingArea}>
+        {/* DEV SHORTCUT: tap heading to skip to signin */}
+        <Pressable onPress={() => router.push('/onboarding/signin')}>
+          <MixedHeading boldLine="Choose" italicPhrase="your program" size={44} />
+        </Pressable>
+      </View>
 
-        {/* Bottom buttons */}
-        <View style={styles.bottomSection}>
-          <Link href="/onboarding/intro" asChild>
-            <Pressable
-              style={styles.getStartedButton}
-              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)}
-            >
-              <Text style={styles.getStartedText}>{t('welcome.getStarted')}</Text>
-            </Pressable>
-          </Link>
+      <View style={styles.headingButtonSpacer} />
 
-          <Link href="/onboarding/signin" asChild>
-            <Pressable onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)}>
-              <Text style={styles.signInText}>
-                {t('welcome.alreadyHaveAccount')}
-                <Text style={styles.signInBold}>{t('welcome.signIn')}</Text>
-              </Text>
-            </Pressable>
-          </Link>
-        </View>
-      </SafeAreaView>
-    </View>
+      <View style={styles.bottomSection}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/onboarding/intro');
+          }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+        >
+          <LinearGradient
+            colors={['#2a2a2a', '#000000']}
+            style={[styles.getStartedButton, { width: buttonWidth }]}
+          >
+            <Text style={styles.getStartedText}>Begin</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
+
+      <View style={[styles.signInContainer, { bottom: Math.max(bottomInset - 14, 4) }]}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/onboarding/signin');
+          }}
+          style={styles.signInPressable}
+        >
+          <Text style={styles.signInText}>Already have an account?</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  splash: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  splashText: {
+    fontFamily: fonts.instrumentSerifItalic,
+    fontSize: 90,
+    color: '#000000',
+  },
   container: {
     flex: 1,
-    backgroundColor: colors.primary,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  languageRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    zIndex: 100,
-  },
-  languageAnchor: {
-    position: 'relative',
-  },
-  languagePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-  },
-  languageFlag: {
-    fontSize: 16,
-  },
-  dropdownContainer: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    marginTop: 8,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 4,
-    width: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
   },
-  dropdownRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  dropdownFlag: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  dropdownName: {
+  imageSection: {
     flex: 1,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
+    overflow: 'hidden',
+    marginTop: -35,
   },
-  dropdownNameActive: {
-    fontFamily: fonts.semiBold,
-    color: colors.primary,
+  imageGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 205,
   },
-  dropdownCheck: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
+  headingArea: {
+    height: 100,
+    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  dropdownDivider: {
-    height: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
-    marginHorizontal: 16,
-  },
-  starsTopRight: {
-    position: 'absolute',
-    top: SCREEN_HEIGHT * 0.12,
-    right: 60,
-    width: 90,
-    height: 90,
-  },
-  starsLeft: {
-    position: 'absolute',
-    top: SCREEN_HEIGHT * 0.32,
-    left: 24,
-    width: 70,
-    height: 70,
-  },
-  starsBottomRight: {
-    position: 'absolute',
-    top: SCREEN_HEIGHT * 0.58,
-    right: 40,
-    width: 110,
-    height: 110,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    marginTop: 80,
   },
-  logo: {
-    fontFamily: fonts.canela,
-    fontSize: 96,
-    color: colors.textInverse,
-    letterSpacing: 4,
-    fontStyle: 'italic',
-  },
-  tagline: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.xl,
-    color: colors.textInverse,
-    marginTop: spacing.sm,
+  headingButtonSpacer: {
+    height: 20,
   },
   bottomSection: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
     alignItems: 'center',
+    paddingBottom: spacing.lg,
+    paddingTop: 4,
   },
   getStartedButton: {
-    backgroundColor: colors.textInverse,
-    paddingVertical: 18,
-    paddingHorizontal: spacing.xl,
-    borderRadius: 30,
-    width: '100%',
+    height: 48,
+    borderRadius: 500,
     alignItems: 'center',
-    marginBottom: spacing.md,
+    justifyContent: 'center',
   },
   getStartedText: {
     fontFamily: fonts.bold,
-    fontSize: fontSize.lg,
-    color: colors.primary,
+    fontSize: 17,
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  signInContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  signInPressable: {
+    paddingVertical: 4,
   },
   signInText: {
     fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textInverse,
-  },
-  signInBold: {
-    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: '#b9b9b9',
+    textDecorationLine: 'underline',
   },
 });
