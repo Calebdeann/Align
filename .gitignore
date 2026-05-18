@@ -46,3 +46,9 @@ supabase/.temp/
 
 # Exercise DB data (loaded from API, not bundled)
 data/
+
+# iOS backup (too large for git)
+ios_backup_align/
+
+# Claude lock files
+.claude/scheduled_tasks.lock

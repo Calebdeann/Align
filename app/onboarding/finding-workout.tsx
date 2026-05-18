@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { fonts } from '@/constants/theme';
 
 export default function FindingWorkoutScreen() {
@@ -9,6 +10,11 @@ export default function FindingWorkoutScreen() {
   const barWidth = screenWidth * 0.45;
 
   useEffect(() => {
+    const hapticTimes = [1050, 2000, 3300, 4050, 4900, 5600];
+    const timers = hapticTimes.map((ms) =>
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), ms)
+    );
+
     // 500ms buffer lets the fade transition finish before the bar starts moving
     Animated.sequence([
       Animated.delay(500),
@@ -53,6 +59,8 @@ export default function FindingWorkoutScreen() {
         router.replace('/onboarding/select-program');
       }
     });
+
+    return () => timers.forEach(clearTimeout);
   }, []);
 
   const fillWidth = progress.interpolate({
@@ -93,24 +101,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 28,
     paddingTop: 16,
+    marginTop: -30,
   },
   title: {
     fontFamily: fonts.instrumentSerif,
-    fontSize: 52,
+    fontSize: 44,
     color: '#000000',
     textAlign: 'center',
-    lineHeight: 76,
+    lineHeight: 68,
     paddingHorizontal: 32,
   },
   titleItalic: {
     fontFamily: fonts.instrumentSerifItalic,
-    fontSize: 52,
-    lineHeight: 76,
+    fontSize: 44,
+    lineHeight: 68,
   },
   titleRegular: {
     fontFamily: fonts.instrumentSerif,
-    fontSize: 52,
-    lineHeight: 76,
+    fontSize: 44,
+    lineHeight: 68,
   },
   barTrack: {
     height: 4,

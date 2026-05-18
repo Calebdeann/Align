@@ -5,15 +5,17 @@
     "version": "1.0.0",
     "scheme": "itgirl",
     "orientation": "portrait",
-    "icon": "./assets/LOGO.png",
+    "icon": "./assets/Star Logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
+      "image": "./assets/Star Splash Screen.png",
+      "resizeMode": "cover",
       "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.itgirl.app",
+      "bundleIdentifier": "com.itgirlapp.app",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -22,12 +24,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/LOGO.png",
+        "foregroundImage": "./assets/Star Logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.itgirl.app",
+      "package": "com.itgirlapp.app",
       "permissions": ["android.permission.RECORD_AUDIO"]
     },
     "web": {
@@ -67,8 +69,31 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "9360f59b-9137-443a-9823-a2a318eee257"
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "LiveActivity",
+                  "bundleIdentifier": "com.itgirlapp.app.LiveActivity",
+                  "entitlements": {
+                    "com.apple.security.application-groups": ["group.com.aligntracker.app"]
+                  }
+                },
+                {
+                  "targetName": "ShareExtension",
+                  "bundleIdentifier": "com.aligntracker.app.ShareExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": ["group.com.aligntracker.app"]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "27dc476a-dfdb-48f1-936b-7ec5fc70c4ae"
       }
-    }
+    },
+    "owner": "caleb.dean"
   }
 }

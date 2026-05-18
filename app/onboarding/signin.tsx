@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import {
   View,
   Text,
@@ -30,6 +31,8 @@ export default function SignInScreen() {
   const { t } = useTranslation();
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const appleScale = useSharedValue(1);
+  const appleAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: appleScale.value }] }));
 
   const handleAppleSignIn = async () => {
     try {
@@ -73,7 +76,7 @@ export default function SignInScreen() {
         return;
       }
       await clearAnonymousSession();
-      router.replace('/onboarding/find-partner');
+      router.replace('/(tabs)');
     } catch (error: any) {
       if (error.code === 'ERR_REQUEST_CANCELED') return;
       Alert.alert(t('auth.signInFailed'), error?.message || t('auth.appleSignInError'));
@@ -85,7 +88,7 @@ export default function SignInScreen() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      const redirectTo = 'alyne://auth/callback';
+      const redirectTo = 'itgirl://auth/callback';
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo, skipBrowserRedirect: true },
@@ -138,7 +141,7 @@ export default function SignInScreen() {
         return;
       }
       await clearAnonymousSession();
-      router.replace('/onboarding/find-partner');
+      router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert(t('auth.signInFailed'), t('auth.googleSignInError'));
     } finally {
@@ -179,21 +182,30 @@ export default function SignInScreen() {
         <View style={styles.buttons}>
           {/* Apple */}
           <Pressable
-            style={[styles.authButton, styles.appleButton, { marginBottom: 5 }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               handleAppleSignIn();
             }}
+            onPressIn={() => {
+              appleScale.value = withSpring(0.93, { damping: 15, stiffness: 400 });
+            }}
+            onPressOut={() => {
+              appleScale.value = withSpring(1, { damping: 15, stiffness: 400 });
+            }}
             disabled={isAppleLoading || isGoogleLoading}
           >
-            {isAppleLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <View style={styles.buttonRow}>
-                <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
-                <Text style={styles.appleButtonText}>{t('auth.continueWithApple')}</Text>
-              </View>
-            )}
+            <Animated.View
+              style={[styles.authButton, styles.appleButton, { marginBottom: 5 }, appleAnimStyle]}
+            >
+              {isAppleLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <View style={styles.buttonRow}>
+                  <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
+                  <Text style={styles.appleButtonText}>{t('auth.continueWithApple')}</Text>
+                </View>
+              )}
+            </Animated.View>
           </Pressable>
 
           {/* Google */}
@@ -269,7 +281,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: 90,
+    width: 100,
     height: 4,
     backgroundColor: '#000000',
   },

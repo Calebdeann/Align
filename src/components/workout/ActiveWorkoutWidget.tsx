@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, AppState } from 'react-native';
+import { View, Text, StyleSheet, Pressable, AppState, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useTranslation } from 'react-i18next';
-import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { fonts, fontSize, spacing } from '@/constants/theme';
 import { useWorkoutStore } from '@/stores/workoutStore';
 
 function formatTime(seconds: number): string {
@@ -15,14 +14,12 @@ function formatTime(seconds: number): string {
 }
 
 export default function ActiveWorkoutWidget() {
-  const { t } = useTranslation();
   const activeWorkout = useWorkoutStore((state) => state.activeWorkout);
+  const discardActiveWorkout = useWorkoutStore((state) => state.discardActiveWorkout);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isMinimized = activeWorkout?.isMinimized ?? false;
 
-  // Use local display time to avoid reading from store each tick.
-  // This prevents compounding if any other timer also writes to the store.
   const [displaySeconds, setDisplaySeconds] = useState(0);
 
   const exercises = activeWorkout?.exercises ?? [];
@@ -37,23 +34,14 @@ export default function ActiveWorkoutWidget() {
       const startedAt = useWorkoutStore.getState().activeWorkout?.startedAt;
       if (!startedAt) return;
       const startedAtMs = new Date(startedAt).getTime();
-
-      // Wall-clock based calculation — same strategy as active-workout.tsx.
-      // Elapsed = floor((now - startedAt) / 1000), so it never drifts behind.
       const calcElapsed = () => Math.floor((Date.now() - startedAtMs) / 1000);
 
       setDisplaySeconds(calcElapsed());
-
       if (intervalRef.current) clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(() => {
-        setDisplaySeconds(calcElapsed());
-      }, 1000);
+      intervalRef.current = setInterval(() => setDisplaySeconds(calcElapsed()), 1000);
 
-      // Resync immediately when app comes back to foreground after backgrounding
       const appStateSub = AppState.addEventListener('change', (state) => {
-        if (state === 'active') {
-          setDisplaySeconds(calcElapsed());
-        }
+        if (state === 'active') setDisplaySeconds(calcElapsed());
       });
 
       return () => {
@@ -71,9 +59,7 @@ export default function ActiveWorkoutWidget() {
     }
   }, [isMinimized]);
 
-  if (!activeWorkout || !activeWorkout.isMinimized) {
-    return null;
-  }
+  if (!activeWorkout || !activeWorkout.isMinimized) return null;
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -84,23 +70,57 @@ export default function ActiveWorkoutWidget() {
     router.push('/active-workout');
   };
 
+  const handleDiscard = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      'Discard Workout',
+      'Are you sure you want to discard the workout in progress? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: () => {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+            discardActiveWorkout();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [styles.container, pressed && { opacity: 0.85 }]}
       onPress={handlePress}
     >
       <View style={styles.iconContainer}>
-        <Ionicons name="barbell" size={20} color="#FFFFFF" />
+        <Ionicons name="chevron-up" size={20} color="#000" />
       </View>
+
       <View style={styles.info}>
-        <Text style={styles.title}>{t('workout.activeWorkout')}</Text>
+        <Text style={styles.title}>Workout in Progress</Text>
         <Text style={styles.subtitle}>
-          {t('workout.exerciseCount', { count: exerciseCount })} •{' '}
-          {t('workout.setCount', { count: completedSets })}
+          {exerciseCount} {exerciseCount === 1 ? 'exercise' : 'exercises'} • {completedSets}{' '}
+          {completedSets === 1 ? 'set' : 'sets'} completed
         </Text>
       </View>
+
       <Text style={styles.timer}>{formatTime(displaySeconds)}</Text>
-      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+
+      <Pressable
+        style={({ pressed }) => [styles.discardBtn, pressed && { opacity: 0.6 }]}
+        onPress={(e) => {
+          e.stopPropagation();
+          handleDiscard();
+        }}
+        hitSlop={8}
+      >
+        <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+      </Pressable>
     </Pressable>
   );
 }
@@ -109,21 +129,25 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: '#fff',
     marginHorizontal: spacing.md,
     marginBottom: spacing.sm,
-    paddingVertical: 12,
-    paddingHorizontal: spacing.md,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.cardStroke,
-    gap: spacing.sm,
+    paddingVertical: 10,
+    paddingLeft: 12,
+    paddingRight: 8,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    gap: 10,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0,0,0,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -133,17 +157,24 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.sm,
-    color: colors.text,
+    color: '#000',
   },
   subtitle: {
     fontFamily: fonts.regular,
     fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
+    color: 'rgba(0,0,0,0.45)',
+    marginTop: 1,
   },
   timer: {
     fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.primary,
+    fontSize: fontSize.sm,
+    color: '#000',
+    letterSpacing: -0.3,
+  },
+  discardBtn: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import { fonts } from '@/constants/theme';
 import { GYM_BUDDIES } from '@/data/gymBuddies';
 
@@ -62,6 +63,7 @@ export default function GymBuddyScreen() {
       accumulated += delay;
       const isLast = i === delays.length - 1;
       const timer = setTimeout(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         if (isLast) {
           setCurrentIndex(targetIdx);
           const navTimer = setTimeout(() => {

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions, PixelRatio } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -58,17 +58,21 @@ export default function StickerScreen() {
   async function handleGetSticker() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
-      const uri = await captureRef(stickerRef, { format: 'png', quality: 1 });
+      const uri = await captureRef(stickerRef, {
+        format: 'png',
+        quality: 1,
+        pixelRatio: PixelRatio.get() * 2,
+      });
       await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your sticker' });
     } catch (_e) {
       // user cancelled or sharing unavailable
     }
-    router.push('/onboarding/loading');
+    router.push('/onboarding/personalising');
   }
 
   function handleLater() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.push('/onboarding/loading');
+    router.push('/onboarding/personalising');
   }
 
   return (
@@ -110,18 +114,14 @@ export default function StickerScreen() {
               </View>
             ))}
             <View style={styles.stickerDivider} />
-            <Text style={styles.stickerBrand}>I-T-G-I-R-L</Text>
+            <Text style={styles.stickerBrand}>IT Girl</Text>
           </View>
         </View>
       </View>
 
       {/* Buttons */}
       <View style={styles.buttons}>
-        <OnboardingContinueButton
-          onPress={handleGetSticker}
-          label="Get my sticker"
-          widthRatio={0.65}
-        />
+        <OnboardingContinueButton onPress={handleGetSticker} label="Get my sticker" autoSize />
         <Pressable
           onPress={handleLater}
           style={styles.laterButton}
@@ -187,6 +187,11 @@ const styles = StyleSheet.create({
     top: '6%',
     right: 16,
     transform: [{ rotate: '3deg' }],
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
   },
   stickerCard: {
     backgroundColor: '#FFFFFF',
@@ -194,11 +199,6 @@ const styles = StyleSheet.create({
     padding: 12,
     width: 162,
     gap: 5,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
   stickerPlanName: {
     fontFamily: fonts.instrumentSerif,

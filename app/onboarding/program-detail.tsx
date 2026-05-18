@@ -108,7 +108,7 @@ export default function ProgramDetailScreen() {
         <OnboardingContinueButton
           onPress={() => {
             setSelectedPlanId(plan.id);
-            router.push('/onboarding/when-to-begin');
+            router.push('/onboarding/reviews');
           }}
           label="Select"
         />
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: 80,
+    width: 70,
     height: 4,
     backgroundColor: '#000000',
   },

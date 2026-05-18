@@ -24,6 +24,7 @@ const fieldToColumn: Record<string, string> = {
   energyFluctuation: 'energy_fluctuation',
   notificationsEnabled: 'notifications_enabled',
   reminderTime: 'reminder_time',
+  selectedPlanId: 'plan_id',
 };
 
 export async function saveOnboardingField(field: string, value: unknown): Promise<boolean> {

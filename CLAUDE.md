@@ -24,10 +24,11 @@ app/onboarding/ideal-day.tsx    → /onboarding/challenge
 app/onboarding/challenge.tsx    → /onboarding/finding-workout
 app/onboarding/finding-workout.tsx → /onboarding/select-program
 app/onboarding/select-program.tsx  → /onboarding/program-detail (with planId param)
-app/onboarding/program-detail.tsx  → /onboarding/when-to-begin
-app/onboarding/when-to-begin.tsx   → /onboarding/reviews
+app/onboarding/program-detail.tsx  → /onboarding/reviews
 app/onboarding/reviews.tsx         → /onboarding/personalising
-app/onboarding/personalising.tsx   → /onboarding/signin
+app/onboarding/sticker.tsx         → /onboarding/personalising
+app/onboarding/personalising.tsx   → /onboarding/pre-paywall
+app/onboarding/pre-paywall.tsx     → /onboarding/signin  (paywall TBD)
 app/onboarding/signin.tsx          → /(tabs)  (auth complete)
 ```
 

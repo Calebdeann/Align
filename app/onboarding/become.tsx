@@ -1,13 +1,47 @@
+import { useEffect } from 'react';
 import { View, StyleSheet, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { spacing } from '@/constants/theme';
-import MixedHeading from '@/components/MixedHeading';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  SharedValue,
+} from 'react-native-reanimated';
+import { spacing, fonts } from '@/constants/theme';
 import { OnboardingContinueButton } from '@/components';
 
 const { width, height } = Dimensions.get('screen');
 
+function WordItem({
+  word,
+  opacity,
+  style,
+}: {
+  word: string;
+  opacity: SharedValue<number>;
+  style: object;
+}) {
+  const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.Text style={[style, anim]}>{word}</Animated.Text>;
+}
+
 export default function BecomeScreen() {
+  const w0 = useSharedValue(0);
+  const w1 = useSharedValue(0);
+  const w2 = useSharedValue(0);
+  const w3 = useSharedValue(0);
+
+  useEffect(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    w0.value = withTiming(1, { duration: 675 });
+    w1.value = withDelay(340, withTiming(1, { duration: 675 }));
+    w2.value = withDelay(680, withTiming(1, { duration: 675 }));
+    w3.value = withDelay(1020, withTiming(1, { duration: 675 }));
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* Background image fills the true full screen */}
@@ -19,7 +53,16 @@ export default function BecomeScreen() {
 
       {/* Text pinned to the white-space zone of the image (~43% from top) */}
       <View style={[styles.headingArea, { top: height * 0.43 }]} pointerEvents="none">
-        <MixedHeading boldLine="Become" italicPhrase={'an "It Girl"'} size={54} />
+        <View style={styles.wordContainer}>
+          <View style={styles.wordRow}>
+            <WordItem word="Become" opacity={w0} style={styles.boldWord} />
+          </View>
+          <View style={styles.wordRow}>
+            <WordItem word="an" opacity={w1} style={styles.italicWord} />
+            <WordItem word=' "It' opacity={w2} style={styles.italicWord} />
+            <WordItem word=' Girl"' opacity={w3} style={styles.italicWord} />
+          </View>
+        </View>
       </View>
 
       {/* Button anchored to the bottom safe area */}
@@ -43,6 +86,25 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
+  },
+  wordContainer: {
+    alignItems: 'center',
+  },
+  wordRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  boldWord: {
+    fontFamily: fonts.frauncesBold,
+    fontSize: 54,
+    lineHeight: 65,
+    color: '#000000',
+  },
+  italicWord: {
+    fontFamily: fonts.instrumentSerifItalic,
+    fontSize: 54,
+    lineHeight: 65,
+    color: '#000000',
   },
   safeBottom: {
     position: 'absolute',

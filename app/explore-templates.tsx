@@ -24,7 +24,7 @@ import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
 
 const WORKOUT_COLOURS = [
-  { id: 'purple', color: colors.primary },
+  { id: 'black', color: '#000000' },
   { id: 'green', color: colors.workout.back },
   { id: 'blue', color: colors.workout.chest },
   { id: 'orange', color: colors.workout.biceps },
@@ -314,6 +314,7 @@ export default function ExploreTemplatesScreen() {
     return ALL_CATEGORY_IDS.map((id) => ({ id, label: labelMap[id] || id }));
   }, [t]);
 
+  const [activeTab, setActiveTab] = useState<'itgirl' | 'plan' | 'community'>('itgirl');
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const shouldReopenModalRef = useRef(false);
@@ -332,7 +333,7 @@ export default function ExploreTemplatesScreen() {
   // Colour picker state for quick-add
   const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
   const [showColourModal, setShowColourModal] = useState(false);
-  const [addColourId, setAddColourId] = useState('purple');
+  const [addColourId, setAddColourId] = useState('black');
   const colourSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   const categoryTemplates = selectedCategory
@@ -350,7 +351,7 @@ export default function ExploreTemplatesScreen() {
 
   const handleAddTemplate = (template: WorkoutTemplate) => {
     setPendingTemplate(template);
-    setAddColourId('purple');
+    setAddColourId('black');
     // Close category modal first to avoid stacked modals on iOS
     setShowCategoryModal(false);
     setTimeout(() => {
@@ -395,7 +396,7 @@ export default function ExploreTemplatesScreen() {
       setPendingTemplate(null);
       if (!added) return;
       setSelectedCategory(null);
-      router.navigate('/(tabs)/workout');
+      router.back();
     });
   };
 
@@ -480,55 +481,98 @@ export default function ExploreTemplatesScreen() {
         <Pressable style={styles.importBackdrop} onPress={() => setImportDropdownOpen(false)} />
       )}
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.cardGrid, { marginTop: spacing.lg }]}>
-          {ALL_CATEGORIES.map((category) => {
-            const count = getCategoryCount(category.id);
-            const heroImage = CATEGORY_HERO_IMAGES[category.id];
-            const isComingSoon = category.id === 'cardio';
-            return (
-              <Pressable
-                key={category.id}
-                style={[styles.categoryCard, isComingSoon && { opacity: 0.85 }]}
-                onPress={() => {
-                  if (isComingSoon) return;
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setSelectedCategory(category.id);
-                  setShowCategoryModal(true);
-                }}
-              >
-                {heroImage ? (
-                  <Image
-                    source={heroImage}
-                    style={styles.categoryCardImage}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                  />
-                ) : (
-                  <View style={[styles.categoryCardImage, styles.categoryCardPlaceholder]}>
-                    <Ionicons name="barbell-outline" size={32} color={colors.textSecondary} />
-                  </View>
-                )}
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.65)']}
-                  style={styles.categoryCardGradient}
-                >
-                  <Text style={styles.categoryCardLabel}>{category.label}</Text>
-                  {isComingSoon ? (
-                    <Text style={styles.categoryCardCount}>Coming soon</Text>
-                  ) : (
-                    <Text style={styles.categoryCardCount}>
-                      {t('explore.countWorkouts', { count })}
-                    </Text>
-                  )}
-                </LinearGradient>
-              </Pressable>
-            );
-          })}
-        </View>
+      {/* Tab bar */}
+      <View style={styles.tabBar}>
+        {(
+          [
+            ['itgirl', 'It Girl Templates'],
+            ['plan', 'Plan Templates'],
+            ['community', 'Community'],
+          ] as const
+        ).map(([id, label]) => (
+          <Pressable
+            key={id}
+            style={styles.tab}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setActiveTab(id);
+            }}
+          >
+            <Text style={[styles.tabLabel, activeTab === id && styles.tabLabelActive]}>
+              {label}
+            </Text>
+            {activeTab === id && <View style={styles.tabUnderline} />}
+          </Pressable>
+        ))}
+      </View>
 
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
+      {activeTab === 'itgirl' && (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={[styles.cardGrid, { marginTop: spacing.lg }]}>
+            {ALL_CATEGORIES.map((category) => {
+              const count = getCategoryCount(category.id);
+              const heroImage = CATEGORY_HERO_IMAGES[category.id];
+              const isComingSoon = category.id === 'cardio';
+              return (
+                <Pressable
+                  key={category.id}
+                  style={[styles.categoryCard, isComingSoon && { opacity: 0.85 }]}
+                  onPress={() => {
+                    if (isComingSoon) return;
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedCategory(category.id);
+                    setShowCategoryModal(true);
+                  }}
+                >
+                  {heroImage ? (
+                    <Image
+                      source={heroImage}
+                      style={styles.categoryCardImage}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
+                  ) : (
+                    <View style={[styles.categoryCardImage, styles.categoryCardPlaceholder]}>
+                      <Ionicons name="barbell-outline" size={32} color={colors.textSecondary} />
+                    </View>
+                  )}
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.65)']}
+                    style={styles.categoryCardGradient}
+                  >
+                    <Text style={styles.categoryCardLabel}>{category.label}</Text>
+                    {isComingSoon ? (
+                      <Text style={styles.categoryCardCount}>Coming soon</Text>
+                    ) : (
+                      <Text style={styles.categoryCardCount}>
+                        {t('explore.countWorkouts', { count })}
+                      </Text>
+                    )}
+                  </LinearGradient>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.bottomSpacer} />
+        </ScrollView>
+      )}
+
+      {activeTab === 'plan' && (
+        <View style={styles.tabEmptyState}>
+          <Text style={styles.tabEmptyTitle}>Plan Templates</Text>
+          <Text style={styles.tabEmptyBody}>
+            Start a plan to unlock your personalised workout templates.
+          </Text>
+        </View>
+      )}
+
+      {activeTab === 'community' && (
+        <View style={styles.tabEmptyState}>
+          <Text style={styles.tabEmptyTitle}>Community</Text>
+          <Text style={styles.tabEmptyBody}>Coming soon</Text>
+        </View>
+      )}
 
       <CategoryModal
         visible={showCategoryModal}
@@ -747,6 +791,60 @@ const styles = StyleSheet.create({
     height: 40,
   },
 
+  // Tab bar
+  tabBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tab: {
+    alignItems: 'center',
+    paddingBottom: 4,
+  },
+  tabLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: 'rgba(0,0,0,0.25)',
+    letterSpacing: -0.2,
+  },
+  tabLabelActive: {
+    color: '#000',
+  },
+  tabUnderline: {
+    marginTop: 4,
+    height: 3,
+    width: '100%',
+    backgroundColor: '#000',
+    borderRadius: 100,
+  },
+
+  // Tab empty states (plan + community)
+  tabEmptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 100,
+    paddingHorizontal: 32,
+  },
+  tabEmptyTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 24,
+    color: '#000',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  tabEmptyBody: {
+    fontFamily: fonts.medium,
+    fontSize: 16,
+    color: 'rgba(0,0,0,0.45)',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+
   // Template row (used inside modal)
   templateRow: {
     flexDirection: 'row',
@@ -797,7 +895,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addButtonAdded: {
-    backgroundColor: 'rgba(148, 122, 255, 0.15)',
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
   },
   addButtonPlus: {
     fontFamily: fonts.semiBold,
@@ -810,7 +908,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   addButtonTextAdded: {
-    color: colors.primary,
+    color: '#000',
   },
 
   // Modal styles
@@ -941,7 +1039,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addColourConfirmButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#000',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -950,6 +1048,6 @@ const styles = StyleSheet.create({
   addColourConfirmText: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
-    color: colors.textInverse,
+    color: '#fff',
   },
 });

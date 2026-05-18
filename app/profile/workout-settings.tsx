@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
+import { CircleBackButton } from '@/components';
 import { useUserPreferencesStore, TimerSoundId } from '@/stores/userPreferencesStore';
 import { playTimerSound, TIMER_SOUND_OPTIONS } from '@/utils/sounds';
 
@@ -171,17 +172,9 @@ export default function WorkoutSettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </Pressable>
+        <CircleBackButton />
         <Text style={styles.headerTitle}>Workout Settings</Text>
-        <View style={styles.backButton} />
+        <View style={{ width: 46 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -400,12 +393,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   headerTitle: {
     fontFamily: fonts.semiBold,

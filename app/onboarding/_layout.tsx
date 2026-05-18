@@ -26,6 +26,9 @@ export default function OnboardingLayout() {
       <Stack.Screen name="gym-buddy" />
       <Stack.Screen name="partner-match" />
       <Stack.Screen name="sticker" />
+      <Stack.Screen name="personalising" />
+      <Stack.Screen name="pre-paywall" />
+      <Stack.Screen name="paywall" />
       <Stack.Screen name="email-signin" />
       <Stack.Screen name="signup" />
     </Stack>

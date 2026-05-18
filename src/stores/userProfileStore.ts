@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import Constants from 'expo-constants';
 import { supabase } from '@/services/supabase';
+import type { PlacedTrait } from '@/constants/traits';
 
 // Get app version from expo config
 const APP_VERSION = Constants.expoConfig?.version ?? 'unknown';
@@ -28,6 +29,7 @@ export interface UserProfile {
   email?: string;
   name?: string; // Display name (unique across users)
   avatar_url?: string;
+  bio?: string;
   experience_level?: string;
   main_goal?: string;
   primary_goal?: string;
@@ -57,6 +59,8 @@ export interface UserProfile {
   last_active_at?: string;
   created_at?: string;
   updated_at?: string;
+  traits?: PlacedTrait[];
+  plan_id?: string;
 }
 
 interface UserProfileState {
@@ -69,6 +73,7 @@ interface UserProfileState {
   fetchProfile: () => Promise<void>;
   refreshProfile: () => Promise<void>; // Force refresh, ignore cache
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
+  saveTraits: (traits: PlacedTrait[]) => Promise<boolean>;
   checkNameAvailable: (name: string) => Promise<boolean>;
   clearProfile: () => void;
   setProfile: (profile: UserProfile | null) => void;
@@ -241,6 +246,31 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
       return true;
     } catch (error) {
       console.error('Error in updateProfile:', error);
+      return false;
+    }
+  },
+
+  saveTraits: async (traits) => {
+    const { userId } = get();
+    if (!userId) return false;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ traits, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+
+      if (error?.code === 'PGRST204') return true; // column not yet migrated
+      if (error) {
+        console.error('Error saving traits:', error);
+        return false;
+      }
+
+      set((state) => ({
+        profile: state.profile ? { ...state.profile, traits } : null,
+        lastFetchedAt: Date.now(),
+      }));
+      return true;
+    } catch {
       return false;
     }
   },

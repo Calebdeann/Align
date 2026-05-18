@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, useWindowDimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -8,18 +8,9 @@ import { OnboardingContinueButton } from '@/components';
 import { GYM_BUDDIES } from '@/data/gymBuddies';
 
 const FIGMA_W = 642;
-
-// Each tag has a fixed anchor edge (left or right) at a consistent % of screen width.
-// Tags grow outward from that edge so the layout is predictable regardless of text length.
-const TAG_SLOTS = [
-  { field: 'goal', bg: '#d3e9c5', rot: '-6.67deg', side: 'left' as const, marginPct: 0.15 },
-  { field: 'identity', bg: '#e3c5e9', rot: '3.74deg', side: 'right' as const, marginPct: 0.22 },
-  { field: 'why', bg: '#f9e597', rot: '-1.56deg', side: 'left' as const, marginPct: 0.1 },
-  { field: 'stat', bg: '#fcc4bd', rot: '1.32deg', side: 'right' as const, marginPct: 0.15 },
-  { field: 'lifestyle', bg: '#97d5f9', rot: '-2.82deg', side: 'left' as const, marginPct: 0.18 },
-];
-
-const TAG_HEIGHT_FIGMA = 56;
+const PHOTO_RATIO = 318 / FIGMA_W;
+const ONLINE_BADGE_LEFT_RATIO = 242 / FIGMA_W;
+const ONLINE_BADGE_TOP_RATIO = 10 / FIGMA_W;
 
 export default function PartnerMatchScreen() {
   const params = useLocalSearchParams<{ profileIndex: string }>();
@@ -29,35 +20,33 @@ export default function PartnerMatchScreen() {
   );
   const buddy = GYM_BUDDIES[idx];
 
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const s = width / FIGMA_W;
 
-  const photoSize = Math.round(318 * s);
-  const onlineBadgeLeft = Math.round(242 * s);
-  const onlineBadgeTop = Math.round(10 * s);
-  const tagH = Math.round(TAG_HEIGHT_FIGMA * s);
-
-  const labelText = `Start with ${buddy.name}`;
-  // ~11px per character at 17px Quicksand Bold + 60px horizontal padding
-  const buttonWidthRatio = Math.min(Math.max((labelText.length * 11 + 60) / width, 0.45), 0.82);
+  const photoSize = Math.round(width * PHOTO_RATIO);
+  const onlineBadgeLeft = Math.round(width * ONLINE_BADGE_LEFT_RATIO);
+  const onlineBadgeTop = Math.round(width * ONLINE_BADGE_TOP_RATIO);
 
   function handleStart() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.push('/onboarding/signin');
+    router.push('/onboarding/sticker');
   }
 
   function handleSolo() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.push('/onboarding/signin');
+    router.push('/onboarding/sticker');
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
+    <View style={styles.container}>
+      {/* P17 background has the trait pills baked in */}
+      <Image
+        source={require('../../assets/Onboarding Assets/Onboarding P17/match-bg.png')}
+        style={{ position: 'absolute', width, height }}
+        contentFit="cover"
+      />
+
+      <SafeAreaView style={styles.safeArea}>
         <Text
           style={[styles.name, { fontSize: Math.round(60 * s), marginTop: Math.round(60 * s) }]}
         >
@@ -84,45 +73,20 @@ export default function PartnerMatchScreen() {
           </View>
         </View>
 
-        {/* 83% match badge — slightly overlaps photo bottom */}
+        {/* 91% match badge */}
         <View style={[styles.matchWrapper, { marginTop: Math.round(-16 * s) }]}>
           <View style={styles.matchBadge}>
-            <Text style={[styles.badgeLabel, { fontSize: Math.round(24 * s) }]}>83% match</Text>
+            <Text style={[styles.badgeLabel, { fontSize: Math.round(24 * s) }]}>91% match</Text>
           </View>
         </View>
+      </SafeAreaView>
 
-        {/* Tags — flow layout with consistent left/right anchor edges */}
-        <View style={{ width, marginTop: Math.round(20 * s), gap: Math.round(10 * s) }}>
-          {TAG_SLOTS.map((slot) => (
-            <View
-              key={slot.field}
-              style={{
-                alignSelf: slot.side === 'left' ? 'flex-start' : 'flex-end',
-                marginLeft: slot.side === 'left' ? Math.round(width * slot.marginPct) : 0,
-                marginRight: slot.side === 'right' ? Math.round(width * slot.marginPct) : 0,
-                height: tagH,
-                backgroundColor: slot.bg,
-                borderRadius: tagH / 2,
-                transform: [{ rotate: slot.rot }],
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: Math.round(20 * s),
-              }}
-            >
-              <Text style={[styles.tagText, { fontSize: Math.round(22 * s) }]} numberOfLines={1}>
-                {buddy.tags[slot.field]}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-
-      {/* Fixed bottom — matches position of all other onboarding continue buttons */}
-      <View style={styles.bottomSection}>
+      {/* Fixed bottom buttons */}
+      <SafeAreaView edges={['bottom']} style={styles.bottomSection}>
         <OnboardingContinueButton
           onPress={handleStart}
-          label={labelText}
-          widthRatio={buttonWidthRatio}
+          label={`Start with ${buddy.name}`}
+          autoSize
         />
         <Pressable onPress={handleSolo} style={styles.soloButton}>
           <Text style={styles.soloText}>
@@ -130,8 +94,8 @@ export default function PartnerMatchScreen() {
             <Text style={styles.soloLink}>Continue without partner</Text>
           </Text>
         </Pressable>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -140,9 +104,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  scroll: {
+  safeArea: {
     alignItems: 'center',
-    paddingBottom: 16,
   },
   name: {
     fontFamily: fonts.bold,
@@ -191,20 +154,19 @@ const styles = StyleSheet.create({
   matchWrapper: {
     alignItems: 'center',
   },
-  tagText: {
-    fontFamily: fonts.bold,
-    color: '#000000',
-    textAlign: 'center',
-    letterSpacing: -0.48,
-  },
   bottomSection: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     alignItems: 'center',
+    gap: 10,
     paddingBottom: spacing.lg,
     paddingTop: 4,
-    gap: 10,
   },
   soloButton: {
     paddingVertical: 4,
+    marginTop: 8,
   },
   soloText: {
     fontFamily: fonts.regular,

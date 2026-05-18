@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { View, StyleSheet, useWindowDimensions, Image } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -7,14 +7,17 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedScrollHandler,
+  useAnimatedReaction,
   interpolate,
   Extrapolation,
   SharedValue,
+  withTiming,
+  withDelay,
+  runOnJS,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { spacing } from '@/constants/theme';
+import { spacing, fonts } from '@/constants/theme';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
-import MixedHeading from '@/components/MixedHeading';
 import { OnboardingContinueButton } from '@/components';
 
 // heightRatio = pixel height / pixel width; topOffset shifts image down; scale is uniform zoom
@@ -47,6 +50,19 @@ const SLIDES = [
 
 type Slide = (typeof SLIDES)[number];
 
+function WordItem({
+  word,
+  opacity,
+  style,
+}: {
+  word: string;
+  opacity: SharedValue<number>;
+  style: object;
+}) {
+  const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.Text style={[style, anim]}>{word}</Animated.Text>;
+}
+
 function SlideHeading({
   index,
   slide,
@@ -58,18 +74,66 @@ function SlideHeading({
   scrollX: SharedValue<number>;
   width: number;
 }) {
-  const animatedStyle = useAnimatedStyle(() => {
+  const w0 = useSharedValue(0);
+  const w1 = useSharedValue(0);
+  const w2 = useSharedValue(0);
+
+  const italicWords = slide.italicPhrase.split(' ');
+
+  function triggerHaptic() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+
+  const containerStyle = useAnimatedStyle(() => {
     const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
     const opacity = interpolate(scrollX.value, inputRange, [0, 1, 0], Extrapolation.CLAMP);
     return { opacity };
   });
 
+  // Slide 0 is already active on mount — useAnimatedReaction won't fire for it
+  // because the value never transitions from false→true. Use useEffect instead.
+  useEffect(() => {
+    if (index === 0) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      w0.value = withTiming(1, { duration: 675 });
+      w1.value = withDelay(340, withTiming(1, { duration: 675 }));
+      w2.value = withDelay(680, withTiming(1, { duration: 675 }));
+    }
+  }, []);
+
+  useAnimatedReaction(
+    () => Math.round(scrollX.value / width) === index,
+    (isActive, wasActive) => {
+      if (isActive && wasActive === false) {
+        runOnJS(triggerHaptic)();
+        w0.value = 0;
+        w1.value = 0;
+        w2.value = 0;
+        w0.value = withTiming(1, { duration: 675 });
+        w1.value = withDelay(340, withTiming(1, { duration: 675 }));
+        w2.value = withDelay(680, withTiming(1, { duration: 675 }));
+      } else if (!isActive && wasActive === true) {
+        w0.value = 0;
+        w1.value = 0;
+        w2.value = 0;
+      }
+    }
+  );
+
   return (
     <Animated.View
-      style={[styles.headingWrapper, StyleSheet.absoluteFill, animatedStyle]}
+      style={[styles.headingWrapper, StyleSheet.absoluteFill, containerStyle]}
       pointerEvents="none"
     >
-      <MixedHeading boldLine={slide.boldLine} italicPhrase={slide.italicPhrase} size={44} />
+      <View style={styles.wordContainer}>
+        <View style={styles.wordRow}>
+          <WordItem word={slide.boldLine} opacity={w0} style={styles.boldWord} />
+        </View>
+        <View style={styles.wordRow}>
+          <WordItem word={italicWords[0]} opacity={w1} style={styles.italicWord} />
+          <WordItem word={' ' + italicWords[1]} opacity={w2} style={styles.italicWord} />
+        </View>
+      </View>
     </Animated.View>
   );
 }
@@ -217,6 +281,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
+  },
+  wordContainer: {
+    alignItems: 'center',
+  },
+  wordRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  boldWord: {
+    fontFamily: fonts.frauncesBold,
+    fontSize: 44,
+    lineHeight: Math.round(44 * 1.2),
+    color: '#000000',
+  },
+  italicWord: {
+    fontFamily: fonts.instrumentSerifItalic,
+    fontSize: 44,
+    lineHeight: Math.round(44 * 1.2),
+    color: '#000000',
   },
   headingButtonSpacer: {
     height: 20,

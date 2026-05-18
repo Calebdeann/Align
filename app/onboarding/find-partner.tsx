@@ -1,13 +1,38 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+} from 'react-native-reanimated';
 import { fonts, spacing } from '@/constants/theme';
 import { OnboardingContinueButton } from '@/components';
 
 const { width, height } = Dimensions.get('screen');
 
 export default function FindPartnerScreen() {
+  const statOpacity = useSharedValue(0);
+  const line1Opacity = useSharedValue(0);
+  const line2Opacity = useSharedValue(0);
+  const line3Opacity = useSharedValue(0);
+
+  const statAnim = useAnimatedStyle(() => ({ opacity: statOpacity.value }));
+  const line1Anim = useAnimatedStyle(() => ({ opacity: line1Opacity.value }));
+  const line2Anim = useAnimatedStyle(() => ({ opacity: line2Opacity.value }));
+  const line3Anim = useAnimatedStyle(() => ({ opacity: line3Opacity.value }));
+
+  useEffect(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    statOpacity.value = withTiming(1, { duration: 900 });
+    line1Opacity.value = withDelay(560, withTiming(1, { duration: 675 }));
+    line2Opacity.value = withDelay(1010, withTiming(1, { duration: 675 }));
+    line3Opacity.value = withDelay(1460, withTiming(1, { duration: 675 }));
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* Full-screen background */}
@@ -27,14 +52,18 @@ export default function FindPartnerScreen() {
 
         {/* Stat + body text */}
         <View style={styles.content}>
-          <Text style={styles.stat}>82%</Text>
-          <Text style={styles.body}>
+          <Animated.Text style={[styles.stat, statAnim]}>82%</Animated.Text>
+          <Animated.Text style={[styles.body, line1Anim]}>
             {'of '}
             <Text style={styles.bodyItalic}>women</Text>
-            {' who achieve\ntheir '}
+            {' who achieve'}
+          </Animated.Text>
+          <Animated.Text style={[styles.body, line2Anim]}>
+            {'their '}
             <Text style={styles.bodyBold}>goals</Text>
-            {' have someone\ndoing it with them!'}
-          </Text>
+            {' have someone'}
+          </Animated.Text>
+          <Animated.Text style={[styles.body, line3Anim]}>{'doing it with them!'}</Animated.Text>
         </View>
       </SafeAreaView>
 
@@ -84,7 +113,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: 96,
+    width: 90,
     height: 4,
     backgroundColor: '#000000',
   },

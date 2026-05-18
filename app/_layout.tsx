@@ -158,6 +158,16 @@ export default function RootLayout() {
         <Stack.Screen name="save-workout" options={{ gestureEnabled: false }} />
         <Stack.Screen name="workout-complete" options={{ gestureEnabled: false }} />
         <Stack.Screen
+          name="workout-photo"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+            animation: 'slide_from_bottom',
+            animationDuration: 260,
+          }}
+        />
+        <Stack.Screen name="workout-photo-preview" options={{ headerShown: false }} />
+        <Stack.Screen
           name="explore-templates"
           options={{ animation: 'slide_from_bottom', animationDuration: 260 }}
         />
@@ -186,6 +196,15 @@ export default function RootLayout() {
         <Stack.Screen name="workout-preview" />
         <Stack.Screen name="import-guide" />
         <Stack.Screen name="shortcut-guide" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen
+          name="start-workout-sheet"
+          options={{
+            animation: 'slide_from_bottom',
+            animationDuration: 300,
+            presentation: 'modal',
+          }}
+        />
       </Stack>
     </View>
   );

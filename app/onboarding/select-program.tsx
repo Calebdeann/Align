@@ -75,7 +75,9 @@ export default function SelectProgramScreen() {
         </View>
       </View>
 
-      <Text style={styles.title}>{'Select a program\nthat suits you!'}</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.titleWord}>{'Select a program\nthat suits you!'}</Text>
+      </View>
 
       {/* Tab bar */}
       <View style={styles.tabBar}>
@@ -136,17 +138,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: 70,
+    width: 60,
     height: 4,
     backgroundColor: '#000000',
   },
-  title: {
+  titleContainer: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+  },
+  titleWord: {
     fontFamily: fonts.instrumentSerif,
     fontSize: 48,
     color: '#000000',
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
     lineHeight: 56,
   },
   tabBar: {

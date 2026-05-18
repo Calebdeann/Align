@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: 45,
+    width: 40,
     height: 4,
     backgroundColor: '#000000',
   },

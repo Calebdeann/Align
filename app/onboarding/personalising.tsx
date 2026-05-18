@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { fonts } from '@/constants/theme';
 
 const MESSAGES = [
@@ -24,19 +25,42 @@ const MESSAGES = [
       { text: 'Finalizing ', italic: false },
       { text: 'your', italic: true },
     ],
-    line2Parts: [{ text: 'final details', italic: false }],
+    line2Parts: [{ text: 'workout details', italic: false }],
   },
 ];
 
 export default function PersonalisingScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const progress = useRef(new Animated.Value(0)).current;
+  const textOpacity = useRef(new Animated.Value(1)).current;
   const barWidth = screenWidth * 0.45;
   const [messageIdx, setMessageIdx] = useState(0);
 
+  function switchMessage(idx: number) {
+    Animated.timing(textOpacity, {
+      toValue: 0,
+      duration: 200,
+      easing: Easing.ease,
+      useNativeDriver: true,
+    }).start(() => {
+      setMessageIdx(idx);
+      Animated.timing(textOpacity, {
+        toValue: 1,
+        duration: 350,
+        easing: Easing.ease,
+        useNativeDriver: true,
+      }).start();
+    });
+  }
+
   useEffect(() => {
-    const t1 = setTimeout(() => setMessageIdx(1), 3000);
-    const t2 = setTimeout(() => setMessageIdx(2), 6000);
+    const t1 = setTimeout(() => switchMessage(1), 3000);
+    const t2 = setTimeout(() => switchMessage(2), 6000);
+
+    const hapticTimes = [1400, 2900, 4500, 5700, 7100, 8000];
+    const hapticTimers = hapticTimes.map((ms) =>
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), ms)
+    );
 
     Animated.sequence([
       Animated.delay(500),
@@ -78,13 +102,14 @@ export default function PersonalisingScreen() {
       }),
     ]).start(({ finished }) => {
       if (finished) {
-        router.replace('/onboarding/signin');
+        router.replace('/onboarding/pre-paywall');
       }
     });
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      hapticTimers.forEach(clearTimeout);
     };
   }, []);
 
@@ -100,23 +125,25 @@ export default function PersonalisingScreen() {
       <View style={styles.topSpacer} />
 
       <View style={styles.content}>
-        <Text style={styles.title}>
-          {msg.line1Parts ? (
-            msg.line1Parts.map((p, i) => (
+        <Animated.View style={{ opacity: textOpacity }}>
+          <Text style={styles.title}>
+            {msg.line1Parts ? (
+              msg.line1Parts.map((p, i) => (
+                <Text key={i} style={p.italic ? styles.titleItalic : styles.titleRegular}>
+                  {p.text}
+                </Text>
+              ))
+            ) : (
+              <Text style={styles.titleRegular}>{msg.line1}</Text>
+            )}
+            {'\n'}
+            {msg.line2Parts.map((p, i) => (
               <Text key={i} style={p.italic ? styles.titleItalic : styles.titleRegular}>
                 {p.text}
               </Text>
-            ))
-          ) : (
-            <Text style={styles.titleRegular}>{msg.line1}</Text>
-          )}
-          {'\n'}
-          {msg.line2Parts.map((p, i) => (
-            <Text key={i} style={p.italic ? styles.titleItalic : styles.titleRegular}>
-              {p.text}
-            </Text>
-          ))}
-        </Text>
+            ))}
+          </Text>
+        </Animated.View>
 
         <View style={[styles.barTrack, { width: barWidth }]}>
           <Animated.View style={[styles.barFill, { width: fillWidth }]} />
@@ -140,24 +167,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 28,
     paddingTop: 16,
+    marginTop: -30,
   },
   title: {
     fontFamily: fonts.instrumentSerif,
-    fontSize: 52,
+    fontSize: 44,
     color: '#000000',
     textAlign: 'center',
-    lineHeight: 76,
+    lineHeight: 52,
     paddingHorizontal: 32,
   },
   titleItalic: {
     fontFamily: fonts.instrumentSerifItalic,
-    fontSize: 52,
-    lineHeight: 76,
+    fontSize: 44,
+    lineHeight: 52,
   },
   titleRegular: {
     fontFamily: fonts.instrumentSerif,
-    fontSize: 52,
-    lineHeight: 76,
+    fontSize: 44,
+    lineHeight: 52,
   },
   barTrack: {
     height: 4,

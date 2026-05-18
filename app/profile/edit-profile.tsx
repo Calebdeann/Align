@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
+import { CircleBackButton } from '@/components';
 import { useUserProfileStore, getHighResAvatarUrl } from '@/stores/userProfileStore';
 import { uploadAvatar } from '@/services/api/user';
 
@@ -187,15 +188,7 @@ export default function EditProfileScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </Pressable>
+        <CircleBackButton />
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <Pressable
           onPress={() => {
@@ -354,12 +347,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   headerTitle: {
     fontFamily: fonts.semiBold,

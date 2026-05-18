@@ -645,7 +645,7 @@ export default function SaveWorkoutScreen() {
           const displayTitle = workoutTitle || workoutData.templateName || 'Workout';
           router.dismissAll();
           router.push({
-            pathname: '/workout-complete',
+            pathname: '/workout-photo',
             params: {
               workoutTitle: displayTitle,
               durationSeconds: String(currentDuration),
