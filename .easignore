@@ -1,0 +1,64 @@
+# ─── Repo/system stuff that VCS mode used to auto-exclude but filesystem mode does NOT ───
+# eas-cli v19+ uses filesystem walk when .easignore exists; without these,
+# huge folders like .git/ (gigabytes of history) get uploaded.
+.git/
+.gitignore
+.gitattributes
+.github/
+*.log
+coverage/
+tmp/
+.turbo/
+.next/
+.cache/
+.DS_Store
+Thumbs.db
+
+# ─── Mirror of .gitignore (required: .easignore replaces .gitignore for EAS) ───
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+*.pem
+.env
+.env*.local
+*.tsbuildinfo
+supabase/.temp/
+/data/
+.claude/scheduled_tasks.lock
+scripts/seed-data/
+
+# ─── Build artifacts EAS regenerates ───
+ios/Pods/
+ios/build/
+
+# ─── Legacy / backup folders ───
+ios_backup_align/
+_archive/
+
+# ─── Dev tooling / reference material not used at runtime ───
+docs/
+scripts/
+supabase/
+.husky/
+.claude/
+.cursor/
+.vscode/
+
+# ─── Unreferenced design assets ───
+assets/BugsFolder/
+assets/New Onboarding Figma Files/
+assets/Onboarding Quotes/

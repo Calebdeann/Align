@@ -19,7 +19,8 @@ import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { CircleBackButton } from '@/components';
 import { useUserProfileStore, UserProfile } from '@/stores/userProfileStore';
-import { filterNumericInput } from '@/utils/units';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { filterNumericInput, fromKgForDisplay, getWeightUnit } from '@/utils/units';
 
 interface DetailRowProps {
   label: string;
@@ -31,7 +32,13 @@ interface DetailRowProps {
 function DetailRow({ label, value, onEdit, showDivider = true }: DetailRowProps) {
   return (
     <>
-      <Pressable style={styles.detailRow} onPress={onEdit}>
+      <Pressable
+        style={styles.detailRow}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          onEdit();
+        }}
+      >
         <Text style={styles.detailLabel}>{label}</Text>
         <View style={styles.detailRight}>
           <Text style={styles.detailValue}>{value || '-'}</Text>
@@ -46,6 +53,7 @@ function DetailRow({ label, value, onEdit, showDivider = true }: DetailRowProps)
 export default function PersonalDetailsScreen() {
   const { profile, userId, updateProfile } = useUserProfileStore();
   const { t } = useTranslation();
+  const unitSystem = useUserPreferencesStore((s) => s.getUnitSystem());
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editField, setEditField] = useState<'weight' | 'height' | null>(null);
@@ -98,10 +106,10 @@ export default function PersonalDetailsScreen() {
     }
   }
 
-  function formatWeight(weight?: number): string {
-    if (!weight) return '-';
-    const unit = profile?.weight_unit || 'kg';
-    return `${weight}${unit}`;
+  function formatWeight(weightKg?: number): string {
+    if (!weightKg) return '-';
+    const display = fromKgForDisplay(weightKg, unitSystem);
+    return `${display} ${getWeightUnit(unitSystem)}`;
   }
 
   function formatHeight(height?: number): string {
@@ -160,10 +168,17 @@ export default function PersonalDetailsScreen() {
 
       {/* Edit Field Modal */}
       <Modal visible={showEditModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowEditModal(false)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            setShowEditModal(false);
+          }}
+        >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{getEditLabel()}</Text>
             <TextInput
+              autoCorrect={false}
               style={styles.editInput}
               value={editValue}
               onChangeText={(value) => setEditValue(filterNumericInput(value))}
@@ -173,7 +188,13 @@ export default function PersonalDetailsScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <Pressable style={styles.modalButtonCancel} onPress={() => setShowEditModal(false)}>
+              <Pressable
+                style={styles.modalButtonCancel}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  setShowEditModal(false);
+                }}
+              >
                 <Text style={styles.modalButtonCancelText}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable

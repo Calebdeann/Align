@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,18 @@ import {
   ImageBackground,
   ImageSourcePropType,
 } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, radius } from '@/constants/theme';
 import OnboardingBackButton from './ui/OnboardingBackButton';
 import OnboardingContinueButton from './ui/OnboardingContinueButton';
+
+// Tracks the most recently rendered progress so each new screen's progress bar
+// animates from the previous value instead of snapping to its own.
+let lastSeenProgress = 0;
 
 interface QuestionLayoutProps {
   question: string;
@@ -42,6 +47,16 @@ export default function QuestionLayout({
   const [isNavigating, setIsNavigating] = useState(false);
   const locked = isNavigating || navigationDisabled;
 
+  const progressShared = useSharedValue(lastSeenProgress);
+  const progressFillStyle = useAnimatedStyle(() => ({
+    width: `${progressShared.value}%`,
+  }));
+
+  useEffect(() => {
+    progressShared.value = withTiming(progress, { duration: 350 });
+    lastSeenProgress = progress;
+  }, [progress, progressShared]);
+
   // Reset navigation state when screen comes back into focus
   useFocusEffect(
     useCallback(() => {
@@ -52,21 +67,21 @@ export default function QuestionLayout({
   const handleSkip = () => {
     if (locked) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     onSkip?.();
   };
 
   const handleBack = () => {
     if (locked) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     router.back();
   };
 
   const handleContinue = () => {
     if (locked) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     onContinue?.();
   };
 
@@ -78,7 +93,7 @@ export default function QuestionLayout({
 
         <View style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground} />
-          <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+          <Animated.View style={[styles.progressBarFill, progressFillStyle]} />
         </View>
 
         {onSkip ? (

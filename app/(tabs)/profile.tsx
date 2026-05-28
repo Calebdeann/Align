@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, type ReactNode } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,12 @@ import {
   Keyboard,
   useWindowDimensions,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
@@ -29,16 +30,45 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts, spacing } from '@/constants/theme';
 import { LIQUID_TAB_BAR_HEIGHT } from '@/components/ui/LiquidGlassTabBar';
+import { UserAvatar } from '@/components';
+import RecoverySection from '@/components/recovery/RecoverySection';
 import { supabase } from '@/services/supabase';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useWorkoutStore, type CachedCompletedWorkout } from '@/stores/workoutStore';
 import { uploadAvatar } from '@/services/api/user';
+import { getAppConfig } from '@/services/api/appConfig';
+import { getPlanById } from '@/data/plans';
 import {
   TRAIT_CATEGORIES,
   TRAITS_BOX_H,
   TRAITS_PILL_H,
   type PlacedTrait,
 } from '@/constants/traits';
+
+const PLAN_PROFILE_IMAGES: Record<string, ReturnType<typeof require>> = {
+  'summer-body': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Summer.png'),
+  'pilates-princess': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Pilates.png'),
+  hourglass: require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Hourglass.png'),
+  booty: require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Booty.png'),
+  'it-girl': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_itgirl.png'),
+  'busy-girl': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_BusyGirl.png'),
+  'muscle-mommy': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_muscle.png'),
+  home: require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Home.png'),
+};
+
+const ordinal = (n: number) => {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+};
+
+function formatWeekRange(mondayKey: string): string {
+  const monday = new Date(mondayKey + 'T00:00:00');
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const monthName = (d: Date) => d.toLocaleDateString('en-GB', { month: 'long' });
+  return `${ordinal(monday.getDate())} ${monthName(monday)} - ${ordinal(sunday.getDate())} ${monthName(sunday)}`;
+}
 
 function groupByWeek(workouts: CachedCompletedWorkout[]) {
   const getMondayKey = (d: Date) => {
@@ -57,9 +87,9 @@ function groupByWeek(workouts: CachedCompletedWorkout[]) {
   }
   const sorted = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   return sorted
-    .map(([key, items], idx) => ({
+    .map(([key, items]) => ({
       weekKey: key,
-      label: `Week ${idx + 1}`,
+      label: formatWeekRange(key),
       workouts: items.sort(
         (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
       ),
@@ -67,20 +97,16 @@ function groupByWeek(workouts: CachedCompletedWorkout[]) {
     .reverse();
 }
 
-const PLAN_PROFILE_IMAGES: Record<string, ReturnType<typeof require>> = {
-  'summer-body': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Summer.png'),
-  'pilates-princess': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Pilates.png'),
-  hourglass: require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Hourglass.png'),
-  booty: require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Booty.png'),
-  'it-girl': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_itgirl.png'),
-  'glow-up': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_glow.png'),
-  'muscle-mommy': require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_muscle.png'),
-  home: require('../../assets/Profile Assets/Plan Profile Images/ProfilePlan_Home.png'),
-};
-
 function CircleIconButton({ onPress, children }: { onPress: () => void; children: ReactNode }) {
   return (
-    <Pressable onPress={onPress} style={styles.circleButton} hitSlop={8}>
+    <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        onPress();
+      }}
+      style={styles.circleButton}
+      hitSlop={8}
+    >
       {children}
     </Pressable>
   );
@@ -131,13 +157,30 @@ export default function ProfileScreen() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const profile = useUserProfileStore((state) => state.profile);
+  const userId = useUserProfileStore((state) => state.userId);
   const fetchProfile = useUserProfileStore((state) => state.fetchProfile);
   const updateProfile = useUserProfileStore((state) => state.updateProfile);
+  const sessionAvatarUri = useUserProfileStore((state) => state.sessionAvatarUri);
+  const setSessionAvatarUri = useUserProfileStore((state) => state.setSessionAvatarUri);
   const cachedCompletedWorkouts = useWorkoutStore((s) => s.cachedCompletedWorkouts);
   const weekGroups = useMemo(() => groupByWeek(cachedCompletedWorkouts), [cachedCompletedWorkouts]);
+  const currentPlan = getPlanById(profile?.plan_id ?? 'summer-body');
 
-  useEffect(() => {
-    fetchProfile();
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [fetchProfile])
+  );
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setRefreshing(true);
+    try {
+      await fetchProfile();
+    } finally {
+      setRefreshing(false);
+    }
   }, [fetchProfile]);
 
   useEffect(() => {
@@ -145,12 +188,12 @@ export default function ProfileScreen() {
   }, [profile?.bio]);
 
   function handleSettings() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     router.push('/settings');
   }
 
   async function handlePickAvatar() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!granted) {
       Alert.alert('Permission needed', 'Allow photo library access to set a profile picture.');
@@ -163,23 +206,42 @@ export default function ProfileScreen() {
       quality: 0.8,
     });
     if (result.canceled || !result.assets[0]) return;
-    const userId = profile?.id;
     if (!userId) return;
+
+    const asset = result.assets[0];
+    // Push the local file:// URI into the global store so every screen showing
+    // the current user's avatar (this profile, discover feed, friend cards,
+    // workout summary, etc.) renders the new photo immediately. It survives
+    // for the rest of the session; on next app launch, profile.avatar_url
+    // loads from the DB.
+    setSessionAvatarUri(asset.uri);
     setUploadingAvatar(true);
-    const url = await uploadAvatar(userId, result.assets[0].uri);
+    const url = await uploadAvatar(userId, asset.uri);
+    if (__DEV__) console.log('[avatar] uploadAvatar returned URL:', url);
     if (url) {
-      await updateProfile({ avatar_url: url });
+      const ok = await updateProfile({ avatar_url: url });
+      if (__DEV__) console.log('[avatar] updateProfile ok:', ok);
+      if (!ok) {
+        Alert.alert(
+          'Save Failed',
+          'Photo uploaded but could not save to profile. Please try again.'
+        );
+      }
+    } else {
+      setSessionAvatarUri(null);
+      Alert.alert('Upload Failed', 'Could not upload photo. Check your connection and try again.');
     }
     setUploadingAvatar(false);
   }
 
   function handleBio() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setBioText(profile?.bio ?? '');
     setBioModalVisible(true);
   }
 
   async function handleSaveBio() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     const trimmed = bioText.trim();
     setDisplayBio(trimmed);
     setBioModalVisible(false);
@@ -187,7 +249,7 @@ export default function ProfileScreen() {
   }
 
   function handleTraits() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     router.push('/profile/traits');
   }
 
@@ -195,6 +257,7 @@ export default function ProfileScreen() {
   const hasSavedTraits = savedTraits.length > 0;
 
   const handleAppleSignIn = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       setIsAppleLoading(true);
       const rawNonce = Crypto.randomUUID();
@@ -233,6 +296,7 @@ export default function ProfileScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       setIsGoogleLoading(true);
       const redirectTo = 'itgirl://auth/callback';
@@ -284,7 +348,14 @@ export default function ProfileScreen() {
   };
 
   async function handleReview() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    // Remote-controlled URL via the `review_url` row in the app_config table.
+    // Empty / null → fall back to the native review prompt (current behaviour).
+    const remoteUrl = await getAppConfig('review_url');
+    if (remoteUrl && remoteUrl.length > 0) {
+      Linking.openURL(remoteUrl).catch(() => {});
+      return;
+    }
     const isAvailable = await StoreReview.isAvailableAsync();
     if (isAvailable) {
       StoreReview.requestReview();
@@ -306,18 +377,18 @@ export default function ProfileScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />
+        }
       >
-        {/* Avatar */}
+        {/* Avatar — priority: local pick → DB URL → placeholder (handled inside UserAvatar) */}
         <Pressable style={styles.avatarContainer} onPress={handlePickAvatar}>
-          {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} contentFit="cover" />
-          ) : (
-            <Image
-              source={require('../../assets/Profile Assets/no-pfp.png')}
-              style={[styles.avatar, uploadingAvatar && styles.avatarLoading]}
-              contentFit="cover"
-            />
-          )}
+          <UserAvatar
+            uri={sessionAvatarUri ?? profile?.avatar_url ?? null}
+            size={120}
+            loading={uploadingAvatar}
+            version={profile?.updated_at}
+          />
         </Pressable>
 
         {/* Name */}
@@ -336,11 +407,11 @@ export default function ProfileScreen() {
         {/* Scattered traits pills */}
         <Pressable style={styles.traitsContainer} onPress={handleTraits}>
           {hasSavedTraits ? (
-            savedTraits.map((trait) => {
+            savedTraits.map((trait, idx) => {
               const cat = TRAIT_CATEGORIES.find((c) => c.id === trait.categoryId);
               return (
                 <View
-                  key={trait.categoryId}
+                  key={`${trait.categoryId}-${trait.tag}-${idx}`}
                   style={[
                     styles.savedTraitPill,
                     {
@@ -361,7 +432,7 @@ export default function ProfileScreen() {
                 style={[
                   styles.traitPill,
                   styles.traitPillRound,
-                  { top: 16, left: 35, width: 88, transform: [{ rotate: '4deg' }] },
+                  { top: 22, left: 35, width: 88, transform: [{ rotate: '4deg' }] },
                 ]}
               >
                 <Text style={styles.traitLabel}>Add traits</Text>
@@ -370,7 +441,7 @@ export default function ProfileScreen() {
                 style={[
                   styles.traitPill,
                   styles.traitPillRound,
-                  { top: 50, left: 82, width: 88, transform: [{ rotate: '-3deg' }] },
+                  { top: 80, left: 82, width: 88, transform: [{ rotate: '-3deg' }] },
                 ]}
               >
                 <Text style={styles.traitLabel}>Add traits</Text>
@@ -379,7 +450,7 @@ export default function ProfileScreen() {
                 style={[
                   styles.traitPill,
                   styles.traitPillRound,
-                  { top: 4, left: 148, width: 88, transform: [{ rotate: '4deg' }] },
+                  { top: 8, left: 148, width: 88, transform: [{ rotate: '4deg' }] },
                 ]}
               >
                 <Text style={styles.traitLabel}>Add traits</Text>
@@ -388,7 +459,7 @@ export default function ProfileScreen() {
                 style={[
                   styles.traitPill,
                   styles.traitPillRound,
-                  { top: 48, left: 190, width: 88, transform: [{ rotate: '3deg' }] },
+                  { top: 78, left: 190, width: 88, transform: [{ rotate: '3deg' }] },
                 ]}
               >
                 <Text style={styles.traitLabel}>Add traits</Text>
@@ -397,7 +468,7 @@ export default function ProfileScreen() {
                 style={[
                   styles.traitPill,
                   styles.traitPillRound,
-                  { top: 10, left: 246, width: 88, transform: [{ rotate: '-6deg' }] },
+                  { top: 18, left: 246, width: 88, transform: [{ rotate: '-6deg' }] },
                 ]}
               >
                 <Text style={styles.traitLabel}>Add traits</Text>
@@ -411,7 +482,7 @@ export default function ProfileScreen() {
           <Pressable
             style={styles.tab}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setActiveTab('profile');
             }}
           >
@@ -423,7 +494,7 @@ export default function ProfileScreen() {
           <Pressable
             style={styles.tab}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setActiveTab('recovery');
             }}
           >
@@ -434,83 +505,109 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        {/* Tab content */}
-        {activeTab === 'profile' ? (
-          <Pressable
-            style={styles.planCardShadow}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/profile/change-plan');
-            }}
-          >
-            <Image
-              source={
-                PLAN_PROFILE_IMAGES[profile?.plan_id ?? 'summer-body'] ??
-                PLAN_PROFILE_IMAGES['summer-body']
-              }
-              style={styles.planImage}
-              contentFit="cover"
-            />
-          </Pressable>
-        ) : (
-          <View style={styles.recoveryPlaceholder}>
-            <Text style={styles.recoveryText}>Recovery coming soon</Text>
-          </View>
-        )}
-
-        {/* Workout history by week */}
-        {weekGroups.map((group) => (
-          <View key={group.weekKey} style={styles.weekSection}>
-            <Text style={styles.weekLabel}>{group.label}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.weekRow}
-              style={styles.weekScroll}
-            >
-              {group.workouts.map((workout, i) => {
-                const rotation = ['-0.5deg', '1deg', '-1deg'][i % 3];
-                return (
-                  <Pressable
-                    key={workout.id}
-                    style={[styles.photoCardShadow, { transform: [{ rotate: rotation }] }]}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/workout-detail?id=${workout.id}`);
-                    }}
-                  >
-                    <View style={styles.photoCardInner}>
-                      {workout.imageUri ? (
-                        <Image
-                          source={{ uri: workout.imageUri }}
-                          style={styles.photoCardImage}
-                          contentFit="cover"
-                        />
-                      ) : (
-                        <View style={styles.photoCardPlaceholder}>
-                          <Text style={styles.photoCardName} numberOfLines={3}>
-                            {workout.name ?? 'Workout'}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        ))}
-
-        {/* Help Us Grow */}
-        <Pressable style={styles.reviewShadow} onPress={handleReview}>
-          <View style={styles.reviewInner}>
-            <Image
-              source={require('../../assets/Profile Assets/help-us-grow.png')}
-              style={styles.reviewImage}
-              contentFit="cover"
-            />
-          </View>
+        {/* Plan image banner — shown above both Profile and Recovery tab content */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/profile/change-plan');
+          }}
+        >
+          <Image
+            source={
+              PLAN_PROFILE_IMAGES[profile?.plan_id ?? 'summer-body'] ??
+              PLAN_PROFILE_IMAGES['summer-body']
+            }
+            style={styles.planImage}
+            contentFit="contain"
+          />
         </Pressable>
+
+        {/* Tab content */}
+        {activeTab === 'recovery' && <RecoverySection />}
+
+        {/* Workout history by week — profile tab only */}
+        {/* TODO: When other-user profile view is built, replicate this section.
+            Photos are persistent Supabase Storage public URLs in workout.imageUri.
+            Query via getWorkoutsByDateRange(viewedUserId, ...) and verify photo thumbnails
+            display on their profile. May need a public SELECT RLS policy on workouts. */}
+        {activeTab === 'profile' &&
+          weekGroups.map((group, index) => (
+            <View
+              key={group.weekKey}
+              style={[styles.weekSection, index === 0 && { marginTop: 30 }]}
+            >
+              <Text style={styles.weekLabel}>{group.label}</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.weekRow}
+                style={styles.weekScroll}
+              >
+                {group.workouts.map((workout, i) => {
+                  const rotation = ['-0.5deg', '1deg', '-1deg'][i % 3];
+                  return (
+                    <Pressable
+                      key={workout.id}
+                      style={[styles.photoCardShadow, { transform: [{ rotate: rotation }] }]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                        router.push({
+                          pathname: '/workout-summary',
+                          params: {
+                            workoutId: workout.id,
+                            mode: 'view',
+                            workoutTitle: workout.name ?? '',
+                            imageUri: workout.imageUri ?? '',
+                            imageAspectRatio: workout.imageAspectRatio
+                              ? String(workout.imageAspectRatio)
+                              : '',
+                            userName: profile?.name ?? '',
+                            userAvatarUrl: profile?.avatar_url ?? '',
+                            ownerUserId: profile?.id ?? '',
+                            completedAt: workout.completedAt ?? '',
+                          },
+                        });
+                      }}
+                    >
+                      <View style={styles.photoCardInner}>
+                        {workout.imageUri ? (
+                          <Image
+                            source={{ uri: workout.imageUri }}
+                            style={styles.photoCardImage}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View style={styles.photoCardPlaceholder}>
+                            <Text style={styles.photoCardName} numberOfLines={3}>
+                              {workout.name ?? 'Workout'}
+                            </Text>
+                          </View>
+                        )}
+                        {workout.imageAudience && workout.imageAudience !== 'everyone' && (
+                          <View style={styles.photoCardLockBadge}>
+                            <Ionicons name="lock-closed" size={12} color="#fff" />
+                          </View>
+                        )}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ))}
+
+        {/* Help Us Grow — profile tab only */}
+        {activeTab === 'profile' && (
+          <Pressable style={styles.reviewShadow} onPress={handleReview}>
+            <View style={styles.reviewInner}>
+              <Image
+                source={require('../../assets/Profile Assets/help-us-grow.png')}
+                style={styles.reviewImage}
+                contentFit="cover"
+              />
+            </View>
+          </Pressable>
+        )}
 
         {__DEV__ && (
           <View style={styles.devAuthSection}>
@@ -562,6 +659,7 @@ export default function ProfileScreen() {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Your Bio</Text>
             <TextInput
+              autoCorrect={false}
               style={styles.modalInput}
               value={bioText}
               onChangeText={setBioText}
@@ -573,7 +671,13 @@ export default function ProfileScreen() {
             />
             <Text style={styles.modalCount}>{bioText.length}/150</Text>
             <View style={styles.modalActions}>
-              <Pressable style={styles.modalCancel} onPress={() => setBioModalVisible(false)}>
+              <Pressable
+                style={styles.modalCancel}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  setBioModalVisible(false);
+                }}
+              >
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </Pressable>
               <Pressable style={styles.modalSave} onPress={handleSaveBio}>
@@ -599,11 +703,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.07)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   gearButtonContainer: {
     position: 'absolute',
@@ -619,23 +725,14 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     alignItems: 'center',
-    marginTop: -17,
-  },
-  avatar: {
-    width: 166,
-    height: 166,
-    borderRadius: 83,
-    overflow: 'hidden',
-  },
-  avatarLoading: {
-    opacity: 0.5,
+    marginTop: 16,
   },
   name: {
     fontFamily: fonts.bold,
     fontSize: 22,
     color: '#000000',
     textAlign: 'center',
-    marginTop: -26,
+    marginTop: 10,
     letterSpacing: -0.4,
   },
   bioRow: {
@@ -697,6 +794,10 @@ const styles = StyleSheet.create({
     color: '#BDBDBD',
     letterSpacing: -0.2,
   },
+  planImage: {
+    width: '100%',
+    aspectRatio: 1836 / 769,
+  },
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -723,40 +824,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     borderRadius: 100,
   },
-  planCardShadow: {
-    marginTop: 8,
-    borderRadius: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 6,
-  },
-  planImage: {
-    width: '100%',
-    aspectRatio: 1836 / 769,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  recoveryPlaceholder: {
-    height: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recoveryText: {
-    fontFamily: fonts.instrumentSerifItalic,
-    fontSize: 30,
-    color: '#999999',
-  },
   reviewShadow: {
     marginTop: 20,
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   reviewInner: {
     borderRadius: 20,
@@ -768,38 +844,52 @@ const styles = StyleSheet.create({
   },
   // Workout history
   weekSection: {
-    marginTop: 20,
+    marginTop: 0,
   },
   weekLabel: {
     fontFamily: fonts.bold,
     fontSize: 22,
     color: '#000000',
     letterSpacing: -0.4,
-    marginBottom: 12,
+    marginBottom: 4,
   },
   weekScroll: {
     marginHorizontal: -16,
+    overflow: 'visible',
   },
   weekRow: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     gap: 12,
-    paddingVertical: 8,
+    paddingTop: 4,
+    paddingBottom: 30,
   },
   photoCardShadow: {
     width: 140,
     height: 168,
     borderRadius: 20,
+    backgroundColor: '#1a1a1a',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   photoCardInner: {
     width: 140,
     height: 168,
     borderRadius: 20,
     overflow: 'hidden',
+  },
+  photoCardLockBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   photoCardImage: {
     width: 140,

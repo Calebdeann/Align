@@ -1,23 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Stack, router, usePathname } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { View, AppState, Platform, NativeModules } from 'react-native';
+import { View, AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { colors } from '@/constants/theme';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { initializeStoreManager } from '@/lib/storeManager';
+import { useAppConfigStore } from '@/stores/appConfigStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SuperwallProvider } from 'expo-superwall';
 import { setupNotificationHandler, scheduleDailyReminder } from '@/services/notifications';
 import { cleanupStaleLiveActivities } from '@/services/liveActivity';
+import { Image as ExpoImage } from 'expo-image';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import '@/i18n';
 import { useLanguageSync } from '@/hooks/useLanguageSync';
 import { useExerciseTranslations } from '@/hooks/useExerciseTranslations';
-
-const { WorkoutWidgetBridge } = NativeModules;
+import { authStateManager } from '@/services/authState';
+import { processSeedBuddyAccepts } from '@/services/api/friends';
 
 // Keep splash screen visible while fonts load
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -46,8 +49,28 @@ export default function RootLayout() {
         ]);
         // Errors from store/locale init are non-blocking; app will still render
 
+        // Fetch remote feature flags (e.g. in_app_paywall_enabled).
+        // Fire-and-forget: useSubscriptionGate keeps the gate inert until
+        // hasLoaded flips, so a slow fetch never blocks the UI.
+        useAppConfigStore
+          .getState()
+          .refresh()
+          .catch(() => {});
+
         // Clean up any orphaned Live Activity from a previous session
         cleanupStaleLiveActivities().catch(() => {});
+
+        // One-shot: flush expo-image's disk cache to clear any stale
+        // empty-byte entries from the pre-FileSystem.uploadAsync avatar bug.
+        // Runs exactly once per install; safe to remove after a few weeks.
+        AsyncStorage.getItem('image-cache-cleared-v1')
+          .then((done) => {
+            if (done) return;
+            return Promise.all([ExpoImage.clearMemoryCache(), ExpoImage.clearDiskCache()]).then(
+              () => AsyncStorage.setItem('image-cache-cleared-v1', '1')
+            );
+          })
+          .catch(() => {});
 
         // Load fonts (must complete before render) - retry once on failure
         const fontAssets = {
@@ -79,21 +102,23 @@ export default function RootLayout() {
     prepare();
   }, [initializeFromLocale]);
 
-  // Track current path to avoid navigating to import-video if already there
-  const pathname = usePathname();
-
-  // Check for pending video import on cold start (fallback if Share Extension couldn't open the app)
+  // Flip any ripe seed-buddy auto-accepts whenever a user is signed in.
+  // Fires on cold start (existing session) and on every fresh sign-in.
   useEffect(() => {
-    if (!appIsReady) return;
-    const timeout = setTimeout(() => {
-      if (!pathname?.includes('import-video')) {
-        checkPendingVideoImport();
-      }
-    }, 1500);
-    return () => clearTimeout(timeout);
-  }, [appIsReady]);
+    let cancelled = false;
+    authStateManager.getUserIdAsync().then((userId) => {
+      if (!cancelled && userId) processSeedBuddyAccepts().catch(() => {});
+    });
+    const unsubscribe = authStateManager.subscribe((userId) => {
+      if (userId) processSeedBuddyAccepts().catch(() => {});
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
 
-  // Refresh profile when app returns to foreground + check for pending video import
+  // Refresh profile when app returns to foreground
   const appStateRef = useRef(AppState.currentState);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', async (nextAppState) => {
@@ -103,35 +128,11 @@ export default function RootLayout() {
         if (profile?.notifications_enabled && profile?.reminder_time) {
           scheduleDailyReminder(profile.reminder_time);
         }
-        if (!pathname?.includes('import-video')) {
-          checkPendingVideoImport();
-        }
       }
       appStateRef.current = nextAppState;
     });
     return () => subscription.remove();
-  }, [pathname]);
-
-  // Check for pending video import written by Share Extension via App Groups
-  async function checkPendingVideoImport() {
-    if (Platform.OS !== 'ios' || !WorkoutWidgetBridge?.readPendingVideoImport) return;
-    try {
-      // Only allow import for signed-in users
-      const profile = useUserProfileStore.getState().profile;
-      if (!profile) return;
-
-      const jsonString = await WorkoutWidgetBridge.readPendingVideoImport();
-      if (jsonString) {
-        const data = JSON.parse(jsonString);
-        router.push({
-          pathname: '/import-video',
-          params: { videoUrl: data.url, platform: data.platform || 'tiktok' },
-        });
-      }
-    } catch {
-      // Silently fail - Share Extension may not be available
-    }
-  }
+  }, []);
 
   // Show nothing while loading (splash is visible)
   if (!appIsReady) {
@@ -144,6 +145,8 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="sign-in" />
+        <Stack.Screen name="sign-in-email" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="profile" />
         <Stack.Screen
@@ -156,7 +159,6 @@ export default function RootLayout() {
         />
         <Stack.Screen name="add-exercise" />
         <Stack.Screen name="save-workout" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="workout-complete" options={{ gestureEnabled: false }} />
         <Stack.Screen
           name="workout-photo"
           options={{
@@ -166,11 +168,11 @@ export default function RootLayout() {
             animationDuration: 260,
           }}
         />
-        <Stack.Screen name="workout-photo-preview" options={{ headerShown: false }} />
         <Stack.Screen
-          name="explore-templates"
-          options={{ animation: 'slide_from_bottom', animationDuration: 260 }}
+          name="workout-summary"
+          options={{ headerShown: false, gestureEnabled: false }}
         />
+        <Stack.Screen name="workout-photo-preview" options={{ headerShown: false }} />
         <Stack.Screen name="template-detail" />
         <Stack.Screen
           name="create-template"
@@ -182,29 +184,12 @@ export default function RootLayout() {
         />
         <Stack.Screen name="schedule-workout" />
         <Stack.Screen name="save-template" />
-        <Stack.Screen name="workout-details" />
-        <Stack.Screen
-          name="import-video"
-          options={{
-            animation: 'slide_from_bottom',
-            animationDuration: 260,
-            gestureEnabled: false,
-          }}
-        />
         <Stack.Screen name="exercise" />
         <Stack.Screen name="create-exercise" />
         <Stack.Screen name="workout-preview" />
-        <Stack.Screen name="import-guide" />
         <Stack.Screen name="shortcut-guide" />
         <Stack.Screen name="settings" />
-        <Stack.Screen
-          name="start-workout-sheet"
-          options={{
-            animation: 'slide_from_bottom',
-            animationDuration: 300,
-            presentation: 'modal',
-          }}
-        />
+        <Stack.Screen name="start-workout-sheet" options={{ headerShown: false }} />
       </Stack>
     </View>
   );
@@ -212,7 +197,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
-        <SuperwallProvider apiKeys={{ ios: 'SUPERWALL_API_KEY_TODO' }}>
+        <SuperwallProvider apiKeys={{ ios: process.env.EXPO_PUBLIC_SUPERWALL_IOS_API_KEY ?? '' }}>
           {appContent}
         </SuperwallProvider>
       </ErrorBoundary>

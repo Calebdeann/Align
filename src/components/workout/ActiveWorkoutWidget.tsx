@@ -62,7 +62,7 @@ export default function ActiveWorkoutWidget() {
   if (!activeWorkout || !activeWorkout.isMinimized) return null;
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -71,7 +71,7 @@ export default function ActiveWorkoutWidget() {
   };
 
   const handleDiscard = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Alert.alert(
       'Discard Workout',
       'Are you sure you want to discard the workout in progress? This cannot be undone.',

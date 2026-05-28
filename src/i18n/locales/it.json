@@ -82,7 +82,7 @@
     "ft": "ft"
   },
   "welcome": {
-    "align": "SNATCHED",
+    "align": "IT GIRL",
     "forTheGirls": "PER LE RAGAZZE",
     "getStarted": "Inizia ora",
     "alreadyHaveAccount": "Hai già un account? ",
@@ -117,7 +117,7 @@
   },
   "onboarding": {
     "intro": {
-      "slide1Title": "Benvenuta su Snatched!",
+      "slide1Title": "Benvenuta su It Girl!",
       "slide1Subtitle": "Registra facilmente i tuoi allenamenti, tracciando ogni serie",
       "slide2Title": "Misura i progressi",
       "slide2Subtitle": "Monitora i tuoi progressi e risultati con le nostre analisi dettagliate",
@@ -178,13 +178,13 @@
       "confidence": "Mi manca la sicurezza"
     },
     "obstacleResponse": {
-      "scheduleTitle": "Con Snatched è facile\npianificare i tuoi allenamenti",
+      "scheduleTitle": "Con It Girl è facile\npianificare i tuoi allenamenti",
       "scheduleSubtitle": "La tua settimana, a modo tuo!",
-      "knowledgeTitle": "Con Snatched è facile\nsapere esattamente cosa fare",
+      "knowledgeTitle": "Con It Girl è facile\nsapere esattamente cosa fare",
       "knowledgeSubtitle": "Schede professionali, pronte per te!",
-      "motivationTitle": "Con Snatched è facile\nrestare motivata",
+      "motivationTitle": "Con It Girl è facile\nrestare motivata",
       "motivationSubtitle": "Monitora i tuoi progressi e guardati migliorare!",
-      "confidenceTitle": "Con Snatched è facile\nallenarti con sicurezza",
+      "confidenceTitle": "Con It Girl è facile\nallenarti con sicurezza",
       "confidenceSubtitle": "Ogni esercizio spiegato, passo dopo passo!"
     },
     "triedApps": {
@@ -193,12 +193,12 @@
       "no": "No"
     },
     "goalComparison": {
-      "title": "{{action}} il doppio del\npeso con Snatched\nrispetto a farlo da sola",
+      "title": "{{action}} il doppio del\npeso con It Girl\nrispetto a farlo da sola",
       "lose": "Perdi",
       "gain": "Aumenta",
-      "withoutAlyne": "Senza\nSnatched",
-      "withAlyne": "Con\nSnatched",
-      "comparisonText": "Snatched rende tutto più facile e ti\naiuta a restare costante"
+      "withoutIt Girl": "Senza\nIt Girl",
+      "withIt Girl": "Con\nIt Girl",
+      "comparisonText": "It Girl rende tutto più facile e ti\naiuta a restare costante"
     },
     "goalReality": {
       "realisticTarget": "{{diff}}{{unit}} è un obiettivo realistico. Ce la puoi fare!"
@@ -261,8 +261,8 @@
       "title": "Aiutaci a crescere!",
       "rating": "4.8",
       "appStoreRating": "Valutazione App Store",
-      "sectionTitle": "Snatched è stata creata per\npersone come te",
-      "usersLove": "Le utenti ADORANO Snatched!",
+      "sectionTitle": "It Girl è stata creata per\npersone come te",
+      "usersLove": "Le utenti ADORANO It Girl!",
       "love": "ADORANO",
       "review1Author": "Ellie Sullivan",
       "review1Text": "Ho perso 7 kg in 2 mesi! Stavo per iniziare Ozempic ma ho deciso di provare questa app e ha funzionato :)",
@@ -297,11 +297,11 @@
     "thankYou": {
       "title": "Grazie per\naverci scelta!",
       "percentage": "Il 94% delle nostre utenti",
-      "description": "afferma che usare Snatched è semplice\ne rende facile restare in carreggiata"
+      "description": "afferma che usare It Girl è semplice\ne rende facile restare in carreggiata"
     },
     "reminder": {
       "question": "Vuoi ricevere promemoria per gli allenamenti?",
-      "notificationApp": "Snatched",
+      "notificationApp": "It Girl",
       "notificationTime": "2h fa",
       "notificationTitle": "Allenamento di oggi: Glutei",
       "notificationBody": "Hip Thrust, Stacchi rumeni, Split squat bulgari",
@@ -346,9 +346,9 @@
     "dateHeaderToday": "Oggi - {{dayName}}, {{day}} {{month}}",
     "dateHeader": "{{dayName}}, {{day}} {{month}}",
     "founderGreeting": "Ciao {{name}}!",
-    "founderBody1": "Siamo Caleb e Cass, e abbiamo creato Snatched. Grazie mille per aver provato la nostra app!",
+    "founderBody1": "Siamo Caleb e Cass, e abbiamo creato It Girl. Grazie mille per aver provato la nostra app!",
     "founderBody2": "La nostra missione è costruire il miglior workout tracker per donne al mondo, quindi ogni tuo feedback sarebbe davvero prezioso!",
-    "founderBody3": "Puoi scriverci a aligntracker@gmail.com"
+    "founderBody3": "Puoi scriverci a itgirlsupport@gmail.com"
   },
   "workout": {
     "title": "Allenamento",
@@ -521,7 +521,7 @@
     "noTemplate": "Nessun Modello",
     "startWithoutTemplate": "Inizia senza modello",
     "yourTemplates": "I Tuoi Modelli",
-    "alignTemplates": "Modelli Snatched",
+    "alignTemplates": "Modelli It Girl",
     "colour": "Colore",
     "dateAndTime": "Data & Ora",
     "date": "Data",

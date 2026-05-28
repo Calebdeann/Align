@@ -1,7 +1,7 @@
 import { Pressable, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { fonts } from '@/constants/theme';
 import { useEffect, useState } from 'react';
 
@@ -11,6 +11,7 @@ interface OnboardingContinueButtonProps {
   label?: string;
   widthRatio?: number;
   autoSize?: boolean;
+  labelFontSize?: number;
 }
 
 export default function OnboardingContinueButton({
@@ -19,11 +20,15 @@ export default function OnboardingContinueButton({
   label = 'Continue',
   widthRatio = 0.338,
   autoSize = false,
+  labelFontSize,
 }: OnboardingContinueButtonProps) {
   const { width } = useWindowDimensions();
   const buttonWidth = Math.round(width * widthRatio);
   const scale = useSharedValue(1);
   const [ready, setReady] = useState(false);
+  // Once the user has successfully pressed, we never want the gradient to flip
+  // back to grey during the navigation handoff (parent flips `disabled` true→false).
+  const [wasPressed, setWasPressed] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 400);
@@ -31,35 +36,46 @@ export default function OnboardingContinueButton({
   }, []);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const isDisabled = disabled || !ready;
-
   function handlePress() {
-    if (isDisabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    if (disabled || !ready) return;
+    strongHaptic();
+    setWasPressed(true);
     onPress();
   }
 
   function handlePressIn() {
-    scale.value = withSpring(0.93, { damping: 15, stiffness: 400 });
+    if (disabled || !ready) return;
+    scale.value = withSpring(0.96, { damping: 22, stiffness: 320 });
   }
 
   function handlePressOut() {
-    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+    if (disabled || !ready) return;
+    scale.value = withSpring(1, { damping: 22, stiffness: 320 });
   }
+
+  const showAsDisabled = disabled && !wasPressed;
 
   return (
     <Pressable
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      disabled={isDisabled}
+      disabled={disabled}
     >
       <Animated.View style={animatedStyle}>
         <LinearGradient
-          colors={disabled ? ['#f3f4f4', '#efefef'] : ['#2a2a2a', '#000000']}
+          colors={showAsDisabled ? ['#f3f4f4', '#efefef'] : ['#2a2a2a', '#000000']}
           style={[styles.button, autoSize ? { paddingHorizontal: 28 } : { width: buttonWidth }]}
         >
-          <Text style={[styles.label, disabled && styles.labelDisabled]}>{label}</Text>
+          <Text
+            style={[
+              styles.label,
+              labelFontSize !== undefined && { fontSize: labelFontSize },
+              showAsDisabled && styles.labelDisabled,
+            ]}
+          >
+            {label}
+          </Text>
         </LinearGradient>
       </Animated.View>
     </Pressable>

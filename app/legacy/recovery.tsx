@@ -514,7 +514,7 @@ export default function RecoveryScreen() {
               <Pressable
                 key={tf.value}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   setSelectedIndex(index);
                 }}
                 style={[styles.timePill, isSelected && styles.timePillSelected]}

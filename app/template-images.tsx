@@ -33,7 +33,7 @@ function BackIcon() {
 
 export default function TemplateImagesScreen() {
   const handleSelectImage = (image: TemplateImageItem) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setPendingTemplateImage({ id: image.id, source: image.source });
     router.back();
   };
@@ -43,7 +43,7 @@ export default function TemplateImagesScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
           style={styles.backButton}

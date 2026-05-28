@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { fonts, spacing } from '@/constants/theme';
-import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 import {
   OnboardingBackButton,
   OnboardingContinueButton,
@@ -25,20 +25,25 @@ const OPTIONS = [
 ];
 
 export default function TrafficSourceScreen() {
-  const { isNavigating, withLock } = useNavigationLock();
-  const [selected, setSelected] = useState<string | null>(null);
+  const setAndSave = useOnboardingStore((s) => s.setAndSave);
+  const savedTrafficSource = useOnboardingStore((s) => s.trafficSource);
+  const [selected, setSelected] = useState<string | null>(savedTrafficSource);
+  const [isSaving, setIsSaving] = useState(false);
 
   function handleSelect(option: string) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     setSelected((prev) => (prev === option ? null : option));
   }
 
-  function handleContinue() {
-    if (!selected) return;
-    withLock(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  async function handleContinue() {
+    if (!selected || isSaving) return;
+    setIsSaving(true);
+    try {
+      await setAndSave('trafficSource', selected);
+    } finally {
+      setIsSaving(false);
       router.push('/onboarding/achieve');
-    });
+    }
   }
 
   return (
@@ -83,7 +88,7 @@ export default function TrafficSourceScreen() {
 
         {/* Continue button */}
         <View style={styles.bottomSection}>
-          <OnboardingContinueButton onPress={handleContinue} disabled={!selected || isNavigating} />
+          <OnboardingContinueButton onPress={handleContinue} disabled={!selected || isSaving} />
         </View>
       </SafeAreaView>
     </View>

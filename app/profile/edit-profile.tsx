@@ -8,19 +8,19 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
-import { CircleBackButton } from '@/components';
-import { useUserProfileStore, getHighResAvatarUrl } from '@/stores/userProfileStore';
+import { CircleBackButton, UserAvatar } from '@/components';
+import { useUserProfileStore } from '@/stores/userProfileStore';
 import { uploadAvatar } from '@/services/api/user';
 
 export default function EditProfileScreen() {
-  const { profile, userId, updateProfile, checkNameAvailable } = useUserProfileStore();
+  const { profile, userId, updateProfile, sessionAvatarUri, setSessionAvatarUri } =
+    useUserProfileStore();
 
   // Initialize state from cached profile
   const [name, setName] = useState(profile?.name || '');
@@ -69,14 +69,6 @@ export default function EditProfileScreen() {
     setNameError(null);
 
     try {
-      // Check if name is available
-      const isAvailable = await checkNameAvailable(trimmedName);
-      if (!isAvailable) {
-        setIsSaving(false);
-        setNameError('This name is already taken');
-        return;
-      }
-
       const updates: Record<string, unknown> = { name: trimmedName };
       const parsedWeight = parseFloat(weight);
       if (!isNaN(parsedWeight) && parsedWeight > 0) {
@@ -104,10 +96,14 @@ export default function EditProfileScreen() {
 
   async function handlePickedImage(uri: string) {
     if (!userId) return;
+    // Optimistically swap to the local file:// URI so every screen showing the
+    // user's avatar renders the new photo immediately.
+    setSessionAvatarUri(uri);
     setIsUploadingPhoto(true);
     try {
       const publicUrl = await uploadAvatar(userId, uri);
       if (!publicUrl) {
+        setSessionAvatarUri(null);
         Alert.alert('Upload Failed', 'Could not upload photo. Please try again.');
         return;
       }
@@ -170,7 +166,7 @@ export default function EditProfileScreen() {
   }
 
   function handleChangePhoto() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Alert.alert('Profile Photo', '', [
       { text: 'Choose from Library', onPress: handleChooseFromLibrary },
       { text: 'Take Photo', onPress: handleTakePhoto },
@@ -209,19 +205,15 @@ export default function EditProfileScreen() {
 
       {/* Avatar Section */}
       <View style={styles.avatarSection}>
-        <View>
-          {profile?.avatar_url ? (
-            <Image
-              source={{ uri: getHighResAvatarUrl(profile.avatar_url, 400) || profile.avatar_url }}
-              style={styles.avatar}
-            />
-          ) : (
-            <View style={styles.avatarContainer}>
-              <Ionicons name="person" size={48} color={colors.textSecondary} />
-            </View>
-          )}
+        <View style={styles.avatarWrap}>
+          <UserAvatar
+            uri={sessionAvatarUri ?? profile?.avatar_url ?? null}
+            size={120}
+            loading={isUploadingPhoto}
+            version={profile?.updated_at}
+          />
           {isUploadingPhoto && (
-            <View style={styles.avatarOverlay}>
+            <View style={styles.avatarSpinner}>
               <ActivityIndicator size="small" color="#FFFFFF" />
             </View>
           )}
@@ -243,6 +235,7 @@ export default function EditProfileScreen() {
           <Text style={styles.inputLabel}>Name</Text>
           <View style={styles.inputRow}>
             <TextInput
+              autoCorrect={false}
               ref={nameInputRef}
               style={styles.input}
               value={name}
@@ -256,7 +249,7 @@ export default function EditProfileScreen() {
             />
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 setIsEditingName(true);
                 setTimeout(() => nameInputRef.current?.focus(), 100);
               }}
@@ -273,6 +266,7 @@ export default function EditProfileScreen() {
           <Text style={styles.inputLabel}>Weight ({weightUnit})</Text>
           <View style={styles.inputRow}>
             <TextInput
+              autoCorrect={false}
               ref={weightInputRef}
               style={styles.input}
               value={weight}
@@ -289,7 +283,7 @@ export default function EditProfileScreen() {
             />
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 setIsEditingWeight(true);
                 setTimeout(() => weightInputRef.current?.focus(), 100);
               }}
@@ -305,6 +299,7 @@ export default function EditProfileScreen() {
           <Text style={styles.inputLabel}>Height ({heightUnit})</Text>
           <View style={styles.inputRow}>
             <TextInput
+              autoCorrect={false}
               ref={heightInputRef}
               style={styles.input}
               value={height}
@@ -321,7 +316,7 @@ export default function EditProfileScreen() {
             />
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 setIsEditingHeight(true);
                 setTimeout(() => heightInputRef.current?.focus(), 100);
               }}
@@ -371,29 +366,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xl,
   },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  avatarWrap: {
     marginBottom: spacing.md,
   },
-  avatarContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F0EEF6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  avatarOverlay: {
+  avatarSpinner: {
     position: 'absolute',
     top: 0,
     left: 0,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

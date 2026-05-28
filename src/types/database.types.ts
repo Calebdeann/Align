@@ -8,6 +8,74 @@ export type Database = {
   };
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          key: string;
+          updated_at: string;
+          value: string | null;
+        };
+        Insert: {
+          key: string;
+          updated_at?: string;
+          value?: string | null;
+        };
+        Update: {
+          key?: string;
+          updated_at?: string;
+          value?: string | null;
+        };
+        Relationships: [];
+      };
+      blocked_users: {
+        Row: {
+          blocked_id: string;
+          blocker_id: string;
+          created_at: string;
+          id: string;
+        };
+        Insert: {
+          blocked_id: string;
+          blocker_id: string;
+          created_at?: string;
+          id?: string;
+        };
+        Update: {
+          blocked_id?: string;
+          blocker_id?: string;
+          created_at?: string;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'blocked_users_blocked_id_fkey';
+            columns: ['blocked_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'blocked_users_blocked_id_fkey';
+            columns: ['blocked_id'];
+            isOneToOne: false;
+            referencedRelation: 'v_user_onboarding_summary';
+            referencedColumns: ['user_id'];
+          },
+          {
+            foreignKeyName: 'blocked_users_blocker_id_fkey';
+            columns: ['blocker_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'blocked_users_blocker_id_fkey';
+            columns: ['blocker_id'];
+            isOneToOne: false;
+            referencedRelation: 'v_user_onboarding_summary';
+            referencedColumns: ['user_id'];
+          },
+        ];
+      };
       custom_exercises: {
         Row: {
           created_at: string | null;
@@ -219,198 +287,388 @@ export type Database = {
         };
         Relationships: [];
       };
-      onboarding_sessions: {
+      friendships: {
         Row: {
-          age: number | null;
-          anonymous_id: string;
-          body_change_goal: string | null;
+          addressee_id: string;
+          created_at: string;
+          id: string;
+          requester_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          addressee_id: string;
+          created_at?: string;
+          id?: string;
+          requester_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          addressee_id?: string;
+          created_at?: string;
+          id?: string;
+          requester_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'friendships_addressee_id_fkey';
+            columns: ['addressee_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'friendships_addressee_id_fkey';
+            columns: ['addressee_id'];
+            isOneToOne: false;
+            referencedRelation: 'v_user_onboarding_summary';
+            referencedColumns: ['user_id'];
+          },
+          {
+            foreignKeyName: 'friendships_requester_id_fkey';
+            columns: ['requester_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'friendships_requester_id_fkey';
+            columns: ['requester_id'];
+            isOneToOne: false;
+            referencedRelation: 'v_user_onboarding_summary';
+            referencedColumns: ['user_id'];
+          },
+        ];
+      };
+      imported_workout_cache: {
+        Row: {
+          confidence: number;
           created_at: string | null;
+          exercises: Json;
+          id: string;
+          platform: string;
+          video_id: string;
+          workout_name: string | null;
+        };
+        Insert: {
+          confidence: number;
+          created_at?: string | null;
+          exercises: Json;
+          id?: string;
+          platform: string;
+          video_id: string;
+          workout_name?: string | null;
+        };
+        Update: {
+          confidence?: number;
+          created_at?: string | null;
+          exercises?: Json;
+          id?: string;
+          platform?: string;
+          video_id?: string;
+          workout_name?: string | null;
+        };
+        Relationships: [];
+      };
+      legacy_align_onboarding: {
+        Row: {
+          archived_at: string;
+          body_change_goal: string | null;
+          email: string | null;
           energy_fluctuation: string | null;
           experience_level: string | null;
           goals: string[] | null;
           health_situation: string | null;
-          height: number | null;
-          id: string;
-          linked_user_id: string | null;
           main_goal: string | null;
           main_obstacle: string | null;
-          notifications_enabled: boolean | null;
           referral_source: string | null;
-          reminder_time: string | null;
-          skipped_fields: string[] | null;
-          target_weight: number | null;
           training_location: string | null;
           tried_other_apps: string | null;
           units: string | null;
-          updated_at: string | null;
-          weight: number | null;
-          workout_days: string[] | null;
+          user_id: string;
           workout_frequency: number | null;
         };
         Insert: {
-          age?: number | null;
-          anonymous_id: string;
+          archived_at?: string;
           body_change_goal?: string | null;
-          created_at?: string | null;
+          email?: string | null;
           energy_fluctuation?: string | null;
           experience_level?: string | null;
           goals?: string[] | null;
           health_situation?: string | null;
-          height?: number | null;
-          id?: string;
-          linked_user_id?: string | null;
           main_goal?: string | null;
           main_obstacle?: string | null;
-          notifications_enabled?: boolean | null;
           referral_source?: string | null;
-          reminder_time?: string | null;
-          skipped_fields?: string[] | null;
-          target_weight?: number | null;
           training_location?: string | null;
           tried_other_apps?: string | null;
           units?: string | null;
-          updated_at?: string | null;
-          weight?: number | null;
-          workout_days?: string[] | null;
+          user_id: string;
           workout_frequency?: number | null;
         };
         Update: {
-          age?: number | null;
-          anonymous_id?: string;
+          archived_at?: string;
           body_change_goal?: string | null;
-          created_at?: string | null;
+          email?: string | null;
           energy_fluctuation?: string | null;
           experience_level?: string | null;
           goals?: string[] | null;
           health_situation?: string | null;
-          height?: number | null;
-          id?: string;
-          linked_user_id?: string | null;
           main_goal?: string | null;
           main_obstacle?: string | null;
-          notifications_enabled?: boolean | null;
           referral_source?: string | null;
-          reminder_time?: string | null;
-          skipped_fields?: string[] | null;
-          target_weight?: number | null;
           training_location?: string | null;
           tried_other_apps?: string | null;
           units?: string | null;
-          updated_at?: string | null;
-          weight?: number | null;
-          workout_days?: string[] | null;
+          user_id?: string;
           workout_frequency?: number | null;
         };
         Relationships: [];
       };
+      motivational_posts: {
+        Row: {
+          aspect_ratio: number;
+          caption: string | null;
+          created_at: string | null;
+          display_order: number;
+          id: string;
+          storage_path: string;
+        };
+        Insert: {
+          aspect_ratio: number;
+          caption?: string | null;
+          created_at?: string | null;
+          display_order: number;
+          id?: string;
+          storage_path: string;
+        };
+        Update: {
+          aspect_ratio?: number;
+          caption?: string | null;
+          created_at?: string | null;
+          display_order?: number;
+          id?: string;
+          storage_path?: string;
+        };
+        Relationships: [];
+      };
+      onboarding_sessions: {
+        Row: {
+          achieve_goals: string[] | null;
+          anonymous_id: string;
+          challenges: string[] | null;
+          created_at: string | null;
+          id: string;
+          ideal_day: string | null;
+          linked_user_id: string | null;
+          matched_buddy_index: number | null;
+          name: string | null;
+          plan_id: string | null;
+          program_start_date: string | null;
+          skipped_fields: string[] | null;
+          traffic_source: string | null;
+          updated_at: string | null;
+          workout_days: string[] | null;
+        };
+        Insert: {
+          achieve_goals?: string[] | null;
+          anonymous_id: string;
+          challenges?: string[] | null;
+          created_at?: string | null;
+          id?: string;
+          ideal_day?: string | null;
+          linked_user_id?: string | null;
+          matched_buddy_index?: number | null;
+          name?: string | null;
+          plan_id?: string | null;
+          program_start_date?: string | null;
+          skipped_fields?: string[] | null;
+          traffic_source?: string | null;
+          updated_at?: string | null;
+          workout_days?: string[] | null;
+        };
+        Update: {
+          achieve_goals?: string[] | null;
+          anonymous_id?: string;
+          challenges?: string[] | null;
+          created_at?: string | null;
+          id?: string;
+          ideal_day?: string | null;
+          linked_user_id?: string | null;
+          matched_buddy_index?: number | null;
+          name?: string | null;
+          plan_id?: string | null;
+          program_start_date?: string | null;
+          skipped_fields?: string[] | null;
+          traffic_source?: string | null;
+          updated_at?: string | null;
+          workout_days?: string[] | null;
+        };
+        Relationships: [];
+      };
+      pokes: {
+        Row: {
+          created_at: string;
+          id: string;
+          message: string | null;
+          pokee_id: string;
+          poker_id: string;
+          seen: boolean;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          message?: string | null;
+          pokee_id: string;
+          poker_id: string;
+          seen?: boolean;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          message?: string | null;
+          pokee_id?: string;
+          poker_id?: string;
+          seen?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pokes_pokee_id_fkey';
+            columns: ['pokee_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pokes_pokee_id_fkey';
+            columns: ['pokee_id'];
+            isOneToOne: false;
+            referencedRelation: 'v_user_onboarding_summary';
+            referencedColumns: ['user_id'];
+          },
+          {
+            foreignKeyName: 'pokes_poker_id_fkey';
+            columns: ['poker_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pokes_poker_id_fkey';
+            columns: ['poker_id'];
+            isOneToOne: false;
+            referencedRelation: 'v_user_onboarding_summary';
+            referencedColumns: ['user_id'];
+          },
+        ];
+      };
       profiles: {
         Row: {
+          achieve_goals: string[] | null;
           age: number | null;
           app_version: string | null;
           avatar_url: string | null;
-          body_change_goal: string | null;
+          bio: string | null;
+          challenges: string[] | null;
           created_at: string | null;
           distance_unit: string | null;
           email: string | null;
-          energy_fluctuation: string | null;
-          experience_level: string | null;
           full_name: string | null;
-          goals: string[] | null;
-          health_situation: string | null;
           height: number | null;
           id: string;
+          ideal_day: string | null;
           last_active_at: string | null;
-          main_goal: string | null;
-          main_obstacle: string | null;
+          matched_buddy_index: number | null;
           measurement_unit: string | null;
           name: string | null;
           notifications_enabled: boolean | null;
+          plan_id: string | null;
+          program_start_date: string | null;
           referral_code: string | null;
-          referral_source: string | null;
           referred_by: string | null;
           reminder_time: string | null;
           skipped_fields: string[] | null;
+          subscribed_at: string | null;
+          subscription_status: string | null;
           target_weight: number | null;
-          training_location: string | null;
-          tried_other_apps: string | null;
-          units: string | null;
+          traffic_source: string | null;
+          traits: Json | null;
           updated_at: string | null;
           weight: number | null;
           weight_unit: string | null;
           workout_days: string[] | null;
-          workout_frequency: number | null;
         };
         Insert: {
+          achieve_goals?: string[] | null;
           age?: number | null;
           app_version?: string | null;
           avatar_url?: string | null;
-          body_change_goal?: string | null;
+          bio?: string | null;
+          challenges?: string[] | null;
           created_at?: string | null;
           distance_unit?: string | null;
           email?: string | null;
-          energy_fluctuation?: string | null;
-          experience_level?: string | null;
           full_name?: string | null;
-          goals?: string[] | null;
-          health_situation?: string | null;
           height?: number | null;
           id: string;
+          ideal_day?: string | null;
           last_active_at?: string | null;
-          main_goal?: string | null;
-          main_obstacle?: string | null;
+          matched_buddy_index?: number | null;
           measurement_unit?: string | null;
           name?: string | null;
           notifications_enabled?: boolean | null;
+          plan_id?: string | null;
+          program_start_date?: string | null;
           referral_code?: string | null;
-          referral_source?: string | null;
           referred_by?: string | null;
           reminder_time?: string | null;
           skipped_fields?: string[] | null;
+          subscribed_at?: string | null;
+          subscription_status?: string | null;
           target_weight?: number | null;
-          training_location?: string | null;
-          tried_other_apps?: string | null;
-          units?: string | null;
+          traffic_source?: string | null;
+          traits?: Json | null;
           updated_at?: string | null;
           weight?: number | null;
           weight_unit?: string | null;
           workout_days?: string[] | null;
-          workout_frequency?: number | null;
         };
         Update: {
+          achieve_goals?: string[] | null;
           age?: number | null;
           app_version?: string | null;
           avatar_url?: string | null;
-          body_change_goal?: string | null;
+          bio?: string | null;
+          challenges?: string[] | null;
           created_at?: string | null;
           distance_unit?: string | null;
           email?: string | null;
-          energy_fluctuation?: string | null;
-          experience_level?: string | null;
           full_name?: string | null;
-          goals?: string[] | null;
-          health_situation?: string | null;
           height?: number | null;
           id?: string;
+          ideal_day?: string | null;
           last_active_at?: string | null;
-          main_goal?: string | null;
-          main_obstacle?: string | null;
+          matched_buddy_index?: number | null;
           measurement_unit?: string | null;
           name?: string | null;
           notifications_enabled?: boolean | null;
+          plan_id?: string | null;
+          program_start_date?: string | null;
           referral_code?: string | null;
-          referral_source?: string | null;
           referred_by?: string | null;
           reminder_time?: string | null;
           skipped_fields?: string[] | null;
+          subscribed_at?: string | null;
+          subscription_status?: string | null;
           target_weight?: number | null;
-          training_location?: string | null;
-          tried_other_apps?: string | null;
-          units?: string | null;
+          traffic_source?: string | null;
+          traits?: Json | null;
           updated_at?: string | null;
           weight?: number | null;
           weight_unit?: string | null;
           workout_days?: string[] | null;
-          workout_frequency?: number | null;
         };
         Relationships: [
           {
@@ -419,6 +677,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'profiles_referred_by_fkey';
+            columns: ['referred_by'];
+            isOneToOne: false;
+            referencedRelation: 'v_user_onboarding_summary';
+            referencedColumns: ['user_id'];
           },
         ];
       };
@@ -450,13 +715,96 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
+            foreignKeyName: 'referrals_referred_id_fkey';
+            columns: ['referred_id'];
+            isOneToOne: false;
+            referencedRelation: 'v_user_onboarding_summary';
+            referencedColumns: ['user_id'];
+          },
+          {
             foreignKeyName: 'referrals_referrer_id_fkey';
             columns: ['referrer_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },
+          {
+            foreignKeyName: 'referrals_referrer_id_fkey';
+            columns: ['referrer_id'];
+            isOneToOne: false;
+            referencedRelation: 'v_user_onboarding_summary';
+            referencedColumns: ['user_id'];
+          },
         ];
+      };
+      scheduled_workouts: {
+        Row: {
+          completed_dates: Json;
+          created_at: string;
+          date: string;
+          description: string | null;
+          end_date: string | null;
+          excluded_dates: Json;
+          id: string;
+          image: Json | null;
+          name: string;
+          plan_id: string | null;
+          program_workout_id: string | null;
+          reminder: Json | null;
+          repeat: Json;
+          tag_color: string;
+          tag_id: string | null;
+          template_id: string | null;
+          template_name: string | null;
+          time: Json | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          completed_dates?: Json;
+          created_at?: string;
+          date: string;
+          description?: string | null;
+          end_date?: string | null;
+          excluded_dates?: Json;
+          id?: string;
+          image?: Json | null;
+          name: string;
+          plan_id?: string | null;
+          program_workout_id?: string | null;
+          reminder?: Json | null;
+          repeat?: Json;
+          tag_color?: string;
+          tag_id?: string | null;
+          template_id?: string | null;
+          template_name?: string | null;
+          time?: Json | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          completed_dates?: Json;
+          created_at?: string;
+          date?: string;
+          description?: string | null;
+          end_date?: string | null;
+          excluded_dates?: Json;
+          id?: string;
+          image?: Json | null;
+          name?: string;
+          plan_id?: string | null;
+          program_workout_id?: string | null;
+          reminder?: Json | null;
+          repeat?: Json;
+          tag_color?: string;
+          tag_id?: string | null;
+          template_id?: string | null;
+          template_name?: string | null;
+          time?: Json | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       template_exercises: {
         Row: {
@@ -762,6 +1110,8 @@ export type Database = {
           created_at: string | null;
           duration_seconds: number | null;
           id: string;
+          image_aspect_ratio: number | null;
+          image_audience: string | null;
           image_template_id: string | null;
           image_type: string | null;
           image_uri: string | null;
@@ -769,6 +1119,7 @@ export type Database = {
           notes: string | null;
           source_template_id: string | null;
           started_at: string | null;
+          title_customized: boolean;
           user_id: string;
         };
         Insert: {
@@ -776,6 +1127,8 @@ export type Database = {
           created_at?: string | null;
           duration_seconds?: number | null;
           id?: string;
+          image_aspect_ratio?: number | null;
+          image_audience?: string | null;
           image_template_id?: string | null;
           image_type?: string | null;
           image_uri?: string | null;
@@ -783,6 +1136,7 @@ export type Database = {
           notes?: string | null;
           source_template_id?: string | null;
           started_at?: string | null;
+          title_customized?: boolean;
           user_id: string;
         };
         Update: {
@@ -790,6 +1144,8 @@ export type Database = {
           created_at?: string | null;
           duration_seconds?: number | null;
           id?: string;
+          image_aspect_ratio?: number | null;
+          image_audience?: string | null;
           image_template_id?: string | null;
           image_type?: string | null;
           image_uri?: string | null;
@@ -797,13 +1153,49 @@ export type Database = {
           notes?: string | null;
           source_template_id?: string | null;
           started_at?: string | null;
+          title_customized?: boolean;
           user_id?: string;
         };
         Relationships: [];
       };
     };
     Views: {
-      [_ in never]: never;
+      v_user_onboarding_summary: {
+        Row: {
+          age: number | null;
+          align_archived_at: string | null;
+          align_body_change: string | null;
+          align_energy: string | null;
+          align_experience: string | null;
+          align_goals: string | null;
+          align_health: string | null;
+          align_main_goal: string | null;
+          align_main_obstacle: string | null;
+          align_referral_source: string | null;
+          align_train_location: string | null;
+          align_tried_others: string | null;
+          align_units: string | null;
+          align_workout_freq: number | null;
+          email: string | null;
+          height: number | null;
+          it_girl_name: string | null;
+          itgirl_buddy_idx: number | null;
+          itgirl_challenges: string | null;
+          itgirl_goals: string | null;
+          itgirl_how_they_found_us: string | null;
+          itgirl_lifestyle: string | null;
+          itgirl_plan: string | null;
+          itgirl_start_date: string | null;
+          itgirl_workout_days: string | null;
+          notifications_enabled: boolean | null;
+          reminder_time: string | null;
+          signed_up: string | null;
+          target_weight: number | null;
+          user_id: string | null;
+          weight: number | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       archive_and_delete_user: {
@@ -812,6 +1204,83 @@ export type Database = {
       };
       delete_own_account: { Args: never; Returns: undefined };
       generate_referral_code: { Args: never; Returns: string };
+      get_friends_with_activity: {
+        Args: { p_user_id: string };
+        Returns: {
+          duration_seconds: number;
+          friend_avatar: string;
+          friend_id: string;
+          friend_name: string;
+          image_audience: string;
+          image_uri: string;
+          is_active: boolean;
+          last_workout_at: string;
+          volume_kg: number;
+          workout_at: string;
+          workout_id: string;
+          workout_name: string;
+        }[];
+      };
+      get_next_official_posts: {
+        Args: { p_count: number; p_offset: number; p_viewer_id: string };
+        Returns: {
+          aspect_ratio: number;
+          caption: string;
+          display_order: number;
+          id: string;
+          storage_path: string;
+        }[];
+      };
+      get_public_profile: {
+        Args: { p_target_id: string; p_viewer_id: string };
+        Returns: {
+          avatar_url: string;
+          bio: string;
+          created_at: string;
+          id: string;
+          name: string;
+          plan_id: string;
+          traits: Json;
+        }[];
+      };
+      get_public_workout_details: {
+        Args: { p_workout_id: string };
+        Returns: Json;
+      };
+      get_public_workout_photos: {
+        Args: { p_cursor?: string; p_limit?: number; p_visibility?: string };
+        Returns: {
+          completed_at: string;
+          image_aspect_ratio: number;
+          image_uri: string;
+          title_customized: boolean;
+          user_avatar: string;
+          user_id: string;
+          user_name: string;
+          workout_id: string;
+          workout_name: string;
+        }[];
+      };
+      get_public_workouts: {
+        Args: { p_limit?: number; p_target_id: string; p_viewer_id: string };
+        Returns: {
+          completed_at: string;
+          duration_seconds: number;
+          id: string;
+          image_uri: string;
+          name: string;
+        }[];
+      };
+      get_suggested_users: {
+        Args: { p_limit?: number; p_user_id: string };
+        Returns: {
+          avatar_url: string;
+          bio: string;
+          id: string;
+          name: string;
+          traits: Json;
+        }[];
+      };
       validate_referral_code: { Args: { code: string }; Returns: string };
     };
     Enums: {

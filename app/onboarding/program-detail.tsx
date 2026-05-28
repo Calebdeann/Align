@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts, spacing } from '@/constants/theme';
@@ -38,7 +38,8 @@ function ReviewCard({ review, rotation }: { review: PlanReview; rotation: string
 export default function ProgramDetailScreen() {
   const { planId } = useLocalSearchParams<{ planId: string }>();
   const { width } = useWindowDimensions();
-  const { setSelectedPlanId } = useOnboardingStore();
+  const insets = useSafeAreaInsets();
+  const { setAndSave } = useOnboardingStore();
   const plan = getPlanById(planId);
 
   const cardWidth = width - spacing.lg * 2;
@@ -104,10 +105,10 @@ export default function ProgramDetailScreen() {
       </ScrollView>
 
       {/* Floating continue button — no background, hovers over scroll */}
-      <View style={styles.floatingButton}>
+      <View style={[styles.floatingButton, { bottom: Math.max(insets.bottom, spacing.lg) }]}>
         <OnboardingContinueButton
-          onPress={() => {
-            setSelectedPlanId(plan.id);
+          onPress={async () => {
+            await setAndSave('selectedPlanId', plan.id);
             router.push('/onboarding/reviews');
           }}
           label="Select"
@@ -127,6 +128,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
     gap: 12,
   },
   progressCenter: {
@@ -141,7 +143,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: 70,
+    width: 80,
     height: 4,
     backgroundColor: '#000000',
   },

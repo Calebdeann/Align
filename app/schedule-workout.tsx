@@ -23,7 +23,11 @@ import Svg, { Path, Rect, Circle, Polyline } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
-import { useWorkoutStore, type ScheduledWorkout } from '@/stores/workoutStore';
+import {
+  useWorkoutStore,
+  getScheduledWorkoutDisplayName,
+  type ScheduledWorkout,
+} from '@/stores/workoutStore';
 import { requestListViewForDate } from '@/utils/calendarSignals';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -468,7 +472,9 @@ export default function ScheduleWorkoutScreen() {
     if (!workout) return;
 
     setOriginalWorkout(workout);
-    setWorkoutName(workout.name);
+    // Use the live display name (program title for non-customized seeded workouts)
+    // so the edit field shows what the user actually sees on the planner.
+    setWorkoutName(getScheduledWorkoutDisplayName(workout));
     setDescription(workout.description || '');
 
     // Use the occurrence date (editDateKey), not the original start date
@@ -683,6 +689,17 @@ export default function ScheduleWorkoutScreen() {
     const colourValue = getSelectedColour();
     const templateName = getTemplateName();
 
+    // Mark as user-renamed only when the typed name diverges from what the
+    // user was shown in the edit field. For non-program workouts this is moot
+    // (getScheduledWorkoutDisplayName falls back to sw.name).
+    const liveDisplayName = originalWorkout
+      ? getScheduledWorkoutDisplayName(originalWorkout)
+      : null;
+    const titleCustomized =
+      liveDisplayName !== null
+        ? workoutName.trim() !== liveDisplayName || !!originalWorkout?.titleCustomized
+        : undefined;
+
     return {
       userId: userId!,
       name: workoutName,
@@ -702,6 +719,7 @@ export default function ScheduleWorkoutScreen() {
         ? { enabled: true as const, hour: reminderHour, minute: reminderMinute }
         : undefined,
       templateId: selectedTemplate?.id,
+      ...(titleCustomized !== undefined && { titleCustomized }),
     };
   };
 
@@ -831,7 +849,7 @@ export default function ScheduleWorkoutScreen() {
       const index = Math.round(y / TIME_ITEM_HEIGHT);
       const clampedIndex = Math.min(Math.max(index, 0), hours.length - 1);
       if (clampedIndex !== lastHourIndexRef.current) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         lastHourIndexRef.current = clampedIndex;
       }
       const hour12 = hours[clampedIndex];
@@ -847,7 +865,7 @@ export default function ScheduleWorkoutScreen() {
     const index = Math.round(y / TIME_ITEM_HEIGHT);
     const clampedIndex = Math.min(Math.max(index, 0), minutes.length - 1);
     if (clampedIndex !== lastMinuteIndexRef.current) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       lastMinuteIndexRef.current = clampedIndex;
     }
     setSelectedMinute(minutes[clampedIndex]);
@@ -859,7 +877,7 @@ export default function ScheduleWorkoutScreen() {
       const index = Math.round(y / TIME_ITEM_HEIGHT);
       const clampedIndex = Math.min(Math.max(index, 0), periods.length - 1);
       if (clampedIndex !== lastPeriodIndexRef.current) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         lastPeriodIndexRef.current = clampedIndex;
       }
       if (clampedIndex === 0 && selectedHour >= 12) {
@@ -878,7 +896,7 @@ export default function ScheduleWorkoutScreen() {
       const index = Math.round(y / TIME_ITEM_HEIGHT);
       const clampedIndex = Math.min(Math.max(index, 0), hours.length - 1);
       if (clampedIndex !== lastReminderHourIndexRef.current) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         lastReminderHourIndexRef.current = clampedIndex;
       }
       const hour12 = hours[clampedIndex];
@@ -894,7 +912,7 @@ export default function ScheduleWorkoutScreen() {
     const index = Math.round(y / TIME_ITEM_HEIGHT);
     const clampedIndex = Math.min(Math.max(index, 0), minutes.length - 1);
     if (clampedIndex !== lastReminderMinuteIndexRef.current) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       lastReminderMinuteIndexRef.current = clampedIndex;
     }
     setReminderMinute(minutes[clampedIndex]);
@@ -906,7 +924,7 @@ export default function ScheduleWorkoutScreen() {
       const index = Math.round(y / TIME_ITEM_HEIGHT);
       const clampedIndex = Math.min(Math.max(index, 0), periods.length - 1);
       if (clampedIndex !== lastReminderPeriodIndexRef.current) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         lastReminderPeriodIndexRef.current = clampedIndex;
       }
       if (clampedIndex === 0 && reminderHour >= 12) {
@@ -993,7 +1011,7 @@ export default function ScheduleWorkoutScreen() {
         <Pressable
           style={styles.backButton}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
         >
@@ -1025,6 +1043,7 @@ export default function ScheduleWorkoutScreen() {
           <View style={styles.inputRow}>
             <Text style={styles.inputLabel}>{t('schedule.workoutName')}</Text>
             <TextInput
+              autoCorrect={false}
               style={styles.inputField}
               placeholder={t('schedule.enterWorkoutName')}
               placeholderTextColor={colors.textTertiary}
@@ -1039,6 +1058,7 @@ export default function ScheduleWorkoutScreen() {
           <View style={styles.inputRow}>
             <Text style={styles.inputLabel}>{t('schedule.description')}</Text>
             <TextInput
+              autoCorrect={false}
               style={styles.inputField}
               placeholder={t('schedule.optional')}
               placeholderTextColor={colors.textTertiary}
@@ -1053,7 +1073,7 @@ export default function ScheduleWorkoutScreen() {
           <Pressable
             style={styles.menuRow}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               openTemplateModal();
             }}
           >
@@ -1072,7 +1092,7 @@ export default function ScheduleWorkoutScreen() {
           <Pressable
             style={styles.menuRow}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               openColourModal();
             }}
           >
@@ -1107,7 +1127,7 @@ export default function ScheduleWorkoutScreen() {
               <View style={styles.calendarNav}>
                 <Pressable
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     goToPrevMonth();
                   }}
                   style={styles.calendarNavButton}
@@ -1116,7 +1136,7 @@ export default function ScheduleWorkoutScreen() {
                 </Pressable>
                 <Pressable
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     goToNextMonth();
                   }}
                   style={styles.calendarNavButton}
@@ -1142,7 +1162,7 @@ export default function ScheduleWorkoutScreen() {
                     style={styles.calendarDay}
                     onPress={() => {
                       if (day) {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         selectDate(day);
                       }
                     }}
@@ -1188,12 +1208,12 @@ export default function ScheduleWorkoutScreen() {
             <Switch
               value={timeEnabled}
               onValueChange={(value) => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 setTimeEnabled(value);
                 if (value) setShowTimePicker(true);
               }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={colors.background}
+              trackColor={{ false: '#E5E5EA', true: '#34C759' }}
+              ios_backgroundColor="#E5E5EA"
             />
           </View>
 
@@ -1263,7 +1283,7 @@ export default function ScheduleWorkoutScreen() {
           <Pressable
             style={styles.menuRow}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               openRepeatModal();
             }}
           >
@@ -1291,11 +1311,11 @@ export default function ScheduleWorkoutScreen() {
             <Switch
               value={remindEnabled}
               onValueChange={(value) => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 setRemindEnabled(value);
               }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={colors.background}
+              trackColor={{ false: '#E5E5EA', true: '#34C759' }}
+              ios_backgroundColor="#E5E5EA"
             />
           </View>
 
@@ -1304,7 +1324,7 @@ export default function ScheduleWorkoutScreen() {
           <Pressable
             style={styles.menuRow}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setShowReminderTimePicker(!showReminderTimePicker);
             }}
           >
@@ -1389,7 +1409,13 @@ export default function ScheduleWorkoutScreen() {
         animationType="none"
         onRequestClose={closeColourModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeColourModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            closeColourModal();
+          }}
+        >
           <Animated.View style={[styles.modalContent, { transform: [{ translateY: slideAnim }] }]}>
             <Pressable onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalHandle} />
@@ -1398,7 +1424,7 @@ export default function ScheduleWorkoutScreen() {
                 <Pressable
                   style={styles.modalCloseButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     closeColourModal();
                   }}
                 >
@@ -1418,7 +1444,7 @@ export default function ScheduleWorkoutScreen() {
                         selectedColour === colour.id && styles.colourOptionSelected,
                       ]}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         selectColour(colour.id);
                       }}
                     >
@@ -1443,7 +1469,13 @@ export default function ScheduleWorkoutScreen() {
         animationType="none"
         onRequestClose={closeRepeatModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeRepeatModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            closeRepeatModal();
+          }}
+        >
           <Animated.View
             style={[styles.modalContent, { transform: [{ translateY: repeatSlideAnim }] }]}
           >
@@ -1454,7 +1486,7 @@ export default function ScheduleWorkoutScreen() {
                 <Pressable
                   style={styles.modalCloseButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     closeRepeatModal();
                   }}
                 >
@@ -1472,7 +1504,7 @@ export default function ScheduleWorkoutScreen() {
                       <Pressable
                         style={styles.repeatOptionRow}
                         onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                           selectRepeatOption(option.id);
                         }}
                       >
@@ -1504,7 +1536,7 @@ export default function ScheduleWorkoutScreen() {
                                 selectedRepeatDays.includes(index) && styles.dayCircleSelected,
                               ]}
                               onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                                 toggleRepeatDay(index);
                               }}
                             >
@@ -1535,7 +1567,7 @@ export default function ScheduleWorkoutScreen() {
                           selectedRepeatDays.length === 0 && styles.doneButtonDisabled,
                         ]}
                         onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                           closeRepeatModal();
                         }}
                         disabled={selectedRepeatDays.length === 0}
@@ -1561,6 +1593,7 @@ export default function ScheduleWorkoutScreen() {
                           <Text style={styles.intervalLabel}>{t('schedule.every')}</Text>
                           <View style={styles.intervalInputWrapper}>
                             <TextInput
+                              autoCorrect={false}
                               style={styles.intervalInput}
                               keyboardType="number-pad"
                               value={String(intervalDays)}
@@ -1585,7 +1618,7 @@ export default function ScheduleWorkoutScreen() {
                       <Pressable
                         style={styles.doneButton}
                         onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                           closeRepeatModal();
                         }}
                       >
@@ -1607,7 +1640,13 @@ export default function ScheduleWorkoutScreen() {
         animationType="none"
         onRequestClose={closeTemplateModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeTemplateModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            closeTemplateModal();
+          }}
+        >
           <Animated.View
             style={[
               styles.templateModalContent,
@@ -1622,7 +1661,7 @@ export default function ScheduleWorkoutScreen() {
                   <Pressable
                     style={styles.modalCloseButton}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                       setSelectedCategory(null);
                     }}
                   >
@@ -1632,7 +1671,7 @@ export default function ScheduleWorkoutScreen() {
                   <Pressable
                     style={styles.modalCloseButton}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                       closeTemplateModal();
                     }}
                   >
@@ -1663,7 +1702,7 @@ export default function ScheduleWorkoutScreen() {
                           template.tagColor && { backgroundColor: template.tagColor + '30' },
                         ]}
                         onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                           selectTemplate(template, false);
                         }}
                       >
@@ -1712,7 +1751,7 @@ export default function ScheduleWorkoutScreen() {
                         <Pressable
                           style={styles.scheduleButton}
                           onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                             selectTemplate(template, false);
                           }}
                         >
@@ -1735,7 +1774,7 @@ export default function ScheduleWorkoutScreen() {
                     <Pressable
                       style={styles.templateRow}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         selectTemplate(null, true);
                       }}
                     >
@@ -1776,7 +1815,7 @@ export default function ScheduleWorkoutScreen() {
                                     },
                                   ]}
                                   onPress={() => {
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                                     selectTemplate(template, false);
                                   }}
                                 >
@@ -1831,7 +1870,7 @@ export default function ScheduleWorkoutScreen() {
                                   <Pressable
                                     style={styles.scheduleButton}
                                     onPress={() => {
-                                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                                       selectTemplate(template, false);
                                     }}
                                   >
@@ -1847,7 +1886,7 @@ export default function ScheduleWorkoutScreen() {
                       </>
                     )}
 
-                    {/* Align Templates - Category Grid */}
+                    {/* It Girl Templates - Category Grid */}
                     <Text style={styles.templateSectionHeader}>{t('schedule.alignTemplates')}</Text>
                     <View style={styles.categoryGrid}>
                       {ALL_CATEGORIES.map((category) => {
@@ -1860,7 +1899,7 @@ export default function ScheduleWorkoutScreen() {
                             style={[styles.categoryCard, isComingSoon && { opacity: 0.85 }]}
                             onPress={() => {
                               if (isComingSoon) return;
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                               setSelectedCategory(category.id);
                             }}
                           >

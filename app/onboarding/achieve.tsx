@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-na
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { fonts, spacing } from '@/constants/theme';
-import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 import {
   OnboardingBackButton,
   OnboardingContinueButton,
@@ -44,15 +44,17 @@ const OPTIONS = [
 ];
 
 export default function AchieveScreen() {
-  const { isNavigating, withLock } = useNavigationLock();
+  const setAndSave = useOnboardingStore((s) => s.setAndSave);
+  const savedAchieveGoals = useOnboardingStore((s) => s.achieveGoals);
   const { width } = useWindowDimensions();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(savedAchieveGoals));
+  const [isSaving, setIsSaving] = useState(false);
 
   const cardWidth = (width - spacing.lg * 2 - 12) / 2;
   const cardHeight = cardWidth * 1.17;
 
   function handleSelect(id: string) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -61,11 +63,15 @@ export default function AchieveScreen() {
     });
   }
 
-  function handleContinue() {
-    withLock(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  async function handleContinue() {
+    if (selected.size === 0 || isSaving) return;
+    setIsSaving(true);
+    try {
+      await setAndSave('achieveGoals', [...selected]);
+    } finally {
+      setIsSaving(false);
       router.push('/onboarding/ideal-day');
-    });
+    }
   }
 
   return (
@@ -125,7 +131,7 @@ export default function AchieveScreen() {
       <View style={styles.bottomSection}>
         <OnboardingContinueButton
           onPress={handleContinue}
-          disabled={selected.size === 0 || isNavigating}
+          disabled={selected.size === 0 || isSaving}
         />
       </View>
     </SafeAreaView>

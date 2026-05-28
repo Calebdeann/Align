@@ -15,7 +15,7 @@ function isSchemaError(error: any): boolean {
 
 // Convert local ScheduledWorkout to DB row format
 function toDbRow(workout: ScheduledWorkout) {
-  return {
+  const row: Record<string, any> = {
     user_id: workout.userId,
     name: workout.name,
     description: workout.description || null,
@@ -32,6 +32,17 @@ function toDbRow(workout: ScheduledWorkout) {
     excluded_dates: workout.excludedDates || [],
     end_date: workout.endDate || null,
   };
+  if (workout.planId) row.plan_id = workout.planId;
+  if (workout.programWorkoutId) row.program_workout_id = workout.programWorkoutId;
+  return row;
+}
+
+// Columns added by migration 042 — strip on PGRST204 retry for back-compat.
+const OPTIONAL_NEW_COLUMNS = ['plan_id', 'program_workout_id'] as const;
+function stripOptionalNewColumns<T extends Record<string, any>>(row: T): T {
+  const copy: Record<string, any> = { ...row };
+  for (const col of OPTIONAL_NEW_COLUMNS) delete copy[col];
+  return copy as T;
 }
 
 // Convert DB row to local ScheduledWorkout format
@@ -54,6 +65,8 @@ function fromDbRow(row: any): ScheduledWorkout {
     completedDates: row.completed_dates || [],
     excludedDates: row.excluded_dates || undefined,
     endDate: row.end_date || undefined,
+    planId: row.plan_id || undefined,
+    programWorkoutId: row.program_workout_id || undefined,
   };
 }
 
@@ -67,14 +80,25 @@ export async function saveScheduledWorkoutToBackend(
   try {
     const row = toDbRow(workout);
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('scheduled_workouts')
       .insert(row)
       .select('id')
       .single();
 
+    // If the new plan columns don't exist in DB yet, retry without them.
+    if (error && isSchemaError(error) && (row.plan_id || row.program_workout_id)) {
+      const fallback = stripOptionalNewColumns(row);
+      const retry = await supabase
+        .from('scheduled_workouts')
+        .insert(fallback)
+        .select('id')
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (error) {
-      // Schema error = table might not exist yet, fail gracefully
       if (isSchemaError(error)) {
         logger.warn('[ScheduledWorkouts] Schema error on save, table may not exist yet');
         return null;
@@ -83,7 +107,7 @@ export async function saveScheduledWorkoutToBackend(
       return null;
     }
 
-    return data.id;
+    return data?.id ?? null;
   } catch (error) {
     logger.warn('[ScheduledWorkouts] Unexpected error saving', { error });
     return null;
@@ -204,4 +228,74 @@ export async function bulkSaveScheduledWorkouts(
   }
 
   return idMap;
+}
+
+/**
+ * Batch-insert N scheduled workouts in a single Supabase round trip.
+ * Returns `Map<tempLocalId, backendUuid>` for client to swap ids.
+ *
+ * Critical for plan-switch performance: seeding a fresh plan can produce 50+
+ * workouts. Serial inserts (the old pattern) caused 50+ separate Zustand `set`
+ * calls and 50+ React reconciliations — the source of the multi-second freeze.
+ *
+ * Preserves the `isSchemaError` retry fallback for unmigrated optional columns.
+ */
+export async function saveScheduledWorkoutsBatch(
+  workouts: ScheduledWorkout[]
+): Promise<Map<string, string>> {
+  const idMap = new Map<string, string>();
+  if (workouts.length === 0) return idMap;
+
+  try {
+    const rows = workouts.map(toDbRow);
+
+    let { data, error } = await supabase.from('scheduled_workouts').insert(rows).select('id');
+
+    if (error && isSchemaError(error)) {
+      const fallback = rows.map(stripOptionalNewColumns);
+      const retry = await supabase.from('scheduled_workouts').insert(fallback).select('id');
+      data = retry.data;
+      error = retry.error;
+    }
+
+    if (error) {
+      if (!isSchemaError(error)) {
+        logger.warn('[ScheduledWorkouts] Error batch saving', { error });
+      }
+      return idMap;
+    }
+
+    // Postgres preserves insert order in the RETURNING clause, so the returned
+    // rows align positionally with the input rows.
+    if (data && data.length === workouts.length) {
+      for (let i = 0; i < workouts.length; i++) {
+        const backendId = data[i]?.id;
+        if (backendId) idMap.set(workouts[i].id, backendId);
+      }
+    }
+
+    return idMap;
+  } catch (error) {
+    logger.warn('[ScheduledWorkouts] Unexpected error batch saving', { error });
+    return idMap;
+  }
+}
+
+/**
+ * Batch-delete N scheduled workouts from Supabase in a single round trip.
+ * Skips ids that aren't valid UUIDs (local-only workouts not yet synced).
+ */
+export async function deleteScheduledWorkoutsBatch(workoutIds: string[]): Promise<void> {
+  const validIds = workoutIds.filter(isValidUuid);
+  if (validIds.length === 0) return;
+
+  try {
+    const { error } = await supabase.from('scheduled_workouts').delete().in('id', validIds);
+
+    if (error && !isSchemaError(error)) {
+      logger.warn('[ScheduledWorkouts] Error batch deleting', { error });
+    }
+  } catch (error) {
+    logger.warn('[ScheduledWorkouts] Unexpected error batch deleting', { error });
+  }
 }

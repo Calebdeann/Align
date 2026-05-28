@@ -5,7 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
@@ -32,7 +32,7 @@ export default function SignUpScreen() {
   const handleBack = () => {
     if (isNavigating) return;
     setIsNavigating(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     router.back();
   };
 
@@ -113,7 +113,7 @@ export default function SignUpScreen() {
       // (safe here because Google OAuth opens a browser - user won't cancel before this)
       await supabase.auth.signOut();
 
-      const redirectTo = 'alyne://auth/callback';
+      const redirectTo = 'itgirl://auth/callback';
 
       // Start OAuth flow with Supabase
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -217,7 +217,7 @@ export default function SignUpScreen() {
           <Pressable
             style={styles.appleButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              strongHaptic();
               handleAppleSignUp();
             }}
             disabled={isAppleLoading || isGoogleLoading}
@@ -236,7 +236,7 @@ export default function SignUpScreen() {
           <Pressable
             style={styles.googleButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              strongHaptic();
               handleGoogleSignUp();
             }}
             disabled={isAppleLoading || isGoogleLoading}

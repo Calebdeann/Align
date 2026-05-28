@@ -2,7 +2,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 class ShareExtensionViewController: UIViewController {
-  private static let appGroupId = "group.com.aligntracker.app"
+  private static let appGroupId = "group.com.itgirlapp.app"
   private static let sharedUrlKey = "pendingVideoImport"
 
   override func viewDidLoad() {
@@ -30,7 +30,7 @@ class ShareExtensionViewController: UIViewController {
     icon.heightAnchor.constraint(equalToConstant: 48).isActive = true
 
     let label = UILabel()
-    label.text = "Sending to Alyne..."
+    label.text = "Sending to It Girl..."
     label.textColor = .white
     label.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
     label.textAlignment = .center
@@ -118,7 +118,7 @@ class ShareExtensionViewController: UIViewController {
     // extensionContext?.open() completion handler is unreliable on iOS 13+ for Share Extensions,
     // so we fire-and-forget the open and dismiss with a short delay instead.
     DispatchQueue.main.async {
-      guard let url = URL(string: "alyne://import-video") else {
+      guard let url = URL(string: "itgirl://import-video") else {
         self.closeOnce()
         return
       }

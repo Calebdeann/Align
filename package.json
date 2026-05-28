@@ -1,5 +1,5 @@
 {
-  "name": "alyne",
+  "name": "it-girl",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
@@ -13,6 +13,13 @@
     "prepare": "husky",
     "types:generate": "npx supabase gen types typescript --project-id dngpsabyqsuunajtotci > src/types/database.types.ts",
     "db:push": "npx supabase db push",
+    "upload:motivational": "node scripts/upload-motivational-posts.mjs",
+    "seed:exercises": "node scripts/seed-exercises.mjs",
+    "seed:photos": "node scripts/upload-fake-workout-photos.mjs",
+    "seed:accounts": "node scripts/seed-fake-accounts.mjs",
+    "seed:workouts": "node scripts/seed-fake-workouts.mjs",
+    "seed:all": "npm run seed:exercises && npm run seed:photos && npm run seed:accounts && npm run seed:workouts",
+    "seed:teardown": "node scripts/teardown-fake-data.mjs",
     "postinstall": "patch-package"
   },
   "lint-staged": {
@@ -25,6 +32,7 @@
     ]
   },
   "dependencies": {
+    "@callstack/liquid-glass": "^0.7.1",
     "@expo-google-fonts/caveat": "^0.4.2",
     "@expo-google-fonts/cormorant-garamond": "^0.4.1",
     "@expo-google-fonts/fraunces": "^0.4.1",
@@ -47,6 +55,7 @@
     "expo-dev-client": "~6.0.20",
     "expo-file-system": "~19.0.21",
     "expo-font": "~14.0.10",
+    "expo-glass-effect": "~0.1.10",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",
     "expo-image-picker": "~17.0.10",
@@ -54,6 +63,7 @@
     "expo-linking": "~8.0.11",
     "expo-live-activity": "^0.4.2",
     "expo-localization": "~17.0.8",
+    "expo-media-library": "~18.2.1",
     "expo-notifications": "^0.32.16",
     "expo-router": "~6.0.21",
     "expo-secure-store": "~15.0.8",

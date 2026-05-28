@@ -36,8 +36,8 @@ const PLANS = [
     image: require('../../assets/Onboarding Assets/Onboarding P10/ITGirl.png'),
   },
   {
-    id: 'glow-up',
-    image: require('../../assets/Onboarding Assets/Onboarding P10/Glow.png'),
+    id: 'busy-girl',
+    image: require('../../assets/Onboarding Assets/Onboarding P10/BusyGirl.png'),
   },
   {
     id: 'muscle-mommy',
@@ -57,7 +57,7 @@ export default function ChangePlanScreen() {
   const cardHeight = Math.round(cardWidth / IMG_RATIO);
 
   function handleCustomTab() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Alert.alert('Coming Soon', 'Custom programs are on the way!');
   }
 
@@ -148,6 +148,7 @@ const styles = StyleSheet.create({
     fontSize: 48,
     color: '#000000',
     lineHeight: 56,
+    textAlign: 'center',
   },
   tabBar: {
     flexDirection: 'row',

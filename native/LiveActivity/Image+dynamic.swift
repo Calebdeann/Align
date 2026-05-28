@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 private let appGroups = [
-  "group.com.aligntracker.app",
+  "group.com.itgirlapp.app",
 ]
 
 extension Image {

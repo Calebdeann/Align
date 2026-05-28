@@ -106,7 +106,7 @@ function ExerciseItem({
         isAlreadyAdded
           ? undefined
           : () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               onToggle();
             }
       }
@@ -117,7 +117,7 @@ function ExerciseItem({
         onPress={
           exercise.image_url || exercise.thumbnail_url
             ? () => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 onPressName();
               }
             : undefined
@@ -143,7 +143,7 @@ function ExerciseItem({
             isAlreadyAdded || (!exercise.image_url && !exercise.thumbnail_url)
               ? undefined
               : () => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   onPressName();
                 }
           }
@@ -456,7 +456,7 @@ export default function AddExerciseScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
           style={styles.backButton}
@@ -466,7 +466,7 @@ export default function AddExerciseScreen() {
         <Text style={styles.headerTitle}>{t('addExercise.title')}</Text>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.push('/create-exercise');
           }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -479,6 +479,7 @@ export default function AddExerciseScreen() {
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color={colors.textSecondary} />
         <TextInput
+          autoCorrect={false}
           style={styles.searchInput}
           placeholder={t('addExercise.searchPlaceholder')}
           placeholderTextColor={colors.textSecondary}
@@ -488,7 +489,7 @@ export default function AddExerciseScreen() {
         {searchQuery.length > 0 && (
           <Pressable
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setSearchQuery('');
             }}
           >
@@ -502,7 +503,7 @@ export default function AddExerciseScreen() {
         <Pressable
           style={[styles.filterButton, selectedMuscle !== 'all' && styles.filterButtonActive]}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             setShowMuscleModal(true);
           }}
         >
@@ -521,7 +522,7 @@ export default function AddExerciseScreen() {
         <Pressable
           style={[styles.filterButton, selectedEquipment !== 'all' && styles.filterButtonActive]}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             setShowEquipmentModal(true);
           }}
         >
@@ -553,7 +554,7 @@ export default function AddExerciseScreen() {
           <Pressable
             style={styles.retryButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               loadExercises();
             }}
           >
@@ -594,7 +595,7 @@ export default function AddExerciseScreen() {
                 <Pressable
                   style={styles.clearFiltersButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     clearFilters();
                   }}
                 >

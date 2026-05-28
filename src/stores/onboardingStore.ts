@@ -6,7 +6,6 @@ import {
 } from '@/services/api/onboarding';
 import { clearAnonymousSession } from '@/services/anonymousSession';
 
-// Simple retry helper for save operations
 async function saveWithRetry<T>(
   operation: () => Promise<T>,
   maxRetries: number = 3,
@@ -20,180 +19,87 @@ async function saveWithRetry<T>(
         console.error(`Failed after ${maxRetries} attempts:`, err);
         return null;
       }
-      // Wait before retrying (exponential backoff)
       await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
     }
   }
   return null;
 }
 
-// All onboarding data fields
-// NOTE: All weights (currentWeight, targetWeight) are stored in kg
-// Height is stored in inches
+// It Girl onboarding answers — every field corresponds to a screen in the current flow.
 export interface OnboardingData {
   name: string | null;
-  experienceLevel: string | null;
-  triedOtherApps: string | null;
-  mainGoal: string | null;
-  bodyChangeGoal: string | null;
-  otherGoals: string[];
-  referralSource: string | null;
-  age: number | null;
-  heightInches: number | null;
-  currentWeight: number; // Always stored in kg
-  targetWeight: number; // Always stored in kg
-  unit: 'kg' | 'lb'; // User's display preference (for legacy compatibility)
-  trainingLocation: string | null;
-  workoutFrequency: string | null;
+  trafficSource: string | null;
+  achieveGoals: string[];
+  idealDay: string | null;
+  challenges: string[];
   workoutDays: string[];
-  mainObstacle: string | null;
-  healthSituation: string | null;
-  energyFluctuation: string | null;
-  notificationsEnabled: boolean;
-  reminderTime: string | null;
   selectedPlanId: string | null;
+  matchedBuddyIndex: number | null;
+  programStartDate: string | null; // YYYY-MM-DD
 }
 
 interface OnboardingState extends OnboardingData {
-  // Individual setters (for local state without saving)
   setName: (name: string) => void;
-  setExperienceLevel: (level: string) => void;
-  setTriedOtherApps: (value: string) => void;
-  setMainGoal: (goal: string) => void;
-  setBodyChangeGoal: (goal: string) => void;
-  setOtherGoals: (goals: string[]) => void;
-  setReferralSource: (source: string) => void;
-  setAge: (age: number) => void;
-  setHeightInches: (height: number) => void;
-  setCurrentWeight: (weight: number) => void;
-  setTargetWeight: (weight: number) => void;
-  setUnit: (unit: 'kg' | 'lb') => void;
-  setTrainingLocation: (location: string) => void;
-  setWorkoutFrequency: (frequency: string) => void;
+  setTrafficSource: (source: string) => void;
+  setAchieveGoals: (goals: string[]) => void;
+  setIdealDay: (value: string) => void;
+  setChallenges: (challenges: string[]) => void;
   setWorkoutDays: (days: string[]) => void;
-  setMainObstacle: (obstacle: string) => void;
-  setHealthSituation: (situation: string) => void;
-  setEnergyFluctuation: (fluctuation: string) => void;
-  setNotificationsEnabled: (enabled: boolean) => void;
-  setReminderTime: (time: string) => void;
   setSelectedPlanId: (id: string) => void;
+  setProgramStartDate: (date: string) => void;
 
-  // Save a field to both store and Supabase
   setAndSave: <K extends keyof OnboardingData>(field: K, value: OnboardingData[K]) => Promise<void>;
-
-  // Link anonymous session to authenticated user
   linkToUser: (userId: string) => Promise<boolean>;
-
-  // Track when a field is skipped
   skipField: (field: keyof OnboardingData) => Promise<void>;
 
-  // Helper functions
-  getWeightDifference: () => number;
-  isLosingWeight: () => boolean;
-  getGoalDifficulty: () => 'moderate' | 'challenging' | 'difficult';
-
-  // Reset store
   reset: () => void;
 }
 
 const initialState: OnboardingData = {
   name: null,
-  experienceLevel: null,
-  triedOtherApps: null,
-  mainGoal: null,
-  bodyChangeGoal: null,
-  otherGoals: [],
-  referralSource: null,
-  age: null,
-  heightInches: null,
-  currentWeight: 0, // Will be set by weight screen (in kg)
-  targetWeight: 0, // Will be set by target-weight screen (in kg)
-  unit: 'lb', // Default, will be overridden by userPreferencesStore
-  trainingLocation: null,
-  workoutFrequency: null,
+  trafficSource: null,
+  achieveGoals: [],
+  idealDay: null,
+  challenges: [],
   workoutDays: [],
-  mainObstacle: null,
-  healthSituation: null,
-  energyFluctuation: null,
-  notificationsEnabled: false,
-  reminderTime: null,
   selectedPlanId: null,
+  matchedBuddyIndex: null,
+  programStartDate: null,
 };
 
-export const useOnboardingStore = create<OnboardingState>((set, get) => ({
+export const useOnboardingStore = create<OnboardingState>((set) => ({
   ...initialState,
 
-  // Individual setters
   setName: (name) => set({ name }),
-  setExperienceLevel: (level) => set({ experienceLevel: level }),
-  setTriedOtherApps: (value) => set({ triedOtherApps: value }),
-  setMainGoal: (goal) => set({ mainGoal: goal }),
-  setBodyChangeGoal: (goal) => set({ bodyChangeGoal: goal }),
-  setOtherGoals: (goals) => set({ otherGoals: goals }),
-  setReferralSource: (source) => set({ referralSource: source }),
-  setAge: (age) => set({ age }),
-  setHeightInches: (height) => set({ heightInches: height }),
-  setCurrentWeight: (weight) => set({ currentWeight: weight }),
-  setTargetWeight: (weight) => set({ targetWeight: weight }),
-  setUnit: (unit) => set({ unit }),
-  setTrainingLocation: (location) => set({ trainingLocation: location }),
-  setWorkoutFrequency: (frequency) => set({ workoutFrequency: frequency }),
-  setWorkoutDays: (days) => set({ workoutDays: days }),
-  setMainObstacle: (obstacle) => set({ mainObstacle: obstacle }),
-  setHealthSituation: (situation) => set({ healthSituation: situation }),
-  setEnergyFluctuation: (fluctuation) => set({ energyFluctuation: fluctuation }),
-  setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
-  setReminderTime: (time) => set({ reminderTime: time }),
-  setSelectedPlanId: (id) => set({ selectedPlanId: id }),
+  setTrafficSource: (trafficSource) => set({ trafficSource }),
+  setAchieveGoals: (achieveGoals) => set({ achieveGoals }),
+  setIdealDay: (idealDay) => set({ idealDay }),
+  setChallenges: (challenges) => set({ challenges }),
+  setWorkoutDays: (workoutDays) => set({ workoutDays }),
+  setSelectedPlanId: (selectedPlanId) => set({ selectedPlanId }),
+  setProgramStartDate: (programStartDate) => set({ programStartDate }),
 
-  // Save to both store and Supabase
   setAndSave: async (field, value) => {
-    // Update local state
     set({ [field]: value } as Partial<OnboardingData>);
-
-    // Save to Supabase with retry (await so data is persisted before navigation)
     const result = await saveWithRetry(() => saveOnboardingField(field, value));
     if (result === null) {
       console.warn(`Onboarding field '${field}' failed to save to Supabase after retries`);
     }
   },
 
-  // Link to authenticated user
   linkToUser: async (userId: string) => {
     return linkOnboardingToUser(userId);
   },
 
-  // Track when a field is skipped
   skipField: async (field) => {
-    // Save with retry (don't block UI)
-    saveWithRetry(() => saveSkippedField(field));
+    const result = await saveWithRetry(() => saveSkippedField(field));
+    if (result === null) {
+      console.warn(`Onboarding field '${field}' failed to mark as skipped after retries`);
+    }
   },
 
-  // Helper functions
-  getWeightDifference: () => {
-    const { currentWeight, targetWeight } = get();
-    return Math.abs(targetWeight - currentWeight);
-  },
-
-  isLosingWeight: () => {
-    const { currentWeight, targetWeight } = get();
-    return targetWeight < currentWeight;
-  },
-
-  getGoalDifficulty: () => {
-    const { currentWeight, targetWeight } = get();
-    const diff = Math.abs(targetWeight - currentWeight);
-    const percentChange = (diff / currentWeight) * 100;
-
-    if (percentChange < 10) return 'moderate';
-    if (percentChange < 20) return 'challenging';
-    return 'difficult';
-  },
-
-  // Reset to initial state and clear anonymous session
   reset: () => {
     set(initialState);
-    // Also clear the anonymous session from SecureStore
     clearAnonymousSession().catch((err) => {
       console.error('Failed to clear anonymous session:', err);
     });

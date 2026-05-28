@@ -95,7 +95,7 @@ export function FilterModal({
       <Pressable
         style={styles.modalOverlay}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onClose();
         }}
       >
@@ -107,7 +107,7 @@ export function FilterModal({
               <Pressable
                 style={styles.modalCloseButton}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   onClose();
                 }}
               >
@@ -123,7 +123,7 @@ export function FilterModal({
                   key={option.id}
                   style={styles.filterOptionItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     onSelect(option.id);
                     onClose();
                   }}
@@ -214,7 +214,7 @@ export function MultiSelectFilterModal({
       <Pressable
         style={styles.modalOverlay}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onClose();
         }}
       >
@@ -226,7 +226,7 @@ export function MultiSelectFilterModal({
               <Pressable
                 style={styles.modalCloseButton}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   onClose();
                 }}
               >
@@ -244,7 +244,7 @@ export function MultiSelectFilterModal({
                     key={option.id}
                     style={styles.filterOptionItem}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                       onToggle(option.id);
                     }}
                   >
@@ -283,7 +283,7 @@ export function MultiSelectFilterModal({
               <Pressable
                 style={styles.doneButton}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   onDone();
                 }}
               >

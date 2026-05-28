@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
@@ -51,8 +51,9 @@ const SHELL_IMAGES: Record<string, number> = {
 
 export default function NameScreen() {
   const { setAndSave } = useOnboardingStore();
+  const savedName = useOnboardingStore((s) => s.name);
   const { isNavigating } = useNavigationLock();
-  const [name, setName] = useState('');
+  const [name, setName] = useState(savedName ?? '');
   const [isSaving, setIsSaving] = useState(false);
 
   const { width: screenWidth } = useWindowDimensions();
@@ -96,7 +97,7 @@ export default function NameScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            strongHaptic();
             router.back();
           }}
           style={styles.backButton}

@@ -124,7 +124,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
   };
 
   const handleTimerAdjust = (delta: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (!timerRunning) {
       const newValue = Math.max(0, timerSeconds + delta);
       setTimerSeconds(newValue);
@@ -136,7 +136,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
   };
 
   const handleStopwatchAdjust = (delta: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     const newValue = Math.max(0, stopwatchSeconds + delta);
     setStopwatchSeconds(newValue);
   };
@@ -163,7 +163,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
   };
 
   const handleTabChange = (tab: ClockTab) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setActiveTab(tab);
     if (tab === 'timer') {
       const progress =
@@ -181,7 +181,7 @@ export default function ClockModal({ visible, onClose }: ClockModalProps) {
   });
 
   const handleClose = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     onClose();
   };
 

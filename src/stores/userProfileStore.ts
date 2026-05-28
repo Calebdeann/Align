@@ -27,7 +27,7 @@ export function getHighResAvatarUrl(
 export interface UserProfile {
   id: string;
   email?: string;
-  name?: string; // Display name (unique across users)
+  name?: string;
   avatar_url?: string;
   bio?: string;
   experience_level?: string;
@@ -50,6 +50,10 @@ export interface UserProfile {
   training_location?: string;
   workout_frequency?: number;
   workout_days?: string[];
+  // Per-user override of which program day runs on which weekday. Keys are
+  // weekday names ("Monday", "Tuesday", ...); values are 1-indexed
+  // ProgramDay.dayNumber values. NULL/undefined = positional fallback.
+  workout_day_assignments?: Record<string, number> | null;
   main_obstacle?: string;
   notifications_enabled?: boolean;
   reminder_time?: string;
@@ -68,16 +72,22 @@ interface UserProfileState {
   userId: string | null;
   isLoading: boolean;
   lastFetchedAt: number | null;
+  // In-memory override for the current user's avatar — set right after a
+  // successful upload to the picker's local file:// URI. Lets every screen
+  // showing the user's own avatar render the new photo immediately for the
+  // rest of the session, without depending on the DB URL loading correctly.
+  // Cleared on sign-out via clearProfile().
+  sessionAvatarUri: string | null;
 
   // Actions
   fetchProfile: () => Promise<void>;
   refreshProfile: () => Promise<void>; // Force refresh, ignore cache
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
   saveTraits: (traits: PlacedTrait[]) => Promise<boolean>;
-  checkNameAvailable: (name: string) => Promise<boolean>;
   clearProfile: () => void;
   setProfile: (profile: UserProfile | null) => void;
   invalidateCache: () => void; // Invalidate cache so next fetch is fresh
+  setSessionAvatarUri: (uri: string | null) => void;
 }
 
 // Cache duration: 5 minutes
@@ -88,6 +98,7 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
   userId: null,
   isLoading: false,
   lastFetchedAt: null,
+  sessionAvatarUri: null,
 
   fetchProfile: async () => {
     const { lastFetchedAt, isLoading } = get();
@@ -167,42 +178,44 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
           set({ isLoading: false, lastFetchedAt: null });
           return;
         }
-        console.error('Error fetching profile:', error);
+        console.warn('Error fetching profile:', error);
         set({ isLoading: false, lastFetchedAt: null });
         return;
       }
 
       set({ profile: data, isLoading: false, lastFetchedAt: Date.now() });
 
-      // Silently update app version and last active timestamp
+      // Silently update app version, last active timestamp, and plan_id default
+      const silentUpdates: Record<string, unknown> = { last_active_at: new Date().toISOString() };
+      const localUpdates: Record<string, unknown> = { last_active_at: new Date().toISOString() };
+
       if (data.app_version !== APP_VERSION) {
-        supabase
-          .from('profiles')
-          .update({ app_version: APP_VERSION, last_active_at: new Date().toISOString() })
-          .eq('id', user.id)
-          .then(({ error: updateError }) => {
-            if (!updateError) {
-              set((state) => ({
-                profile: state.profile
-                  ? {
-                      ...state.profile,
-                      app_version: APP_VERSION,
-                      last_active_at: new Date().toISOString(),
-                    }
-                  : null,
-              }));
-            }
-          });
-      } else {
-        // Just update last_active_at
-        supabase
-          .from('profiles')
-          .update({ last_active_at: new Date().toISOString() })
-          .eq('id', user.id)
-          .then(() => {});
+        silentUpdates.app_version = APP_VERSION;
+        localUpdates.app_version = APP_VERSION;
       }
+
+      if (!data.plan_id) {
+        silentUpdates.plan_id = 'summer-body';
+        localUpdates.plan_id = 'summer-body';
+      }
+
+      supabase
+        .from('profiles')
+        .update(silentUpdates)
+        .eq('id', user.id)
+        .then(({ error: updateError }) => {
+          if (!updateError) {
+            set((state) => ({
+              profile: state.profile ? { ...state.profile, ...localUpdates } : null,
+            }));
+          }
+        })
+        // Swallow network errors silently — this is a best-effort background sync
+        // (app_version / last_active_at / plan_id default). An unhandled rejection
+        // here would surface as a generic "Network request failed" console error.
+        .then(undefined, () => {});
     } catch (error) {
-      console.error('Error in fetchProfile:', error);
+      console.warn('Error in fetchProfile:', error);
       set({ isLoading: false, lastFetchedAt: null });
     }
   },
@@ -220,29 +233,58 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
 
     if (!userId) return false;
 
-    try {
-      // If updating name, check if it's available first
-      if (updates.name) {
-        const isAvailable = await get().checkNameAvailable(updates.name);
-        if (!isAvailable) {
-          return false; // Name is taken
-        }
-      }
+    const updatedAt = new Date().toISOString();
 
-      const { data, error } = await supabase
+    try {
+      let { data, error } = await supabase
         .from('profiles')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update({ ...updates, updated_at: updatedAt })
         .eq('id', userId)
         .select()
         .single();
+
+      // Backwards-compat: if a NEW column (e.g. workout_day_assignments from
+      // migration 083) hasn't been applied on the server yet, the write fails
+      // with PGRST204 / 42xxx. Strip the optional new column(s) and retry so
+      // the core profile save still succeeds — per backend-rules Rule 3.
+      const isSchemaErr =
+        !!error &&
+        (error.code === 'PGRST204' ||
+          error.code === 'PGRST301' ||
+          (typeof error.code === 'string' && error.code.startsWith('42')));
+      if (isSchemaErr && 'workout_day_assignments' in updates) {
+        console.warn(
+          'updateProfile: workout_day_assignments column missing (migration 083 not applied). Retrying without it.'
+        );
+        const { workout_day_assignments: _omit, ...baseUpdates } = updates;
+        const retry = await supabase
+          .from('profiles')
+          .update({ ...baseUpdates, updated_at: updatedAt })
+          .eq('id', userId)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         console.error('Error updating profile:', error);
         return false;
       }
 
-      // Update local state with new data
-      set({ profile: data, lastFetchedAt: Date.now() });
+      // Merge updates into existing profile rather than trusting Supabase's
+      // .select() response blindly — column-level RLS or row-level filters can
+      // mask returned fields. The values we sent are authoritative for what was
+      // just written, so merge them on top of whatever came back.
+      set((state) => ({
+        profile: {
+          ...(state.profile ?? {}),
+          ...(data ?? {}),
+          ...updates,
+          updated_at: updatedAt,
+        } as UserProfile,
+        lastFetchedAt: Date.now(),
+      }));
       return true;
     } catch (error) {
       console.error('Error in updateProfile:', error);
@@ -275,43 +317,12 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
     }
   },
 
-  checkNameAvailable: async (name: string) => {
-    const { userId, profile } = get();
-    const trimmedName = name.trim();
-
-    if (!trimmedName) return false;
-
-    // If the name is the same as the current user's name (case-insensitive), it's available
-    if (profile?.name && profile.name.toLowerCase() === trimmedName.toLowerCase()) {
-      return true;
-    }
-
-    // If we don't have a userId, we can't properly exclude our own record
-    if (!userId) return false;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .ilike('name', trimmedName)
-        .neq('id', userId)
-        .limit(1);
-
-      if (error) {
-        console.error('Error checking name availability:', error);
-        return false;
-      }
-
-      // Name is available if no results found
-      return data.length === 0;
-    } catch (error) {
-      console.error('Error in checkNameAvailable:', error);
-      return false;
-    }
+  clearProfile: () => {
+    set({ profile: null, userId: null, lastFetchedAt: null, sessionAvatarUri: null });
   },
 
-  clearProfile: () => {
-    set({ profile: null, userId: null, lastFetchedAt: null });
+  setSessionAvatarUri: (uri) => {
+    set({ sessionAvatarUri: uri });
   },
 
   setProfile: (profile) => {

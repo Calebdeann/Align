@@ -66,7 +66,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
                 style={styles.tab}
                 onPress={() => {
                   if (!isFocused) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     navigation.navigate(route.name);
                   }
                 }}

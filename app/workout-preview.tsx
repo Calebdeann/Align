@@ -1,129 +1,101 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
-import i18n from '@/i18n';
-import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/constants/theme';
-import { useWorkoutStore, type ScheduledWorkout } from '@/stores/workoutStore';
-import {
-  useTemplateStore,
-  type WorkoutTemplate,
-  estimateTemplateDuration,
-  formatTemplateDuration,
-  getTemplateTotalSets,
-} from '@/stores/templateStore';
+import { fonts } from '@/constants/theme';
+import { useWorkoutStore, getScheduledWorkoutDisplayName } from '@/stores/workoutStore';
+import { useTemplateStore, getTemplateTotalSets } from '@/stores/templateStore';
 import { getCurrentUser } from '@/services/api/user';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { prefetchExerciseGif, resolveExerciseDisplayName } from '@/stores/exerciseStore';
-import * as Haptics from 'expo-haptics';
-import { useState, useEffect } from 'react';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
+import CircleBackButton from '@/components/ui/CircleBackButton';
+import {
+  getProgramWorkout,
+  WORKOUT_TYPE_COLORS,
+  type ProgramExercise,
+  type ProgramWorkout,
+} from '@/data/programs';
+import { getPlanRectangleImage } from '@/data/programs/planImages';
+import {
+  resolveProgramExercises,
+  type ResolvedProgramExercise,
+} from '@/data/programs/exerciseMatching';
+import { useExerciseStore } from '@/stores/exerciseStore';
+import { WORKOUT_PREVIEW_LOREM } from '@/data/plans';
+import { getSuggestedWeightKg } from '@/data/suggestedWeights';
+import { CARDIO_OPTIONS, parseRecommendedMinutes } from '@/constants/cardioOptions';
 
-// Icons
-function BackIcon() {
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M15 18l-6-6 6-6"
-        stroke={colors.text}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
+const MAX_CARDIO_SELECTIONS = 2;
+
+// Per-option Ionicons used in the cardio row thumbnail. Keeps the cardio list
+// visually consistent with the exercise rows above it.
+const CARDIO_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+  'treadmill-run': 'walk',
+  'incline-walk': 'trending-up',
+  bike: 'bicycle',
+  stairmaster: 'footsteps',
+  rower: 'boat',
+  elliptical: 'fitness',
+  'outdoor-run': 'walk',
+  'outdoor-walk': 'walk',
+};
+
+// Soft pastel backgrounds for each cardio icon tile — gives the list a
+// playful, varied feel instead of a single workout-type color.
+const CARDIO_ICON_COLORS: Record<string, string> = {
+  'treadmill-run': '#FFD1DC',
+  'incline-walk': '#C8F0D2',
+  bike: '#CFE8FF',
+  stairmaster: '#E2D4F7',
+  rower: '#FFE0B5',
+  elliptical: '#FFF3B0',
+  'outdoor-run': '#FFC4B8',
+  'outdoor-walk': '#D9EAD3',
+};
+
+function parseFirstRep(reps: string): number | undefined {
+  const m = reps.match(/\d+/);
+  return m ? parseInt(m[0], 10) : undefined;
 }
 
-function DumbbellIcon() {
-  return <Ionicons name="barbell-outline" size={20} color={colors.primary} />;
-}
-
-function CalendarIcon() {
-  return <Ionicons name="calendar-outline" size={20} color={colors.text} />;
-}
-
-function TimeIcon() {
-  return <Ionicons name="time-outline" size={20} color={colors.text} />;
-}
-
-function RepeatIcon() {
-  return <Ionicons name="repeat-outline" size={20} color={colors.text} />;
-}
-
-function ReminderIcon() {
-  return <Ionicons name="notifications-outline" size={20} color={colors.text} />;
-}
-
-// Format date for display
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const tomorrowOnly = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
-
-  if (dateOnly.getTime() === todayOnly.getTime()) {
-    return i18n.t('calendar.today');
-  }
-  if (dateOnly.getTime() === tomorrowOnly.getTime()) {
-    return i18n.t('calendar.tomorrow');
-  }
-
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
+function programExerciseToTemplateExercise(
+  pe: ProgramExercise,
+  resolved?: ResolvedProgramExercise
+) {
+  const targetReps = parseFirstRep(pe.reps);
+  // Pre-fill a sensible starting weight from the central suggested-weights map.
+  // 0 = bodyweight (the user can edit during the workout); we map 0 to undefined
+  // so it's not displayed as "0 kg" in the input.
+  const suggestedKg = getSuggestedWeightKg(pe.name);
+  const targetWeight = suggestedKg > 0 ? suggestedKg : undefined;
+  return {
+    exerciseId: resolved?.exerciseId ?? `plan_${pe.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+    exerciseName: resolved?.matchedName ?? pe.name,
+    muscle: resolved?.muscleGroup ?? 'other',
+    gifUrl: resolved?.gifUrl,
+    thumbnailUrl: resolved?.thumbnailUrl,
+    notes: pe.notes,
+    sets: Array.from({ length: pe.sets }).map(() => ({
+      targetWeight,
+      targetReps,
+      setType: 'normal',
+    })),
+    restTimerSeconds: 90,
+    // Forward the program's superset grouping so active-workout starts with
+    // the pair already linked (no manual setup needed).
+    supersetId: pe.supersetGroup ?? null,
   };
-  return date.toLocaleDateString(i18n.language, options);
 }
 
-// Format time for display
-function formatTime(hour: number, minute: number): string {
-  const period = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  const displayMinute = minute.toString().padStart(2, '0');
-  return `${displayHour}:${displayMinute} ${period}`;
-}
-
-// Get repeat label
-function getRepeatLabel(repeat: ScheduledWorkout['repeat']): string {
-  switch (repeat.type) {
-    case 'never':
-      return i18n.t('schedule.doesNotRepeat');
-    case 'daily':
-      return i18n.t('schedule.everyDay');
-    case 'weekly':
-      return i18n.t('schedule.repeatEveryWeek');
-    case 'biweekly':
-      return i18n.t('schedule.repeatEvery2Weeks');
-    case 'monthly':
-      return i18n.t('schedule.repeatEveryMonth');
-    case 'custom':
-      if (repeat.customDays && repeat.customDays.length > 0) {
-        const dayNames = [
-          i18n.t('calendar.daysShort.sun'),
-          i18n.t('calendar.daysShort.mon'),
-          i18n.t('calendar.daysShort.tue'),
-          i18n.t('calendar.daysShort.wed'),
-          i18n.t('calendar.daysShort.thu'),
-          i18n.t('calendar.daysShort.fri'),
-          i18n.t('calendar.daysShort.sat'),
-        ];
-        return repeat.customDays.map((d) => dayNames[d]).join(', ');
-      }
-      return i18n.t('workoutPreview.custom');
-    case 'interval':
-      return i18n.t('workoutPreview.everyXDays', { count: repeat.intervalDays || 2 });
-    default:
-      return i18n.t('schedule.doesNotRepeat');
-  }
+// Mirrors SUPERSET_COLORS in app/active-workout.tsx — same indices, same colors,
+// so the badge in the preview matches what users see during the workout.
+const SUPERSET_COLORS = ['#FFB6C1', '#C8B6FF', '#B6E0FF', '#B6FFD9', '#FFE08A', '#FFA585'];
+function getSupersetColor(supersetId: number): string {
+  return SUPERSET_COLORS[(supersetId - 1) % SUPERSET_COLORS.length];
 }
 
 export default function WorkoutPreviewScreen() {
@@ -132,56 +104,130 @@ export default function WorkoutPreviewScreen() {
   const dateKey = params.dateKey as string;
   const { t } = useTranslation();
 
-  const { isNavigating, withLock } = useNavigationLock();
+  const { withLock } = useNavigationLock();
   const [userId, setUserId] = useState<string | null>(null);
-  // Get workout from store
-  const scheduledWorkouts = useWorkoutStore((state) => state.scheduledWorkouts);
-  const startWorkoutFromTemplate = useWorkoutStore((state) => state.startWorkoutFromTemplate);
-  const startActiveWorkout = useWorkoutStore((state) => state.startActiveWorkout);
-  const removeWorkout = useWorkoutStore((state) => state.removeWorkout);
-  const removeWorkoutOccurrence = useWorkoutStore((state) => state.removeWorkoutOccurrence);
-  const updateWorkout = useWorkoutStore((state) => state.updateWorkout);
+  const [resolved, setResolved] = useState<ResolvedProgramExercise[]>([]);
+  // Cardio workout state: which cardio options the user has selected before
+  // starting. Only relevant when programWorkout.type === 'cardio'.
+  const [selectedCardio, setSelectedCardio] = useState<string[]>([]);
 
-  // Get template store
-  const getTemplateById = useTemplateStore((state) => state.getTemplateById);
+  const scheduledWorkouts = useWorkoutStore((s) => s.scheduledWorkouts);
+  const startWorkoutFromTemplate = useWorkoutStore((s) => s.startWorkoutFromTemplate);
+  const startActiveWorkout = useWorkoutStore((s) => s.startActiveWorkout);
+  const removeWorkout = useWorkoutStore((s) => s.removeWorkout);
+  const removeWorkoutOccurrence = useWorkoutStore((s) => s.removeWorkoutOccurrence);
+  const updateWorkout = useWorkoutStore((s) => s.updateWorkout);
+  const getTemplateById = useTemplateStore((s) => s.getTemplateById);
+  const allExercises = useExerciseStore((s) => s.allExercises);
+  const loadExercises = useExerciseStore((s) => s.loadExercises);
 
-  // Fetch user on mount
   useEffect(() => {
-    async function loadUser() {
-      const user = await getCurrentUser();
-      if (user) {
-        setUserId(user.id);
-      }
-    }
-    loadUser();
+    getCurrentUser()
+      .then((u) => u && setUserId(u.id))
+      .catch(() => {});
   }, []);
 
-  // Find the scheduled workout
+  // Lazily load the exercise DB if it hasn't been loaded yet — plan workouts
+  // need it to resolve thumbnail / id / instructions for each exercise.
+  useEffect(() => {
+    if (!allExercises.length) {
+      loadExercises().catch(() => {});
+    }
+  }, [allExercises.length, loadExercises]);
+
   const workout = useMemo(() => {
-    // The workoutId coming from the planner might have "scheduled_" prefix
     const cleanId = workoutId?.replace('scheduled_', '');
     return scheduledWorkouts.find((w) => w.id === cleanId || w.id === workoutId);
   }, [scheduledWorkouts, workoutId]);
 
-  // Get linked template if exists
+  const programWorkout = useMemo<ProgramWorkout | null>(() => {
+    if (!workout?.programWorkoutId) return null;
+    return getProgramWorkout(workout.programWorkoutId);
+  }, [workout]);
+
   const template = useMemo(() => {
     if (!workout?.templateId) return null;
     return getTemplateById(workout.templateId);
   }, [workout, getTemplateById]);
 
-  // Handle delete workout
+  // Resolve plan-workout exercises to real DB rows once the exercise store is loaded.
+  useEffect(() => {
+    if (!programWorkout || programWorkout.exercises.length === 0) {
+      setResolved([]);
+      return;
+    }
+    if (!allExercises.length) return;
+    const names = programWorkout.exercises.map((e) => e.name);
+    setResolved(resolveProgramExercises(names));
+  }, [programWorkout, allExercises]);
+
+  // Resolve title, description, exercises, duration, hero color
+  const display = useMemo(() => {
+    if (programWorkout) {
+      const heroImage = workout?.programWorkoutId
+        ? getPlanRectangleImage(workout.programWorkoutId)
+        : null;
+      return {
+        title: programWorkout.title,
+        description: programWorkout.description ?? WORKOUT_PREVIEW_LOREM,
+        heroColor: WORKOUT_TYPE_COLORS[programWorkout.type] ?? '#E5E5E5',
+        heroImage,
+        exercises: programWorkout.exercises.map((pe, idx) => {
+          const r = resolved[idx];
+          return {
+            name: pe.name,
+            sub: `${pe.sets} x ${pe.reps}`,
+            gifUrl: r?.gifUrl,
+            thumbnailUrl: r?.thumbnailUrl,
+            exerciseId: r?.exerciseId ?? undefined,
+            supersetGroup: pe.supersetGroup,
+          };
+        }),
+        freeText: programWorkout.freeText,
+        hasExercises: programWorkout.exercises.length > 0,
+      };
+    }
+    if (template) {
+      return {
+        title: workout?.name ?? template.name,
+        description: workout?.description ?? template.description ?? '',
+        heroColor: workout?.tagColor ?? template.tagColor ?? '#E5E5E5',
+        heroImage: null,
+        exercises: template.exercises.map((ex) => ({
+          name: ex.exerciseName,
+          sub: `${ex.sets.length} sets`,
+          gifUrl: ex.gifUrl,
+          thumbnailUrl: ex.thumbnailUrl,
+          exerciseId: ex.exerciseId,
+          supersetGroup: ex.supersetId ?? undefined,
+        })),
+        freeText: undefined,
+        hasExercises: true,
+      };
+    }
+    // Fallback for scheduled workouts where neither program data nor a
+    // template resolved — still try the programWorkoutId for an image so a
+    // tagged cardio day doesn't render an empty colored block.
+    const fallbackHero = workout?.programWorkoutId
+      ? getPlanRectangleImage(workout.programWorkoutId)
+      : null;
+    return {
+      title: workout?.name ?? '',
+      description: workout?.description ?? '',
+      heroColor: workout?.tagColor ?? '#E5E5E5',
+      heroImage: fallbackHero,
+      exercises: [] as { name: string; sub: string }[],
+      freeText: undefined,
+      hasExercises: false,
+    };
+  }, [programWorkout, template, workout, resolved]);
+
   const handleDeleteWorkout = () => {
     if (!workout) return;
-
     const isRecurring = workout.repeat.type !== 'never';
-
     if (isRecurring) {
-      // Recurring workout - ask which to delete
       Alert.alert(t('workoutPreview.deleteWorkout'), t('workoutPreview.deleteRecurringMessage'), [
-        {
-          text: t('common.cancel'),
-          style: 'cancel',
-        },
+        { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('workoutPreview.justThisOne'),
           onPress: () => {
@@ -193,7 +239,6 @@ export default function WorkoutPreviewScreen() {
           text: t('workoutPreview.allFutureWorkouts'),
           style: 'destructive',
           onPress: () => {
-            // Set endDate to the day before this occurrence so past ones are preserved
             const d = new Date(dateKey);
             d.setDate(d.getDate() - 1);
             const endDateKey = d.toISOString().split('T')[0];
@@ -203,15 +248,11 @@ export default function WorkoutPreviewScreen() {
         },
       ]);
     } else {
-      // Single workout - confirm deletion
       Alert.alert(
         t('workoutPreview.deleteWorkout'),
-        t('workoutPreview.deleteConfirm', { name: workout.name }),
+        t('workoutPreview.deleteConfirm', { name: getScheduledWorkoutDisplayName(workout) }),
         [
-          {
-            text: t('common.cancel'),
-            style: 'cancel',
-          },
+          { text: t('common.cancel'), style: 'cancel' },
           {
             text: t('common.delete'),
             style: 'destructive',
@@ -225,11 +266,73 @@ export default function WorkoutPreviewScreen() {
     }
   };
 
-  // Handle starting workout
+  // A workout is "cardio" if either the program data says so, or the scheduled
+  // row was seeded with tagId='cardio' (programWorkout resolution sometimes
+  // returns null when local state drifts from the current program data — that
+  // shouldn't block the picker because the user-facing intent is unambiguous).
+  const isCardioWorkout = programWorkout?.type === 'cardio' || workout?.tagId === 'cardio';
+  const recommendedCardioMinutes = isCardioWorkout
+    ? parseRecommendedMinutes(programWorkout?.freeText)
+    : null;
+
+  function toggleCardioOption(optionId: string) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSelectedCardio((prev) => {
+      if (prev.includes(optionId)) return prev.filter((id) => id !== optionId);
+      if (prev.length >= MAX_CARDIO_SELECTIONS) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        return prev;
+      }
+      return [...prev, optionId];
+    });
+  }
+
   const handleStartWorkout = () => {
+    if (!workout) return;
     withLock(() => {
-      if (template) {
-        // Start workout from template, passing scheduledWorkoutId for auto-tick on save
+      // Cardio: each picker option maps to a real DB exercise row, so the
+      // workout uses that row's id directly (animations + detail view work).
+      if (isCardioWorkout && selectedCardio.length > 0) {
+        const cardioExercises = selectedCardio
+          .map((optId) => CARDIO_OPTIONS.find((o) => o.id === optId))
+          .filter((o): o is NonNullable<typeof o> => !!o)
+          .map((opt) => {
+            const dbExercise = allExercises.find((e) => e.id === opt.id);
+            return {
+              exerciseId: opt.id,
+              exerciseName: dbExercise?.display_name ?? opt.name,
+              muscle: 'cardio',
+              gifUrl: dbExercise?.image_url ?? undefined,
+              thumbnailUrl: dbExercise?.thumbnail_url ?? undefined,
+              sets: [
+                {
+                  targetDifficulty: opt.defaultDifficulty,
+                  targetDurationMinutes: recommendedCardioMinutes ?? undefined,
+                },
+              ],
+              restTimerSeconds: 0,
+            };
+          });
+        // programWorkout may be null when isCardioWorkout fired off tagId
+        // alone; in that case use the scheduled workout's own id/name.
+        startWorkoutFromTemplate(
+          programWorkout?.id ?? workout.id,
+          programWorkout?.title ?? workout.name ?? 'Cardio',
+          cardioExercises,
+          userId,
+          workout.id
+        );
+      } else if (programWorkout && display.hasExercises) {
+        startWorkoutFromTemplate(
+          programWorkout.id,
+          programWorkout.title,
+          programWorkout.exercises.map((pe, idx) =>
+            programExerciseToTemplateExercise(pe, resolved[idx])
+          ),
+          userId,
+          workout.id
+        );
+      } else if (template) {
         startWorkoutFromTemplate(
           template.id,
           template.name,
@@ -237,6 +340,8 @@ export default function WorkoutPreviewScreen() {
             exerciseId: ex.exerciseId,
             exerciseName: ex.exerciseName,
             muscle: ex.muscle,
+            gifUrl: ex.gifUrl,
+            thumbnailUrl: ex.thumbnailUrl,
             notes: ex.notes,
             sets: ex.sets.map((s) => ({
               targetWeight: s.targetWeight,
@@ -245,31 +350,26 @@ export default function WorkoutPreviewScreen() {
             restTimerSeconds: ex.restTimerSeconds,
           })),
           userId,
-          workout?.id
+          workout.id
         );
       } else {
-        // Start empty workout, passing scheduledWorkoutId for auto-tick on save
-        startActiveWorkout(userId, workout?.id);
+        startActiveWorkout(userId, workout.id);
       }
       router.push('/active-workout');
     });
+  };
+
+  const handleShare = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Alert.alert('Share', 'Sharing is coming soon.');
   };
 
   if (!workout) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.back();
-            }}
-            style={styles.backButton}
-          >
-            <BackIcon />
-          </Pressable>
-          <Text style={styles.headerTitle}>{t('workout.title')}</Text>
-          <View style={styles.backButton} />
+          <CircleBackButton />
+          <View style={{ flex: 1 }} />
         </View>
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>{t('workoutPreview.workoutNotFound')}</Text>
@@ -281,234 +381,214 @@ export default function WorkoutPreviewScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
-          style={styles.backButton}
-        >
-          <BackIcon />
-        </Pressable>
-        <Text style={styles.headerTitle}>{t('workout.title')}</Text>
-        <Pressable
-          onPress={() => {
-            withLock(() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push({
-                pathname: '/schedule-workout',
-                params: { editWorkoutId: workout.id, editDateKey: dateKey },
-              });
-            });
-          }}
-          style={styles.editButton}
-        >
-          <Text style={styles.editButtonText}>{t('common.edit')}</Text>
-        </Pressable>
+        <CircleBackButton />
+        <View style={styles.headerRight}>
+          <Pressable style={styles.circleIconBtn} onPress={handleShare}>
+            <Ionicons name="share-outline" size={20} color="#000" />
+          </Pressable>
+        </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Workout Info Card */}
-        <View style={[styles.card, styles.workoutInfoCard]}>
-          <View style={styles.workoutHeader}>
-            {/* Template name badge with colour dot */}
-            {workout.templateName && workout.templateName !== 'Default Workout' && (
-              <View
-                style={[
-                  styles.templateBadge,
-                  { backgroundColor: (workout.tagColor || colors.primary) + '20' },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.colourDot,
-                    { backgroundColor: workout.tagColor || colors.primary },
-                  ]}
-                />
-                <Text
-                  style={[styles.templateBadgeText, { color: workout.tagColor || colors.primary }]}
-                >
-                  {workout.templateName.toUpperCase()}
-                </Text>
-              </View>
-            )}
-            <View style={styles.titleRow}>
-              <View
-                style={[styles.titleDot, { backgroundColor: workout.tagColor || colors.primary }]}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero card */}
+        <View style={styles.heroRow}>
+          <View style={[styles.heroImage, { backgroundColor: display.heroColor }]}>
+            {display.heroImage && (
+              <Image
+                source={display.heroImage}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
               />
-              <Text style={styles.workoutTitle}>{workout.name}</Text>
-            </View>
-            {workout.description && (
-              <Text style={styles.workoutDescription}>{workout.description}</Text>
             )}
           </View>
-
-          <View style={styles.cardDivider} />
-
-          {/* Schedule Info */}
-          <View style={styles.scheduleRow}>
-            <CalendarIcon />
-            <Text style={styles.scheduleLabel}>{t('workoutPreview.date')}</Text>
-            <Text style={styles.scheduleValue}>{formatDate(dateKey || workout.date)}</Text>
+          <View style={styles.heroText}>
+            <Text style={styles.heroTitle}>{display.title}</Text>
+            {display.description ? (
+              <Text style={styles.heroDescription} numberOfLines={5}>
+                {display.description}
+              </Text>
+            ) : null}
           </View>
+        </View>
 
-          {workout.time && (
+        {/* Start Workout pill — disabled for cardio until user picks at least one */}
+        <Pressable
+          style={[
+            styles.startPill,
+            isCardioWorkout && selectedCardio.length === 0 && styles.startPillDisabled,
+          ]}
+          disabled={isCardioWorkout && selectedCardio.length === 0}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            const todayKey = new Date().toISOString().split('T')[0];
+            if (dateKey && dateKey !== todayKey) {
+              const workoutDate = new Date(dateKey + 'T12:00:00');
+              const formatted = workoutDate.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'long',
+              });
+              const isPast = dateKey < todayKey;
+              Alert.alert(
+                isPast ? 'Past Workout' : 'Future Workout',
+                isPast
+                  ? `This workout was scheduled for ${formatted}. Starting it now will log it for today.`
+                  : `This workout is scheduled for ${formatted}. Starting it early will log it for today.`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Start Anyway', onPress: handleStartWorkout },
+                ]
+              );
+              return;
+            }
+            handleStartWorkout();
+          }}
+        >
+          <Text style={styles.startPillText}>Start Workout</Text>
+        </Pressable>
+
+        {/* Exercise list (or cardio picker for cardio sub-workouts, or
+            free-text instructions for any remaining freeText workouts) */}
+        <View style={styles.listCard}>
+          <View style={styles.listHandle} />
+          {isCardioWorkout ? (
             <>
-              <View style={styles.cardDivider} />
-              <View style={styles.scheduleRow}>
-                <TimeIcon />
-                <Text style={styles.scheduleLabel}>{t('workoutPreview.time')}</Text>
-                <Text style={styles.scheduleValue}>
-                  {formatTime(workout.time.hour, workout.time.minute)}
-                </Text>
-              </View>
+              <Text style={styles.cardioHint}>
+                {recommendedCardioMinutes
+                  ? `Plan suggests: ${recommendedCardioMinutes} min  ·  Pick 1 or 2`
+                  : 'Pick 1 or 2'}
+              </Text>
+              {CARDIO_OPTIONS.map((opt, i) => {
+                const isSelected = selectedCardio.includes(opt.id);
+                // At-max: dim unselected rows so users see they're locked out.
+                // Selected rows stay full-opacity (still tappable to deselect).
+                const atMax = selectedCardio.length >= MAX_CARDIO_SELECTIONS;
+                const isLocked = atMax && !isSelected;
+                const last = i === CARDIO_OPTIONS.length - 1;
+                return (
+                  <View key={opt.id}>
+                    <Pressable
+                      style={[styles.exRow, isLocked && styles.cardioRowLocked]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                        toggleCardioOption(opt.id);
+                      }}
+                    >
+                      <View
+                        style={[
+                          styles.exThumb,
+                          styles.cardioIconBox,
+                          { backgroundColor: CARDIO_ICON_COLORS[opt.slug] ?? display.heroColor },
+                        ]}
+                      >
+                        <Ionicons
+                          name={CARDIO_ICONS[opt.slug] ?? 'fitness'}
+                          size={26}
+                          color="#000"
+                        />
+                      </View>
+                      <View style={styles.exInfo}>
+                        <Text style={styles.exName}>{opt.name}</Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.cardioCheckCircle,
+                          isSelected && styles.cardioCheckCircleSelected,
+                          isLocked && styles.cardioCheckCircleLocked,
+                        ]}
+                      >
+                        {isSelected && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+                      </View>
+                    </Pressable>
+                    {!last && <View style={styles.exDivider} />}
+                  </View>
+                );
+              })}
             </>
-          )}
-
-          <View style={styles.cardDivider} />
-          <View style={styles.scheduleRow}>
-            <RepeatIcon />
-            <Text style={styles.scheduleLabel}>{t('workoutPreview.repeat')}</Text>
-            <Text style={styles.scheduleValue}>{getRepeatLabel(workout.repeat)}</Text>
-          </View>
-
-          {workout.reminder?.enabled && (
-            <>
-              <View style={styles.cardDivider} />
-              <View style={styles.scheduleRow}>
-                <ReminderIcon />
-                <Text style={styles.scheduleLabel}>{t('workoutPreview.reminder')}</Text>
-                <Text style={styles.scheduleValue}>
-                  {formatTime(workout.reminder.hour, workout.reminder.minute)}
-                </Text>
-              </View>
-            </>
+          ) : display.freeText && !display.hasExercises ? (
+            <View style={styles.freeTextBlock}>
+              <Text style={styles.freeTextLabel}>WHAT TO DO</Text>
+              <Text style={styles.freeTextContent}>{display.freeText}</Text>
+            </View>
+          ) : display.exercises.length === 0 ? (
+            <View style={styles.placeholderBlock}>
+              <Text style={styles.placeholderText}>No exercises yet</Text>
+            </View>
+          ) : (
+            display.exercises.map((ex, i) => {
+              const gifUrl = (ex as { gifUrl?: string }).gifUrl;
+              const thumbnailUrl = (ex as { thumbnailUrl?: string }).thumbnailUrl;
+              const exerciseId = (ex as { exerciseId?: string }).exerciseId;
+              const supersetGroup = (ex as { supersetGroup?: number }).supersetGroup;
+              const hasImg = !!(gifUrl || thumbnailUrl);
+              const canOpen = !!exerciseId && !exerciseId.startsWith('plan_');
+              const openExercise = canOpen
+                ? () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    withLock(() => router.push(`/exercise/${exerciseId}`));
+                  }
+                : undefined;
+              // Hide the divider between two same-superset rows so the pair
+              // reads as a visually-linked unit.
+              const next = display.exercises[i + 1] as { supersetGroup?: number } | undefined;
+              const inSameGroupAsNext =
+                supersetGroup != null && next?.supersetGroup === supersetGroup;
+              const supersetColor = supersetGroup != null ? getSupersetColor(supersetGroup) : null;
+              return (
+                <View key={`${ex.name}-${i}`}>
+                  <View style={styles.exRow}>
+                    {supersetColor && (
+                      <View style={[styles.supersetStripe, { backgroundColor: supersetColor }]} />
+                    )}
+                    <Pressable style={styles.exThumb} onPress={openExercise} disabled={!canOpen}>
+                      {hasImg ? (
+                        <ExerciseImage
+                          gifUrl={gifUrl}
+                          thumbnailUrl={thumbnailUrl}
+                          size={56}
+                          borderRadius={10}
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles.exThumbPlaceholder,
+                            { backgroundColor: display.heroColor },
+                          ]}
+                        />
+                      )}
+                    </Pressable>
+                    <View style={styles.exInfo} pointerEvents="box-none">
+                      <View style={styles.exNameRow}>
+                        <Text
+                          style={[styles.exName, { alignSelf: 'flex-start' }]}
+                          numberOfLines={2}
+                          onPress={openExercise}
+                        >
+                          {ex.name}
+                        </Text>
+                        {supersetColor && (
+                          <View style={[styles.supersetBadge, { backgroundColor: supersetColor }]}>
+                            <Ionicons name="link" size={11} color="#000" />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.exSub}>{ex.sub}</Text>
+                    </View>
+                  </View>
+                  {i < display.exercises.length - 1 && !inSameGroupAsNext && (
+                    <View style={styles.exDivider} />
+                  )}
+                </View>
+              );
+            })
           )}
         </View>
 
-        {/* Template Section - only show when workout has a linked template */}
-        {workout.templateId && (
-          <>
-            <Text style={styles.sectionTitle}>{t('workoutPreview.template')}</Text>
-            {template ? (
-              <View style={styles.card}>
-                {/* Template Header */}
-                <View style={styles.templateHeader}>
-                  {template.localImage ? (
-                    <Image
-                      source={template.localImage}
-                      style={styles.templateImage}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
-                  ) : template.image?.uri ? (
-                    <Image
-                      source={{ uri: template.image.uri }}
-                      style={styles.templateImage}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
-                  ) : (
-                    <View
-                      style={[styles.templateIcon, { backgroundColor: template.tagColor + '20' }]}
-                    >
-                      <DumbbellIcon />
-                    </View>
-                  )}
-                  <View style={styles.templateInfo}>
-                    <Text style={styles.templateName}>{template.name}</Text>
-                    <Text style={styles.templateMeta}>
-                      {formatTemplateDuration(estimateTemplateDuration(template))} •{' '}
-                      {getTemplateTotalSets(template)} {t('workoutDetails.sets').toLowerCase()} •{' '}
-                      {template.exercises.length} {t('workoutDetails.exercises').toLowerCase()}
-                    </Text>
-                  </View>
-                </View>
-
-                {template.description && (
-                  <>
-                    <View style={styles.cardDivider} />
-                    <Text style={styles.templateDescription}>{template.description}</Text>
-                  </>
-                )}
-
-                <View style={styles.cardDivider} />
-
-                {/* Exercise List */}
-                <View style={styles.exerciseList}>
-                  {template.exercises.map((ex, index) => (
-                    <View key={ex.id}>
-                      <View style={styles.exerciseRow}>
-                        <Pressable
-                          onPress={
-                            ex.gifUrl || ex.thumbnailUrl
-                              ? () => {
-                                  withLock(() => {
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                    prefetchExerciseGif(ex.exerciseId);
-                                    router.push(`/exercise/${ex.exerciseId}`);
-                                  });
-                                }
-                              : undefined
-                          }
-                          disabled={!ex.gifUrl && !ex.thumbnailUrl}
-                        >
-                          <ExerciseImage
-                            gifUrl={ex.gifUrl}
-                            thumbnailUrl={ex.thumbnailUrl}
-                            size={46}
-                            borderRadius={8}
-                          />
-                        </Pressable>
-                        <View
-                          style={{ flex: 1, justifyContent: 'center' }}
-                          pointerEvents="box-none"
-                        >
-                          <Text
-                            style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
-                            onPress={
-                              ex.gifUrl || ex.thumbnailUrl
-                                ? () => {
-                                    withLock(() => {
-                                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                      prefetchExerciseGif(ex.exerciseId);
-                                      router.push(`/exercise/${ex.exerciseId}`);
-                                    });
-                                  }
-                                : undefined
-                            }
-                          >
-                            {resolveExerciseDisplayName(ex.exerciseId, ex.exerciseName)}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {index < template.exercises.length - 1 && (
-                        <View style={styles.exerciseDivider} />
-                      )}
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ) : (
-              <View style={styles.card}>
-                <View style={styles.noTemplateContainer}>
-                  <View style={styles.noTemplateIcon}>
-                    <Ionicons name="barbell-outline" size={32} color={colors.textTertiary} />
-                  </View>
-                  <Text style={styles.noTemplateTitle}>{t('workoutPreview.templateNotFound')}</Text>
-                  <Text style={styles.noTemplateText}>
-                    {t('workoutPreview.templateNotFoundText')}
-                  </Text>
-                </View>
-              </View>
-            )}
-          </>
-        )}
-
-        {/* Delete Workout Button */}
+        {/* Delete (kept from previous behaviour) */}
         <Pressable
           style={styles.deleteButton}
           onPress={() => {
@@ -519,275 +599,195 @@ export default function WorkoutPreviewScreen() {
           <Text style={styles.deleteButtonText}>{t('workoutPreview.deleteWorkout')}</Text>
         </Pressable>
 
-        <View style={styles.bottomSpacer} />
+        <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* Start Workout Button */}
-      <View style={styles.bottomBar}>
-        <Pressable
-          style={styles.startButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            handleStartWorkout();
-          }}
-        >
-          <Text style={styles.startButtonText}>{t('workoutPreview.startWorkout')}</Text>
-        </Pressable>
-      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.surfaceSecondary,
-  },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-  backButton: {
+  headerRight: { flexDirection: 'row', gap: 8 },
+  circleIconBtn: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.07)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  headerTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
-    color: colors.text,
-  },
-  editButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  editButtonText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.primary,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textTertiary,
-  },
-  emptySubtext: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textTertiary,
-    marginTop: spacing.xs,
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-  },
-  card: {
-    ...cardStyle,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  workoutInfoCard: {
-    marginTop: spacing.md,
-  },
-  workoutHeader: {
-    gap: spacing.xs,
-  },
-  templateBadge: {
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 8 },
+  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyText: { fontFamily: fonts.medium, fontSize: 16, color: '#999' },
+  emptySubtext: { fontFamily: fonts.regular, fontSize: 13, color: '#bbb', marginTop: 6 },
+
+  heroRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: spacing.xs,
-    marginBottom: spacing.xs,
+    gap: 16,
+    marginBottom: 18,
   },
-  colourDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  heroImage: {
+    width: 110,
+    height: 130,
+    borderRadius: 16,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    marginLeft: 4,
+    transform: [{ rotate: '-2.5deg' }],
   },
-  templateBadgeText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.xs,
-    letterSpacing: 0.5,
-  },
-  titleRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  titleDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  workoutTitle: {
+  heroText: { flex: 1, paddingTop: 4 },
+  heroTitle: {
     fontFamily: fonts.bold,
-    fontSize: fontSize.xl,
-    color: colors.text,
+    fontSize: 24,
+    color: '#000',
+    marginBottom: 6,
   },
-  workoutDescription: {
+  heroDescription: {
     fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
   },
-  cardDivider: {
-    ...dividerStyle,
-    marginVertical: spacing.sm,
-    marginHorizontal: -spacing.sm,
-    marginLeft: 0,
-    marginRight: 0,
-  },
-  scheduleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  scheduleLabel: {
-    flex: 1,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  scheduleValue: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-  },
-  sectionTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  templateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  templateIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  templateInfo: {
-    flex: 1,
-  },
-  templateName: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.text,
-  },
-  templateMeta: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  templateDescription: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-  },
-  exerciseList: {
-    gap: spacing.xs,
-  },
-  templateImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-  },
-  exerciseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: spacing.sm,
-  },
-  exerciseName: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.sm,
-    color: colors.primary,
-  },
-  exerciseDivider: {
-    height: 1,
-    backgroundColor: 'rgba(217, 217, 217, 0.15)',
-  },
-  noTemplateContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  noTemplateIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  noTemplateTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  noTemplateText: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-    lineHeight: 20,
-  },
-  bottomSpacer: {
-    height: 100,
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    paddingBottom: spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-  },
-  startButton: {
-    backgroundColor: colors.primary,
+
+  startPill: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
     paddingVertical: 16,
-    borderRadius: 30,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.07)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 18,
   },
-  startButtonText: {
+  startPillText: { fontFamily: fonts.semiBold, fontSize: 16, color: '#000' },
+
+  listCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  listHandle: {
+    alignSelf: 'center',
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E5E5',
+    marginBottom: 12,
+  },
+  exRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 14 },
+  exThumb: { width: 56, height: 56, borderRadius: 10, overflow: 'hidden' },
+  exThumbPlaceholder: { width: 56, height: 56, borderRadius: 10 },
+  exInfo: { flex: 1 },
+  exNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  exName: { fontFamily: fonts.semiBold, fontSize: 16, color: '#000' },
+  exSub: { fontFamily: fonts.regular, fontSize: 12, color: '#999', marginTop: 2 },
+  exDivider: { height: 1, backgroundColor: '#F0F0F0' },
+  supersetStripe: { width: 3, alignSelf: 'stretch', borderRadius: 2 },
+  supersetBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  placeholderBlock: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    gap: 8,
+  },
+  placeholderText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    lineHeight: 18,
+  },
+  freeTextBlock: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    gap: 10,
+  },
+  freeTextLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: 'rgba(0,0,0,0.35)',
+    letterSpacing: 1,
+  },
+  freeTextContent: {
     fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.textInverse,
+    fontSize: 16,
+    color: '#000',
+    lineHeight: 24,
+    letterSpacing: -0.2,
   },
-  deleteButton: {
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-  deleteButtonText: {
+
+  cardioHint: {
     fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.error,
+    fontSize: 13,
+    color: 'rgba(0,0,0,0.5)',
+    letterSpacing: -0.2,
+    paddingBottom: 4,
   },
+  cardioIconBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardioCheckCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(0,0,0,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  cardioCheckCircleSelected: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  cardioCheckCircleLocked: {
+    borderColor: 'rgba(0,0,0,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.04)',
+  },
+  cardioRowLocked: {
+    opacity: 0.35,
+  },
+  startPillDisabled: {
+    opacity: 0.4,
+  },
+
+  deleteButton: { paddingVertical: 16, alignItems: 'center', marginTop: 20 },
+  deleteButtonText: { fontFamily: fonts.medium, fontSize: 14, color: '#E53935' },
 });

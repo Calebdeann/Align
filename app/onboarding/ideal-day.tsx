@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-na
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { fonts, spacing } from '@/constants/theme';
-import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 import {
   OnboardingBackButton,
   OnboardingContinueButton,
@@ -27,13 +27,13 @@ const OPTIONS = [
   },
   {
     id: 'balanced',
-    label: 'Balanced work\nhard, rest too',
+    label: 'Work hard,\nplay hard',
     image: require('../../assets/Onboarding Assets/Onboarding P7/BalancedWorkHard.png'),
     rotation: '-1.5deg',
   },
   {
     id: 'gentle',
-    label: 'Gentle reset,\nstart fresh',
+    label: 'Slow but\nproductive',
     image: require('../../assets/Onboarding Assets/Onboarding P7/GentleReset.png'),
     rotation: '2deg',
   },
@@ -44,25 +44,30 @@ const CARD_GAP = 12;
 const ROW_GAP = 20;
 
 export default function IdealDayScreen() {
-  const { isNavigating, withLock } = useNavigationLock();
+  const setAndSave = useOnboardingStore((s) => s.setAndSave);
+  const savedIdealDay = useOnboardingStore((s) => s.idealDay);
   const { width: screenWidth } = useWindowDimensions();
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(savedIdealDay);
+  const [isSaving, setIsSaving] = useState(false);
 
   const cardWidth = (screenWidth - H_PAD * 2 - CARD_GAP) / 2;
   const cardHeight = Math.round(cardWidth * (241 / 283));
   const cardRadius = Math.round(cardWidth * (40 / 283));
 
   function handleSelect(id: string) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     setSelected((prev) => (prev === id ? null : id));
   }
 
-  function handleContinue() {
-    if (!selected) return;
-    withLock(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  async function handleContinue() {
+    if (!selected || isSaving) return;
+    setIsSaving(true);
+    try {
+      await setAndSave('idealDay', selected);
+    } finally {
+      setIsSaving(false);
       router.push('/onboarding/challenge');
-    });
+    }
   }
 
   return (
@@ -123,7 +128,7 @@ export default function IdealDayScreen() {
       <View style={{ flex: 1 }} />
 
       <View style={styles.bottomSection}>
-        <OnboardingContinueButton onPress={handleContinue} disabled={!selected || isNavigating} />
+        <OnboardingContinueButton onPress={handleContinue} disabled={!selected || isSaving} />
       </View>
     </SafeAreaView>
   );

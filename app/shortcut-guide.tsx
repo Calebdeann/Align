@@ -32,7 +32,7 @@ export default function ShortcutGuideScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
           style={styles.backButton}

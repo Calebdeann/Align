@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, fonts, fontSize, cardStyle, spacing } from '@/constants/theme';
+import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { getSimplifiedMuscleI18nKey } from '@/constants/muscleGroups';
 import type { BodyGraphMuscleData } from '@/services/api/recovery';
 
@@ -75,8 +75,7 @@ export default function MuscleBarList({
 
 const styles = StyleSheet.create({
   card: {
-    ...cardStyle,
-    padding: 20,
+    paddingVertical: 20,
     gap: 12,
   },
   headerRow: {
@@ -86,14 +85,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   heading: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.text,
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    color: '#000000',
+    letterSpacing: -0.4,
   },
   setsHeading: {
     fontFamily: fonts.semiBold,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
+    fontSize: 12,
+    color: '#888888',
   },
   row: {
     flexDirection: 'row',
@@ -103,14 +103,14 @@ const styles = StyleSheet.create({
   muscleName: {
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
-    color: colors.text,
+    color: '#000000',
     width: 88,
   },
   barTrack: {
     flex: 1,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.surface,
+    backgroundColor: '#EBEBEB',
     flexDirection: 'row',
     overflow: 'hidden',
   },
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   setCount: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.sm,
-    color: colors.text,
+    color: '#000000',
     width: 28,
     textAlign: 'right',
   },

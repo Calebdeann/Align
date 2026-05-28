@@ -40,6 +40,8 @@ export interface Exercise {
   exercise_type?: string;
   keywords?: string[]; // Search aliases (e.g., "lat pulldown" for "cable pulldown (pro lat bar)")
   popularity?: number; // 0 = default, 1-5 = popular (used as search ranking tiebreaker)
+  // Hardcoded coaching note shown as the notes-field placeholder in the active workout tracker.
+  default_note?: string;
   // Computed property for backward compatibility
   muscle?: string;
   // Custom exercise flag

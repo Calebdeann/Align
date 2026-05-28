@@ -82,7 +82,7 @@
     "ft": "ft"
   },
   "welcome": {
-    "align": "SNATCHED",
+    "align": "IT GIRL",
     "forTheGirls": "ДЛЯ ДЕВЧОНОК",
     "getStarted": "Начать",
     "alreadyHaveAccount": "Уже есть аккаунт? ",
@@ -117,7 +117,7 @@
   },
   "onboarding": {
     "intro": {
-      "slide1Title": "Добро пожаловать в Snatched!",
+      "slide1Title": "Добро пожаловать в It Girl!",
       "slide1Subtitle": "Легко записывай тренировки, отслеживая каждый подход",
       "slide2Title": "Отслеживай прогресс",
       "slide2Subtitle": "Следи за своим прогрессом и результатами с нашей подробной аналитикой",
@@ -178,13 +178,13 @@
       "confidence": "Не хватает уверенности"
     },
     "obstacleResponse": {
-      "scheduleTitle": "С Snatched легко\nпланировать тренировки",
+      "scheduleTitle": "С It Girl легко\nпланировать тренировки",
       "scheduleSubtitle": "Твоя неделя, твои правила!",
-      "knowledgeTitle": "С Snatched легко\nзнать, что делать",
+      "knowledgeTitle": "С It Girl легко\nзнать, что делать",
       "knowledgeSubtitle": "Готовые профессиональные шаблоны тренировок!",
-      "motivationTitle": "С Snatched легко\nоставаться мотивированной",
+      "motivationTitle": "С It Girl легко\nоставаться мотивированной",
       "motivationSubtitle": "Отслеживай прогресс и смотри, как ты растёшь!",
-      "confidenceTitle": "С Snatched легко\nтренироваться уверенно",
+      "confidenceTitle": "С It Girl легко\nтренироваться уверенно",
       "confidenceSubtitle": "Каждое упражнение объяснено шаг за шагом!"
     },
     "triedApps": {
@@ -193,12 +193,12 @@
       "no": "Нет"
     },
     "goalComparison": {
-      "title": "{{action}} в два раза больше\nвеса с Snatched\nчем без него",
+      "title": "{{action}} в два раза больше\nвеса с It Girl\nчем без него",
       "lose": "Сбрось",
       "gain": "Набери",
-      "withoutAlyne": "Без\nSnatched",
-      "withAlyne": "С\nSnatched",
-      "comparisonText": "Snatched упрощает процесс и помогает\nтебе не сдаваться"
+      "withoutIt Girl": "Без\nIt Girl",
+      "withIt Girl": "С\nIt Girl",
+      "comparisonText": "It Girl упрощает процесс и помогает\nтебе не сдаваться"
     },
     "goalReality": {
       "realisticTarget": "{{diff}}{{unit}}, это реальная цель. У тебя получится!"
@@ -261,8 +261,8 @@
       "title": "Помоги нам расти!",
       "rating": "4.8",
       "appStoreRating": "Рейтинг в App Store",
-      "sectionTitle": "Snatched создан для\nтаких, как ты",
-      "usersLove": "Пользователи ОБОЖАЮТ Snatched!",
+      "sectionTitle": "It Girl создан для\nтаких, как ты",
+      "usersLove": "Пользователи ОБОЖАЮТ It Girl!",
       "love": "ОБОЖАЮТ",
       "review1Author": "Ellie Sullivan",
       "review1Text": "Я сбросила 7 кг за 2 месяца! Я уже думала начать принимать препараты, но решила попробовать это приложение, и оно помогло :)",
@@ -297,11 +297,11 @@
     "thankYou": {
       "title": "Спасибо за\nдоверие!",
       "percentage": "94% наших пользователей",
-      "description": "считают, что Snatched удобен в использовании\nи помогает не сбиваться с курса"
+      "description": "считают, что It Girl удобен в использовании\nи помогает не сбиваться с курса"
     },
     "reminder": {
       "question": "Хочешь получать напоминания о тренировках?",
-      "notificationApp": "Snatched",
+      "notificationApp": "It Girl",
       "notificationTime": "2ч назад",
       "notificationTitle": "Сегодня тренировка: Ягодицы",
       "notificationBody": "Ягодичный мост, Румынская тяга, Болгарские приседания",
@@ -346,9 +346,9 @@
     "dateHeaderToday": "Сегодня, {{dayName}}, {{month}} {{day}}",
     "dateHeader": "{{dayName}}, {{month}} {{day}}",
     "founderGreeting": "Привет, {{name}}!",
-    "founderBody1": "Мы Caleb и Cass, и мы создали Snatched. Спасибо огромное, что пробуешь наше приложение!",
+    "founderBody1": "Мы Caleb и Cass, и мы создали It Girl. Спасибо огромное, что пробуешь наше приложение!",
     "founderBody2": "Наша миссия, создать лучший женский трекер тренировок в мире, поэтому мы будем очень рады любой обратной связи!",
-    "founderBody3": "Пиши нам на aligntracker@gmail.com"
+    "founderBody3": "Пиши нам на itgirlsupport@gmail.com"
   },
   "workout": {
     "title": "Тренировка",
@@ -558,7 +558,7 @@
     "noTemplate": "Без шаблона",
     "startWithoutTemplate": "Начать без шаблона",
     "yourTemplates": "Твои шаблоны",
-    "alignTemplates": "Шаблоны Snatched",
+    "alignTemplates": "Шаблоны It Girl",
     "colour": "Цвет",
     "dateAndTime": "Дата и время",
     "date": "Дата",

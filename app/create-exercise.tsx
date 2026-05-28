@@ -159,7 +159,7 @@ export default function CreateExerciseScreen() {
   }
 
   function handleImagePress() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Alert.alert(t('createExercise.addAsset'), '', [
       { text: t('createExercise.chooseFromLibrary'), onPress: handleChooseFromLibrary },
       { text: t('createExercise.takePhoto'), onPress: handleTakePhoto },
@@ -216,7 +216,7 @@ export default function CreateExerciseScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
           style={styles.backButton}
@@ -267,6 +267,7 @@ export default function CreateExerciseScreen() {
             <Text style={styles.fieldLabel}>{t('createExercise.exerciseName')}</Text>
             <View style={styles.fieldInputRow}>
               <TextInput
+                autoCorrect={false}
                 style={styles.fieldInput}
                 value={name}
                 onChangeText={setName}
@@ -281,7 +282,7 @@ export default function CreateExerciseScreen() {
           <Pressable
             style={styles.fieldContainer}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setShowEquipmentModal(true);
             }}
           >
@@ -298,7 +299,7 @@ export default function CreateExerciseScreen() {
           <Pressable
             style={styles.fieldContainer}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setShowPrimaryMuscleModal(true);
             }}
           >
@@ -315,7 +316,7 @@ export default function CreateExerciseScreen() {
           <Pressable
             style={styles.fieldContainer}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setShowOtherMusclesModal(true);
             }}
           >

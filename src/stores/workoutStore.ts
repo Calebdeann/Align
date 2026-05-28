@@ -4,14 +4,38 @@ import { createUserNamespacedStorage } from '@/lib/userNamespacedStorage';
 import { logger } from '@/utils/logger';
 import {
   saveScheduledWorkoutToBackend,
+  saveScheduledWorkoutsBatch,
   updateScheduledWorkoutInBackend,
   deleteScheduledWorkoutFromBackend,
+  deleteScheduledWorkoutsBatch,
   getScheduledWorkoutsFromBackend,
 } from '@/services/api/scheduledWorkouts';
+import { getProgram, getProgramWorkout, WORKOUT_TYPE_COLORS } from '@/data/programs';
+import { isCardioExerciseId } from '@/constants/cardioOptions';
 
 // UUID v4 format check - local IDs like "workout_123_abc" are not valid UUIDs
 const isValidUuid = (id: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+// Prevents concurrent seedPlanWorkouts() calls for the same plan from double-seeding.
+const _seedingInProgress = new Set<string>();
+
+// Display name for a scheduled workout. Program-seeded workouts pull their
+// title live from program data unless the user has explicitly renamed them
+// (titleCustomized=true). This makes program renames (e.g. "Lower 2" →
+// "Lower (Session 2)") propagate to already-scheduled rows without a re-seed.
+export function getScheduledWorkoutDisplayName(sw: {
+  name: string;
+  programWorkoutId?: string;
+  titleCustomized?: boolean;
+}): string {
+  if (sw.titleCustomized) return sw.name;
+  if (sw.programWorkoutId) {
+    const pw = getProgramWorkout(sw.programWorkoutId);
+    if (pw?.title) return pw.title;
+  }
+  return sw.name;
+}
 
 export interface WorkoutImage {
   type: 'template' | 'camera' | 'gallery';
@@ -25,6 +49,10 @@ export interface ActiveExerciseSet {
   previous: string;
   kg: string;
   reps: string;
+  // Cardio-only fields. When `isCardioExerciseId(exercise.id)` is true,
+  // the active-workout row UI uses these instead of kg/reps.
+  difficulty?: string;
+  durationMinutes?: string;
   completed: boolean;
   setType?: string;
   rpe: number | null;
@@ -104,6 +132,13 @@ export interface ScheduledWorkout {
   excludedDates?: string[]; // Array of YYYY-MM-DD dates to skip for recurring workouts
   endDate?: string; // YYYY-MM-DD - if set, no occurrences generated after this date
   templateId?: string; // Optional link to a workout template
+  planId?: string; // Plan this workout belongs to (e.g. 'hourglass'); set when seeded from a program
+  programWorkoutId?: string; // Stable id from the program data (e.g. 'hourglass-w1-d1-main')
+  // True once the user has explicitly renamed this workout. Until then,
+  // program-seeded workouts pull their display title live from program data
+  // so renames in the source (e.g. "Lower 2" → "Lower (Session 2)") propagate
+  // without re-seeding. Absent = treat as false.
+  titleCustomized?: boolean;
 }
 
 // Cached completed workout from Supabase (for instant loading)
@@ -117,7 +152,11 @@ export interface CachedCompletedWorkout {
   totalSets: number;
   imageType: string | null;
   imageUri: string | null;
+  imageAspectRatio?: number | null;
   imageTemplateId: string | null;
+  imageAudience?: 'friends' | 'everyone' | null;
+  programWorkoutId?: string | null;
+  planId?: string | null;
 }
 
 interface WorkoutStore {
@@ -141,12 +180,52 @@ interface WorkoutStore {
   clearAllScheduledWorkouts: () => void;
   toggleWorkoutCompletion: (workoutId: string, dateKey: string) => void;
   isWorkoutCompleted: (workoutId: string, dateKey: string) => boolean;
-  getWorkoutsForDate: (date: string, userId: string | null) => ScheduledWorkout[];
+  getWorkoutsForDate: (
+    date: string,
+    userId: string | null,
+    options?: { includePlanWorkouts?: boolean }
+  ) => ScheduledWorkout[];
   getWorkoutsForMonth: (
     year: number,
     month: number,
-    userId: string | null
+    userId: string | null,
+    options?: { includePlanWorkouts?: boolean }
   ) => Map<number, ScheduledWorkout[]>;
+  // Plan workout seeding
+  seedPlanWorkouts: (
+    planId: string,
+    startDateKey: string,
+    userId: string,
+    weekdays?: number[],
+    startProgramDayIdx?: number,
+    // Optional per-weekday → 1-indexed cycle-position override. Keys are
+    // weekday names ("Monday", "Tuesday", ...). When provided, the seeder
+    // distributes each cycle of program-days according to this mapping
+    // instead of the default sorted-positional order.
+    dayAssignments?: Record<string, number> | null
+  ) => void;
+  getPlanWorkoutSeedStatus: (planId: string, userId: string) => { seeded: boolean; count: number };
+  // Re-flow plan workouts to a new weekday cadence. Keeps past + today's seeded
+  // workouts in place; deletes future plan workouts and re-seeds from tomorrow,
+  // continuing the program at the next unseeded day index.
+  reflowPlanWorkouts: (
+    planId: string,
+    userId: string,
+    newWeekdays: number[],
+    // Optional new per-weekday → 1-indexed cycle-position override. See
+    // seedPlanWorkouts above for semantics.
+    dayAssignments?: Record<string, number> | null
+  ) => { kept: number; rescheduled: number };
+  // Remove all future (unstarted) workouts for a plan — called when the user switches plans
+  clearFuturePlanWorkouts: (planId: string, userId: string) => void;
+  // Restart a plan from today: deletes all future/today uncompleted workouts and
+  // re-seeds W1D1 onto today (using the user's current weekday cadence). Past
+  // completed workouts are preserved. Lets the user collapse a gap that formed
+  // from a stale seeding cursor.
+  resyncPlanFromToday: (planId: string, userId: string, weekdays: number[]) => void;
+  // Remove today+future plan workouts that don't belong to the user's CURRENT plan.
+  // Skips already-completed entries. Self-heals stale data left from earlier plan switches.
+  clearStalePlanWorkouts: (userId: string, currentPlanId: string) => void;
   // Cascade template edits (name, color, image) to all scheduled workouts referencing that template
   updateScheduledWorkoutsForTemplate: (
     templateId: string,
@@ -174,6 +253,7 @@ interface WorkoutStore {
   cachedCompletedWorkoutsLastFetch: string | null; // ISO timestamp
   setCachedCompletedWorkouts: (workouts: CachedCompletedWorkout[]) => void;
   addCachedCompletedWorkout: (workout: CachedCompletedWorkout) => void;
+  removeCachedCompletedWorkout: (workoutId: string) => void;
   getCachedCompletedWorkoutsForDate: (
     dateKey: string,
     userId: string | null
@@ -193,8 +273,16 @@ interface WorkoutStore {
       thumbnailUrl?: string;
       notes?: string;
       is_custom?: boolean;
-      sets: { targetWeight?: number; targetReps?: number; setType?: string }[];
+      sets: {
+        targetWeight?: number;
+        targetReps?: number;
+        setType?: string;
+        // Cardio-only initial values (used when isCardioExerciseId(exerciseId) is true)
+        targetDifficulty?: number;
+        targetDurationMinutes?: number;
+      }[];
       restTimerSeconds: number;
+      supersetId?: number | null;
     }[],
     userId: string | null,
     scheduledWorkoutId?: string
@@ -276,6 +364,33 @@ const workoutOccursOnDate = (workout: ScheduledWorkout, checkDate: Date): boolea
   return false;
 };
 
+const DAY_NAME_TO_WEEKDAY: Record<string, number> = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+};
+
+const WEEKDAY_TO_DAY_NAME: string[] = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
+
+export function workoutDaysToWeekdays(days: string[]): number[] {
+  return days
+    .map((d) => DAY_NAME_TO_WEEKDAY[d] ?? -1)
+    .filter((n) => n >= 0)
+    .sort((a, b) => a - b);
+}
+
 export const useWorkoutStore = create<WorkoutStore>()(
   persist(
     (set, get) => ({
@@ -327,21 +442,31 @@ export const useWorkoutStore = create<WorkoutStore>()(
           },
           notes: te.notes || '',
           restTimerSeconds: te.restTimerSeconds,
-          sets: te.sets.map((s, index) => ({
-            id: `set_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
-            previous:
-              s.targetWeight && s.targetReps ? `${s.targetWeight}kg x ${s.targetReps}` : '-',
-            kg: s.targetWeight?.toString() || '',
-            reps: s.targetReps?.toString() || '',
-            completed: false,
-            setType: s.setType || 'normal',
-            rpe: null,
-          })),
-          previousSets: te.sets.map((s) => ({
-            weightKg: s.targetWeight || null,
-            reps: s.targetReps || null,
-          })),
-          supersetId: null,
+          sets: te.sets.map((s, index) => {
+            const isCardio = isCardioExerciseId(te.exerciseId);
+            return {
+              id: `set_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
+              // "Previous" always starts as '-' on first render; the
+              // history-fetch effect in active-workout populates it with
+              // real prior-workout values when the user has done this
+              // exercise before. Showing template targets here would
+              // misrepresent unfinished plans as historical performance.
+              previous: '-',
+              kg: isCardio ? '' : s.targetWeight?.toString() || '',
+              reps: isCardio ? '' : s.targetReps?.toString() || '',
+              difficulty: isCardio ? (s.targetDifficulty?.toString() ?? '') : undefined,
+              durationMinutes: isCardio ? (s.targetDurationMinutes?.toString() ?? '') : undefined,
+              completed: false,
+              setType: s.setType || 'normal',
+              rpe: null,
+            };
+          }),
+          // `previousSets` is the source of truth for the "Previous" column
+          // *and* the auto-fill-on-complete behavior. Start null so neither
+          // path can echo back the template's plan as if it were history;
+          // the history fetcher populates this with real data when present.
+          previousSets: null,
+          supersetId: te.supersetId ?? null,
         }));
 
         set({
@@ -689,26 +814,30 @@ export const useWorkoutStore = create<WorkoutStore>()(
         return workout?.completedDates.includes(dateKey) ?? false;
       },
 
-      getWorkoutsForDate: (dateKey, userId) => {
+      getWorkoutsForDate: (dateKey, userId, options) => {
         const { scheduledWorkouts } = get();
         const checkDate = new Date(dateKey);
-        // Filter by userId first, then check if workout occurs on date
-        return scheduledWorkouts.filter(
-          (workout) => workout.userId === userId && workoutOccursOnDate(workout, checkDate)
-        );
+        const includePlan = options?.includePlanWorkouts ?? true;
+        return scheduledWorkouts.filter((workout) => {
+          if (workout.userId !== userId) return false;
+          if (!includePlan && workout.planId) return false;
+          return workoutOccursOnDate(workout, checkDate);
+        });
       },
 
-      getWorkoutsForMonth: (year, month, userId) => {
+      getWorkoutsForMonth: (year, month, userId, options) => {
         const { scheduledWorkouts } = get();
         const workoutsByDay = new Map<number, ScheduledWorkout[]>();
+        const includePlan = options?.includePlanWorkouts ?? true;
 
-        // Filter workouts by userId first
-        const userWorkouts = scheduledWorkouts.filter((w) => w.userId === userId);
+        const userWorkouts = scheduledWorkouts.filter((w) => {
+          if (w.userId !== userId) return false;
+          if (!includePlan && w.planId) return false;
+          return true;
+        });
 
-        // Get number of days in the month
         const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        // Check each day of the month
         for (let day = 1; day <= daysInMonth; day++) {
           const checkDate = new Date(year, month, day);
           const workoutsForDay = userWorkouts.filter((workout) =>
@@ -720,6 +849,273 @@ export const useWorkoutStore = create<WorkoutStore>()(
         }
 
         return workoutsByDay;
+      },
+
+      seedPlanWorkouts: (
+        planId,
+        startDateKey,
+        userId,
+        weekdays,
+        startProgramDayIdx,
+        dayAssignments
+      ) => {
+        const lockKey = `${userId}:${planId}`;
+        if (_seedingInProgress.has(lockKey)) return;
+        _seedingInProgress.add(lockKey);
+        try {
+          const program = getProgram(planId);
+          if (!program) return;
+
+          // Only dedupe against FUTURE workouts for THIS plan. Past completed
+          // workouts share the same program-workout-id (e.g. `hourglass-w1-d1-main`)
+          // and would otherwise block re-seeding for a user who's done these days
+          // before and switched plans away then back.
+          const todayKey = formatDateKey(new Date());
+          const existing = get().scheduledWorkouts;
+          const existingProgramIds = new Set(
+            existing
+              .filter(
+                (w) =>
+                  w.userId === userId &&
+                  w.planId === planId &&
+                  w.date >= todayKey &&
+                  !!w.programWorkoutId
+              )
+              .map((w) => w.programWorkoutId as string)
+          );
+
+          // SLOT-BASED SEEDING (see project_workout_plan_stretch.md memory):
+          //   Each weekday maps to a fixed plan dayInWeek slot. Plan runs in
+          //   exactly program.durationWeeks calendar weeks. Slots not picked by
+          //   the user are skipped permanently.
+          //
+          // Build weekday-number → 1-indexed dayInWeek slot. When dayAssignments
+          // is provided, honor it. Otherwise default to sorted-positional from
+          // `weekdays` (Mon=slot1, Tue=slot2, …), clipped to program.daysPerWeek.
+          const userWeekdays = weekdays && weekdays.length > 0 ? weekdays : program.defaultWeekdays;
+          const slotByWeekday = new Map<number, number>();
+          if (dayAssignments && Object.keys(dayAssignments).length > 0) {
+            for (const [name, slot] of Object.entries(dayAssignments)) {
+              const wd = DAY_NAME_TO_WEEKDAY[name];
+              if (wd === undefined) continue;
+              if (typeof slot !== 'number') continue;
+              if (slot < 1 || slot > program.daysPerWeek) continue;
+              slotByWeekday.set(wd, slot);
+            }
+          } else {
+            const sorted = [...userWeekdays].sort((a, b) => a - b).slice(0, program.daysPerWeek);
+            sorted.forEach((wd, i) => slotByWeekday.set(wd, i + 1));
+          }
+          if (slotByWeekday.size === 0) return;
+
+          // Determine which program week startDateKey lives in. If the user
+          // already has plan workouts seeded for THIS plan, find the earliest
+          // one — that's the plan's anchor. Otherwise treat startDateKey as
+          // program week 1.
+          const allPlanWorkouts = existing.filter(
+            (w) => w.userId === userId && w.planId === planId && !!w.programWorkoutId
+          );
+          let planAnchorKey = startDateKey;
+          for (const w of allPlanWorkouts) {
+            if (w.date < planAnchorKey) planAnchorKey = w.date;
+          }
+          const anchorMs = new Date(planAnchorKey + 'T00:00:00').getTime();
+          const startMs = new Date(startDateKey + 'T00:00:00').getTime();
+          const offsetDays = Math.max(0, Math.round((startMs - anchorMs) / 86400000));
+          const startWeekIdx = Math.floor(offsetDays / 7) + 1; // 1-indexed
+          const remainingWeeks = program.durationWeeks - (startWeekIdx - 1);
+          if (remainingWeeks <= 0) return;
+          const totalDays = remainingWeeks * 7;
+
+          const toAdd: ScheduledWorkout[] = [];
+          const cursor = new Date(startDateKey + 'T00:00:00');
+          // Index program.days by (week, dayInWeek) once for O(1) lookups.
+          const programDayByKey = new Map<string, (typeof program.days)[number]>();
+          for (const pd of program.days) {
+            programDayByKey.set(`${pd.week}-${pd.dayInWeek}`, pd);
+          }
+
+          for (let offset = 0; offset < totalDays; offset++) {
+            const d = new Date(cursor);
+            d.setDate(d.getDate() + offset);
+            const weekdayNum = d.getDay();
+            const slot = slotByWeekday.get(weekdayNum);
+            if (slot === undefined) continue;
+            const programWeek = startWeekIdx + Math.floor(offset / 7);
+            if (programWeek > program.durationWeeks) break;
+            const programDay = programDayByKey.get(`${programWeek}-${slot}`);
+            if (!programDay) continue;
+            const dateKey = formatDateKey(d);
+            for (const pw of programDay.workouts) {
+              if (existingProgramIds.has(pw.id)) continue;
+              const color = WORKOUT_TYPE_COLORS[pw.type] ?? '#CCCCCC';
+              toAdd.push({
+                id: generateId(),
+                userId,
+                name: pw.title,
+                description: undefined,
+                tagId: pw.type,
+                tagColor: color,
+                templateName: null,
+                date: dateKey,
+                repeat: { type: 'never' },
+                createdAt: new Date().toISOString(),
+                completedDates: [],
+                planId,
+                programWorkoutId: pw.id,
+              });
+            }
+          }
+
+          if (toAdd.length === 0) return;
+
+          set((state) => ({
+            scheduledWorkouts: [...state.scheduledWorkouts, ...toAdd],
+          }));
+
+          // Best-effort backend sync via single batch insert; failures tolerated
+          // (CLAUDE.md rule #9). Critical for performance: one round-trip + one
+          // `set` call instead of N — avoids the multi-second plan-switch freeze
+          // that hit users when seeding 50+ workouts.
+          saveScheduledWorkoutsBatch(toAdd)
+            .then((idMap) => {
+              if (idMap.size === 0) return;
+              set((state) => ({
+                scheduledWorkouts: state.scheduledWorkouts.map((sw) =>
+                  idMap.has(sw.id) ? { ...sw, id: idMap.get(sw.id)! } : sw
+                ),
+              }));
+            })
+            .catch(() => {});
+        } finally {
+          _seedingInProgress.delete(lockKey);
+        }
+      },
+
+      getPlanWorkoutSeedStatus: (planId, userId) => {
+        // Only count future + today workouts. Past completed workouts don't
+        // count as "seeded" because they don't represent what the user will see
+        // going forward — a user who switched plans away and back should be
+        // able to re-seed even if they have past completions for this plan.
+        const todayKey = formatDateKey(new Date());
+        const count = get().scheduledWorkouts.filter(
+          (w) => w.userId === userId && w.planId === planId && w.date >= todayKey
+        ).length;
+        return { seeded: count > 0, count };
+      },
+
+      reflowPlanWorkouts: (planId, userId, newWeekdays, dayAssignments) => {
+        const program = getProgram(planId);
+        if (!program) return { kept: 0, rescheduled: 0 };
+
+        // Slot-based reflow: delete future plan workouts and let seedPlanWorkouts
+        // re-seed from tomorrow. The seeder figures out the program-week offset
+        // from the EARLIEST remaining plan workout (the plan anchor stays put).
+        const todayKey = formatDateKey(new Date());
+        const planWorkouts = get().scheduledWorkouts.filter(
+          (w) => w.userId === userId && w.planId === planId && w.programWorkoutId
+        );
+
+        const futureWorkouts = planWorkouts.filter((w) => w.date > todayKey);
+        const futureIds = new Set(futureWorkouts.map((w) => w.id));
+
+        if (futureIds.size > 0) {
+          set((state) => ({
+            scheduledWorkouts: state.scheduledWorkouts.filter((w) => !futureIds.has(w.id)),
+          }));
+          for (const id of futureIds) {
+            deleteScheduledWorkoutFromBackend(id).catch(() => {});
+          }
+        }
+
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowKey = formatDateKey(tomorrow);
+
+        get().seedPlanWorkouts(planId, tomorrowKey, userId, newWeekdays, undefined, dayAssignments);
+
+        const kept = planWorkouts.length - futureWorkouts.length;
+        const rescheduled = futureWorkouts.length;
+        return { kept, rescheduled };
+      },
+
+      clearFuturePlanWorkouts: (planId, userId) => {
+        const todayKey = formatDateKey(new Date());
+        // Clear today + future plan workouts on a plan switch, but preserve any
+        // the user has already completed (don't undo today's completion just
+        // because they swapped plans afterward).
+        const toDelete = get().scheduledWorkouts.filter(
+          (w) =>
+            w.userId === userId &&
+            w.planId === planId &&
+            w.date >= todayKey &&
+            !w.completedDates.includes(w.date)
+        );
+        if (toDelete.length === 0) return;
+        const ids = new Set(toDelete.map((w) => w.id));
+        set((state) => ({
+          scheduledWorkouts: state.scheduledWorkouts.filter((w) => !ids.has(w.id)),
+        }));
+        // Single batch delete instead of N individual calls — same perf
+        // motivation as the seedPlanWorkouts batch insert above.
+        deleteScheduledWorkoutsBatch(Array.from(ids)).catch(() => {});
+      },
+
+      // Wipes today + future uncompleted plan workouts AND any past uncompleted
+      // workouts (so a stale W1D1 stuck on a future date can't block the dedupe).
+      // Then re-seeds the program from W1D1 onto today, walking forward on the
+      // user's chosen weekdays. Past *completed* workouts are preserved as
+      // history. Use this to collapse a gap created by an earlier reflow or
+      // partial seeding.
+      resyncPlanFromToday: (planId, userId, weekdays) => {
+        const todayKey = formatDateKey(new Date());
+
+        // Delete every uncompleted plan workout — past and future. We must drop
+        // future ones (they'd block re-seeding via the programWorkoutId dedupe);
+        // past uncompleted ones are stale and irrelevant to the new schedule.
+        const toDelete = get().scheduledWorkouts.filter(
+          (w) =>
+            w.userId === userId &&
+            w.planId === planId &&
+            !!w.programWorkoutId &&
+            !w.completedDates.includes(w.date)
+        );
+        if (toDelete.length > 0) {
+          const ids = new Set(toDelete.map((w) => w.id));
+          set((state) => ({
+            scheduledWorkouts: state.scheduledWorkouts.filter((w) => !ids.has(w.id)),
+          }));
+          deleteScheduledWorkoutsBatch(Array.from(ids)).catch(() => {});
+        }
+
+        // Re-seed from today at program day 0 (W1D1). seedPlanWorkouts itself
+        // dedupes by programWorkoutId for date >= today, but the wipe above
+        // cleared those; any past completions are date < today so untouched.
+        get().seedPlanWorkouts(planId, todayKey, userId, weekdays, 0);
+      },
+
+      clearStalePlanWorkouts: (userId, currentPlanId) => {
+        const todayKey = formatDateKey(new Date());
+        // Wipe any scheduled workout from a *different* plan than the user's
+        // current one — but only future/today and only if not yet completed.
+        // This catches data left over from earlier plan switches that didn't
+        // get fully cleaned up.
+        const toDelete = get().scheduledWorkouts.filter(
+          (w) =>
+            w.userId === userId &&
+            !!w.planId &&
+            w.planId !== currentPlanId &&
+            w.date >= todayKey &&
+            !w.completedDates.includes(w.date)
+        );
+        if (toDelete.length === 0) return;
+        const ids = new Set(toDelete.map((w) => w.id));
+        set((state) => ({
+          scheduledWorkouts: state.scheduledWorkouts.filter((w) => !ids.has(w.id)),
+        }));
+        // Single batch delete instead of N individual calls — same perf
+        // motivation as the seedPlanWorkouts batch insert above.
+        deleteScheduledWorkoutsBatch(Array.from(ids)).catch(() => {});
       },
 
       // Mark scheduled workouts as complete when a workout is saved
@@ -776,11 +1172,41 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
           // Get current local-only workouts (not yet synced to Supabase)
           const currentLocal = get().scheduledWorkouts;
-          const localOnly = currentLocal.filter((w) => !isValidUuid(w.id));
+
+          // Drop local workouts whose programWorkoutId is already covered by a backend entry.
+          // This prevents duplicates during the async window where local IDs haven't been
+          // replaced with UUIDs yet but the backend has already accepted the record.
+          const backendProgramIds = new Set(
+            backendWorkouts.map((w) => w.programWorkoutId).filter(Boolean)
+          );
+          const localOnly = currentLocal.filter(
+            (w) => !isValidUuid(w.id) && !backendProgramIds.has(w.programWorkoutId ?? '')
+          );
 
           if (backendWorkouts.length > 0 || localOnly.length > 0) {
-            // Backend workouts take precedence; keep local-only ones that aren't in backend
-            set({ scheduledWorkouts: [...backendWorkouts, ...localOnly] });
+            // Final safety: deduplicate merged list by programWorkoutId (backend wins).
+            // Collect dropped IDs so we can delete them from Supabase too.
+            const seenPwIds = new Set<string>();
+            const droppedIds: string[] = [];
+            const merged = [...backendWorkouts, ...localOnly].filter((w) => {
+              if (!w.programWorkoutId) return true;
+              if (seenPwIds.has(w.programWorkoutId)) {
+                if (isValidUuid(w.id)) droppedIds.push(w.id);
+                return false;
+              }
+              seenPwIds.add(w.programWorkoutId);
+              return true;
+            });
+            set({ scheduledWorkouts: merged });
+            // Clean up duplicate records from Supabase in the background.
+            for (const id of droppedIds) {
+              deleteScheduledWorkoutFromBackend(id).catch(() => {});
+            }
+            if (droppedIds.length > 0) {
+              logger.info(
+                `[WorkoutStore] Deleted ${droppedIds.length} duplicate plan workouts from backend`
+              );
+            }
           }
 
           // Upload any local-only workouts to Supabase
@@ -822,6 +1248,12 @@ export const useWorkoutStore = create<WorkoutStore>()(
         }));
       },
 
+      removeCachedCompletedWorkout: (workoutId) => {
+        set((state) => ({
+          cachedCompletedWorkouts: state.cachedCompletedWorkouts.filter((w) => w.id !== workoutId),
+        }));
+      },
+
       getCachedCompletedWorkoutsForDate: (dateKey, userId) => {
         const { cachedCompletedWorkouts } = get();
         return cachedCompletedWorkouts.filter((w) => {
@@ -850,6 +1282,24 @@ export const useWorkoutStore = create<WorkoutStore>()(
           useWorkoutStore.setState({
             activeWorkout: { ...state.activeWorkout, isMinimized: true },
           });
+        }
+
+        // One-time dedup: remove duplicate plan workouts by programWorkoutId.
+        // Keeps the UUID-based (backend-synced) record when both exist.
+        const seen = new Set<string>();
+        const deduped = [...state.scheduledWorkouts]
+          .sort((a, b) => (isValidUuid(a.id) ? -1 : 1) - (isValidUuid(b.id) ? -1 : 1))
+          .filter((w) => {
+            if (!w.programWorkoutId) return true;
+            if (seen.has(w.programWorkoutId)) return false;
+            seen.add(w.programWorkoutId);
+            return true;
+          });
+        if (deduped.length < state.scheduledWorkouts.length) {
+          useWorkoutStore.setState({ scheduledWorkouts: deduped });
+          logger.info(
+            `[WorkoutStore] Removed ${state.scheduledWorkouts.length - deduped.length} duplicate plan workouts on rehydration`
+          );
         }
 
         // Wait for template store to rehydrate before checking for orphans.

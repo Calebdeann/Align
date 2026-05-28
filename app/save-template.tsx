@@ -287,7 +287,7 @@ export default function SaveTemplateScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
           style={styles.backButton}
@@ -319,7 +319,7 @@ export default function SaveTemplateScreen() {
             <Pressable
               style={[styles.imagePlaceholder, selectedImage && styles.imagePlaceholderFilled]}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 setShowImagePicker(true);
               }}
             >
@@ -345,6 +345,7 @@ export default function SaveTemplateScreen() {
             </Pressable>
             <View style={styles.textInputs}>
               <TextInput
+                autoCorrect={false}
                 style={styles.nameInput}
                 placeholder={t('template.templateName')}
                 placeholderTextColor={colors.textTertiary}
@@ -352,6 +353,7 @@ export default function SaveTemplateScreen() {
                 onChangeText={setName}
               />
               <TextInput
+                autoCorrect={false}
                 style={styles.descriptionInput}
                 placeholder={t('template.descriptionOptional')}
                 placeholderTextColor={colors.textTertiary}
@@ -367,7 +369,7 @@ export default function SaveTemplateScreen() {
           <Pressable
             style={styles.menuRow}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               openColourModal();
             }}
           >
@@ -390,7 +392,7 @@ export default function SaveTemplateScreen() {
                     exercise.gifUrl || exercise.thumbnailUrl
                       ? () => {
                           withLock(() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                             prefetchExerciseGif(exercise.exerciseId);
                             router.push(`/exercise/${exercise.exerciseId}`);
                           });
@@ -414,7 +416,7 @@ export default function SaveTemplateScreen() {
                         ? undefined
                         : () => {
                             withLock(() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                               prefetchExerciseGif(exercise.exerciseId);
                               router.push(`/exercise/${exercise.exerciseId}`);
                             });
@@ -457,7 +459,7 @@ export default function SaveTemplateScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeColourModal();
           }}
         >
@@ -471,7 +473,7 @@ export default function SaveTemplateScreen() {
                 <Pressable
                   style={styles.modalCloseButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     closeColourModal();
                   }}
                 >
@@ -491,7 +493,7 @@ export default function SaveTemplateScreen() {
                         selectedColourId === colour.id && styles.colourOptionSelected,
                       ]}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         selectColour(colour.id);
                       }}
                     >

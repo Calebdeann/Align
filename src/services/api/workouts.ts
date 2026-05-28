@@ -1,4 +1,5 @@
 import { Alert } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../supabase';
 import { z } from 'zod';
 import {
@@ -16,6 +17,21 @@ function isSchemaError(error: any): boolean {
   // PGRST301 = could not find relation
   // 42xxx = PostgreSQL schema errors
   return code === 'PGRST204' || code === 'PGRST301' || code.startsWith('42');
+}
+
+// Helper: retry a supabase call once if fetch throws (transient network failure).
+// Prevents raw TypeErrors from bubbling up to LogBox as red console errors.
+async function callRpcWithRetry<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch {
+    await new Promise((r) => setTimeout(r, 600));
+    try {
+      return await fn();
+    } catch {
+      return fallback;
+    }
+  }
 }
 
 // =============================================
@@ -37,6 +53,8 @@ export interface DbWorkout {
   image_type: string | null;
   image_uri: string | null;
   image_template_id: string | null;
+  image_aspect_ratio: number | null;
+  image_audience: 'friends' | 'everyone' | null;
   created_at: string;
 }
 
@@ -96,6 +114,9 @@ export interface SaveWorkoutInput {
   imageType?: 'template' | 'camera' | 'gallery';
   imageUri?: string;
   imageTemplateId?: string;
+  imageAspectRatio?: number;
+  imageAudience?: 'friends' | 'everyone';
+  titleCustomized?: boolean;
   exercises: {
     exerciseId: string;
     exerciseName: string;
@@ -124,7 +145,9 @@ export interface WorkoutHistoryItem {
   totalSets: number;
   imageType: string | null;
   imageUri: string | null;
+  imageAspectRatio: number | null;
   imageTemplateId: string | null;
+  imageAudience: 'friends' | 'everyone' | null;
 }
 
 // Type for previous sets
@@ -132,6 +155,102 @@ export interface PreviousSetData {
   setNumber: number;
   weightKg: number | null;
   reps: number | null;
+}
+
+// =============================================
+// WORKOUT PHOTO UPLOAD
+// =============================================
+
+async function uploadWorkoutPhoto(
+  userId: string,
+  localUri: string
+): Promise<{ publicUrl: string } | { error: string }> {
+  try {
+    // RN's fetch().blob() returns an empty blob in production builds, leading
+    // to 0-byte uploads. Use FileSystem.uploadAsync with BINARY_CONTENT instead
+    // — same pattern as uploadAvatar in user.ts. This streams the file directly.
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) {
+      const msg = 'EXPO_PUBLIC_SUPABASE_URL is not set';
+      console.error('[uploadWorkoutPhoto]', msg);
+      return { error: msg };
+    }
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      const msg = 'No auth session — cannot upload photo';
+      console.error('[uploadWorkoutPhoto]', msg);
+      return { error: msg };
+    }
+
+    // Template photos come through as Metro bundler URLs (http://192.x.x.x:8081/...).
+    // FileSystem.uploadAsync(BINARY_CONTENT) only accepts file:// URIs, so download
+    // the source to a temp file first when it isn't already local.
+    let sourceUri = localUri;
+    const isHttp = localUri.startsWith('http://') || localUri.startsWith('https://');
+    const lower = localUri.toLowerCase();
+    const ext: 'png' | 'jpg' = lower.includes('.png') ? 'png' : 'jpg';
+    if (isHttp) {
+      const tmpPath = `${FileSystem.cacheDirectory}wk-upload-${Date.now()}.${ext}`;
+      const dl = await FileSystem.downloadAsync(localUri, tmpPath);
+      if (dl.status < 200 || dl.status >= 300) {
+        const msg = `Failed to fetch template source (HTTP ${dl.status})`;
+        console.error('[uploadWorkoutPhoto]', msg);
+        return { error: msg };
+      }
+      sourceUri = dl.uri;
+    }
+
+    const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
+    const path = `${userId}/${Date.now()}.${ext}`;
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/workout-photos/${path}`;
+
+    const result = await FileSystem.uploadAsync(uploadUrl, sourceUri, {
+      httpMethod: 'POST',
+      uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': contentType,
+        'x-upsert': 'false',
+        'cache-control': 'public, max-age=31536000, immutable',
+      },
+    });
+
+    if (result.status !== 200 && result.status !== 201) {
+      const msg = `Storage upload failed (HTTP ${result.status}): ${result.body?.slice(0, 200) ?? '<empty body>'}`;
+      logger.warn('Failed to upload workout photo', {
+        status: result.status,
+        body: result.body?.slice(0, 200),
+      });
+      console.error('[uploadWorkoutPhoto]', msg);
+      return { error: msg };
+    }
+
+    const { data } = supabase.storage.from('workout-photos').getPublicUrl(path);
+    return { publicUrl: data.publicUrl };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.warn('Error uploading workout photo', { error: e });
+    console.error('[uploadWorkoutPhoto] Exception during upload:', msg);
+    return { error: msg };
+  }
+}
+
+function isLocalUri(uri: string): boolean {
+  return uri.startsWith('file://') || uri.startsWith('ph://') || uri.startsWith('/var/');
+}
+
+// Any URI that isn't already a persistent Supabase Storage URL needs to be uploaded.
+// This catches: file:// (camera/gallery), ph:// (PhotoKit), /var/ (iOS tmp),
+// http://localhost:8081 (Metro bundler templates), assets-library://, etc.
+function needsCloudUpload(uri: string): boolean {
+  if (!uri) return false;
+  if (uri.includes('supabase.co/storage/')) return false;
+  if (uri.includes('supabase.in/storage/')) return false;
+  return true;
 }
 
 // =============================================
@@ -159,6 +278,31 @@ export async function saveCompletedWorkout(
       validatedInput.name ||
       `Workout - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
+    // Upload any non-cloud URI to Supabase Storage before inserting the workout row.
+    // This covers file:// (camera/gallery), ph:// (PhotoKit), Metro bundler URLs for
+    // templates, and anything else that isn't already a persistent cloud URL.
+    let resolvedImageUri = validatedInput.imageUri;
+    if (validatedInput.imageUri && needsCloudUpload(validatedInput.imageUri)) {
+      console.log('[saveCompletedWorkout] uploading image:', {
+        imageUri: validatedInput.imageUri,
+        imageType: validatedInput.imageType,
+        isLocal: isLocalUri(validatedInput.imageUri),
+      });
+      const uploadResult = await uploadWorkoutPhoto(validatedInput.userId, validatedInput.imageUri);
+      if ('error' in uploadResult) {
+        throw new Error(`Photo upload failed: ${uploadResult.error}`);
+      }
+      console.log('[saveCompletedWorkout] upload success, public URL:', uploadResult.publicUrl);
+      resolvedImageUri = uploadResult.publicUrl;
+    } else if (validatedInput.imageUri) {
+      console.log(
+        '[saveCompletedWorkout] skipping upload (already cloud URL):',
+        validatedInput.imageUri
+      );
+    } else {
+      console.log('[saveCompletedWorkout] no image URI provided');
+    }
+
     // 1. Insert the workout record
     // Base insert uses only established columns (always works)
     const baseWorkoutInsert: Record<string, any> = {
@@ -180,17 +324,29 @@ export async function saveCompletedWorkout(
     };
 
     // Add optional image columns when an image was selected
-    // (requires migration 010_workout_image.sql)
+    // (requires migration 010_workout_image.sql + 042_workout_photo_storage.sql)
     const workoutInsert = { ...baseWorkoutInsert };
     const hasImageFields = !!validatedInput.imageType;
     if (hasImageFields) {
       workoutInsert.image_type = validatedInput.imageType;
-      workoutInsert.image_uri = validatedInput.imageUri || null;
+      workoutInsert.image_uri = resolvedImageUri || null;
       workoutInsert.image_template_id = validatedInput.imageTemplateId || null;
+      if (validatedInput.imageAudience) {
+        workoutInsert.image_audience = validatedInput.imageAudience;
+      }
+      if (validatedInput.imageAspectRatio != null) {
+        workoutInsert.image_aspect_ratio = validatedInput.imageAspectRatio;
+      }
+    }
+    // title_customized (migration 051) — kept on workoutInsert only so a schema
+    // error falls back to baseWorkoutInsert per CLAUDE.md backwards-compat rule.
+    if (validatedInput.titleCustomized != null) {
+      workoutInsert.title_customized = validatedInput.titleCustomized;
     }
 
-    // Try insert; if schema error from image columns, retry without them
+    // Try insert; if schema error from any optional column, retry stripping all of them.
     let workout: { id: string } | null = null;
+    const wroteOptionalColumns = hasImageFields || validatedInput.titleCustomized != null;
 
     const { data: firstAttempt, error: firstError } = await supabase
       .from('workouts')
@@ -198,9 +354,9 @@ export async function saveCompletedWorkout(
       .select('id')
       .single();
 
-    if (firstError && hasImageFields && isSchemaError(firstError)) {
+    if (firstError && wroteOptionalColumns && isSchemaError(firstError)) {
       logger.warn(
-        'Image columns not found in database (migration 010 not applied). Saving workout without image.'
+        'Optional workout columns not found in database (migration not applied). Saving workout without them.'
       );
       const { data: retryAttempt, error: retryError } = await supabase
         .from('workouts')
@@ -279,23 +435,25 @@ export async function saveCompletedWorkout(
           .single();
 
         if (retryError || !retryExercise) {
-          logger.warn('Error saving workout exercise (retry failed)', {
+          logger.warn('Error saving workout exercise (retry failed) — deleting orphan workout', {
             exerciseName: exercise.exerciseName,
+            workoutId,
             error: retryError,
             originalError: exerciseError,
           });
-          failedExercises.push({
-            name: exercise.exerciseName,
-            error: retryError?.message || exerciseError.message,
-          });
-          continue;
+          await supabase.from('workouts').delete().eq('id', workoutId);
+          throw new Error(
+            `Failed to save exercise "${exercise.exerciseName}": ${retryError?.message || exerciseError.message}`
+          );
         }
         workoutExercise = retryExercise;
       }
 
       if (!workoutExercise) {
-        failedExercises.push({ name: exercise.exerciseName, error: 'No data returned' });
-        continue;
+        await supabase.from('workouts').delete().eq('id', workoutId);
+        throw new Error(
+          `Failed to save exercise "${exercise.exerciseName}": no row returned from insert`
+        );
       }
 
       // 3. Insert workout_sets for this exercise
@@ -307,26 +465,47 @@ export async function saveCompletedWorkout(
         set_type: set.setType || 'normal',
         completed: set.completed,
         rpe: set.rpe ?? null,
+        // Cardio fields (migration 074). Nullable; null for non-cardio sets.
+        difficulty: set.difficulty ?? null,
+        duration_seconds: set.durationSeconds ?? null,
       }));
 
       if (setsToInsert.length > 0) {
         const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert);
 
         if (setsError && isSchemaError(setsError)) {
-          // set_type column may not exist yet (migration 028) - retry without it
-          const setsWithoutSetType = setsToInsert.map(({ set_type, ...rest }) => rest);
+          // set_type / difficulty / duration_seconds columns may not exist yet
+          // on older databases (migrations 028 / 074). Retry stripping all
+          // optional new columns.
+          const setsWithoutOptional = setsToInsert.map((s) => {
+            const { set_type, difficulty, duration_seconds, ...rest } = s;
+            return rest;
+          });
           const { error: retryError } = await supabase
             .from('workout_sets')
-            .insert(setsWithoutSetType);
+            .insert(setsWithoutOptional);
           if (retryError) {
-            logger.warn('Error saving workout sets (retry without set_type)', {
-              error: retryError,
-            });
-            failedSetsCount++;
+            logger.warn(
+              'Error saving workout sets (retry without optional cols) — deleting orphan workout',
+              {
+                workoutId,
+                error: retryError,
+              }
+            );
+            await supabase.from('workouts').delete().eq('id', workoutId);
+            throw new Error(
+              `Failed to save sets for "${exercise.exerciseName}": ${retryError.message}`
+            );
           }
         } else if (setsError) {
-          logger.warn('Error saving workout sets', { error: setsError });
-          failedSetsCount++;
+          logger.warn('Error saving workout sets — deleting orphan workout', {
+            workoutId,
+            error: setsError,
+          });
+          await supabase.from('workouts').delete().eq('id', workoutId);
+          throw new Error(
+            `Failed to save sets for "${exercise.exerciseName}": ${setsError.message}`
+          );
         }
       }
 
@@ -454,6 +633,9 @@ export async function updateCompletedWorkout(
       workoutUpdate.image_type = validatedInput.imageType;
       workoutUpdate.image_uri = validatedInput.imageUri || null;
       workoutUpdate.image_template_id = validatedInput.imageTemplateId || null;
+      if (validatedInput.imageAspectRatio != null) {
+        workoutUpdate.image_aspect_ratio = validatedInput.imageAspectRatio;
+      }
     }
 
     let updateSuccess = false;
@@ -717,6 +899,10 @@ export async function getBatchExercisePreviousSets(
   try {
     // Single query using Supabase relation joins instead of 3 sequential queries.
     // !inner join on workouts ensures only this user's data is returned.
+    // Sort by date desc + cap row count so users with long history don't pay
+    // an unbounded payload here — we only need the most recent per exercise,
+    // and PAGE_SIZE_HARD_CAP comfortably covers that for any sane history.
+    const PAGE_SIZE_HARD_CAP = 200;
     const { data, error } = await supabase
       .from('workout_exercises')
       .select(
@@ -729,7 +915,9 @@ export async function getBatchExercisePreviousSets(
       `
       )
       .in('exercise_id', exerciseIds)
-      .eq('workouts.user_id', userId);
+      .eq('workouts.user_id', userId)
+      .order('completed_at', { referencedTable: 'workouts', ascending: false })
+      .limit(PAGE_SIZE_HARD_CAP);
 
     if (error || !data || data.length === 0) {
       return result;
@@ -784,7 +972,9 @@ export async function getWorkoutHistory(userId: string, limit = 20): Promise<Wor
         duration_seconds,
         image_type,
         image_uri,
+        image_aspect_ratio,
         image_template_id,
+        image_audience,
         workout_exercises(
           id,
           workout_sets(id)
@@ -815,7 +1005,10 @@ export async function getWorkoutHistory(userId: string, limit = 20): Promise<Wor
         totalSets,
         imageType: workout.image_type ?? null,
         imageUri: workout.image_uri ?? null,
+        imageAspectRatio:
+          workout.image_aspect_ratio != null ? Number(workout.image_aspect_ratio) : null,
         imageTemplateId: workout.image_template_id ?? null,
+        imageAudience: (workout.image_audience as 'friends' | 'everyone' | null) ?? 'everyone',
       };
     });
   } catch (error) {
@@ -888,6 +1081,34 @@ export async function getWorkoutById(
   }
 }
 
+// Fetches a publicly-viewable workout (image_audience = 'everyone') with full
+// exercises + sets + muscles via the get_public_workout_details RPC. Used when
+// viewing another user's workout from the Discover feed — RLS blocks the
+// direct table read so this SECURITY DEFINER RPC is the only path.
+export async function getPublicWorkoutDetails(workoutId: string): Promise<{
+  workout: DbWorkout;
+  exercises: (DbWorkoutExercise & { sets: DbWorkoutSet[] })[];
+  muscles: WorkoutMuscleData[];
+} | null> {
+  const { data, error } = await callRpcWithRetry(
+    () => supabase.rpc('get_public_workout_details', { p_workout_id: workoutId }),
+    { data: null, error: null } as any
+  );
+  if (error || !data) return null;
+
+  const muscles: WorkoutMuscleData[] = (data.muscles ?? []).map((m: any) => ({
+    muscle: m.muscle,
+    totalSets: m.total_sets,
+    activation: m.activation,
+  }));
+
+  return {
+    workout: data.workout,
+    exercises: data.exercises ?? [],
+    muscles,
+  };
+}
+
 // =============================================
 // DELETE WORKOUT
 // =============================================
@@ -910,6 +1131,25 @@ export async function deleteWorkout(workoutId: string, userId?: string): Promise
     Alert.alert('Error', 'Unable to delete workout. Please try again.');
     return false;
   }
+}
+
+// =============================================
+// UPDATE WORKOUT AUDIENCE (public/private toggle)
+// =============================================
+
+export async function updateWorkoutAudience(
+  workoutId: string,
+  audience: 'friends' | 'everyone'
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('workouts')
+    .update({ image_audience: audience })
+    .eq('id', workoutId);
+  if (error) {
+    logger.warn('updateWorkoutAudience failed', { workoutId, audience, error });
+    return false;
+  }
+  return true;
 }
 
 // =============================================
@@ -1044,7 +1284,9 @@ export async function getWorkoutsByDateRange(
         duration_seconds,
         image_type,
         image_uri,
+        image_aspect_ratio,
         image_template_id,
+        image_audience,
         workout_exercises(id)
       `
       )
@@ -1068,7 +1310,10 @@ export async function getWorkoutsByDateRange(
       totalSets: 0,
       imageType: workout.image_type ?? null,
       imageUri: workout.image_uri ?? null,
+      imageAspectRatio:
+        workout.image_aspect_ratio != null ? Number(workout.image_aspect_ratio) : null,
       imageTemplateId: workout.image_template_id ?? null,
+      imageAudience: (workout.image_audience as 'friends' | 'everyone' | null) ?? 'everyone',
     }));
   } catch (error) {
     logger.warn('Error in getWorkoutsByDateRange', { error });
@@ -1219,4 +1464,54 @@ export async function getCompletedWorkoutCount(userId: string): Promise<number> 
     logger.warn('Error in getCompletedWorkoutCount', { error });
     return 0;
   }
+}
+
+// =============================================
+// PUBLIC DISCOVER FEED
+// =============================================
+
+export type PublicWorkoutPhoto = {
+  workoutId: string;
+  workoutName: string | null;
+  completedAt: string;
+  imageUri: string | null;
+  aspectRatio: number | null;
+  userId: string;
+  userName: string | null;
+  userAvatar: string | null;
+  titleCustomized: boolean;
+  isOfficial?: boolean;
+};
+
+export async function getPublicWorkoutPhotos(
+  limit = 20,
+  cursor?: string,
+  visibility: 'public' | 'friends' = 'public'
+): Promise<PublicWorkoutPhoto[]> {
+  const { data, error } = await callRpcWithRetry(
+    () =>
+      supabase.rpc('get_public_workout_photos', {
+        p_limit: limit,
+        p_cursor: cursor ?? null,
+        p_visibility: visibility,
+      } as any),
+    { data: [], error: null } as any
+  );
+
+  if (error) {
+    logger.warn('getPublicWorkoutPhotos error', { error });
+    return [];
+  }
+
+  return (data ?? []).map((row: any) => ({
+    workoutId: row.workout_id,
+    workoutName: row.workout_name ?? null,
+    completedAt: row.completed_at,
+    imageUri: row.image_uri,
+    aspectRatio: row.image_aspect_ratio != null ? Number(row.image_aspect_ratio) : null,
+    userId: row.user_id,
+    userName: row.user_name ?? null,
+    userAvatar: row.user_avatar ?? null,
+    titleCustomized: !!row.title_customized,
+  }));
 }

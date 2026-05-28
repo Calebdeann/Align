@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Animated, Easing, useWindowDimensions } from 'r
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { fonts } from '@/constants/theme';
+import { useUserProfileStore } from '@/stores/userProfileStore';
+import { useDiscoverPrefetchStore } from '@/stores/discoverPrefetchStore';
 
 const MESSAGES = [
   {
@@ -35,6 +37,7 @@ export default function PersonalisingScreen() {
   const textOpacity = useRef(new Animated.Value(1)).current;
   const barWidth = screenWidth * 0.45;
   const [messageIdx, setMessageIdx] = useState(0);
+  const hapticIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function switchMessage(idx: number) {
     Animated.timing(textOpacity, {
@@ -54,13 +57,28 @@ export default function PersonalisingScreen() {
   }
 
   useEffect(() => {
+    // Kick off discover-feed prefetch in parallel with the ~9s of animation,
+    // so the feed is painted from cache by the time the user lands in /(tabs).
+    const viewerId = useUserProfileStore.getState().profile?.id;
+    useDiscoverPrefetchStore.getState().hydrate(viewerId);
+
     const t1 = setTimeout(() => switchMessage(1), 3000);
     const t2 = setTimeout(() => switchMessage(2), 6000);
 
-    const hapticTimes = [1400, 2900, 4500, 5700, 7100, 8000];
-    const hapticTimers = hapticTimes.map((ms) =>
-      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), ms)
-    );
+    // Phone-call style sustained buzz: one Heavy every 150ms while the bar fills.
+    const startHapticTimer = setTimeout(() => {
+      hapticIntervalRef.current = setInterval(
+        () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
+        150
+      );
+    }, 500);
+
+    function stopHaptic() {
+      if (hapticIntervalRef.current) {
+        clearInterval(hapticIntervalRef.current);
+        hapticIntervalRef.current = null;
+      }
+    }
 
     Animated.sequence([
       Animated.delay(500),
@@ -101,6 +119,7 @@ export default function PersonalisingScreen() {
         useNativeDriver: false,
       }),
     ]).start(({ finished }) => {
+      stopHaptic();
       if (finished) {
         router.replace('/onboarding/pre-paywall');
       }
@@ -109,7 +128,8 @@ export default function PersonalisingScreen() {
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
-      hapticTimers.forEach(clearTimeout);
+      clearTimeout(startHapticTimer);
+      stopHaptic();
     };
   }, []);
 

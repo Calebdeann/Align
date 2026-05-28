@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
@@ -40,7 +40,7 @@ export default function EmailSignInScreen() {
 
     try {
       setIsLoading(true);
-      console.log('[Auth:EmailSignIn] Starting email sign-in...');
+      if (__DEV__) console.log('[Auth:EmailSignIn] Starting email sign-in...');
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
@@ -58,9 +58,11 @@ export default function EmailSignInScreen() {
         return;
       }
 
-      console.log(
-        `[Auth:EmailSignIn] Email sign-in success, userId: ${data.user.id.slice(0, 8)}...`
-      );
+      if (__DEV__) {
+        console.log(
+          `[Auth:EmailSignIn] Email sign-in success, userId: ${data.user.id.slice(0, 8)}...`
+        );
+      }
 
       // Check for profile, create if missing
       const { data: profile } = await supabase
@@ -70,7 +72,7 @@ export default function EmailSignInScreen() {
         .single();
 
       if (!profile) {
-        console.log('[Auth:EmailSignIn] No profile for email user, creating one...');
+        if (__DEV__) console.log('[Auth:EmailSignIn] No profile for email user, creating one...');
         const { error: profileError } = await supabase.from('profiles').insert({
           id: data.user.id,
           email: trimmedEmail,
@@ -80,7 +82,7 @@ export default function EmailSignInScreen() {
         }
       }
 
-      console.log('[Auth:EmailSignIn] Navigating to main app...');
+      if (__DEV__) console.log('[Auth:EmailSignIn] Navigating to main app...');
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('[Auth:EmailSignIn] Email sign-in error:', error);
@@ -99,7 +101,7 @@ export default function EmailSignInScreen() {
         {/* Back button */}
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            strongHaptic();
             router.back();
           }}
           style={styles.backButton}
@@ -113,6 +115,7 @@ export default function EmailSignInScreen() {
 
           <View style={styles.form}>
             <TextInput
+              autoCorrect={false}
               style={styles.input}
               placeholder={t('auth.emailPlaceholder')}
               placeholderTextColor="rgba(255, 255, 255, 0.6)"
@@ -126,6 +129,7 @@ export default function EmailSignInScreen() {
               onSubmitEditing={() => passwordRef.current?.focus()}
             />
             <TextInput
+              autoCorrect={false}
               ref={passwordRef}
               style={styles.input}
               placeholder={t('auth.passwordPlaceholder')}
@@ -146,7 +150,7 @@ export default function EmailSignInScreen() {
           <Pressable
             style={styles.continueButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              strongHaptic();
               handleEmailSignIn();
             }}
             disabled={isLoading}

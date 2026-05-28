@@ -21,8 +21,14 @@ import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle, dividerStyle } from '@/constants/theme';
-import { saveCompletedWorkout, updateCompletedWorkout } from '@/services/api/workouts';
-import { UnitSystem, kgToLbs, toKgForStorage, getWeightUnit } from '@/utils/units';
+import { updateCompletedWorkout } from '@/services/api/workouts';
+import {
+  UnitSystem,
+  kgToLbs,
+  toKgForStorage,
+  fromKgForDisplay,
+  getWeightUnit,
+} from '@/utils/units';
 import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
 import { useTemplateStore, TemplateExercise, TemplateSet } from '@/stores/templateStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -152,7 +158,7 @@ function DurationPickerModal({
   }, [visible]);
 
   const adjust = (delta: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setSelectedSeconds((prev) => Math.max(60, prev + delta));
   };
 
@@ -167,7 +173,7 @@ function DurationPickerModal({
       <Pressable
         style={pickerStyles.overlay}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onClose();
         }}
       >
@@ -178,7 +184,7 @@ function DurationPickerModal({
             <View style={pickerStyles.header}>
               <Pressable
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   onClose();
                 }}
               >
@@ -333,10 +339,8 @@ function formatDuration(seconds: number): string {
 
 // Format volume with units
 function formatVolume(volumeKg: number, units: UnitSystem): string {
-  if (units === 'imperial') {
-    return `${Math.round(kgToLbs(volumeKg)).toLocaleString()} lbs`;
-  }
-  return `${Math.round(volumeKg).toLocaleString()} kg`;
+  const val = Math.round(fromKgForDisplay(volumeKg, units));
+  return `${val.toLocaleString()} ${getWeightUnit(units)}`;
 }
 
 export default function SaveWorkoutScreen() {
@@ -366,7 +370,10 @@ export default function SaveWorkoutScreen() {
   const workoutData: WorkoutData = useMemo(() => {
     try {
       return JSON.parse(params.workoutData as string);
-    } catch {
+    } catch (e) {
+      // Surface the parse failure so we can debug if a save ever lands here
+      // with a userId of '' (which would otherwise look like "not logged in").
+      console.warn('save-workout: failed to parse workoutData param', e);
       return { exercises: [], durationSeconds: 0, startedAt: '', userId: '' };
     }
   }, [params.workoutData]);
@@ -435,24 +442,22 @@ export default function SaveWorkoutScreen() {
     [workoutData.exercises]
   );
 
-  // Check if exercises have changed from the original template
+  // Check if exercises have changed from the original template. Pure reorder
+  // doesn't count as a change — compare as sorted sets to avoid prompting
+  // the user to update the template when they just rearranged exercises.
   const exercisesChanged = useMemo(() => {
     if (!workoutData.sourceTemplateId) return false;
 
     const template = getTemplateById(workoutData.sourceTemplateId);
     if (!template) return false;
 
-    const templateExerciseIds = template.exercises.map((e) => e.exerciseId);
-    const workoutExerciseIds = workoutData.exercises.map((e) => e.exercise.id);
+    const templateIds = [...template.exercises.map((e) => e.exerciseId)].sort();
+    const workoutIds = [...workoutData.exercises.map((e) => e.exercise.id)].sort();
 
-    // Check if exercises were added or removed
-    if (templateExerciseIds.length !== workoutExerciseIds.length) return true;
-
-    // Check if the exercise IDs are the same (in the same order)
-    for (let i = 0; i < templateExerciseIds.length; i++) {
-      if (templateExerciseIds[i] !== workoutExerciseIds[i]) return true;
+    if (templateIds.length !== workoutIds.length) return true;
+    for (let i = 0; i < templateIds.length; i++) {
+      if (templateIds[i] !== workoutIds[i]) return true;
     }
-
     return false;
   }, [workoutData.sourceTemplateId, workoutData.exercises, getTemplateById]);
 
@@ -536,8 +541,47 @@ export default function SaveWorkoutScreen() {
     }
   };
 
+  // Snapshot of initial editable fields so we can detect unsaved edits when
+  // the user taps Back in edit mode. Captured once via useRef.
+  const initialEditSnapshotRef = useRef({
+    title: workoutTitle,
+    description,
+    duration: editDuration,
+    imageType: selectedImage?.type ?? null,
+    imageUri: selectedImage?.uri ?? null,
+    imageTemplateId: selectedImage?.templateImageId ?? null,
+  });
+
   const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    if (isEditMode) {
+      const snap = initialEditSnapshotRef.current;
+      const isDirty =
+        workoutTitle !== snap.title ||
+        description !== snap.description ||
+        editDuration !== snap.duration ||
+        (selectedImage?.type ?? null) !== snap.imageType ||
+        (selectedImage?.uri ?? null) !== snap.imageUri ||
+        (selectedImage?.templateImageId ?? null) !== snap.imageTemplateId;
+
+      if (isDirty) {
+        Alert.alert(
+          'Discard changes?',
+          'You have unsaved changes to this workout. Going back will discard them.',
+          [
+            { text: 'Keep editing', style: 'cancel' },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: () => router.back(),
+            },
+          ]
+        );
+        return;
+      }
+    }
+
     router.back();
   };
 
@@ -605,8 +649,8 @@ export default function SaveWorkoutScreen() {
                 onPress: () => {
                   router.dismissAll();
                   router.push({
-                    pathname: '/workout-details',
-                    params: { workoutId: editWorkoutId },
+                    pathname: '/workout-summary',
+                    params: { workoutId: editWorkoutId, mode: 'view' },
                   });
                 },
               },
@@ -616,51 +660,23 @@ export default function SaveWorkoutScreen() {
           Alert.alert(i18n.t('saveWorkout.updateFailed'), updateResult.error);
         }
       } else {
-        // Save new workout
-        const saveResult = await saveCompletedWorkout(saveInput);
-
-        if ('workoutId' in saveResult) {
-          if (saveResult.partialWarning) {
-            Alert.alert('Partial Save', saveResult.partialWarning);
-          }
-          // Clear active workout now that save is confirmed
-          cancelWorkoutInProgressReminder();
-          endWorkoutLiveActivity();
-          discardActiveWorkout();
-          // Auto-mark the scheduled workout as complete for today
-          const todayKey = `${completedAt.getFullYear()}-${String(completedAt.getMonth() + 1).padStart(2, '0')}-${String(completedAt.getDate()).padStart(2, '0')}`;
-          if (workoutData.scheduledWorkoutId) {
-            if (!isWorkoutCompleted(workoutData.scheduledWorkoutId, todayKey)) {
-              toggleWorkoutCompletion(workoutData.scheduledWorkoutId, todayKey);
-            }
-          } else {
-            markScheduledWorkoutComplete(
-              todayKey,
-              workoutData.userId,
-              workoutData.sourceTemplateId,
-              workoutTitle || workoutData.templateName || undefined
-            );
-          }
-
-          const displayTitle = workoutTitle || workoutData.templateName || 'Workout';
-          router.dismissAll();
-          router.push({
-            pathname: '/workout-photo',
-            params: {
-              workoutTitle: displayTitle,
-              durationSeconds: String(currentDuration),
-              totalVolume: String(
-                Math.round(units === 'imperial' ? kgToLbs(totalVolume) : totalVolume)
-              ),
-              volumeUnit: getWeightUnit(units),
-              exerciseCount: String(exercisesWithCompletedSets.length),
-              totalSets: String(totalSets),
-              userId: workoutData.userId,
-            },
-          });
-        } else {
-          Alert.alert(i18n.t('saveWorkout.saveFailed'), saveResult.error);
-        }
+        // Navigate to workout-photo; workout-summary handles the actual DB save
+        const displayTitle = workoutTitle || workoutData.templateName || 'Workout';
+        router.dismissAll();
+        router.push({
+          pathname: '/workout-photo',
+          params: {
+            workoutTitle: displayTitle,
+            durationSeconds: String(currentDuration),
+            totalVolume: String(
+              Math.round(units === 'imperial' ? kgToLbs(totalVolume) : totalVolume)
+            ),
+            volumeUnit: getWeightUnit(units),
+            exerciseCount: String(exercisesWithCompletedSets.length),
+            totalSets: String(totalSets),
+            userId: workoutData.userId,
+          },
+        });
       }
     } catch (error: any) {
       console.error('Error saving workout:', error);
@@ -747,7 +763,7 @@ export default function SaveWorkoutScreen() {
             <Pressable
               style={[styles.imagePlaceholder, selectedImage && styles.imagePlaceholderFilled]}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 setShowImagePicker(true);
               }}
             >
@@ -773,6 +789,7 @@ export default function SaveWorkoutScreen() {
             </Pressable>
             <View style={styles.workoutTextInputs}>
               <TextInput
+                autoCorrect={false}
                 style={styles.titleInput}
                 placeholder={t('saveWorkout.workoutTitle')}
                 placeholderTextColor={colors.textTertiary}
@@ -780,6 +797,7 @@ export default function SaveWorkoutScreen() {
                 onChangeText={setWorkoutTitle}
               />
               <TextInput
+                autoCorrect={false}
                 style={styles.descriptionInput}
                 placeholder={t('saveWorkout.descriptionOptional')}
                 placeholderTextColor={colors.textTertiary}
@@ -796,7 +814,7 @@ export default function SaveWorkoutScreen() {
           <Pressable
             style={styles.statRow}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setShowDurationModal(true);
             }}
           >
@@ -838,7 +856,7 @@ export default function SaveWorkoutScreen() {
           <Pressable
             style={styles.discardButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               Alert.alert(t('saveWorkout.discardWorkout'), t('saveWorkout.discardWorkoutMessage'), [
                 { text: i18n.t('common.cancel'), style: 'cancel' },
                 {
@@ -918,7 +936,7 @@ export default function SaveWorkoutScreen() {
             <Pressable
               style={styles.keepOriginalButton}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 handleKeepOriginal();
               }}
             >

@@ -25,11 +25,16 @@ app/onboarding/challenge.tsx    → /onboarding/finding-workout
 app/onboarding/finding-workout.tsx → /onboarding/select-program
 app/onboarding/select-program.tsx  → /onboarding/program-detail (with planId param)
 app/onboarding/program-detail.tsx  → /onboarding/reviews
-app/onboarding/reviews.tsx         → /onboarding/personalising
-app/onboarding/sticker.tsx         → /onboarding/personalising
-app/onboarding/personalising.tsx   → /onboarding/pre-paywall
-app/onboarding/pre-paywall.tsx     → /onboarding/signin  (paywall TBD)
-app/onboarding/signin.tsx          → /(tabs)  (auth complete)
+app/onboarding/reviews.tsx              → /onboarding/signin
+app/onboarding/signin.tsx               → /onboarding/find-partner  (auth complete; existing accounts still continue the rest of the flow)
+app/onboarding/find-partner.tsx         → /onboarding/gym-buddy
+app/onboarding/gym-buddy.tsx            → /onboarding/partner-match (with profileIndex param)
+app/onboarding/partner-match.tsx        → /onboarding/not-by-accident
+app/onboarding/not-by-accident.tsx      → /onboarding/quote-flicker     (auto, after typewriter)
+app/onboarding/quote-flicker.tsx        → /onboarding/quote-sticker     (on tap, passes quoteIndex)
+app/onboarding/quote-sticker.tsx        → /onboarding/personalising
+app/onboarding/personalising.tsx        → /onboarding/pre-paywall
+app/onboarding/pre-paywall.tsx     → /(tabs)  (paywall TBD)
 ```
 
 If you touch ANY file in app/onboarding/, verify after your edit that its `router.push` still points to the correct next screen from this table.
@@ -37,6 +42,25 @@ If you touch ANY file in app/onboarding/, verify after your edit that its `route
 ## Quick Summary
 
 It Girl is a women-focused social fitness app. Built with React Native + Expo, targeting iOS first.
+
+## Fake accounts: rationale (READ BEFORE TOUCHING SOCIAL FEATURES)
+
+We're launching with no real users yet. Half the app's value is social — without people, those surfaces look dead. To avoid that, the app ships with a roster of seeded "fake" accounts (Priya, Emma, Tilly, Rachel, etc.) defined in `scripts/seed-data/fake-accounts.json` and populated by `scripts/seed-fake-accounts.mjs` + `scripts/seed-fake-workouts.mjs` + `scripts/upload-fake-workout-photos.mjs`. They are real Supabase users with real profiles, real workout rows, and real photos — just synthetic.
+
+These accounts exist to make four surfaces feel populated until real users arrive:
+
+1. **Buddy match** ([app/onboarding/gym-buddy.tsx](app/onboarding/gym-buddy.tsx), [app/onboarding/partner-match.tsx](app/onboarding/partner-match.tsx)) — every user gets paired with one. If the user taps **"Start with {buddy}"**, the buddy is auto-added as a friend via `addSeedBuddyAsFriend`. If they tap **"Continue without partner"**, the match is saved to their profile but no friendship is created. Always respect the prefer-solo path.
+2. **Discover feed** — seeded posts drip-release over ~30 days so the feed always has fresh content.
+3. **My Friends tab** — the matched buddy gives new users at least one friend so the tab is non-empty.
+4. **Friend suggestions** in `/add-friends`.
+
+The seed script intentionally creates workouts dated up to ~30 days in the **future** — that's the Discover drip mechanism, and discover RPCs (`get_public_workouts`, `get_public_workout_details`) gate visibility by `completed_at <= cutoff`. Any RPC the Friends feed touches must also exclude future-dated workouts (see [supabase/migrations/078_friends_exclude_future_workouts.sql](supabase/migrations/078_friends_exclude_future_workouts.sql)) — otherwise a buddy's "latest workout" becomes the furthest-future drip release, which breaks active/inactive partitioning, "Just now" timestamps, and tap-to-view.
+
+These accounts will be removed gradually as real users join. Until then, treat them as real users in code paths.
+
+## Design Rules (READ BEFORE TOUCHING ANY UI)
+
+All typography, spacing, component patterns, and colors are codified in `.claude/design-rules.md`. Before styling any text, button, header, sheet, or grid — check that file first and match the existing pattern. Never invent a new font size or spacing value; always reuse from the scale defined there.
 
 ## Tech Stack
 
@@ -254,7 +278,13 @@ Use `QuestionLayout` component with `optionStyles` for all multi-select/single-s
 11. **Workout tracker and template builder parity.** Any UX or functionality change made to the active workout tracker (`app/active-workout.tsx`) must be replicated in the template builder (`app/create-template.tsx`) unless explicitly told not to, or unless it would cause issues specific to the template context.
 12. **Onboarding continue button:** Always use `OnboardingContinueButton` from `@/components` for the continue/next action on every onboarding screen. Never create inline full-width black buttons on onboarding screens. See the Key Patterns section for usage.
 13. **Onboarding haptics: always Heavy.** Every `Pressable` in onboarding (screens and shared onboarding components) must use `Haptics.ImpactFeedbackStyle.Heavy`. Never use `Light` or `Medium` in onboarding. See Key Patterns → Onboarding Haptic Feedback.
-14. **Superwall: always use official docs.** When implementing or modifying Superwall integration, reference the official Expo SDK docs at https://superwall.com/docs/expo/ . Do not guess APIs or invent patterns. Key docs: install (`/quickstart/install`), configure (`/quickstart/configure`), present paywall (`/quickstart/present-first-paywall`), feature gating (`/quickstart/feature-gating`), usePlacement (`/sdk-reference/hooks/usePlacement`), useSuperwall (`/sdk-reference/hooks/useSuperwall`).
+14. **Haptic feedback: always Heavy everywhere.** Every `Pressable` (and `TouchableOpacity`) throughout the entire app — tabs, settings, workout screens, profile, modals, icon buttons, camera, photo actions — must use `Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)`. Never use `Light` or `Medium` for any button press. Tab switching must also use `Heavy`. **Press equivalents** — keyboard "Done" / `onSubmitEditing`, swipe-action confirmations, and programmatic-press handlers that confirm a destructive or save action — must also fire `Heavy` before invoking the handler. The only exceptions are `NotificationFeedbackType` calls (separate API for success/error/warning feedback) and deliberate multi-haptic animation sequences (e.g. `strongHaptic()` for primary affirmative actions). This extends the onboarding Heavy rule to the entire app.
+15. **Superwall: always use official docs.** When implementing or modifying Superwall integration, reference the official Expo SDK docs at https://superwall.com/docs/expo/ . Do not guess APIs or invent patterns. Key docs: install (`/quickstart/install`), configure (`/quickstart/configure`), present paywall (`/quickstart/present-first-paywall`), feature gating (`/quickstart/feature-gating`), usePlacement (`/sdk-reference/hooks/usePlacement`), useSuperwall (`/sdk-reference/hooks/useSuperwall`).
+16. **Supabase migrations: read before you write.** Multiple Claude sessions touch this repo in parallel and migrations are NOT git-tracked, so a coordination step is mandatory before creating a new migration file:
+    1. **Pick the next number from disk**, not from memory: run `ls supabase/migrations/ | sort | tail -10` and use the highest prefix + 1. If two files share a prefix, that's an unresolved collision — pick a number higher than both.
+    2. **Check for in-flight work on the same RPC / table.** Grep the migrations directory for any function or column you're about to modify (`grep -l "get_public_workouts" supabase/migrations/`). If a later, unpushed migration already redefines it, your migration is probably redundant or will be overwritten — coordinate via the existing file instead of stacking a new one.
+    3. **Verify your fix against the live DB before writing a new migration.** Use `curl …/rest/v1/rpc/<fn>` with the service-role key to confirm the bug actually exists on remote. PL/pgSQL `RETURNS TABLE(col …)` makes those column names act as OUT variables inside the function — `WHERE col = …` against an unrelated table will raise `42702 ambiguous` and silently return zero rows. Always fully qualify (`WHERE p.id = …`) inside such functions.
+    4. **After pushing,** if the CLI complains "local migration files to be inserted before the last migration on remote" (you went into the middle of history), use `npx supabase db push --include-all`. If it complains about a filename collision, rename your file to the next free prefix — do not rename other agents' files.
 
 ## Backend Security
 
@@ -351,6 +381,18 @@ Google Sign-In:
 - **Key hooks:** `useSuperwall()` for SDK state, `usePlacement()` for paywall triggers
 - **Placement:** TBD (new Superwall account)
 - **Provider:** `SuperwallProvider` wraps app in `app/_layout.tsx`
+
+### In-app paywall remote toggle
+
+The global gate inside `(tabs)` (`PaywallGate` → `useSubscriptionGate` → Superwall `campaign_trigger`) is controlled at runtime by a row in Supabase's `app_config` table — no rebuild required to flip it.
+
+- **Flag:** `app_config.in_app_paywall_enabled` (JSONB boolean)
+- **Default:** `false` (seeded by [supabase/migrations/084_app_config.sql](supabase/migrations/084_app_config.sql))
+- **Effect when `false`:** `PaywallGate` mounts but `useSubscriptionGate` early-returns, never presenting Superwall. Signed-in users move freely between tabs.
+- **Effect when `true`:** non-subscribed users get the Superwall `campaign_trigger` paywall on every tab mount and background→foreground.
+- **To toggle:** Supabase dashboard → Table Editor → `app_config` → update the `value` column for `in_app_paywall_enabled` to `true` or `false`. Existing users pick up the change on next app foreground (the gate re-fetches the flag on `AppState` transitions). New cold-starts pick it up immediately.
+
+The onboarding paywall ([app/onboarding/pre-paywall.tsx](app/onboarding/pre-paywall.tsx)) is **independent of this flag** — it has its own Superwall placement (TBD) and stays on regardless.
 
 ## Quick Reference
 

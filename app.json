@@ -60,6 +60,14 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow It Girl to take photos after your workout.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "react-native-share",
         {
           "ios": ["instagram-stories", "instagram", "twitter"]
@@ -77,14 +85,14 @@
                   "targetName": "LiveActivity",
                   "bundleIdentifier": "com.itgirlapp.app.LiveActivity",
                   "entitlements": {
-                    "com.apple.security.application-groups": ["group.com.aligntracker.app"]
+                    "com.apple.security.application-groups": ["group.com.itgirlapp.app"]
                   }
                 },
                 {
                   "targetName": "ShareExtension",
-                  "bundleIdentifier": "com.aligntracker.app.ShareExtension",
+                  "bundleIdentifier": "com.itgirlapp.app.ShareExtension",
                   "entitlements": {
-                    "com.apple.security.application-groups": ["group.com.aligntracker.app"]
+                    "com.apple.security.application-groups": ["group.com.itgirlapp.app"]
                   }
                 }
               ]

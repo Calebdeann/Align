@@ -1,9 +1,13 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { fonts, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useUserProfileStore } from '@/stores/userProfileStore';
+import { useDiscoverPrefetchStore } from '@/stores/discoverPrefetchStore';
 import { OnboardingContinueButton } from '@/components';
 
 const PLAN_BACKGROUNDS: Record<string, ReturnType<typeof require>> = {
@@ -12,7 +16,7 @@ const PLAN_BACKGROUNDS: Record<string, ReturnType<typeof require>> = {
   booty: require('../../assets/Onboarding Assets/Onboarding P20/p20-booty.png'),
   'summer-body': require('../../assets/Onboarding Assets/Onboarding P20/p20-summer.png'),
   'it-girl': require('../../assets/Onboarding Assets/Onboarding P20/p20-it-girl.png'),
-  'glow-up': require('../../assets/Onboarding Assets/Onboarding P20/p20-glow.png'),
+  'busy-girl': require('../../assets/Onboarding Assets/Onboarding P20/p20-busygirl.png'),
   'muscle-mommy': require('../../assets/Onboarding Assets/Onboarding P20/p20-muscle-mommy.png'),
   home: require('../../assets/Onboarding Assets/Onboarding P20/p20-home.png'),
 };
@@ -22,9 +26,24 @@ export default function PrePaywallScreen() {
   const bgImage =
     PLAN_BACKGROUNDS[selectedPlanId ?? 'summer-body'] ?? PLAN_BACKGROUNDS['summer-body'];
 
+  // Shake-style haptic burst the moment "Congrats!" lands.
+  useEffect(() => {
+    const intervals = [0, 80, 160, 240, 320, 400];
+    const timers = intervals.map((ms) =>
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), ms)
+    );
+
+    // Warm the discover feed so it's painted from disk cache when the user
+    // lands in /(tabs) and Superwall briefly reveals the UI underneath.
+    const viewerId = useUserProfileStore.getState().profile?.id;
+    useDiscoverPrefetchStore.getState().hydrate(viewerId);
+
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
   function handleStart() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.push('/onboarding/paywall');
+    strongHaptic();
+    router.replace('/(tabs)');
   }
 
   return (

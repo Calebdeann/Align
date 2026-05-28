@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,11 @@ import {
   Pressable,
   Modal,
   TouchableWithoutFeedback,
-  Alert,
+  Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ export default function WorkoutPhotoPreviewScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     imageUri: string;
+    imageAspectRatio: string;
     workoutTitle: string;
     durationSeconds: string;
     totalVolume: string;
@@ -30,95 +32,89 @@ export default function WorkoutPhotoPreviewScreen() {
     userId: string;
   }>();
 
-  const [audience, setAudience] = useState<Audience>('friends');
+  const { width } = useWindowDimensions();
+  // Fixed-height container (16/9 of width) keeps the "Everyone" pill, X button,
+  // and SAVE label anchored at consistent positions regardless of which photo
+  // is picked. The image inside uses contentFit="contain" so it shows at its
+  // natural aspect ratio, centered both axes, with #1F1F1F filling any
+  // letterbox/pillarbox space around it.
+  const PHOTO_H = Math.round(width * (16 / 9));
+
+  const [audience, setAudience] = useState<Audience>('everyone');
   const [audienceVisible, setAudienceVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(300)).current;
+
+  const showAudience = () => {
+    setAudienceVisible(true);
+    slideAnim.setValue(300);
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const hideAudience = () => {
+    Animated.timing(slideAnim, { toValue: 300, duration: 200, useNativeDriver: true }).start(() => {
+      setAudienceVisible(false);
+    });
+  };
 
   const handleSave = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.replace({
-      pathname: '/workout-complete',
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    router.push({
+      pathname: '/workout-summary',
       params: {
+        photoUri: params.imageUri,
+        imageAudience: audience,
+        imageAspectRatio: params.imageAspectRatio,
         workoutTitle: params.workoutTitle,
         durationSeconds: params.durationSeconds,
         totalVolume: params.totalVolume,
         volumeUnit: params.volumeUnit,
         exerciseCount: params.exerciseCount,
         totalSets: params.totalSets,
-        userId: params.userId,
       },
     });
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <SafeAreaView edges={['top']}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.back();
-            }}
-            style={styles.circleBtn}
-          >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </Pressable>
-          <Text style={styles.title}>Submit Photo</Text>
-          <View style={styles.circleBtn}>
-            <Ionicons name="information-circle-outline" size={22} color="#fff" />
-          </View>
-        </View>
-      </SafeAreaView>
+      {/* Photo — fills from very top of screen */}
+      <View style={[styles.photoContainer, { height: PHOTO_H, marginTop: insets.top }]}>
+        <Image source={{ uri: params.imageUri }} style={styles.photo} contentFit="contain" />
 
-      {/* Photo */}
-      <View style={styles.photoContainer}>
-        <Image source={{ uri: params.imageUri }} style={styles.photo} contentFit="cover" />
-
-        {/* X retake button */}
+        {/* Back button — floats on image, no background */}
         <Pressable
-          style={styles.closeBtn}
+          style={[styles.closeBtn, { top: 10, left: 16 }]}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
         >
-          <Ionicons name="close" size={20} color="#fff" />
+          <View style={styles.iconShadow}>
+            <Ionicons name="close" size={28} color="#fff" />
+          </View>
         </Pressable>
 
-        {/* Right-side placeholder circles */}
-        <View style={styles.rightCircles}>
-          <View style={styles.frostedCircle} />
-          <View style={styles.frostedCircle} />
-          <View style={styles.frostedCircle} />
-        </View>
-
-        {/* Bottom pills */}
+        {/* Bottom pills — centered */}
         <View style={styles.pillsRow}>
           <Pressable
             style={[styles.frostedPill, styles.audiencePill]}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setAudienceVisible(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              showAudience();
             }}
           >
             <Ionicons
               name={audience === 'friends' ? 'lock-closed' : 'globe-outline'}
-              size={22}
+              size={18}
               color="#fff"
             />
             <Text style={styles.pillText}>
               {audience === 'friends' ? 'My Friends' : 'Everyone'}
             </Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.frostedPill, styles.musicPill]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              Alert.alert('Music', 'Music coming soon!');
-            }}
-          >
-            <Ionicons name="musical-notes" size={22} color="#fff" />
           </Pressable>
         </View>
       </View>
@@ -135,22 +131,27 @@ export default function WorkoutPhotoPreviewScreen() {
       <Modal
         visible={audienceVisible}
         transparent
-        animationType="slide"
-        onRequestClose={() => setAudienceVisible(false)}
+        animationType="none"
+        onRequestClose={hideAudience}
       >
-        <TouchableWithoutFeedback onPress={() => setAudienceVisible(false)}>
+        <TouchableWithoutFeedback onPress={hideAudience}>
           <View style={styles.modalOverlay} />
         </TouchableWithoutFeedback>
-        <View style={[styles.audienceSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        <Animated.View
+          style={[
+            styles.audienceSheet,
+            { paddingBottom: Math.max(insets.bottom, 24), transform: [{ translateY: slideAnim }] },
+          ]}
+        >
           <View style={styles.sheetHandle} />
           <Text style={styles.audienceTitle}>Select your Audience</Text>
 
           <Pressable
             style={styles.audienceOption}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setAudience('friends');
-              setAudienceVisible(false);
+              hideAudience();
             }}
           >
             <Ionicons name="lock-closed" size={22} color="#fff" />
@@ -163,9 +164,9 @@ export default function WorkoutPhotoPreviewScreen() {
           <Pressable
             style={styles.audienceOption}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setAudience('everyone');
-              setAudienceVisible(false);
+              hideAudience();
             }}
           >
             <Ionicons name="globe-outline" size={22} color="#fff" />
@@ -174,7 +175,7 @@ export default function WorkoutPhotoPreviewScreen() {
               {audience === 'everyone' && <Ionicons name="checkmark" size={16} color="#fff" />}
             </View>
           </Pressable>
-        </View>
+        </Animated.View>
       </Modal>
     </View>
   );
@@ -185,78 +186,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  circleBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    flex: 1,
-    fontFamily: fonts.bold,
-    fontSize: 26,
-    color: '#fff',
-    textAlign: 'center',
-  },
   photoContainer: {
-    flex: 1,
-    marginHorizontal: 0,
-    marginTop: 8,
-    marginBottom: 0,
-    borderRadius: 24,
+    width: '100%',
+    backgroundColor: '#1F1F1F',
+    borderRadius: 20,
     overflow: 'hidden',
   },
   photo: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   closeBtn: {
     position: 'absolute',
-    top: 16,
-    left: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-  },
-  rightCircles: {
-    position: 'absolute',
-    top: 20,
-    right: 16,
-    gap: 10,
-  },
-  frostedCircle: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconShadow: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
   },
   pillsRow: {
     position: 'absolute',
-    bottom: 24,
-    left: 16,
+    bottom: 14,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
+    justifyContent: 'center',
     gap: 10,
   },
   frostedPill: {
-    height: 52,
+    height: 44,
     borderRadius: 50,
     backgroundColor: 'rgba(255,255,255,0.25)',
     flexDirection: 'row',
@@ -268,34 +231,27 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   audiencePill: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     gap: 8,
-    minWidth: 160,
-  },
-  musicPill: {
-    width: 72,
-    justifyContent: 'center',
-    paddingHorizontal: 0,
-    alignItems: 'center',
+    minWidth: 130,
   },
   pillText: {
     fontFamily: fonts.semiBold,
-    fontSize: 17,
+    fontSize: 15,
     color: '#fff',
   },
   saveArea: {
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 24,
   },
   saveText: {
     fontFamily: fonts.instrumentSerif,
-    fontSize: 80,
+    fontSize: 56,
     color: '#fff',
     letterSpacing: -2,
-    lineHeight: 88,
+    lineHeight: 64,
   },
-  // Audience modal
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -322,7 +278,7 @@ const styles = StyleSheet.create({
   },
   audienceTitle: {
     fontFamily: fonts.semiBold,
-    fontSize: 22,
+    fontSize: 18,
     color: '#fff',
     textAlign: 'center',
     marginBottom: 4,
@@ -332,7 +288,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#121213',
     borderRadius: 20,
-    height: 72,
+    height: 64,
     paddingHorizontal: 20,
     gap: 14,
   },

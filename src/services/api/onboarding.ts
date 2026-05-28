@@ -1,60 +1,51 @@
 import { supabase } from '../supabase';
-import { getAnonymousSessionId, clearAnonymousSession } from '../anonymousSession';
+import { getAnonymousSessionId } from '../anonymousSession';
 
-// Field mapping from store property names to database column names
-// Also used to identify which field was skipped
+// Map store property names → onboarding_sessions column names.
+// Only fields collected by It Girl onboarding screens. Body / notification preferences
+// live exclusively on `profiles` (set post-onboarding via personal-details / settings),
+// not on `onboarding_sessions`.
 const fieldToColumn: Record<string, string> = {
   name: 'name',
-  experienceLevel: 'experience_level',
-  triedOtherApps: 'tried_other_apps',
-  mainGoal: 'main_goal',
-  bodyChangeGoal: 'body_change_goal',
-  otherGoals: 'goals',
-  referralSource: 'referral_source',
-  age: 'age',
-  heightInches: 'height',
-  currentWeight: 'weight',
-  targetWeight: 'target_weight',
-  unit: 'units',
-  trainingLocation: 'training_location',
-  workoutFrequency: 'workout_frequency',
+  trafficSource: 'traffic_source',
+  achieveGoals: 'achieve_goals',
+  idealDay: 'ideal_day',
+  challenges: 'challenges',
   workoutDays: 'workout_days',
-  mainObstacle: 'main_obstacle',
-  healthSituation: 'health_situation',
-  energyFluctuation: 'energy_fluctuation',
-  notificationsEnabled: 'notifications_enabled',
-  reminderTime: 'reminder_time',
   selectedPlanId: 'plan_id',
+  matchedBuddyIndex: 'matched_buddy_index',
+  programStartDate: 'program_start_date',
 };
+
+function isMissingColumnError(error: { code?: string; message?: string }): boolean {
+  if (!error) return false;
+  const code = String(error.code || '');
+  if (code === 'PGRST204' || code === '42703') return true;
+  return /could not find.*column|column.*does not exist/i.test(error.message || '');
+}
 
 export async function saveOnboardingField(field: string, value: unknown): Promise<boolean> {
   const anonymousId = await getAnonymousSessionId();
   const columnName = fieldToColumn[field] || field;
 
-  // Convert values to match database format
-  let dbValue = value;
-  if (field === 'unit') {
-    dbValue = value === 'lb' ? 'imperial' : 'metric';
-  } else if (field === 'workoutFrequency') {
-    // Convert "4 days / week" or "Every day" to integer
-    if (value === 'Every day') {
-      dbValue = 7;
-    } else if (typeof value === 'string') {
-      const match = value.match(/^(\d+)/);
-      dbValue = match ? parseInt(match[1], 10) : null;
-    }
-  }
-
   const { error } = await supabase.from('onboarding_sessions').upsert(
     {
       anonymous_id: anonymousId,
-      [columnName]: dbValue,
+      [columnName]: value,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'anonymous_id' }
   );
 
   if (error) {
+    // Column missing (migration not pushed yet) is non-fatal; linkOnboardingToUser will
+    // still attempt to upsert known fields to profiles later. Don't break onboarding.
+    if (isMissingColumnError(error)) {
+      console.warn(
+        `[onboarding] Column '${columnName}' missing on onboarding_sessions; skipping persist. Run pending migrations.`
+      );
+      return false;
+    }
     throw new Error(`Error saving onboarding field '${columnName}': ${error.message}`);
   }
   return true;
@@ -63,7 +54,6 @@ export async function saveOnboardingField(field: string, value: unknown): Promis
 export async function linkOnboardingToUser(userId: string): Promise<boolean> {
   const anonymousId = await getAnonymousSessionId();
 
-  // Get the onboarding data from anonymous session
   const { data: session, error: fetchError } = await supabase
     .from('onboarding_sessions')
     .select('*')
@@ -71,7 +61,6 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
     .single();
 
   if (fetchError) {
-    // No anonymous data to link - that's okay, user might have skipped onboarding
     console.log('No onboarding session found to link:', fetchError.message);
     return true;
   }
@@ -80,12 +69,10 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
     return true;
   }
 
-  // Get user info for profile creation
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Transfer data to profiles table using upsert (creates if doesn't exist)
   const { error: updateError } = await supabase.from('profiles').upsert(
     {
       id: userId,
@@ -93,25 +80,15 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
       name: session.name || null,
       full_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
       avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture,
-      experience_level: session.experience_level,
-      main_goal: session.main_goal,
-      goals: session.goals,
-      referral_source: session.referral_source,
-      age: session.age,
-      height: session.height,
-      weight: session.weight,
-      target_weight: session.target_weight,
-      units: session.units,
-      tried_other_apps: session.tried_other_apps,
-      body_change_goal: session.body_change_goal,
-      training_location: session.training_location,
-      workout_frequency: session.workout_frequency,
+      // It Girl onboarding answers — every column an active onboarding screen wrote to.
+      traffic_source: session.traffic_source,
+      achieve_goals: session.achieve_goals,
+      ideal_day: session.ideal_day,
+      challenges: session.challenges,
       workout_days: session.workout_days,
-      main_obstacle: session.main_obstacle,
-      health_situation: session.health_situation,
-      energy_fluctuation: session.energy_fluctuation,
-      notifications_enabled: session.notifications_enabled,
-      reminder_time: session.reminder_time,
+      plan_id: session.plan_id || 'summer-body',
+      matched_buddy_index: session.matched_buddy_index ?? null,
+      program_start_date: session.program_start_date,
       skipped_fields: session.skipped_fields,
       updated_at: new Date().toISOString(),
     },
@@ -123,7 +100,6 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
     return false;
   }
 
-  // Delete the anonymous session data (no longer needed)
   const { error: deleteError } = await supabase
     .from('onboarding_sessions')
     .delete()
@@ -131,7 +107,6 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
 
   if (deleteError) {
     console.warn('Error deleting anonymous session:', deleteError);
-    // Don't fail the whole operation, data was transferred successfully
   }
 
   return true;
@@ -153,12 +128,10 @@ export async function getOnboardingSession() {
   return data;
 }
 
-// Track when a user skips a question during onboarding
 export async function saveSkippedField(field: string): Promise<boolean> {
   const anonymousId = await getAnonymousSessionId();
   const columnName = fieldToColumn[field] || field;
 
-  // First, get the current skipped_fields array
   const { data: session } = await supabase
     .from('onboarding_sessions')
     .select('skipped_fields')
@@ -166,7 +139,6 @@ export async function saveSkippedField(field: string): Promise<boolean> {
     .single();
 
   const existing = session?.skipped_fields || [];
-  // Create a new array to avoid mutating the original
   const currentSkipped = existing.includes(columnName) ? existing : [...existing, columnName];
 
   const { error } = await supabase.from('onboarding_sessions').upsert(

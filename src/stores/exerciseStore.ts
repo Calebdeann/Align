@@ -108,12 +108,25 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => ({
 
     try {
       // Select fields needed for list view + search
-      const { data, error } = await supabase
-        .from('exercises')
-        .select(
-          'id, name, display_name, muscle_group, equipment, image_url, thumbnail_url, keywords, popularity'
-        )
-        .order('name');
+      // `default_note` was added in migration 075. On installs where the
+      // migration hasn't been applied yet, the select fails with PG error
+      // 42703 ("column ... does not exist") — fall back to the legacy
+      // column set so the app keeps working until db:push runs.
+      const COLUMNS_WITH_NOTE =
+        'id, name, display_name, muscle_group, equipment, image_url, thumbnail_url, keywords, popularity, default_note';
+      const COLUMNS_LEGACY =
+        'id, name, display_name, muscle_group, equipment, image_url, thumbnail_url, keywords, popularity';
+
+      const initial = await supabase.from('exercises').select(COLUMNS_WITH_NOTE).order('name');
+
+      let data: any = initial.data;
+      let error = initial.error;
+
+      if (error && (error.code === '42703' || /default_note/i.test(error.message ?? ''))) {
+        const retry = await supabase.from('exercises').select(COLUMNS_LEGACY).order('name');
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         throw new Error(error.message);
@@ -274,6 +287,14 @@ export function getExerciseDisplayName(exercise: {
   equipment?: string[];
 }): string {
   return useExerciseStore.getState().getTranslatedDisplayName(exercise);
+}
+
+/**
+ * Returns the hardcoded coaching note for an exercise (used as the notes-field
+ * placeholder in the active workout tracker + template builder), or undefined.
+ */
+export function getExerciseDefaultNote(exerciseId: string): string | undefined {
+  return useExerciseStore.getState().allExercises.find((e) => e.id === exerciseId)?.default_note;
 }
 
 /**

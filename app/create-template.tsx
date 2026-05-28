@@ -28,7 +28,11 @@ import {
   NumericInputDoneButton,
   NUMERIC_ACCESSORY_ID,
 } from '@/components/ui/NumericInputDoneButton';
-import { prefetchExerciseGif, resolveExerciseDisplayName } from '@/stores/exerciseStore';
+import {
+  prefetchExerciseGif,
+  resolveExerciseDisplayName,
+  getExerciseDefaultNote,
+} from '@/stores/exerciseStore';
 import { getWeightUnit, UnitSystem, filterNumericInput, fromKgForDisplay } from '@/utils/units';
 import {
   getBatchExercisePreviousSets,
@@ -240,7 +244,7 @@ function SwipeableSetRow({
       <Pressable
         style={swipeStyles.deleteButton}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           handleDelete();
         }}
       >
@@ -262,7 +266,7 @@ function SwipeableSetRow({
         <Pressable
           style={[styles.setColumn, styles.setNumberButton]}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             onSetTypePress?.(exerciseIndex, setIndex);
           }}
         >
@@ -278,6 +282,7 @@ function SwipeableSetRow({
 
         {/* Weight Input */}
         <TextInput
+          autoCorrect={false}
           style={[styles.setText, styles.kgColumn, styles.setInput]}
           value={set.targetWeight?.toString() || ''}
           onChangeText={(value) =>
@@ -292,6 +297,7 @@ function SwipeableSetRow({
 
         {/* Reps Input */}
         <TextInput
+          autoCorrect={false}
           style={[styles.setText, styles.repsColumn, styles.setInput]}
           value={set.targetReps?.toString() || ''}
           onChangeText={(value) =>
@@ -414,7 +420,7 @@ function DraggableExerciseRow({
       <Pressable
         style={styles.removeButton}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onRemove();
         }}
       >
@@ -883,7 +889,7 @@ export default function CreateTemplateScreen() {
       dragTranslateY.setValue(0);
       rowTranslateY.current.forEach((val) => val.setValue(0));
       setActiveDragIndex(index);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     },
     [dragTranslateY]
   );
@@ -903,7 +909,7 @@ export default function CreateTemplateScreen() {
       );
 
       if (targetIndex !== currentIndex) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
         const updated = [...exerciseOrderRef.current];
         const [draggedItem] = updated.splice(currentIndex, 1);
@@ -1192,7 +1198,7 @@ export default function CreateTemplateScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             handleBack();
           }}
           style={styles.backButton}
@@ -1268,7 +1274,7 @@ export default function CreateTemplateScreen() {
                     exercise.gifUrl || exercise.thumbnailUrl
                       ? () => {
                           withLock(() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                             prefetchExerciseGif(exercise.exerciseId);
                             router.push(`/exercise/${exercise.exerciseId}`);
                           });
@@ -1291,7 +1297,7 @@ export default function CreateTemplateScreen() {
                       exercise.gifUrl || exercise.thumbnailUrl
                         ? () => {
                             withLock(() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                               prefetchExerciseGif(exercise.exerciseId);
                               router.push(`/exercise/${exercise.exerciseId}`);
                             });
@@ -1305,7 +1311,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.moreButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     openExerciseMenu(exerciseIndex);
                   }}
                 >
@@ -1332,10 +1338,12 @@ export default function CreateTemplateScreen() {
                 </View>
               )}
 
-              {/* Notes Input */}
+              {/* Notes Input — hardcoded coaching note (if any) acts as the
+                  placeholder; clearing the field restores it. */}
               <TextInput
+                autoCorrect={false}
                 style={styles.notesInput}
-                placeholder="Add notes here..."
+                placeholder={getExerciseDefaultNote(exercise.exerciseId) ?? 'Add notes here...'}
                 placeholderTextColor={colors.textSecondary}
                 value={exercise.notes || ''}
                 onChangeText={(text) => updateNotes(exerciseIndex, text)}
@@ -1346,7 +1354,7 @@ export default function CreateTemplateScreen() {
               <Pressable
                 style={styles.restTimerRow}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   openRestTimerModal(exerciseIndex);
                 }}
               >
@@ -1396,7 +1404,7 @@ export default function CreateTemplateScreen() {
               <Pressable
                 style={styles.addSetButton}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   addSet(exerciseIndex);
                 }}
               >
@@ -1441,7 +1449,7 @@ export default function CreateTemplateScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeExerciseMenu();
           }}
         >
@@ -1455,7 +1463,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     handleReorderExercises();
                   }}
                 >
@@ -1468,7 +1476,7 @@ export default function CreateTemplateScreen() {
                   <Pressable
                     style={styles.menuItem}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                       handleRemoveFromSuperset();
                     }}
                   >
@@ -1479,7 +1487,7 @@ export default function CreateTemplateScreen() {
                   <Pressable
                     style={styles.menuItem}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                       handleAddToSuperset();
                     }}
                   >
@@ -1491,7 +1499,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     const exerciseIdx = selectedExerciseIndex!;
                     const lastSetIdx = exercises[exerciseIdx].sets.length - 1;
                     closeExerciseMenu();
@@ -1505,7 +1513,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     handleRemoveExercise();
                   }}
                 >
@@ -1555,7 +1563,7 @@ export default function CreateTemplateScreen() {
             <Pressable
               style={styles.doneButton}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 saveReorder();
               }}
             >
@@ -1575,7 +1583,7 @@ export default function CreateTemplateScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeRestTimerModal();
           }}
         >
@@ -1612,7 +1620,7 @@ export default function CreateTemplateScreen() {
                       key={option.value}
                       style={[styles.restTimerOption, isSelected && styles.restTimerOptionSelected]}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         if (restTimerModalExerciseIndex !== null) {
                           updateRestTimer(restTimerModalExerciseIndex, option.value);
                         }
@@ -1636,7 +1644,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.doneButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     closeRestTimerModal();
                   }}
                 >
@@ -1658,7 +1666,7 @@ export default function CreateTemplateScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeSupersetModal();
           }}
         >
@@ -1685,7 +1693,7 @@ export default function CreateTemplateScreen() {
                       key={`${exercise.exerciseId}-${index}`}
                       style={styles.supersetExerciseRow}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         toggleSupersetExercise(index);
                       }}
                     >
@@ -1753,7 +1761,7 @@ export default function CreateTemplateScreen() {
                     supersetSelectedIndices.length < 2 && styles.supersetConfirmButtonDisabled,
                   ]}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     confirmSuperset();
                   }}
                 >
@@ -1777,7 +1785,7 @@ export default function CreateTemplateScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeSetTypeModal();
           }}
         >
@@ -1794,7 +1802,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     updateSetType('warmup');
                   }}
                 >
@@ -1807,7 +1815,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     updateSetType('normal');
                   }}
                 >
@@ -1822,7 +1830,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     updateSetType('failure');
                   }}
                 >
@@ -1835,7 +1843,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     updateSetType('dropset');
                   }}
                 >
@@ -1848,7 +1856,7 @@ export default function CreateTemplateScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     removeSetFromTypeModal();
                   }}
                 >
@@ -2018,7 +2026,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   setColumn: {
-    flex: 1,
+    // Fixed width matching the exercise animation (size={46}) so the column
+    // — both header text and set numbers — sits directly under the image.
+    width: 46,
     textAlign: 'center',
   },
   previousColumn: {

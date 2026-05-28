@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -38,24 +38,6 @@ const REORDER_ROW_HEIGHT = 72;
 const SWIPE_DELETE_WIDTH = 60;
 
 // ─── SVG Icons (matching legacy) ─────────────────────────────────────────────
-
-function PlusCircleIcon() {
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={9} stroke="#000" strokeWidth={1.5} />
-      <Path d="M12 8v8M8 12h8" stroke="#000" strokeWidth={1.5} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Circle cx={11} cy={11} r={7} stroke="#000" strokeWidth={1.5} />
-      <Path d="M16 16l4 4" stroke="#000" strokeWidth={1.5} strokeLinecap="round" />
-    </Svg>
-  );
-}
 
 function FolderIcon() {
   return (
@@ -185,7 +167,7 @@ function MinusCircleIcon() {
   );
 }
 
-// ─── Template Card (2-col grid, matches legacy) ───────────────────────────────
+// ─── Template Card (horizontal row, matches legacy) ───────────────────────────
 
 function TemplateCard({
   template,
@@ -212,7 +194,10 @@ function TemplateCard({
         isDragGhost && { opacity: 0.3 },
         pressed && !isDragGhost && { opacity: 0.7 },
       ]}
-      onPress={onPress}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        onPress();
+      }}
     >
       <View style={styles.templateImageContainer}>
         {template.localImage ? (
@@ -236,8 +221,10 @@ function TemplateCard({
         )}
       </View>
       <View style={styles.templateInfo}>
-        <Text style={styles.templateName}>{template.name}</Text>
-        <Text style={styles.templateMeta}>
+        <Text style={styles.templateName} numberOfLines={1}>
+          {template.name}
+        </Text>
+        <Text style={styles.templateMeta} numberOfLines={1}>
           {totalSets} Sets • {duration}
         </Text>
       </View>
@@ -245,8 +232,10 @@ function TemplateCard({
         style={({ pressed }) => [styles.startTemplateButton, pressed && { opacity: 0.7 }]}
         onPress={(e) => {
           e.stopPropagation();
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onStart();
         }}
+        hitSlop={6}
       >
         <Text style={styles.startTemplateIcon}>+</Text>
         <Text style={styles.startTemplateText}>Start</Text>
@@ -268,7 +257,7 @@ function SwipeableTemplateCard({
 }) {
   const ref = useRef<Swipeable>(null);
   const handleDelete = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     ref.current?.close();
     onDelete(template);
   }, [template, onDelete]);
@@ -350,7 +339,13 @@ function DraggableTemplateRow({
         },
       ]}
     >
-      <Pressable style={styles.removeButton} onPress={onRemove}>
+      <Pressable
+        style={styles.removeButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          onRemove();
+        }}
+      >
         <MinusCircleIcon />
       </Pressable>
       <View style={styles.reorderImagePlaceholder}>
@@ -430,7 +425,13 @@ function DraggableFolderRow({
         },
       ]}
     >
-      <Pressable style={styles.removeButton} onPress={onRemove}>
+      <Pressable
+        style={styles.removeButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          onRemove();
+        }}
+      >
         <MinusCircleIcon />
       </Pressable>
       <View style={[styles.reorderImagePlaceholder, { justifyContent: 'center' }]}>
@@ -459,11 +460,16 @@ export default function StartWorkoutSheet() {
   const moveTemplateToFolder = useTemplateStore((s) => s.moveTemplateToFolder);
   const reorderTemplatesInStore = useTemplateStore((s) => s.reorderTemplates);
   const reorderFoldersInStore = useTemplateStore((s) => s.reorderFolders);
+  const ensureDefaultFolders = useTemplateStore((s) => s.ensureDefaultFolders);
 
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const discardActiveWorkout = useWorkoutStore((s) => s.discardActiveWorkout);
   const startActiveWorkout = useWorkoutStore((s) => s.startActiveWorkout);
   const userId = useUserProfileStore((s) => s.userId);
+
+  useEffect(() => {
+    ensureDefaultFolders();
+  }, [ensureDefaultFolders]);
 
   // Workout-in-progress modal
   const [showWorkoutInProgressModal, setShowWorkoutInProgressModal] = useState(false);
@@ -536,6 +542,7 @@ export default function StartWorkoutSheet() {
   // ─── Start workout helpers ───────────────────────────────────────────────────
 
   const handleStartEmptyWorkout = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (activeWorkout?.isMinimized) {
       if (activeWorkout.exercises.length === 0) {
         withLock(() => router.replace('/active-workout'));
@@ -565,11 +572,13 @@ export default function StartWorkoutSheet() {
   };
 
   const handleResumeWorkout = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setShowWorkoutInProgressModal(false);
     withLock(() => router.replace('/active-workout'));
   };
 
   const handleStartNewWorkout = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     discardActiveWorkout();
     setShowWorkoutInProgressModal(false);
     if (pendingTemplateId) {
@@ -602,6 +611,7 @@ export default function StartWorkoutSheet() {
   // ─── New template + folder selection ────────────────────────────────────────
 
   const handleNewTemplatePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (folders.length === 0) {
       withLock(() => router.push('/create-template'));
     } else if (folders.length === 1) {
@@ -630,6 +640,7 @@ export default function StartWorkoutSheet() {
   };
 
   const handleSelectFolderForNewTemplate = (folderId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     closeFolderSelectionModal();
     setTimeout(() => {
       withLock(() => router.push({ pathname: '/create-template', params: { folderId } }));
@@ -639,6 +650,7 @@ export default function StartWorkoutSheet() {
   // ─── Folder menu ─────────────────────────────────────────────────────────────
 
   const openFolderMenu = (folderId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setSelectedFolderId(folderId);
     setShowFolderMenu(true);
     Animated.spring(folderMenuSlideAnim, {
@@ -661,6 +673,7 @@ export default function StartWorkoutSheet() {
   };
 
   const handleFolderMenuReorderTemplates = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     closeFolderMenu();
     setTimeout(() => {
       const folderTemplates = selectedFolderId ? getTemplatesInFolder(selectedFolderId) : [];
@@ -674,6 +687,7 @@ export default function StartWorkoutSheet() {
   };
 
   const handleFolderMenuAddRoutine = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     closeFolderMenu();
     withLock(() =>
       router.push({
@@ -684,6 +698,7 @@ export default function StartWorkoutSheet() {
   };
 
   const handleFolderMenuDeleteFolder = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (!selectedFolderId) return;
     const folder = folders.find((f) => f.id === selectedFolderId);
     if (!folder) return;
@@ -708,6 +723,7 @@ export default function StartWorkoutSheet() {
   // ─── Create folder ───────────────────────────────────────────────────────────
 
   const handleCreateFolder = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (newFolderName.trim()) {
       createFolder(newFolderName.trim());
       setShowCreateFolderModal(false);
@@ -756,6 +772,7 @@ export default function StartWorkoutSheet() {
   };
 
   const saveTemplateReorder = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     reorderTemplatesInStore(reorderTemplates);
     setShowReorderModal(false);
   };
@@ -884,7 +901,7 @@ export default function StartWorkoutSheet() {
         <Pressable
           style={styles.closeBtn}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
           hitSlop={8}
@@ -903,144 +920,104 @@ export default function StartWorkoutSheet() {
           <Text style={styles.startEmptyText}>Start Empty Workout</Text>
         </Pressable>
 
-        {/* Saved Templates section title */}
-        <Text style={styles.sectionTitleWithPadding}>Saved Templates</Text>
+        {/* New Template */}
+        <Pressable
+          style={({ pressed }) => [styles.startEmptyButton, pressed && { opacity: 0.7 }]}
+          onPress={handleNewTemplatePress}
+        >
+          <Text style={styles.plusIcon}>+</Text>
+          <Text style={styles.startEmptyText}>New Template</Text>
+        </Pressable>
 
-        {/* Template action cards */}
-        <View style={styles.cardsRow}>
-          <Pressable style={styles.card} onPress={handleNewTemplatePress}>
-            <PlusCircleIcon />
-            <Text
-              style={styles.cardText}
-              numberOfLines={2}
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
+        {/* Saved Templates section header */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Saved Templates</Text>
+          <View style={styles.sectionHeaderRight}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                setNewFolderName('');
+                setShowCreateFolderModal(true);
+              }}
+              style={styles.folderButton}
             >
-              New Template
-            </Text>
-          </Pressable>
-          <Pressable
-            style={styles.card}
-            onPress={() => withLock(() => router.push('/explore-templates'))}
-          >
-            <SearchIcon />
-            <Text
-              style={styles.cardText}
-              numberOfLines={2}
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
-            >
-              Explore Templates
-            </Text>
-          </Pressable>
+              <FolderIcon />
+            </Pressable>
+          </View>
         </View>
 
-        {/* My Templates section */}
-        {templates.length > 0 && (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Templates</Text>
-            <View style={styles.sectionHeaderRight}>
-              <Pressable
-                onPress={() => {
-                  setNewFolderName('');
-                  setShowCreateFolderModal(true);
+        <View style={styles.templatesList}>
+          {folders.map((folder) => {
+            const folderTemplates = folderTemplateMap.get(folder.id) || [];
+            return (
+              <View
+                key={folder.id}
+                ref={(ref) => {
+                  if (ref) folderContainerRefs.current.set(folder.id, ref);
                 }}
-                style={styles.folderButton}
+                style={[
+                  styles.folderContainer,
+                  isDragToFolder &&
+                    hoveredFolderId === folder.id &&
+                    styles.folderContainerDropTarget,
+                ]}
               >
-                <FolderIcon />
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {(templates.length > 0 || folders.length > 0) && (
-          <View style={styles.templatesList}>
-            {folders.map((folder) => {
-              const folderTemplates = folderTemplateMap.get(folder.id) || [];
-              return (
-                <View
-                  key={folder.id}
-                  ref={(ref) => {
-                    if (ref) folderContainerRefs.current.set(folder.id, ref);
-                  }}
-                  style={[
-                    styles.folderContainer,
-                    isDragToFolder &&
-                      hoveredFolderId === folder.id &&
-                      styles.folderContainerDropTarget,
-                  ]}
-                >
-                  <View style={styles.folderHeaderRow}>
-                    <Pressable
-                      style={({ pressed }) => [styles.folderHeader, pressed && { opacity: 0.7 }]}
-                      onPress={() => toggleFolderCollapsed(folder.id)}
-                    >
-                      <FolderChevronIcon collapsed={folder.isCollapsed} />
-                      <Text style={styles.folderName}>{folder.name}</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.folderMenuButton}
-                      onPress={() => openFolderMenu(folder.id)}
-                    >
-                      <Ionicons name="ellipsis-horizontal" size={18} color="rgba(0,0,0,0.4)" />
-                    </Pressable>
-                  </View>
-
-                  {!folder.isCollapsed && (
-                    <View style={styles.folderTemplates}>
-                      {folderTemplates.length === 0 ? (
-                        <Pressable
-                          style={styles.addTemplateBox}
-                          onPress={() =>
-                            withLock(() =>
-                              router.push({
-                                pathname: '/create-template',
-                                params: { folderId: folder.id },
-                              })
-                            )
-                          }
-                        >
-                          <Text style={styles.addTemplateIcon}>+</Text>
-                          <Text style={styles.addTemplateText}>Add Template</Text>
-                        </Pressable>
-                      ) : (
-                        folderTemplates.map((template) => (
-                          <SwipeableTemplateCard
-                            key={template.id}
-                            template={template}
-                            onDelete={handleDeleteTemplate}
-                          >
-                            <TemplateCard
-                              template={template}
-                              onStart={() => handleStartFromTemplate(template.id)}
-                              onPress={() => handleTemplatePress(template)}
-                              isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
-                            />
-                          </SwipeableTemplateCard>
-                        ))
-                      )}
-                    </View>
-                  )}
+                <View style={styles.folderHeaderRow}>
+                  <Pressable
+                    style={({ pressed }) => [styles.folderHeader, pressed && { opacity: 0.7 }]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                      toggleFolderCollapsed(folder.id);
+                    }}
+                  >
+                    <FolderChevronIcon collapsed={folder.isCollapsed} />
+                    <Text style={styles.folderName}>{folder.name}</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.folderMenuButton}
+                    onPress={() => openFolderMenu(folder.id)}
+                  >
+                    <Ionicons name="ellipsis-horizontal" size={18} color="rgba(0,0,0,0.4)" />
+                  </Pressable>
                 </View>
-              );
-            })}
 
-            {unfolderedTemplates.map((template) => (
-              <SwipeableTemplateCard
-                key={template.id}
+                {!folder.isCollapsed && folderTemplates.length > 0 && (
+                  <View style={styles.folderTemplates}>
+                    {folderTemplates.map((template) => (
+                      <SwipeableTemplateCard
+                        key={template.id}
+                        template={template}
+                        onDelete={handleDeleteTemplate}
+                      >
+                        <TemplateCard
+                          template={template}
+                          onStart={() => handleStartFromTemplate(template.id)}
+                          onPress={() => handleTemplatePress(template)}
+                          isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
+                        />
+                      </SwipeableTemplateCard>
+                    ))}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+
+          {unfolderedTemplates.map((template) => (
+            <SwipeableTemplateCard
+              key={template.id}
+              template={template}
+              onDelete={handleDeleteTemplate}
+            >
+              <TemplateCard
                 template={template}
-                onDelete={handleDeleteTemplate}
-              >
-                <TemplateCard
-                  template={template}
-                  onStart={() => handleStartFromTemplate(template.id)}
-                  onPress={() => handleTemplatePress(template)}
-                  isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
-                />
-              </SwipeableTemplateCard>
-            ))}
-          </View>
-        )}
+                onStart={() => handleStartFromTemplate(template.id)}
+                onPress={() => handleTemplatePress(template)}
+                isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
+              />
+            </SwipeableTemplateCard>
+          ))}
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -1087,6 +1064,7 @@ export default function StartWorkoutSheet() {
             <Pressable
               style={styles.cancelButton}
               onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 setShowWorkoutInProgressModal(false);
                 setPendingTemplateId(null);
               }}
@@ -1104,7 +1082,13 @@ export default function StartWorkoutSheet() {
         animationType="none"
         onRequestClose={closeFolderMenu}
       >
-        <Pressable style={styles.menuModalOverlay} onPress={closeFolderMenu}>
+        <Pressable
+          style={styles.menuModalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            closeFolderMenu();
+          }}
+        >
           <Animated.View
             style={[styles.menuModalContent, { transform: [{ translateY: folderMenuSlideAnim }] }]}
           >
@@ -1142,6 +1126,7 @@ export default function StartWorkoutSheet() {
           <View style={styles.createFolderModal}>
             <Text style={styles.createFolderTitle}>New Folder</Text>
             <TextInput
+              autoCorrect={false}
               style={styles.createFolderInput}
               placeholder="Folder name"
               value={newFolderName}
@@ -1154,6 +1139,7 @@ export default function StartWorkoutSheet() {
               <Pressable
                 style={styles.createFolderCancel}
                 onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   setShowCreateFolderModal(false);
                   setNewFolderName('');
                 }}
@@ -1179,7 +1165,13 @@ export default function StartWorkoutSheet() {
         animationType="none"
         onRequestClose={closeFolderSelectionModal}
       >
-        <Pressable style={styles.menuModalOverlay} onPress={closeFolderSelectionModal}>
+        <Pressable
+          style={styles.menuModalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            closeFolderSelectionModal();
+          }}
+        >
           <Animated.View
             style={[
               styles.menuModalContent,
@@ -1216,7 +1208,12 @@ export default function StartWorkoutSheet() {
       >
         <SafeAreaView style={styles.reorderModal} edges={['top', 'bottom']}>
           <View style={styles.reorderHeader}>
-            <Pressable onPress={() => setShowReorderModal(false)}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                setShowReorderModal(false);
+              }}
+            >
               <Text style={styles.reorderCancel}>Cancel</Text>
             </Pressable>
             <Text style={styles.reorderTitle}>Reorder Templates</Text>
@@ -1286,40 +1283,6 @@ const styles = StyleSheet.create({
   plusIcon: { fontFamily: fonts.medium, fontSize: 20, color: '#000', marginRight: 4 },
   startEmptyText: { fontFamily: fonts.medium, fontSize: 16, color: '#000' },
 
-  sectionTitleWithPadding: {
-    fontFamily: fonts.semiBold,
-    fontSize: 18,
-    color: '#000',
-    paddingHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 12,
-  },
-
-  cardsRow: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    gap: 12,
-    marginBottom: 8,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 14,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    gap: 10,
-    minHeight: 110,
-    justifyContent: 'center',
-  },
-  cardText: {
-    fontFamily: fonts.medium,
-    fontSize: 16,
-    color: '#000',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1357,45 +1320,42 @@ const styles = StyleSheet.create({
   folderMenuButton: { padding: 8 },
 
   folderTemplates: { gap: 8, paddingBottom: 4 },
-  addTemplateBox: {
+  // Template card (horizontal row, matches legacy)
+  templateCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#f5f5f5',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: 12,
   },
-  addTemplateIcon: { fontFamily: fonts.semiBold, fontSize: 20, color: 'rgba(0,0,0,0.4)' },
-  addTemplateText: { fontFamily: fonts.medium, fontSize: 15, color: 'rgba(0,0,0,0.4)' },
-
-  // Template card (2-col, matches legacy)
-  templateCard: {
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 0,
+  templateImageContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
-  templateImageContainer: { marginBottom: 8 },
-  templateImage: { width: '100%', height: 100, borderRadius: 8 },
+  templateImage: { width: 48, height: 48 },
   templateImagePlaceholder: {
     backgroundColor: 'rgba(0,0,0,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  templateInfo: { marginBottom: 10 },
-  templateName: { fontFamily: fonts.semiBold, fontSize: 15, color: '#000', marginBottom: 2 },
+  templateInfo: { flex: 1, gap: 2 },
+  templateName: { fontFamily: fonts.semiBold, fontSize: 15, color: '#000' },
   templateMeta: { fontFamily: fonts.medium, fontSize: 13, color: 'rgba(0,0,0,0.5)' },
   startTemplateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     gap: 4,
   },
-  startTemplateIcon: { fontFamily: fonts.bold, fontSize: 16, color: '#fff' },
-  startTemplateText: { fontFamily: fonts.semiBold, fontSize: 14, color: '#fff' },
+  startTemplateIcon: { fontFamily: fonts.bold, fontSize: 16, color: '#000' },
+  startTemplateText: { fontFamily: fonts.semiBold, fontSize: 14, color: '#000' },
 
   // Drag overlay
   dragOverlay: {

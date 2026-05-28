@@ -78,7 +78,7 @@ function MenuItem({
       <Pressable
         style={styles.menuItem}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onPress?.();
         }}
       >
@@ -203,11 +203,11 @@ export default function WorkoutSettingsScreen() {
               <Switch
                 value={rpeTrackingEnabled}
                 onValueChange={(value) => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   setRpeTrackingEnabled(value);
                 }}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: '#E5E5EA', true: '#34C759' }}
+                ios_backgroundColor="#E5E5EA"
               />
             }
           />
@@ -232,11 +232,11 @@ export default function WorkoutSettingsScreen() {
               <Switch
                 value={vibrationEnabled}
                 onValueChange={(value) => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   setVibrationEnabled(value);
                 }}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: '#E5E5EA', true: '#34C759' }}
+                ios_backgroundColor="#E5E5EA"
               />
             }
           />
@@ -252,7 +252,13 @@ export default function WorkoutSettingsScreen() {
         animationType="none"
         onRequestClose={closeTimerModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeTimerModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            closeTimerModal();
+          }}
+        >
           <Animated.View
             style={[
               styles.bottomSheetContent,
@@ -273,7 +279,7 @@ export default function WorkoutSettingsScreen() {
                       key={option.value}
                       style={[styles.optionRow, isSelected && styles.optionRowSelected]}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         handleSelectTimer(option.value);
                       }}
                     >
@@ -290,7 +296,7 @@ export default function WorkoutSettingsScreen() {
                 <Pressable
                   style={styles.doneButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     closeTimerModal();
                   }}
                 >
@@ -309,7 +315,13 @@ export default function WorkoutSettingsScreen() {
         animationType="none"
         onRequestClose={closeSoundModal}
       >
-        <Pressable style={styles.modalOverlay} onPress={closeSoundModal}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            closeSoundModal();
+          }}
+        >
           <Animated.View
             style={[
               styles.bottomSheetContent,
@@ -330,7 +342,7 @@ export default function WorkoutSettingsScreen() {
                       key={option.id}
                       style={[styles.optionRow, isSelected && styles.optionRowSelected]}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         handleSelectSound(option.id);
                       }}
                     >
@@ -343,7 +355,7 @@ export default function WorkoutSettingsScreen() {
                         <Pressable
                           style={styles.previewButton}
                           onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                             playTimerSound(option.id);
                           }}
                           hitSlop={8}
@@ -367,7 +379,7 @@ export default function WorkoutSettingsScreen() {
                 <Pressable
                   style={styles.doneButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     closeSoundModal();
                   }}
                 >

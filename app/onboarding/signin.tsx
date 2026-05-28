@@ -15,12 +15,13 @@ import { router } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts, spacing } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
 import { clearAnonymousSession } from '@/services/anonymousSession';
+import { linkOnboardingToUser } from '@/services/api/onboarding';
 import { OnboardingBackButton } from '@/components';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -63,20 +64,14 @@ export default function SignInScreen() {
         Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
         return;
       }
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', data.user.id)
-        .single();
-      if (!profile) {
+      const linked = await linkOnboardingToUser(data.user.id);
+      if (!linked) {
+        Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
         await supabase.auth.signOut();
-        Alert.alert(t('auth.noAccountFound'), t('auth.noAccountMessage'), [
-          { text: t('common.ok') },
-        ]);
         return;
       }
       await clearAnonymousSession();
-      router.replace('/(tabs)');
+      router.replace('/onboarding/find-partner');
     } catch (error: any) {
       if (error.code === 'ERR_REQUEST_CANCELED') return;
       Alert.alert(t('auth.signInFailed'), error?.message || t('auth.appleSignInError'));
@@ -91,7 +86,11 @@ export default function SignInScreen() {
       const redirectTo = 'itgirl://auth/callback';
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo, skipBrowserRedirect: true },
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+          queryParams: { prompt: 'select_account' },
+        },
       });
       if (error) throw error;
       if (!data.url) {
@@ -128,20 +127,14 @@ export default function SignInScreen() {
         Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
         return;
       }
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', sessionData.user.id)
-        .single();
-      if (!profile) {
+      const linked = await linkOnboardingToUser(sessionData.user.id);
+      if (!linked) {
+        Alert.alert(t('auth.signInFailed'), t('errors.somethingWentWrongTryAgain'));
         await supabase.auth.signOut();
-        Alert.alert(t('auth.noAccountFound'), t('auth.noAccountMessage'), [
-          { text: t('common.ok') },
-        ]);
         return;
       }
       await clearAnonymousSession();
-      router.replace('/(tabs)');
+      router.replace('/onboarding/find-partner');
     } catch (error: any) {
       Alert.alert(t('auth.signInFailed'), t('auth.googleSignInError'));
     } finally {
@@ -183,7 +176,7 @@ export default function SignInScreen() {
           {/* Apple */}
           <Pressable
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              strongHaptic();
               handleAppleSignIn();
             }}
             onPressIn={() => {
@@ -201,7 +194,7 @@ export default function SignInScreen() {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <View style={styles.buttonRow}>
-                  <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
+                  <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
                   <Text style={styles.appleButtonText}>{t('auth.continueWithApple')}</Text>
                 </View>
               )}
@@ -212,7 +205,7 @@ export default function SignInScreen() {
           <Pressable
             style={[styles.authButton, styles.googleButton]}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              strongHaptic();
               handleGoogleSignIn();
             }}
             disabled={isAppleLoading || isGoogleLoading}
@@ -234,7 +227,10 @@ export default function SignInScreen() {
           {/* DEV SKIP */}
           {__DEV__ && (
             <Pressable
-              onPress={() => router.replace('/onboarding/find-partner')}
+              onPress={() => {
+                strongHaptic();
+                router.replace('/(tabs)');
+              }}
               style={styles.devButton}
             >
               <Text style={styles.devButtonText}>Dev: Skip Auth →</Text>
@@ -281,7 +277,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: 100,
+    width: 90,
     height: 4,
     backgroundColor: '#000000',
   },
@@ -302,8 +298,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: '20%',
-    right: '20%',
+    left: '14%',
+    right: '14%',
     justifyContent: 'center',
     paddingBottom: '20%',
   },
@@ -311,8 +307,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   authButton: {
-    height: 54,
-    borderRadius: 30,
+    height: 65,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -346,17 +342,17 @@ const styles = StyleSheet.create({
   },
   appleButtonText: {
     fontFamily: fonts.semiBold,
-    fontSize: 16,
+    fontSize: 19,
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
   googleLogo: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
   },
   googleButtonText: {
     fontFamily: fonts.semiBold,
-    fontSize: 16,
+    fontSize: 19,
     color: '#000000',
     letterSpacing: -0.2,
   },

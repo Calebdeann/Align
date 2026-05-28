@@ -14,6 +14,7 @@ import {
   Dimensions,
   PanResponder,
   AppState,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -39,6 +40,8 @@ import {
   UnitSystem,
   filterNumericInput,
   fromKgForDisplay,
+  toKgForStorage,
+  kgToLbs,
 } from '@/utils/units';
 import ClockModal from '@/components/workout/ClockModal';
 import {
@@ -53,6 +56,7 @@ import {
   useExerciseStore,
   prefetchExerciseGif,
   getExerciseDisplayName,
+  getExerciseDefaultNote,
   resolveExerciseDisplayName,
 } from '@/stores/exerciseStore';
 import { playTimerSoundDouble, triggerTimerVibration } from '@/utils/sounds';
@@ -63,6 +67,7 @@ import {
   endWorkoutLiveActivity,
   CurrentExerciseInfo,
 } from '@/services/liveActivity';
+import { isCardioExerciseId } from '@/constants/cardioOptions';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -89,6 +94,11 @@ interface ExerciseSet {
   previous: string;
   kg: string;
   reps: string;
+  // Cardio-only fields. When `isCardioExerciseId(exercise.id)` is true,
+  // the row UI hides kg/reps and shows these instead. Stored as strings to
+  // match the TextInput pattern used by kg/reps; parsed on save.
+  difficulty?: string;
+  durationMinutes?: string;
   completed: boolean;
   setType: SetType;
   rpe: number | null;
@@ -431,7 +441,7 @@ function DraggableExerciseRow({
       <Pressable
         style={styles.removeButton}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onRemove();
         }}
       >
@@ -525,10 +535,13 @@ interface SwipeableSetRowProps {
   exerciseIndex: number;
   setTypeLabel: string;
   setType: SetType;
+  // Cardio mode swaps kg/reps inputs for difficulty/duration. Detected by the
+  // parent via `isCardioExerciseId(exercise.id)` membership in the cardio set.
+  isCardio?: boolean;
   onUpdateValue: (
     exerciseIndex: number,
     setIndex: number,
-    field: 'kg' | 'reps',
+    field: 'kg' | 'reps' | 'difficulty' | 'durationMinutes',
     value: string
   ) => void;
   onToggleCompletion: (exerciseIndex: number, setIndex: number) => void;
@@ -549,6 +562,7 @@ function SwipeableSetRow({
   exerciseIndex,
   setTypeLabel,
   setType,
+  isCardio,
   onUpdateValue,
   onToggleCompletion,
   onDelete,
@@ -587,7 +601,7 @@ function SwipeableSetRow({
       <Pressable
         style={swipeStyles.deleteButton}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           handleDelete();
         }}
       >
@@ -604,14 +618,12 @@ function SwipeableSetRow({
       overshootRight={false}
       containerStyle={swipeStyles.container}
     >
-      <View
-        style={[styles.setRow, set.completed && styles.setRowCompleted, { marginHorizontal: 0 }]}
-      >
+      <View style={[styles.setRow, set.completed && styles.setRowCompleted]}>
         {/* Set number / type */}
         <Pressable
           style={[styles.setColumn, styles.setNumberButton]}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             onSetTypePress(exerciseIndex, setIndex);
           }}
         >
@@ -623,38 +635,73 @@ function SwipeableSetRow({
           {set.previous}
         </Text>
 
-        {/* Input fields */}
-        <TextInput
-          style={[styles.setText, styles.kgColumn, styles.setInput]}
-          value={set.kg}
-          onChangeText={(value) =>
-            onUpdateValue(exerciseIndex, setIndex, 'kg', filterNumericInput(value))
-          }
-          keyboardType="decimal-pad"
-          placeholder={suggestedWeight || previousWeight || '0'}
-          placeholderTextColor={colors.textTertiary}
-          inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
-          onFocus={onInputFocus}
-        />
-        <TextInput
-          style={[styles.setText, styles.repsColumn, styles.setInput]}
-          value={set.reps}
-          onChangeText={(value) =>
-            onUpdateValue(exerciseIndex, setIndex, 'reps', filterNumericInput(value, false))
-          }
-          keyboardType="numeric"
-          placeholder={suggestedReps || previousReps || '0'}
-          placeholderTextColor={colors.textTertiary}
-          inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
-          onFocus={onInputFocus}
-        />
+        {/* Input fields — cardio mode swaps kg/reps for difficulty/duration */}
+        {isCardio ? (
+          <>
+            <TextInput
+              autoCorrect={false}
+              style={[styles.setText, styles.kgColumn, styles.setInput]}
+              value={set.difficulty ?? ''}
+              onChangeText={(value) =>
+                onUpdateValue(exerciseIndex, setIndex, 'difficulty', filterNumericInput(value))
+              }
+              keyboardType="decimal-pad"
+              placeholder="Level"
+              placeholderTextColor={colors.textTertiary}
+              inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
+              onFocus={onInputFocus}
+            />
+            <TextInput
+              autoCorrect={false}
+              style={[styles.setText, styles.repsColumn, styles.setInput]}
+              value={set.durationMinutes ?? ''}
+              onChangeText={(value) =>
+                onUpdateValue(exerciseIndex, setIndex, 'durationMinutes', filterNumericInput(value))
+              }
+              keyboardType="decimal-pad"
+              placeholder="Min"
+              placeholderTextColor={colors.textTertiary}
+              inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
+              onFocus={onInputFocus}
+            />
+          </>
+        ) : (
+          <>
+            <TextInput
+              autoCorrect={false}
+              style={[styles.setText, styles.kgColumn, styles.setInput]}
+              value={set.kg}
+              onChangeText={(value) =>
+                onUpdateValue(exerciseIndex, setIndex, 'kg', filterNumericInput(value))
+              }
+              keyboardType="decimal-pad"
+              placeholder={suggestedWeight || previousWeight || '0'}
+              placeholderTextColor={colors.textTertiary}
+              inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
+              onFocus={onInputFocus}
+            />
+            <TextInput
+              autoCorrect={false}
+              style={[styles.setText, styles.repsColumn, styles.setInput]}
+              value={set.reps}
+              onChangeText={(value) =>
+                onUpdateValue(exerciseIndex, setIndex, 'reps', filterNumericInput(value, false))
+              }
+              keyboardType="numeric"
+              placeholder={suggestedReps || previousReps || '0'}
+              placeholderTextColor={colors.textTertiary}
+              inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
+              onFocus={onInputFocus}
+            />
+          </>
+        )}
 
         {/* RPE column (conditional) */}
         {rpeEnabled && (
           <Pressable
             style={styles.rpeColumn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               onRpePress(exerciseIndex, setIndex);
             }}
           >
@@ -685,7 +732,8 @@ function SwipeableSetRow({
 const swipeStyles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    borderRadius: 8,
+    borderRadius: 0,
+    marginHorizontal: -spacing.lg,
   },
   deleteButton: {
     width: DELETE_BUTTON_WIDTH,
@@ -714,6 +762,7 @@ export default function ActiveWorkoutScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const units = useUserPreferencesStore((s) => s.getUnitSystem());
   const [clockModalVisible, setClockModalVisible] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Global store for persistence
   const activeWorkout = useWorkoutStore((state) => state.activeWorkout);
@@ -732,6 +781,9 @@ export default function ActiveWorkoutScreen() {
 
   // Template store for getting template data
   const getTemplateById = useTemplateStore((state) => state.getTemplateById);
+  const markScheduledWorkoutComplete = useWorkoutStore((s) => s.markScheduledWorkoutComplete);
+  const toggleWorkoutCompletion = useWorkoutStore((s) => s.toggleWorkoutCompletion);
+  const isWorkoutCompleted = useWorkoutStore((s) => s.isWorkoutCompleted);
 
   // Menu state
   const [showExerciseMenu, setShowExerciseMenu] = useState(false);
@@ -938,19 +990,16 @@ export default function ActiveWorkoutScreen() {
             restTimerSeconds: te.restTimerSeconds,
             sets: te.sets.map((s, index) => ({
               id: `set_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`,
-              previous:
-                s.targetWeight && s.targetReps ? `${s.targetWeight} x ${s.targetReps}` : '-',
+              // Same rule as the store path: "Previous" is for real
+              // history only — template targets never seed it.
+              previous: '-',
               kg: s.targetWeight?.toString() || '',
               reps: s.targetReps?.toString() || '',
               completed: false,
               setType: (s.setType || 'normal') as SetType,
               rpe: null,
             })),
-            previousSets: te.sets.map((s, idx) => ({
-              setNumber: idx + 1,
-              weightKg: s.targetWeight || null,
-              reps: s.targetReps || null,
-            })),
+            previousSets: null,
             supersetId: null,
           }));
           setWorkoutExercises(localExercises);
@@ -1104,10 +1153,13 @@ export default function ActiveWorkoutScreen() {
             const prev = histSets[idx];
             return {
               ...set,
+              // Explicit '-' fallback (not `set.previous`) so the column
+              // never echoes any stale value if the history-fetch shape
+              // ever changes — Previous is always real history or '-'.
               previous:
                 prev && prev.weightKg !== null && prev.reps !== null
                   ? formatPreviousSet(prev.weightKg, prev.reps, units)
-                  : set.previous,
+                  : '-',
             };
           });
 
@@ -1207,6 +1259,10 @@ export default function ActiveWorkoutScreen() {
       );
     } catch (e) {
       console.error('Failed to add exercises:', e);
+      Alert.alert(
+        'Could not add exercises',
+        'Something went wrong adding those exercises. They were not added to your workout — please try again.'
+      );
     }
   }
 
@@ -1410,7 +1466,7 @@ export default function ActiveWorkoutScreen() {
       dragTranslateY.setValue(0);
       rowTranslateY.current.forEach((val) => val.setValue(0));
       setActiveDragIndex(index);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     },
     [dragTranslateY]
   );
@@ -1432,7 +1488,7 @@ export default function ActiveWorkoutScreen() {
       );
 
       if (targetIndex !== currentIndex) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
         // Swap in the data array and keep keys in sync
         const updated = [...exerciseOrderRef.current];
@@ -1551,7 +1607,7 @@ export default function ActiveWorkoutScreen() {
     router.back();
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!userId) {
       Alert.alert(t('common.error'), t('workout.mustBeLoggedIn'));
       return;
@@ -1582,35 +1638,66 @@ export default function ActiveWorkoutScreen() {
     cancelWorkoutInProgressReminder();
     endWorkoutLiveActivity();
 
-    // Prepare workout data for save screen
-    const workoutData = {
-      exercises: workoutExercises.map((we) => ({
-        exercise: we.exercise,
-        notes: we.notes,
-        sets: we.sets,
-        supersetId: we.supersetId,
-        restTimerSeconds: we.restTimerSeconds,
-      })),
-      durationSeconds: elapsedSeconds,
-      startedAt: startedAtRef.current.toISOString(),
-      userId,
-      sourceTemplateId: activeWorkout?.sourceTemplateId,
-      templateName: activeWorkout?.templateName,
-      scheduledWorkoutId: activeWorkout?.scheduledWorkoutId,
-    };
-
-    // Navigate to save workout screen — workout stays in store until save completes
-    // so the user can go back without losing progress
-    const saveParams: Record<string, string> = { workoutData: JSON.stringify(workoutData) };
+    // Edit mode: keep existing save-workout screen flow
     if (editDataParsed?.editWorkoutId) {
+      const workoutData = {
+        exercises: workoutExercises.map((we) => ({
+          exercise: we.exercise,
+          notes: we.notes,
+          sets: we.sets,
+          supersetId: we.supersetId,
+          restTimerSeconds: we.restTimerSeconds,
+        })),
+        durationSeconds: elapsedSeconds,
+        startedAt: startedAtRef.current.toISOString(),
+        userId,
+        sourceTemplateId: activeWorkout?.sourceTemplateId,
+        templateName: activeWorkout?.templateName,
+        scheduledWorkoutId: activeWorkout?.scheduledWorkoutId,
+      };
+      const saveParams: Record<string, string> = { workoutData: JSON.stringify(workoutData) };
       saveParams.editWorkoutId = editDataParsed.editWorkoutId;
-      // Pass through existing title/notes if available
       if (editDataParsed.editTitle) saveParams.editTitle = editDataParsed.editTitle;
       if (editDataParsed.editNotes) saveParams.editNotes = editDataParsed.editNotes;
+      router.push({ pathname: '/save-workout', params: saveParams });
+      return;
     }
+
+    // New workout — navigate to photo screen; workout-summary handles the DB save
+    const exercisesWithCompleted = workoutExercises.filter((we) =>
+      we.sets.some((s) => s.completed)
+    );
+    const rawVolumeKg = exercisesWithCompleted.reduce(
+      (total, we) =>
+        total +
+        we.sets
+          .filter((s) => s.completed)
+          .reduce((v, s) => {
+            const wDisplay = parseFloat(s.kg || '0');
+            const r = parseInt(s.reps || '0', 10);
+            if (isNaN(wDisplay) || isNaN(r)) return v;
+            return v + toKgForStorage(wDisplay, units) * r;
+          }, 0),
+      0
+    );
+    const totalSetsCount = exercisesWithCompleted.reduce(
+      (t, we) => t + we.sets.filter((s) => s.completed).length,
+      0
+    );
+    const defaultTitle = activeWorkout?.templateName || '';
+    const displayVolume = Math.round(units === 'imperial' ? kgToLbs(rawVolumeKg) : rawVolumeKg);
+    minimizeActiveWorkout();
     router.push({
-      pathname: '/save-workout',
-      params: saveParams,
+      pathname: '/workout-photo',
+      params: {
+        workoutTitle: defaultTitle,
+        durationSeconds: String(elapsedSeconds),
+        totalVolume: String(displayVolume),
+        volumeUnit: getWeightUnit(units),
+        exerciseCount: String(exercisesWithCompleted.length),
+        totalSets: String(totalSetsCount),
+        userId,
+      },
     });
   };
 
@@ -1698,7 +1785,7 @@ export default function ActiveWorkoutScreen() {
   const updateSetValue = (
     exerciseIndex: number,
     setIndex: number,
-    field: 'kg' | 'reps',
+    field: 'kg' | 'reps' | 'difficulty' | 'durationMinutes',
     value: string
   ) => {
     setWorkoutExercises((prev) => {
@@ -1928,18 +2015,37 @@ export default function ActiveWorkoutScreen() {
 
   const removeSet = () => {
     if (setTypeModalExerciseIndex === null || setTypeModalSetIndex === null) return;
+    const exIdx = setTypeModalExerciseIndex;
+    const setIdx = setTypeModalSetIndex;
+
+    const exercise = workoutExercises[exIdx];
+    if (!exercise) return;
+
+    // If this is the last set, removing it deletes the whole exercise — confirm first.
+    if (exercise.sets.length <= 1) {
+      closeSetTypeModal();
+      Alert.alert(
+        'Remove exercise?',
+        'This is the only set, so removing it will remove the whole exercise from this workout.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              setWorkoutExercises((prev) => prev.filter((_, i) => i !== exIdx));
+            },
+          },
+        ]
+      );
+      return;
+    }
 
     setWorkoutExercises((prev) => {
       const updated = [...prev];
-      const exercise = updated[setTypeModalExerciseIndex];
-
-      // If this is the last set, remove the entire exercise
-      if (exercise.sets.length <= 1) {
-        closeSetTypeModal();
-        return updated.filter((_, i) => i !== setTypeModalExerciseIndex);
-      }
-
-      exercise.sets = exercise.sets.filter((_, index) => index !== setTypeModalSetIndex);
+      const ex = updated[exIdx];
+      ex.sets = ex.sets.filter((_, index) => index !== setIdx);
       return updated;
     });
     closeSetTypeModal();
@@ -1974,12 +2080,12 @@ export default function ActiveWorkoutScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             handleBack();
           }}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="chevron-down" size={28} color={colors.text} />
         </Pressable>
 
         <Text style={styles.timer}>{formatTime(elapsedSeconds)}</Text>
@@ -1988,7 +2094,7 @@ export default function ActiveWorkoutScreen() {
           <Pressable
             style={styles.iconButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               closeAllModals();
               setClockModalVisible(true);
             }}
@@ -2031,7 +2137,7 @@ export default function ActiveWorkoutScreen() {
             <Pressable
               style={styles.secondaryButton}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 router.push('/profile/workout-settings');
               }}
             >
@@ -2072,7 +2178,7 @@ export default function ActiveWorkoutScreen() {
                   onPress={
                     workoutExercise.exercise.gifUrl || workoutExercise.exercise.thumbnailUrl
                       ? () => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                           prefetchExerciseGif(workoutExercise.exercise.id);
                           router.push(`/exercise/${workoutExercise.exercise.id}`);
                         }
@@ -2096,7 +2202,7 @@ export default function ActiveWorkoutScreen() {
                     onPress={
                       workoutExercise.exercise.gifUrl || workoutExercise.exercise.thumbnailUrl
                         ? () => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                             prefetchExerciseGif(workoutExercise.exercise.id);
                             router.push(`/exercise/${workoutExercise.exercise.id}`);
                           }
@@ -2109,7 +2215,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.moreButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     openExerciseMenu(exerciseIndex);
                   }}
                 >
@@ -2136,10 +2242,15 @@ export default function ActiveWorkoutScreen() {
                 </View>
               )}
 
-              {/* Notes Input */}
+              {/* Notes Input — hardcoded coaching note (if any) acts as the
+                  placeholder; clearing the field restores it. */}
               <TextInput
+                autoCorrect={false}
                 style={styles.notesInput}
-                placeholder={t('workout.addNotesPlaceholder')}
+                placeholder={
+                  getExerciseDefaultNote(workoutExercise.exercise.id) ??
+                  t('workout.addNotesPlaceholder')
+                }
                 placeholderTextColor={colors.textSecondary}
                 value={workoutExercise.notes}
                 onChangeText={(text) => updateNotes(exerciseIndex, text)}
@@ -2150,7 +2261,7 @@ export default function ActiveWorkoutScreen() {
               <Pressable
                 style={styles.restTimerRow}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   openRestTimerModal(exerciseIndex);
                 }}
               >
@@ -2169,8 +2280,12 @@ export default function ActiveWorkoutScreen() {
                 <Text style={[styles.setHeaderText, styles.previousColumn]}>
                   {t('workout.previous')}
                 </Text>
-                <Text style={[styles.setHeaderText, styles.kgColumn]}>{weightLabel}</Text>
-                <Text style={[styles.setHeaderText, styles.repsColumn]}>{t('workout.reps')}</Text>
+                <Text style={[styles.setHeaderText, styles.kgColumn]}>
+                  {isCardioExerciseId(workoutExercise.exercise.id) ? 'Level' : weightLabel}
+                </Text>
+                <Text style={[styles.setHeaderText, styles.repsColumn]}>
+                  {isCardioExerciseId(workoutExercise.exercise.id) ? 'Min' : t('workout.reps')}
+                </Text>
                 {rpeTrackingEnabled && (
                   <Text style={[styles.setHeaderText, styles.rpeColumn]}>{t('workout.rpe')}</Text>
                 )}
@@ -2197,6 +2312,7 @@ export default function ActiveWorkoutScreen() {
                   if (prevCurrentSet.reps) suggestedReps = prevCurrentSet.reps;
                 }
 
+                const isCardio = isCardioExerciseId(workoutExercise.exercise.id);
                 return (
                   <SwipeableSetRow
                     key={set.id}
@@ -2205,6 +2321,7 @@ export default function ActiveWorkoutScreen() {
                     exerciseIndex={exerciseIndex}
                     setTypeLabel={getSetTypeLabel(set, setIndex, workoutExercise.sets)}
                     setType={set.setType}
+                    isCardio={isCardio}
                     onUpdateValue={updateSetValue}
                     onToggleCompletion={toggleSetCompletion}
                     onDelete={deleteSet}
@@ -2224,7 +2341,7 @@ export default function ActiveWorkoutScreen() {
               <Pressable
                 style={styles.addSetButton}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   addSet(exerciseIndex);
                 }}
               >
@@ -2249,7 +2366,7 @@ export default function ActiveWorkoutScreen() {
             <Pressable
               style={styles.secondaryButton}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 router.push('/profile/workout-settings');
               }}
             >
@@ -2283,7 +2400,7 @@ export default function ActiveWorkoutScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeExerciseMenu();
           }}
         >
@@ -2298,7 +2415,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     handleReorderExercises();
                   }}
                 >
@@ -2311,7 +2428,7 @@ export default function ActiveWorkoutScreen() {
                   <Pressable
                     style={styles.menuItem}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                       handleRemoveFromSuperset();
                     }}
                   >
@@ -2322,7 +2439,7 @@ export default function ActiveWorkoutScreen() {
                   <Pressable
                     style={styles.menuItem}
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                       handleAddToSuperset();
                     }}
                   >
@@ -2334,7 +2451,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     const exerciseIdx = selectedExerciseIndex!;
                     const lastSetIdx = workoutExercises[exerciseIdx].sets.length - 1;
                     closeExerciseMenu();
@@ -2348,7 +2465,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     handleRemoveExercise();
                   }}
                 >
@@ -2401,7 +2518,7 @@ export default function ActiveWorkoutScreen() {
             <Pressable
               style={styles.doneButton}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 saveReorder();
               }}
             >
@@ -2421,7 +2538,7 @@ export default function ActiveWorkoutScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeRestTimerModal();
           }}
         >
@@ -2461,7 +2578,7 @@ export default function ActiveWorkoutScreen() {
                       key={option.value}
                       style={[styles.restTimerOption, isSelected && styles.restTimerOptionSelected]}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         if (restTimerModalExerciseIndex !== null) {
                           updateRestTimer(restTimerModalExerciseIndex, option.value);
                         }
@@ -2486,7 +2603,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.doneButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     closeRestTimerModal();
                   }}
                 >
@@ -2508,7 +2625,7 @@ export default function ActiveWorkoutScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeSupersetModal();
           }}
         >
@@ -2537,7 +2654,7 @@ export default function ActiveWorkoutScreen() {
                       key={`${workoutExercise.exercise.id}-${index}`}
                       style={styles.supersetExerciseRow}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         toggleSupersetExercise(index);
                       }}
                     >
@@ -2606,7 +2723,7 @@ export default function ActiveWorkoutScreen() {
                     supersetSelectedIndices.length < 2 && styles.supersetConfirmButtonDisabled,
                   ]}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     confirmSuperset();
                   }}
                 >
@@ -2630,7 +2747,7 @@ export default function ActiveWorkoutScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeSetTypeModal();
           }}
         >
@@ -2648,7 +2765,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     updateSetType('warmup');
                   }}
                 >
@@ -2661,7 +2778,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     updateSetType('normal');
                   }}
                 >
@@ -2676,7 +2793,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     updateSetType('failure');
                   }}
                 >
@@ -2689,7 +2806,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     updateSetType('dropset');
                   }}
                 >
@@ -2702,7 +2819,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     removeSet();
                   }}
                 >
@@ -2722,7 +2839,7 @@ export default function ActiveWorkoutScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeRpeModal();
           }}
         >
@@ -2746,7 +2863,7 @@ export default function ActiveWorkoutScreen() {
                       key={rpeValue}
                       style={styles.menuItem}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         if (rpeModalExerciseIndex !== null && rpeModalSetIndex !== null) {
                           updateRpe(rpeModalExerciseIndex, rpeModalSetIndex, rpeValue);
                         }
@@ -2768,7 +2885,7 @@ export default function ActiveWorkoutScreen() {
                 <Pressable
                   style={styles.menuItem}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     if (rpeModalExerciseIndex !== null && rpeModalSetIndex !== null) {
                       updateRpe(rpeModalExerciseIndex, rpeModalSetIndex, null);
                     }
@@ -2796,7 +2913,7 @@ export default function ActiveWorkoutScreen() {
               <Pressable
                 style={styles.restTimerAdjustButton}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   adjustRestTimer(-15);
                 }}
               >
@@ -2805,7 +2922,7 @@ export default function ActiveWorkoutScreen() {
               <Pressable
                 style={styles.restTimerAdjustButton}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   adjustRestTimer(15);
                 }}
               >
@@ -2814,7 +2931,7 @@ export default function ActiveWorkoutScreen() {
               <Pressable
                 style={styles.restTimerSkipButton}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   skipRestTimer();
                 }}
               >
@@ -2826,6 +2943,13 @@ export default function ActiveWorkoutScreen() {
       )}
 
       <NumericInputDoneButton />
+
+      {/* Saving overlay */}
+      {isSaving && (
+        <View style={styles.savingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+        </View>
+      )}
     </View>
   );
 }
@@ -3009,7 +3133,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
   },
   setHeaderText: {
     fontFamily: fonts.medium,
@@ -3017,11 +3140,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   setColumn: {
-    flex: 1,
+    // Fixed width matching the exercise animation (size={46}) so the column
+    // — both header text and set numbers — sits directly under the image.
+    width: 46,
     textAlign: 'center',
   },
   previousColumn: {
-    flex: 1.3,
+    flex: 1,
     textAlign: 'center',
   },
   kgColumn: {
@@ -3055,13 +3180,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    marginHorizontal: -spacing.sm,
+    // The Swipeable wrapper around each row uses `marginHorizontal: -spacing.lg`
+    // to let the swipe action extend to the screen edge. This paddingHorizontal
+    // brings the row's CONTENT back to the exerciseCard's content edge, so the
+    // set-number column lines up vertically with the "Set" header above.
+    paddingHorizontal: spacing.lg,
     borderRadius: 8,
     backgroundColor: colors.background,
   },
   setRowCompleted: {
-    backgroundColor: 'rgba(148, 122, 255, 0.2)',
+    backgroundColor: '#B7FF94',
+    borderRadius: 0,
   },
   setText: {
     fontFamily: fonts.medium,
@@ -3085,8 +3214,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   setCheckboxCompleted: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: '#00D200',
+    borderColor: '#00D200',
   },
   addSetButton: {
     ...cardStyle,
@@ -3503,5 +3632,12 @@ const styles = StyleSheet.create({
   setNumberButton: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  savingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
   },
 });

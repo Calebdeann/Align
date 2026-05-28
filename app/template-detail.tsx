@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { useTemplateStore, TemplateExercise } from '@/stores/templateStore';
+import CircleBackButton from '@/components/ui/CircleBackButton';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useWorkoutStore, WorkoutImage } from '@/stores/workoutStore';
 import { ExerciseImage } from '@/components/ExerciseImage';
@@ -63,7 +64,7 @@ function CloseIcon() {
   );
 }
 
-// Exercise row component
+// Exercise row component — matches workout-preview layout (56×56 thumb + name + sub)
 function ExerciseRow({
   exercise,
   withLock,
@@ -71,46 +72,39 @@ function ExerciseRow({
   exercise: TemplateExercise;
   withLock: (callback: () => void) => void;
 }) {
+  const hasImg = !!(exercise.gifUrl || exercise.thumbnailUrl);
+  const openExercise = hasImg
+    ? () => {
+        withLock(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          prefetchExerciseGif(exercise.exerciseId);
+          router.push(`/exercise/${exercise.exerciseId}`);
+        });
+      }
+    : undefined;
   return (
-    <View style={styles.exerciseRow}>
-      <Pressable
-        onPress={
-          exercise.gifUrl || exercise.thumbnailUrl
-            ? () => {
-                withLock(() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  prefetchExerciseGif(exercise.exerciseId);
-                  router.push(`/exercise/${exercise.exerciseId}`);
-                });
-              }
-            : undefined
-        }
-        disabled={!exercise.gifUrl && !exercise.thumbnailUrl}
-      >
-        <ExerciseImage
-          gifUrl={exercise.gifUrl}
-          thumbnailUrl={exercise.thumbnailUrl}
-          size={46}
-          borderRadius={8}
-        />
+    <View style={styles.exRow}>
+      <Pressable style={styles.exThumb} onPress={openExercise} disabled={!hasImg}>
+        {hasImg ? (
+          <ExerciseImage
+            gifUrl={exercise.gifUrl}
+            thumbnailUrl={exercise.thumbnailUrl}
+            size={56}
+            borderRadius={10}
+          />
+        ) : (
+          <View style={styles.exThumbPlaceholder} />
+        )}
       </Pressable>
-      <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
+      <View style={styles.exInfo} pointerEvents="box-none">
         <Text
-          style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
-          onPress={
-            exercise.gifUrl || exercise.thumbnailUrl
-              ? () => {
-                  withLock(() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    prefetchExerciseGif(exercise.exerciseId);
-                    router.push(`/exercise/${exercise.exerciseId}`);
-                  });
-                }
-              : undefined
-          }
+          style={[styles.exName, { alignSelf: 'flex-start' }]}
+          numberOfLines={2}
+          onPress={openExercise}
         >
           {resolveExerciseDisplayName(exercise.exerciseId, exercise.exerciseName)}
         </Text>
+        <Text style={styles.exSub}>{exercise.sets.length} sets</Text>
       </View>
     </View>
   );
@@ -180,7 +174,7 @@ export default function TemplateDetailScreen() {
         <View style={styles.header}>
           <Pressable
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               router.back();
             }}
             style={styles.backButton}
@@ -412,7 +406,7 @@ export default function TemplateDetailScreen() {
         <Pressable
           style={[styles.imagePlaceholder, editImage && styles.imagePlaceholderFilled]}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             setShowImagePicker(true);
           }}
         >
@@ -475,7 +469,7 @@ export default function TemplateDetailScreen() {
           <>
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 handleCancelEdit();
               }}
               style={styles.backButton}
@@ -495,28 +489,18 @@ export default function TemplateDetailScreen() {
           </>
         ) : (
           <>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.back();
-              }}
-              style={styles.backButton}
-            >
-              <Ionicons name="arrow-back" size={24} color={colors.text} />
-            </Pressable>
-            <Text style={styles.headerTitle}>{t('workout.title')}</Text>
-            {!template.isPreset ? (
+            <CircleBackButton />
+            <View style={{ flex: 1 }} />
+            {!template.isPreset && (
               <Pressable
+                style={styles.circleIconBtn}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   enterEditMode();
                 }}
-                style={styles.backButton}
               >
-                <Ionicons name="pencil-outline" size={22} color={colors.text} />
+                <Ionicons name="create-outline" size={20} color="#000" />
               </Pressable>
-            ) : (
-              <View style={styles.backButton} />
             )}
           </>
         )}
@@ -535,6 +519,7 @@ export default function TemplateDetailScreen() {
               <View style={styles.templateImageContainer}>{renderTemplateImage()}</View>
               <View style={styles.editTextInputs}>
                 <TextInput
+                  autoCorrect={false}
                   style={styles.nameInput}
                   placeholder={t('template.templateName')}
                   placeholderTextColor={colors.textTertiary}
@@ -542,6 +527,7 @@ export default function TemplateDetailScreen() {
                   onChangeText={setEditName}
                 />
                 <TextInput
+                  autoCorrect={false}
                   style={styles.descriptionInput}
                   placeholder={t('template.descriptionOptional')}
                   placeholderTextColor={colors.textTertiary}
@@ -557,7 +543,7 @@ export default function TemplateDetailScreen() {
             <Pressable
               style={styles.colourRow}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 openColourModal();
               }}
             >
@@ -569,19 +555,44 @@ export default function TemplateDetailScreen() {
             </Pressable>
           </View>
         ) : (
-          <View style={styles.templateCard}>
-            <View style={styles.templateImageContainer}>{renderTemplateImage()}</View>
-            <View style={styles.templateInfo}>
-              <Text style={styles.templateName}>{template.name}</Text>
-              {template.description && (
-                <Text style={styles.templateDescription}>{template.description}</Text>
+          /* Hero row — tilted image with duration badge + title/description */
+          <View style={styles.heroRow}>
+            <View
+              style={[styles.heroImage, { backgroundColor: template.tagColor || colors.primary }]}
+            >
+              {template.localImage ? (
+                <Image
+                  source={template.localImage}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
+              ) : template.image?.uri ? (
+                <Image
+                  source={{ uri: template.image.uri }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
+              ) : (
+                <View style={[StyleSheet.absoluteFill, styles.heroImagePlaceholder]}>
+                  <Ionicons name="barbell-outline" size={32} color="rgba(0,0,0,0.4)" />
+                </View>
               )}
+            </View>
+            <View style={styles.heroText}>
+              <Text style={styles.heroTitle}>{template.name}</Text>
+              {template.description ? (
+                <Text style={styles.heroDescription} numberOfLines={5}>
+                  {template.description}
+                </Text>
+              ) : null}
             </View>
           </View>
         )}
 
         {/* Add to Library Button (presets only) */}
-        {template.isPreset && (
+        {template.isPreset && !isEditing && (
           <Pressable
             style={[styles.addToLibraryButton, isSaved && styles.addToLibraryButtonSaved]}
             onPress={() => {
@@ -596,16 +607,16 @@ export default function TemplateDetailScreen() {
           </Pressable>
         )}
 
-        {/* Start Workout Button (user templates, view mode only) */}
+        {/* Start Workout pill (user templates, view mode only) */}
         {!template.isPreset && !isEditing && (
           <Pressable
-            style={styles.startWorkoutButton}
+            style={styles.startPill}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               handleStartWorkout();
             }}
           >
-            <Text style={styles.startWorkoutText}>{t('template.startWorkout')}</Text>
+            <Text style={styles.startPillText}>{t('template.startWorkout')}</Text>
           </Pressable>
         )}
 
@@ -614,7 +625,7 @@ export default function TemplateDetailScreen() {
           <Pressable
             style={styles.editExercisesButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               handleEditExercises();
             }}
           >
@@ -623,27 +634,33 @@ export default function TemplateDetailScreen() {
           </Pressable>
         )}
 
-        {/* Exercises Section */}
-        <Text style={styles.sectionTitle}>{t('template.exercises')}</Text>
-        <View style={styles.exercisesCard}>
-          {template.exercises.map((exercise, index) => (
-            <View key={exercise.id}>
-              <ExerciseRow exercise={exercise} withLock={withLock} />
-              {index < template.exercises.length - 1 && <View style={styles.exerciseDivider} />}
+        {/* Exercises list card — matches workout-preview */}
+        <View style={styles.listCard}>
+          <View style={styles.listHandle} />
+          {template.exercises.length === 0 ? (
+            <View style={styles.placeholderBlock}>
+              <Text style={styles.placeholderText}>{t('template.exercises')}</Text>
             </View>
-          ))}
+          ) : (
+            template.exercises.map((exercise, index) => (
+              <View key={exercise.id}>
+                <ExerciseRow exercise={exercise} withLock={withLock} />
+                {index < template.exercises.length - 1 && <View style={styles.exDivider} />}
+              </View>
+            ))
+          )}
         </View>
 
         {/* Delete Template (user templates only) */}
-        {!template.isPreset && (
+        {!template.isPreset && !isEditing && (
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               handleDeleteTemplate();
             }}
-            style={styles.deleteTextButton}
+            style={styles.deleteButton}
           >
-            <Text style={styles.deleteText}>{t('template.deleteTemplate')}</Text>
+            <Text style={styles.deleteButtonText}>{t('template.deleteTemplate')}</Text>
           </Pressable>
         )}
 
@@ -660,7 +677,7 @@ export default function TemplateDetailScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeColourModal();
           }}
         >
@@ -674,7 +691,7 @@ export default function TemplateDetailScreen() {
                 <Pressable
                   style={styles.modalCloseButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     closeColourModal();
                   }}
                 >
@@ -694,7 +711,7 @@ export default function TemplateDetailScreen() {
                         editColourId === colour.id && styles.colourOptionSelected,
                       ]}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         selectColour(colour.id);
                       }}
                     >
@@ -722,7 +739,7 @@ export default function TemplateDetailScreen() {
         <Pressable
           style={styles.modalOverlay}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             closeAddColourModal();
           }}
         >
@@ -736,7 +753,7 @@ export default function TemplateDetailScreen() {
                 <Pressable
                   style={styles.modalCloseButton}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                     closeAddColourModal();
                   }}
                 >
@@ -756,7 +773,7 @@ export default function TemplateDetailScreen() {
                         addColourId === colour.id && styles.colourOptionSelected,
                       ]}
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         setAddColourId(colour.id);
                       }}
                     >
@@ -841,14 +858,54 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
   },
-  // View mode template card
-  templateCard: {
-    flexDirection: 'row',
+  // View mode — hero row (matches workout-preview)
+  circleIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    padding: spacing.md,
-    ...cardStyle,
-    marginBottom: spacing.md,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.07)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
+  heroRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 18,
+  },
+  heroImage: {
+    width: 110,
+    height: 130,
+    borderRadius: 16,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    marginLeft: 4,
+    transform: [{ rotate: '-2.5deg' }],
+  },
+  heroImagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroText: { flex: 1, paddingTop: 4 },
+  heroTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 24,
+    color: '#000',
+    marginBottom: 6,
+  },
+  heroDescription: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+  // Kept for edit mode (renderTemplateImage view-mode branch falls back to these too)
   templateImageContainer: {
     marginRight: spacing.md,
   },
@@ -861,21 +918,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  templateInfo: {
-    flex: 1,
-  },
-  templateName: {
-    fontFamily: fonts.bold,
-    fontSize: fontSize.lg,
-    color: colors.text,
-    marginBottom: 4,
-  },
-  templateDescription: {
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: 18,
   },
   // Edit mode card
   editCard: {
@@ -971,18 +1013,21 @@ const styles = StyleSheet.create({
   addToLibraryTextSaved: {
     color: colors.textSecondary,
   },
-  startWorkoutButton: {
-    backgroundColor: colors.primary,
+  startPill: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
     paddingVertical: 16,
-    borderRadius: 12,
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.07)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 18,
   },
-  startWorkoutText: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.textInverse,
-  },
+  startPillText: { fontFamily: fonts.semiBold, fontSize: 16, color: '#000' },
   editExercisesButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -998,43 +1043,47 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textInverse,
   },
-  sectionTitle: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  exercisesCard: {
-    ...cardStyle,
-    padding: 12,
+  listCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
     marginBottom: spacing.md,
   },
-  exerciseRow: {
-    flexDirection: 'row',
+  listHandle: {
+    alignSelf: 'center',
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E5E5',
+    marginBottom: 12,
+  },
+  exRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 14 },
+  exThumb: { width: 56, height: 56, borderRadius: 10, overflow: 'hidden' },
+  exThumbPlaceholder: { width: 56, height: 56, borderRadius: 10, backgroundColor: '#E5E5E5' },
+  exInfo: { flex: 1 },
+  exName: { fontFamily: fonts.semiBold, fontSize: 16, color: '#000' },
+  exSub: { fontFamily: fonts.regular, fontSize: 12, color: '#999', marginTop: 2 },
+  exDivider: { height: 1, backgroundColor: '#F0F0F0' },
+  placeholderBlock: {
     alignItems: 'center',
-    paddingVertical: 12,
-    gap: spacing.sm,
+    paddingVertical: 32,
   },
-  exerciseName: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.primary,
+  placeholderText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: '#666',
   },
-  exerciseDivider: {
-    height: 1,
-    backgroundColor: 'rgba(217, 217, 217, 0.25)',
-  },
-  deleteTextButton: {
-    alignItems: 'center',
-    paddingVertical: spacing.lg,
-    marginTop: spacing.md,
-  },
-  deleteText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.error,
-  },
+  deleteButton: { paddingVertical: 16, alignItems: 'center', marginTop: 20 },
+  deleteButtonText: { fontFamily: fonts.medium, fontSize: 14, color: '#E53935' },
   bottomSpacer: {
     height: 40,
   },

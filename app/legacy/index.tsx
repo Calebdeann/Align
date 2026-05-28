@@ -176,7 +176,7 @@ const WorkoutListRow = memo(function WorkoutListRow(props: WorkoutListRowProps) 
   const isCompleted = props.scheduledWorkoutId ? isScheduledCompleted : props.isDbCompleted;
 
   const handleCheckboxPress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (props.scheduledWorkoutId) {
       toggleWorkoutCompletion(props.scheduledWorkoutId, props.dateKey);
     } else if (props.dbWorkoutId) {
@@ -192,7 +192,7 @@ const WorkoutListRow = memo(function WorkoutListRow(props: WorkoutListRowProps) 
 
   const handleRowPress = useCallback(() => {
     withLock(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       if (props.scheduledWorkoutId) {
         router.push({
           pathname: '/workout-preview',
@@ -200,8 +200,8 @@ const WorkoutListRow = memo(function WorkoutListRow(props: WorkoutListRowProps) 
         });
       } else if (props.isFromDatabase && props.dbWorkoutId) {
         router.push({
-          pathname: '/workout-details',
-          params: { workoutId: props.dbWorkoutId },
+          pathname: '/workout-summary',
+          params: { workoutId: props.dbWorkoutId, mode: 'view' },
         });
       }
     });
@@ -401,7 +401,7 @@ export default function CalendarScreen() {
   }, []);
 
   const dismissFounderBanner = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Animated.timing(bannerOpacity, {
       toValue: 0,
       duration: 300,
@@ -512,7 +512,7 @@ export default function CalendarScreen() {
 
   // Handle view mode switch - reset to current date
   const handleViewModeSwitch = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (viewMode === 'calendar') {
       // Switching to list view - today at index 0
       setListDays(generateDays(today, 0, 1 + INITIAL_FUTURE_DAYS));
@@ -627,7 +627,7 @@ export default function CalendarScreen() {
     // Create date object for this day
     const handlePress = () => {
       if (year !== undefined && month !== undefined) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         const targetDate = new Date(year, month, day);
         handleDatePress(targetDate);
       }
@@ -824,7 +824,7 @@ export default function CalendarScreen() {
             disabled={isNavigating}
             onPress={() => {
               withLock(() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 router.push('/schedule-workout');
               });
             }}

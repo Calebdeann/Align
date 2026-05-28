@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { Exercise, getExerciseById } from '@/services/api/exercises';
 import { useExerciseStore } from '@/stores/exerciseStore';
-import * as Haptics from 'expo-haptics';
 import { ExerciseImage } from '@/components/ExerciseImage';
 import { useTranslation } from 'react-i18next';
+import CircleBackButton from '@/components/ui/CircleBackButton';
 
 // Muscle chip component
 function MuscleChip({ muscle }: { muscle: string }) {
@@ -73,18 +73,11 @@ export default function ExerciseDetailScreen() {
     }
   }
 
-  const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.back();
-  };
-
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Pressable onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </Pressable>
+          <CircleBackButton />
           <Text style={styles.headerTitle}>{t('workout.exercise')}</Text>
           <View style={styles.placeholder} />
         </View>
@@ -99,9 +92,7 @@ export default function ExerciseDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Pressable onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </Pressable>
+          <CircleBackButton />
           <Text style={styles.headerTitle}>{t('workout.exercise')}</Text>
           <View style={styles.placeholder} />
         </View>
@@ -124,9 +115,7 @@ export default function ExerciseDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </Pressable>
+        <CircleBackButton />
         <Text style={styles.headerTitle} numberOfLines={1}>
           {translatedDisplayName}
         </Text>
@@ -228,9 +217,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  backButton: {
-    padding: spacing.xs,
-  },
   headerTitle: {
     flex: 1,
     fontFamily: fonts.bold,
@@ -240,7 +226,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
   },
   placeholder: {
-    width: 32,
+    width: 46,
   },
   loadingContainer: {
     flex: 1,

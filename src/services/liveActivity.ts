@@ -88,8 +88,10 @@ export async function cleanupStaleLiveActivities(): Promise<void> {
   if (persistedId && persistedId !== currentActivityId) {
     try {
       LiveActivity.stopActivity(persistedId, { title: 'Workout Complete' });
-    } catch {
-      // Activity may already be expired
+    } catch (err) {
+      // Most failures here are benign (activity already expired), but log so
+      // a real native-module / permission failure isn't completely silent.
+      console.warn('cleanupStaleLiveActivities: stopActivity failed', err);
     }
     await persistActivityId(null);
   }
@@ -137,7 +139,7 @@ export async function startWorkoutLiveActivity(
         subtitleColor: '#666666',
         progressViewTint: '#947AFF',
         progressViewLabelColor: '#947AFF',
-        deepLinkUrl: 'alyne://active-workout',
+        deepLinkUrl: 'itgirl://active-workout',
         timerType: 'digital' as const,
       }
     );

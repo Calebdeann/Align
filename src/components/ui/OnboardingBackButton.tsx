@@ -1,6 +1,6 @@
 import { Pressable, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { router } from 'expo-router';
 
 interface OnboardingBackButtonProps {
@@ -11,7 +11,7 @@ interface OnboardingBackButtonProps {
 export default function OnboardingBackButton({ onPress, disabled }: OnboardingBackButtonProps) {
   function handlePress() {
     if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     if (onPress) {
       onPress();
     } else {

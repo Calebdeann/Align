@@ -14,8 +14,8 @@ const { withXcodeProject, withEntitlementsPlist, withInfoPlist } = require('@exp
 const fs = require('fs');
 const path = require('path');
 
-const APP_GROUP_ID = 'group.com.aligntracker.app';
-const SHARE_EXT_BUNDLE_ID = 'com.aligntracker.app.ShareExtension';
+const APP_GROUP_ID = 'group.com.itgirlapp.app';
+const SHARE_EXT_BUNDLE_ID = 'com.itgirlapp.app.ShareExtension';
 const SHARE_EXT_TARGET_NAME = 'ShareExtension';
 
 // Source directories for custom native files

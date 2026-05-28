@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -26,7 +27,7 @@ export default function FindPartnerScreen() {
   const line3Anim = useAnimatedStyle(() => ({ opacity: line3Opacity.value }));
 
   useEffect(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     statOpacity.value = withTiming(1, { duration: 900 });
     line1Opacity.value = withDelay(560, withTiming(1, { duration: 675 }));
     line2Opacity.value = withDelay(1010, withTiming(1, { duration: 675 }));
@@ -72,7 +73,7 @@ export default function FindPartnerScreen() {
         <View style={styles.buttonRow}>
           <OnboardingContinueButton
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              strongHaptic();
               router.push('/onboarding/gym-buddy');
             }}
             label="Find my Partner"
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: 90,
+    width: 100,
     height: 4,
     backgroundColor: '#000000',
   },
@@ -133,20 +134,20 @@ const styles = StyleSheet.create({
   },
   body: {
     fontFamily: fonts.instrumentSerif,
-    fontSize: 27,
+    fontSize: 31,
     color: '#000000',
     textAlign: 'center',
-    lineHeight: 36,
+    lineHeight: 41,
   },
   bodyItalic: {
     fontFamily: fonts.instrumentSerifItalic,
-    fontSize: 27,
-    lineHeight: 36,
+    fontSize: 31,
+    lineHeight: 41,
   },
   bodyBold: {
     fontFamily: fonts.frauncesBold,
-    fontSize: 27,
-    lineHeight: 36,
+    fontSize: 31,
+    lineHeight: 41,
   },
   bottomArea: {
     position: 'absolute',

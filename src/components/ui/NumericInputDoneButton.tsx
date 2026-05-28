@@ -12,7 +12,7 @@ export function NumericInputDoneButton() {
         <View style={styles.spacer} />
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             Keyboard.dismiss();
           }}
           style={styles.doneButton}

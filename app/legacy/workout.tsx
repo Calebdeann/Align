@@ -314,7 +314,7 @@ function SwipeableTemplateCard({
   const swipeableRef = useRef<Swipeable>(null);
 
   const handleDelete = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     swipeableRef.current?.close();
     onDelete(template);
   }, [template, onDelete]);
@@ -1644,6 +1644,7 @@ export default function WorkoutScreen() {
           <View style={styles.createFolderModal}>
             <Text style={styles.createFolderTitle}>{t('folder.createFolder')}</Text>
             <TextInput
+              autoCorrect={false}
               style={styles.folderNameInput}
               placeholder={t('folder.folderName')}
               placeholderTextColor={colors.textSecondary}

@@ -8,6 +8,7 @@ export type DistanceUnit = 'kilometers' | 'miles';
 export type MeasurementUnit = 'cm' | 'in';
 export type UnitSystem = 'metric' | 'imperial';
 export type TimerSoundId = 'chime' | 'bell' | 'ding' | 'pulse' | 'alert';
+export type DiscoverFeedVisibility = 'public' | 'friends';
 
 // Countries that use imperial system (US, Liberia, Myanmar)
 const IMPERIAL_COUNTRIES = ['US', 'LR', 'MM'];
@@ -23,6 +24,12 @@ interface UserPreferences {
   rpeTrackingEnabled: boolean;
   timerSoundId: TimerSoundId;
   vibrationEnabled: boolean;
+
+  // Planner settings
+  useSuggestedWorkoutPlan: boolean;
+
+  // Discover settings
+  discoverFeedVisibility: DiscoverFeedVisibility;
 }
 
 interface UserPreferencesState extends UserPreferences {
@@ -39,6 +46,12 @@ interface UserPreferencesState extends UserPreferences {
   setRpeTrackingEnabled: (enabled: boolean) => void;
   setTimerSoundId: (soundId: TimerSoundId) => void;
   setVibrationEnabled: (enabled: boolean) => void;
+
+  // Planner setters
+  setUseSuggestedWorkoutPlan: (enabled: boolean) => void;
+
+  // Discover setters
+  setDiscoverFeedVisibility: (value: DiscoverFeedVisibility) => void;
 
   // Initialize based on device locale (only runs once)
   initializeFromLocale: () => void;
@@ -92,6 +105,8 @@ const initialState: UserPreferences = {
   rpeTrackingEnabled: false,
   timerSoundId: 'chime',
   vibrationEnabled: true,
+  useSuggestedWorkoutPlan: true,
+  discoverFeedVisibility: 'public',
 };
 
 export const useUserPreferencesStore = create<UserPreferencesState>()(
@@ -112,6 +127,10 @@ export const useUserPreferencesStore = create<UserPreferencesState>()(
       setRpeTrackingEnabled: (enabled) => set({ rpeTrackingEnabled: enabled }),
       setTimerSoundId: (soundId) => set({ timerSoundId: soundId }),
       setVibrationEnabled: (enabled) => set({ vibrationEnabled: enabled }),
+
+      setUseSuggestedWorkoutPlan: (enabled) => set({ useSuggestedWorkoutPlan: enabled }),
+
+      setDiscoverFeedVisibility: (value) => set({ discoverFeedVisibility: value }),
 
       initializeFromLocale: () => {
         const { hasInitialized } = get();
@@ -135,7 +154,8 @@ export const useUserPreferencesStore = create<UserPreferencesState>()(
         }
       },
 
-      reset: () => set(initialState),
+      reset: () =>
+        set((s) => ({ ...initialState, discoverFeedVisibility: s.discoverFeedVisibility })),
     }),
     {
       name: 'user-preferences',

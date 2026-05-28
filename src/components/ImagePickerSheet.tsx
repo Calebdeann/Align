@@ -111,7 +111,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
   }, [visible]);
 
   const close = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Animated.timing(slideAnim, {
       toValue: SCREEN_HEIGHT,
       duration: 250,
@@ -136,7 +136,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
   };
 
   const handleChooseFromLibrary = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       await closeAndWait();
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -162,7 +162,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
   };
 
   const handleTakePhoto = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       await closeAndWait();
       const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -187,7 +187,7 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
   };
 
   const handleOpenTemplates = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       await closeAndWait();
       router.push('/template-images');

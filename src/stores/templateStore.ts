@@ -111,6 +111,7 @@ interface TemplateStore {
   toggleFolderCollapsed: (folderId: string) => void;
   moveTemplateToFolder: (templateId: string, folderId: string | null) => void;
   reorderFolders: (reorderedFolders: TemplateFolder[]) => void;
+  ensureDefaultFolders: () => void;
 
   // Sync actions for backend persistence
   syncTemplatesFromBackend: (userId: string) => Promise<void>;
@@ -124,6 +125,10 @@ const generateId = () => `template_${Date.now()}_${Math.random().toString(36).su
 // Default folder ID - this folder cannot be deleted
 export const DEFAULT_FOLDER_ID = 'my-templates';
 export const DEFAULT_FOLDER_NAME = 'My Templates';
+
+// Legacy id from the removed plan-folder concept. Templates that still reference
+// it get reparented to DEFAULT_FOLDER_ID on next ensureDefaultFolders call.
+const LEGACY_PLAN_FOLDER_ID = 'plan-folder';
 
 // Generate folder ID
 const generateFolderId = () => `folder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -324,19 +329,22 @@ export const useTemplateStore = create<TemplateStore>()(
         return newFolder;
       },
 
-      // Rename a folder
+      // Rename a folder. The "My Templates" folder cannot be renamed.
       renameFolder: (folderId, newName) => {
+        if (folderId === DEFAULT_FOLDER_ID) {
+          logger.warn('Cannot rename the default folder', { folderId });
+          return;
+        }
         set((state) => ({
           folders: state.folders.map((f) => (f.id === folderId ? { ...f, name: newName } : f)),
         }));
       },
 
-      // Delete a folder (templates in folder become unfiled)
-      // Note: The default "My Templates" folder cannot be deleted
+      // Delete a folder (templates in folder are moved to My Templates).
+      // The default "My Templates" folder cannot be deleted.
       deleteFolder: (folderId) => {
-        // Protect the default folder from deletion
         if (folderId === DEFAULT_FOLDER_ID) {
-          logger.warn('Cannot delete the default "My Templates" folder');
+          logger.warn('Cannot delete the default folder', { folderId });
           return;
         }
         set((state) => ({
@@ -368,6 +376,40 @@ export const useTemplateStore = create<TemplateStore>()(
       // Reorder folders (for drag-and-drop reordering)
       reorderFolders: (reorderedFolders) => {
         set({ folders: reorderedFolders });
+      },
+
+      // Ensure the default "My Templates" folder exists, and migrate any templates
+      // still parented to the legacy plan-folder into it. Idempotent.
+      ensureDefaultFolders: () => {
+        set((state) => {
+          let folders = state.folders;
+          let templates = state.templates;
+          let changed = false;
+
+          const hasDefault = folders.some((f) => f.id === DEFAULT_FOLDER_ID);
+          if (!hasDefault) {
+            const defaultFolder: TemplateFolder = {
+              id: DEFAULT_FOLDER_ID,
+              name: DEFAULT_FOLDER_NAME,
+              createdAt: new Date().toISOString(),
+              isCollapsed: false,
+            };
+            folders = [defaultFolder, ...folders];
+            changed = true;
+          }
+
+          // One-shot migration: drop the legacy plan folder + reparent its templates.
+          const hadPlanFolder = folders.some((f) => f.id === LEGACY_PLAN_FOLDER_ID);
+          if (hadPlanFolder) {
+            folders = folders.filter((f) => f.id !== LEGACY_PLAN_FOLDER_ID);
+            templates = templates.map((t) =>
+              t.folderId === LEGACY_PLAN_FOLDER_ID ? { ...t, folderId: DEFAULT_FOLDER_ID } : t
+            );
+            changed = true;
+          }
+
+          return changed ? { folders, templates } : state;
+        });
       },
 
       // Sync templates from backend (fetch user's templates from Supabase)
@@ -484,14 +526,18 @@ export function getTemplateTotalSets(template: WorkoutTemplate): number {
   return template.exercises.reduce((total, ex) => total + ex.sets.length, 0);
 }
 
-// Estimate workout duration from exercises, sets, and rest timers
+// Estimate workout duration from exercises, sets, and rest timers.
+// A flat +15 min realism bump is added at the end — the raw mechanical estimate
+// (set time + rest + transitions) consistently underestimates what a real session
+// takes once warm-up, weight changes, breaks, and chatter are factored in.
 export function estimateTemplateDuration(template: { exercises: TemplateExercise[] }): number {
   const SET_DURATION = 40; // seconds actively performing a set
   const TRANSITION_TIME = 30; // seconds between exercises
   const DEFAULT_REST = 60; // fallback rest if not specified
   const DEFAULT_SETS = 3; // assumed sets when none defined
+  const REALISM_BUMP_MIN = 15;
 
-  if (template.exercises.length === 0) return 5;
+  if (template.exercises.length === 0) return 5 + REALISM_BUMP_MIN;
 
   let totalSeconds = 0;
   for (const exercise of template.exercises) {
@@ -502,7 +548,7 @@ export function estimateTemplateDuration(template: { exercises: TemplateExercise
   totalSeconds += (template.exercises.length - 1) * TRANSITION_TIME;
 
   const minutes = totalSeconds / 60;
-  return Math.max(5, Math.round(minutes / 5) * 5);
+  return Math.max(5, Math.round(minutes / 5) * 5) + REALISM_BUMP_MIN;
 }
 
 // Helper to format duration for display

@@ -30,7 +30,7 @@ function ToggleButtonGroup({ label, options, selected, onSelect }: ToggleButtonG
             key={option.value}
             style={[styles.toggleButton, selected === option.value && styles.toggleButtonActive]}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               onSelect(option.value);
             }}
           >

@@ -8,12 +8,8 @@ import {
   Switch,
   Alert,
   Linking,
-  Modal,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
+  Image,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
@@ -203,7 +199,14 @@ function Row({
     <>
       <Pressable
         style={({ pressed }) => [styles.row, pressed && !showToggle && styles.rowPressed]}
-        onPress={showToggle ? undefined : onPress}
+        onPress={
+          showToggle
+            ? undefined
+            : () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                onPress?.();
+              }
+        }
       >
         <View style={styles.rowIconWrap}>{icon}</View>
         <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
@@ -212,9 +215,8 @@ function Row({
           <Switch
             value={toggleValue}
             onValueChange={onToggle}
-            trackColor={{ false: '#E0E0E0', true: '#34C759' }}
-            thumbColor="#FFFFFF"
-            ios_backgroundColor="#E0E0E0"
+            trackColor={{ false: '#E5E5EA', true: '#34C759' }}
+            ios_backgroundColor="#E5E5EA"
             style={styles.toggle}
           />
         ) : (
@@ -242,32 +244,20 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
 const DANGER_COLOR = '#FB5057';
 
 export default function SettingsScreen() {
+  const { width: screenWidth } = useWindowDimensions();
+  const bruceHeight = Math.round(screenWidth / (1926 / 708));
   const [notificationsOn, setNotificationsOn] = useState(true);
-  const [nameModalVisible, setNameModalVisible] = useState(false);
-  const [nameText, setNameText] = useState('');
 
   const profile = useUserProfileStore((state) => state.profile);
   const clearProfile = useUserProfileStore((state) => state.clearProfile);
-  const updateProfile = useUserProfileStore((state) => state.updateProfile);
 
   function haptic() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
   }
 
-  function openNameModal() {
+  function openNameEdit() {
     haptic();
-    setNameText(profile?.name ?? '');
-    setNameModalVisible(true);
-  }
-
-  async function handleSaveName() {
-    const trimmed = nameText.trim();
-    if (!trimmed) return;
-    setNameModalVisible(false);
-    const ok = await updateProfile({ name: trimmed });
-    if (!ok) {
-      Alert.alert('Name unavailable', 'That name is already taken. Try a different one.');
-    }
+    router.push('/profile/edit-name');
   }
 
   async function handleRateUs() {
@@ -307,10 +297,18 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             const userId = profile?.id;
-            await deleteUserAccount();
-            if (userId) await clearUserDataFromStorage(userId);
-            clearProfile();
-            await supabase.auth.signOut();
+            const deleted = await deleteUserAccount();
+            if (!deleted) {
+              Alert.alert('Error', 'Failed to delete account. Please try again.');
+              return;
+            }
+            try {
+              if (userId) await clearUserDataFromStorage(userId);
+              clearProfile();
+              await supabase.auth.signOut();
+            } catch {
+              // Local cleanup failed — still navigate away since DB record is gone
+            }
             router.replace('/');
           },
         },
@@ -332,13 +330,14 @@ export default function SettingsScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
       >
         <Section label="Account">
           <Row
             icon={<PersonIcon />}
             label="Your name"
             rightValue={profile?.name ?? ''}
-            onPress={openNameModal}
+            onPress={openNameEdit}
           />
           <Row
             icon={<GlobeIcon />}
@@ -379,7 +378,7 @@ export default function SettingsScreen() {
             label="Instagram"
             onPress={() => {
               haptic();
-              Linking.openURL('https://www.instagram.com/itgirlapp');
+              Linking.openURL('https://www.instagram.com/itgirll.app/?hl=en');
             }}
           />
           <Row
@@ -387,7 +386,7 @@ export default function SettingsScreen() {
             label="TikTok"
             onPress={() => {
               haptic();
-              Linking.openURL('https://www.tiktok.com/@itgirlapp');
+              Linking.openURL('https://www.tiktok.com/@snatched.tracker');
             }}
             isLast
           />
@@ -396,10 +395,10 @@ export default function SettingsScreen() {
         <Section label="Support">
           <Row
             icon={<MailIcon />}
-            label="Contact Us"
+            label="Help & Support"
             onPress={() => {
               haptic();
-              Linking.openURL('mailto:team@getsmokeless.com');
+              Linking.openURL('https://itgirlsupport.carrd.co/');
             }}
           />
           <Row
@@ -407,7 +406,7 @@ export default function SettingsScreen() {
             label="Terms & Conditions"
             onPress={() => {
               haptic();
-              Linking.openURL('https://itgirlapp.com/terms');
+              Linking.openURL('https://itgirltermsandconditions.carrd.co/');
             }}
           />
           <Row
@@ -415,7 +414,7 @@ export default function SettingsScreen() {
             label="Privacy Policy"
             onPress={() => {
               haptic();
-              Linking.openURL('https://itgirlapp.com/privacy');
+              Linking.openURL('https://itgirlprivacypolicy.carrd.co/');
             }}
             isLast
           />
@@ -439,51 +438,14 @@ export default function SettingsScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.version}>v{version}</Text>
-          <Text style={styles.quote}>{'Keep working hard\n- bruce'}</Text>
         </View>
-      </ScrollView>
 
-      {/* Name edit modal */}
-      <Modal
-        visible={nameModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setNameModalVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setNameModalVisible(false)}>
-          <View style={styles.modalOverlay} />
-        </TouchableWithoutFeedback>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalKAV}
-          pointerEvents="box-none"
-        >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Your name</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={nameText}
-                onChangeText={setNameText}
-                placeholder="Enter your name"
-                placeholderTextColor="#BBBBBB"
-                maxLength={50}
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={handleSaveName}
-              />
-              <View style={styles.modalActions}>
-                <Pressable style={styles.modalCancel} onPress={() => setNameModalVisible(false)}>
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </Pressable>
-                <Pressable style={styles.modalSave} onPress={handleSaveName}>
-                  <Text style={styles.modalSaveText}>Save</Text>
-                </Pressable>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-      </Modal>
+        <Image
+          source={require('../assets/images/BrucePic.png')}
+          style={[styles.bruce, { width: screenWidth, height: bruceHeight }]}
+          resizeMode="contain"
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -514,7 +476,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 48,
+    paddingBottom: 0,
   },
   sectionLabel: {
     fontFamily: fonts.semiBold,
@@ -582,9 +544,7 @@ const styles = StyleSheet.create({
   chevronDanger: {
     color: 'rgba(251,80,87,0.4)',
   },
-  toggle: {
-    transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }],
-  },
+  toggle: {},
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: 'rgba(217,217,217,0.8)',
@@ -592,84 +552,14 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     paddingTop: 32,
-    gap: 8,
+  },
+  bruce: {
+    marginTop: 16,
   },
   version: {
     fontFamily: fonts.regular,
     fontSize: 12,
     color: 'rgba(102,102,102,0.5)',
     letterSpacing: -0.2,
-  },
-  quote: {
-    fontFamily: fonts.instrumentSerifItalic,
-    fontSize: 16,
-    color: '#758896',
-    textAlign: 'center',
-    lineHeight: 24,
-    transform: [{ rotate: '-3deg' }],
-    marginTop: 4,
-  },
-  // Name modal
-  modalOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  modalKAV: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  modalTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 18,
-    color: '#000000',
-    letterSpacing: -0.3,
-    marginBottom: 16,
-  },
-  modalInput: {
-    fontFamily: fonts.regular,
-    fontSize: 16,
-    color: '#000000',
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-    borderRadius: 12,
-    padding: 14,
-    letterSpacing: -0.2,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  modalCancel: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 500,
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 15,
-    color: '#888888',
-  },
-  modalSave: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 500,
-    backgroundColor: '#000000',
-    alignItems: 'center',
-  },
-  modalSaveText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 15,
-    color: '#FFFFFF',
   },
 });

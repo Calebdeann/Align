@@ -24,7 +24,7 @@ const PROGRAM_IMAGES = [
   require('../assets/Onboarding Assets/Onboarding P10/Botty.png'),
   require('../assets/Onboarding Assets/Onboarding P10/HourGlass.png'),
   require('../assets/Onboarding Assets/Onboarding P10/ITGirl.png'),
-  require('../assets/Onboarding Assets/Onboarding P10/Glow.png'),
+  require('../assets/Onboarding Assets/Onboarding P10/BusyGirl.png'),
   require('../assets/Onboarding Assets/Onboarding P10/Muscle.png'),
   require('../assets/Onboarding Assets/Onboarding P10/Home.png'),
 ];
@@ -56,7 +56,7 @@ export default function WelcomeScreen() {
       Animated.loop(
         Animated.timing(scrollAnim, {
           toValue: singleSetHeight,
-          duration: 90000,
+          duration: 75000,
           easing: Easing.linear,
           useNativeDriver: true,
         })
@@ -105,18 +105,39 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.imageSection}>
-        <Pressable onPress={() => router.replace('/(tabs)')} style={{ flex: 1 }}>
-          <Animated.View style={{ transform: [{ translateY }], opacity: fadeAnim }}>
-            {LOOP_IMAGES.map((src, i) => (
-              <Image
-                key={i}
-                source={src}
-                style={{ width: imageWidth, height: imageHeight, marginHorizontal: 16 }}
-                resizeMode="cover"
-              />
-            ))}
-          </Animated.View>
-        </Pressable>
+        {__DEV__ ? (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.replace('/(tabs)');
+            }}
+            style={{ flex: 1 }}
+          >
+            <Animated.View style={{ transform: [{ translateY }], opacity: fadeAnim }}>
+              {LOOP_IMAGES.map((src, i) => (
+                <Image
+                  key={i}
+                  source={src}
+                  style={{ width: imageWidth, height: imageHeight, marginHorizontal: 16 }}
+                  resizeMode="cover"
+                />
+              ))}
+            </Animated.View>
+          </Pressable>
+        ) : (
+          <View style={{ flex: 1 }}>
+            <Animated.View style={{ transform: [{ translateY }], opacity: fadeAnim }}>
+              {LOOP_IMAGES.map((src, i) => (
+                <Image
+                  key={i}
+                  source={src}
+                  style={{ width: imageWidth, height: imageHeight, marginHorizontal: 16 }}
+                  resizeMode="cover"
+                />
+              ))}
+            </Animated.View>
+          </View>
+        )}
         <LinearGradient
           colors={['rgba(255,255,255,0)', '#ffffff']}
           style={styles.imageGradient}
@@ -125,10 +146,19 @@ export default function WelcomeScreen() {
       </View>
 
       <View style={styles.headingArea}>
-        {/* DEV SHORTCUT: tap heading to skip to signin */}
-        <Pressable onPress={() => router.push('/onboarding/signin')}>
+        {__DEV__ ? (
+          /* DEV SHORTCUT: tap heading to skip to signin */
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.push('/onboarding/signin');
+            }}
+          >
+            <MixedHeading boldLine="Choose" italicPhrase="your program" size={44} />
+          </Pressable>
+        ) : (
           <MixedHeading boldLine="Choose" italicPhrase="your program" size={44} />
-        </Pressable>
+        )}
       </View>
 
       <View style={styles.headingButtonSpacer} />
@@ -153,8 +183,8 @@ export default function WelcomeScreen() {
       <View style={[styles.signInContainer, { bottom: Math.max(bottomInset - 14, 4) }]}>
         <Pressable
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/onboarding/signin');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/sign-in');
           }}
           style={styles.signInPressable}
         >

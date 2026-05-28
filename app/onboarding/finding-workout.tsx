@@ -8,12 +8,24 @@ export default function FindingWorkoutScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const progress = useRef(new Animated.Value(0)).current;
   const barWidth = screenWidth * 0.45;
+  const hapticIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const hapticTimes = [1050, 2000, 3300, 4050, 4900, 5600];
-    const timers = hapticTimes.map((ms) =>
-      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), ms)
-    );
+    // Phone-call style sustained buzz: one Heavy every 150ms while the bar fills.
+    // Starts after the 500ms fade-in delay; cleared when the bar completes.
+    const startHapticTimer = setTimeout(() => {
+      hapticIntervalRef.current = setInterval(
+        () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
+        150
+      );
+    }, 500);
+
+    function stopHaptic() {
+      if (hapticIntervalRef.current) {
+        clearInterval(hapticIntervalRef.current);
+        hapticIntervalRef.current = null;
+      }
+    }
 
     // 500ms buffer lets the fade transition finish before the bar starts moving
     Animated.sequence([
@@ -55,12 +67,16 @@ export default function FindingWorkoutScreen() {
         useNativeDriver: false,
       }),
     ]).start(({ finished }) => {
+      stopHaptic();
       if (finished) {
         router.replace('/onboarding/select-program');
       }
     });
 
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      clearTimeout(startHapticTimer);
+      stopHaptic();
+    };
   }, []);
 
   const fillWidth = progress.interpolate({

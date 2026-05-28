@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../supabase';
 import {
   UpdateProfileSchema,
@@ -9,7 +10,7 @@ import { logger } from '@/utils/logger';
 export interface UserProfile {
   id: string;
   email?: string;
-  name?: string; // Display name (unique)
+  name?: string;
   avatar_url?: string;
   // Onboarding data
   experience_level?: string;
@@ -177,37 +178,56 @@ export async function saveOnboardingData(
   return true;
 }
 
-// Upload avatar image to Supabase Storage and return the public URL
+// Upload avatar image to Supabase Storage and return the public URL.
+//
+// NOTE: Don't use `fetch(file://...).blob()` here — on iOS that pattern
+// silently returns an EMPTY blob, the upload "succeeds" with 0 bytes, and the
+// resulting public URL serves a blank file that expo-image then can't render.
+// Instead, stream the file straight to Supabase's storage REST endpoint via
+// expo-file-system's uploadAsync, which is a native upload (no JS-side blob
+// conversion). This is the same pattern Supabase recommends for RN.
 export async function uploadAvatar(userId: string, imageUri: string): Promise<string | null> {
   try {
     const filePath = `${userId}/avatar.jpg`;
-
-    // Use FormData for reliable React Native file uploads
-    const formData = new FormData();
-    formData.append('', {
-      uri: imageUri,
-      name: 'avatar.jpg',
-      type: 'image/jpeg',
-    } as any);
-
-    // Upload to Supabase Storage (upsert to replace existing)
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, formData, {
-        contentType: 'multipart/form-data',
-        upsert: true,
-      });
-
-    if (uploadError) {
-      logger.warn('Error uploading avatar', { error: uploadError });
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) {
+      logger.warn('uploadAvatar: EXPO_PUBLIC_SUPABASE_URL is not set');
       return null;
     }
 
-    // Get the public URL
-    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      logger.warn('uploadAvatar: no auth session');
+      return null;
+    }
 
-    // Append cache-buster so the new image loads immediately
-    return `${data.publicUrl}?t=${Date.now()}`;
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/avatars/${filePath}`;
+    const result = await FileSystem.uploadAsync(uploadUrl, imageUri, {
+      httpMethod: 'POST',
+      uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'true',
+        // Long-lived cache so Cloudflare + clients aggressively cache the file.
+        // We invalidate via the ?v=<updated_at> query param at render time.
+        'cache-control': 'public, max-age=31536000, immutable',
+      },
+    });
+
+    if (result.status !== 200 && result.status !== 201) {
+      logger.warn('uploadAvatar: storage REST upload failed', {
+        status: result.status,
+        body: result.body?.slice(0, 200),
+      });
+      return null;
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    return data.publicUrl;
   } catch (error) {
     logger.warn('Error in uploadAvatar', { error });
     return null;

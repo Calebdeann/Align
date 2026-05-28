@@ -61,7 +61,7 @@ export default function SelectLanguageScreen() {
             <Pressable
               style={styles.languageRow}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 handleSelectLanguage(language.code);
               }}
             >

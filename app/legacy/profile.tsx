@@ -63,7 +63,7 @@ function MenuItem({
       <Pressable
         style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.7 }]}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onPress();
         }}
       >
@@ -113,7 +113,7 @@ function ConfirmationModal({
       <Pressable
         style={styles.modalOverlay}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onCancel();
         }}
       >
@@ -121,7 +121,7 @@ function ConfirmationModal({
           <Pressable
             style={styles.modalCloseButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               onCancel();
             }}
           >
@@ -135,7 +135,7 @@ function ConfirmationModal({
             <Pressable
               style={styles.modalCancelButton}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 onCancel();
               }}
               disabled={isLoading}
@@ -187,7 +187,7 @@ export default function ProfileScreen() {
   );
 
   async function handleNotificationToggle(value: boolean) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
     if (value) {
       const granted = await requestNotificationPermissions();
@@ -351,7 +351,7 @@ export default function ProfileScreen() {
           style={styles.profileCard}
           onPress={() => {
             withLock(() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               router.push('/profile/edit-profile');
             });
           }}
@@ -402,11 +402,11 @@ export default function ProfileScreen() {
                 return;
               }
               const available = await StoreReview.isAvailableAsync();
-              console.log('[StoreReview] isAvailable:', available);
+              if (__DEV__) console.log('[StoreReview] isAvailable:', available);
               if (available) {
                 try {
                   await StoreReview.requestReview();
-                  console.log('[StoreReview] requestReview called');
+                  if (__DEV__) console.log('[StoreReview] requestReview called');
                 } catch (e) {
                   console.warn('[StoreReview] requestReview error:', e);
                 }

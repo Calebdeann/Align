@@ -1,4 +1,4 @@
-export const TRAITS_BOX_H = 90;
+export const TRAITS_BOX_H = 140;
 export const TRAITS_PILL_H = 30;
 export const TRAITS_SCALE_MIN = 0.6;
 export const TRAITS_SCALE_MAX = 1.8;
@@ -12,12 +12,14 @@ export type PlacedTrait = {
   scale?: number; // defaults to 1 if absent
 };
 
+export type TraitTag = string | { tag: string; verifyKey: string };
+
 export type TraitCategory = {
   id: string;
   name: string;
   color: string; // pill background
   dotColor: string; // category header dot
-  tags: string[];
+  tags: TraitTag[];
 };
 
 export const TRAIT_CATEGORIES: TraitCategory[] = [
@@ -62,29 +64,6 @@ export const TRAIT_CATEGORIES: TraitCategory[] = [
       'Plate stacker',
       'Squat queen',
       'Deadlift girlie',
-    ],
-  },
-  {
-    id: 'stats',
-    name: 'Workout Stats',
-    color: '#fcc4bd',
-    dotColor: '#F08070',
-    tags: [
-      '25+ workouts completed',
-      '50+ workouts completed',
-      '100+ workouts completed',
-      '30 day streak',
-      '60 day streak',
-      '100 day streak',
-      '100kg hip thrust',
-      '120kg hip thrust',
-      '60kg squat',
-      '80kg squat',
-      '80kg deadlift',
-      '100kg deadlift',
-      'First pull up',
-      '40kg bench',
-      'Completed first plan',
     ],
   },
   {
@@ -133,4 +112,46 @@ export const TRAIT_CATEGORIES: TraitCategory[] = [
       'Always cold',
     ],
   },
+  {
+    id: 'stats',
+    name: 'Workout Stats',
+    color: '#fcc4bd',
+    dotColor: '#F08070',
+    tags: [
+      // Immediate — always unlocked
+      'Day 1',
+      'It Girl era',
+      'Locked in',
+      // Easy thresholds
+      { tag: 'First workout', verifyKey: 'workout_first' },
+      { tag: '10+ workouts', verifyKey: 'workouts_10' },
+      { tag: 'Week 1 done', verifyKey: 'streak_7' },
+      // Existing milestones
+      { tag: '25+ workouts', verifyKey: 'workouts_25' },
+      { tag: '50+ workouts', verifyKey: 'workouts_50' },
+      { tag: '100+ workouts', verifyKey: 'workouts_100' },
+      { tag: '30 day streak', verifyKey: 'streak_30' },
+      { tag: '60 day streak', verifyKey: 'streak_60' },
+      { tag: '100 day streak', verifyKey: 'streak_100' },
+      { tag: '100kg hip thrust', verifyKey: 'hipthrust_100' },
+      { tag: '120kg hip thrust', verifyKey: 'hipthrust_120' },
+      { tag: '60kg squat', verifyKey: 'squat_60' },
+      { tag: '80kg squat', verifyKey: 'squat_80' },
+      { tag: '80kg deadlift', verifyKey: 'deadlift_80' },
+      { tag: '100kg deadlift', verifyKey: 'deadlift_100' },
+      { tag: 'First pull up', verifyKey: 'pullup_first' },
+      { tag: '40kg bench', verifyKey: 'bench_40' },
+      { tag: 'First plan done', verifyKey: 'plan_first' },
+    ],
+  },
 ];
+
+/** Resolve a `TraitTag` (string or object) to the display label. */
+export function getTraitLabel(t: TraitTag): string {
+  return typeof t === 'string' ? t : t.tag;
+}
+
+/** Resolve a `TraitTag` to its eligibility key, or null if it's a free tag. */
+export function getTraitVerifyKey(t: TraitTag): string | null {
+  return typeof t === 'string' ? null : t.verifyKey;
+}

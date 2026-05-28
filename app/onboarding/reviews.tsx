@@ -17,7 +17,7 @@ export default function ReviewsScreen() {
 
   function handlePress() {
     if (rated) {
-      withLock(() => router.push('/onboarding/personalising'));
+      withLock(() => router.push('/onboarding/signin'));
       return;
     }
     setRated(true);

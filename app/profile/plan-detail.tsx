@@ -8,6 +8,7 @@ import { fonts, spacing } from '@/constants/theme';
 import { getPlanById, type PlanReview } from '@/data/plans';
 import { CircleBackButton, OnboardingContinueButton } from '@/components';
 import { useUserProfileStore } from '@/stores/userProfileStore';
+import { useWorkoutStore } from '@/stores/workoutStore';
 
 const IMG_RATIO = 1848 / 739;
 const REVIEW_ROTATIONS = ['-1.5deg', '1deg', '-1deg', '1.5deg', '-0.5deg'] as const;
@@ -40,6 +41,7 @@ export default function PlanDetailScreen() {
   const { planId } = useLocalSearchParams<{ planId: string }>();
   const { width } = useWindowDimensions();
   const { profile, updateProfile } = useUserProfileStore();
+  const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
   const plan = getPlanById(planId);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -58,6 +60,18 @@ export default function PlanDetailScreen() {
       return;
     }
 
+    // An in-progress workout is tied to the OLD plan's scheduled-workout row.
+    // Switching plans deletes that row, leaving the active session orphaned.
+    // Block the switch and tell the user what to do.
+    if (activeWorkout) {
+      Alert.alert(
+        'Finish your current workout first',
+        'You have a workout in progress. Finish or discard it before switching plans.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Switch Plans?',
       "Switching plans will restart your program progress. Your workout history won't be affected, but your current plan streak will reset.",
@@ -70,10 +84,15 @@ export default function PlanDetailScreen() {
             setIsSaving(true);
             const success = await updateProfile({ plan_id: plan.id });
             setIsSaving(false);
-            if (success) {
-              router.back();
-            } else {
+            if (!success) {
               Alert.alert('Error', 'Could not switch plans. Please try again.');
+              return;
+            }
+            // The planner's mount effect handles clearing stale plan workouts
+            // and seeding the new plan when planId changes — no need to do it
+            // synchronously here. Just navigate back snappily.
+            if (router.canGoBack()) {
+              router.back();
             }
           },
         },
@@ -156,7 +175,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md + 8,
   },
   headerTitle: {
     fontFamily: fonts.semiBold,

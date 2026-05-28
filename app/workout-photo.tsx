@@ -1,59 +1,25 @@
-import { useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  ScrollView,
-  Animated,
   Dimensions,
   Image as RNImage,
+  Alert,
+  Linking,
 } from 'react-native';
-import { Image } from 'expo-image';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { fonts } from '@/constants/theme';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
-const { height: SCREEN_H } = Dimensions.get('screen');
-
-const TEMPLATE_SECTIONS = [
-  {
-    title: 'Abs & Core',
-    templates: [
-      require('../assets/images/AbsMain.jpg'),
-      require('../assets/images/ABS-CORE/IMG_4464.jpg'),
-      require('../assets/images/ABS-CORE/IMG_4465.jpg'),
-      require('../assets/images/ABS-CORE/IMG_4466.jpg'),
-      require('../assets/images/ABS-CORE/IMG_4467.jpg'),
-      require('../assets/images/ABS-CORE/IMG_4468.jpg'),
-    ],
-  },
-  {
-    title: 'Glutes',
-    templates: [
-      require('../assets/images/GlutesMain.jpg'),
-      require('../assets/images/GLUTES/IMG_4472.jpg'),
-      require('../assets/images/GLUTES/IMG_4473.jpg'),
-      require('../assets/images/GLUTES/IMG_4474.jpg'),
-      require('../assets/images/GLUTES/IMG_4475.jpg'),
-      require('../assets/images/GLUTES/IMG_4476.jpg'),
-    ],
-  },
-  {
-    title: 'Lower Body',
-    templates: [
-      require('../assets/images/LowerBodyMain.jpg'),
-      require('../assets/images/LOWER BODY/IMG_4484.jpg'),
-      require('../assets/images/LOWER BODY/IMG_4485.jpg'),
-      require('../assets/images/LOWER BODY/IMG_4486.jpg'),
-      require('../assets/images/LOWER BODY/IMG_4487.jpg'),
-      require('../assets/images/LOWER BODY/IMG_4488.jpg'),
-    ],
-  },
-];
+const { width: WIN_W } = Dimensions.get('window');
+const PHOTO_H = Math.round(WIN_W * (16 / 9));
 
 type WorkoutParams = {
   workoutTitle: string;
@@ -69,15 +35,31 @@ export default function WorkoutPhotoScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<WorkoutParams>();
 
-  const sheetY = useRef(new Animated.Value(SCREEN_H)).current;
+  const cameraRef = useRef<CameraView>(null);
+  const [facing, setFacing] = useState<'front' | 'back'>('back');
+  const [flash, setFlash] = useState<'on' | 'off'>('off');
+  const [capturing, setCapturing] = useState(false);
+  const [recentPhotoUri, setRecentPhotoUri] = useState<string | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
 
-  const hideSheet = () => {
-    Animated.timing(sheetY, { toValue: SCREEN_H, duration: 280, useNativeDriver: true }).start();
-  };
+  useEffect(() => {
+    if (permission && !permission.granted && permission.canAskAgain) {
+      requestPermission();
+    }
+  }, [permission, requestPermission]);
 
-  const showSheet = () => {
-    Animated.timing(sheetY, { toValue: 0, duration: 280, useNativeDriver: true }).start();
-  };
+  useEffect(() => {
+    (async () => {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') return;
+      const { assets } = await MediaLibrary.getAssetsAsync({
+        first: 1,
+        sortBy: [MediaLibrary.SortBy.creationTime],
+        mediaType: MediaLibrary.MediaType.photo,
+      });
+      if (assets[0]) setRecentPhotoUri(assets[0].uri);
+    })();
+  }, []);
 
   const workoutParams: WorkoutParams = {
     workoutTitle: params.workoutTitle ?? '',
@@ -89,257 +71,295 @@ export default function WorkoutPhotoScreen() {
     userId: params.userId ?? '',
   };
 
-  const navigateToPreview = (imageUri: string) => {
-    router.push({ pathname: '/workout-photo-preview', params: { imageUri, ...workoutParams } });
+  const navigateToPreview = (imageUri: string, imageAspectRatio: number) => {
+    router.push({
+      pathname: '/workout-photo-preview',
+      params: { imageUri, imageAspectRatio: String(imageAspectRatio), ...workoutParams },
+    });
+  };
+
+  const handlePickerError = (err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    const isHeicFailure = /public\.heic|representation/i.test(msg);
+    console.warn('[workout-photo] image picker failed', { msg });
+    if (isHeicFailure) {
+      Alert.alert(
+        "Couldn't load that photo",
+        'iOS could not read this image. It may be stored only in iCloud and needs to download first. Try a different photo, or open it once in the Photos app to fetch the full version.'
+      );
+    } else {
+      Alert.alert("Couldn't load photo", 'Please try again.');
+    }
+  };
+
+  const promptForPermission = async (): Promise<boolean> => {
+    const res = await requestPermission();
+    if (res.granted) return true;
+    Alert.alert(
+      'Camera access needed',
+      'Enable camera access for It Girl in Settings to take post-workout photos.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+      ]
+    );
+    return false;
   };
 
   const handleTakePhoto = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.9, mediaTypes: ['images'] });
-    if (!result.canceled && result.assets[0]) navigateToPreview(result.assets[0].uri);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    if (capturing) return;
+    if (!permission?.granted) {
+      const ok = await promptForPermission();
+      if (!ok) return;
+    }
+    setCapturing(true);
+    try {
+      const photo = await cameraRef.current?.takePictureAsync({
+        quality: 0.9,
+        skipProcessing: false,
+      });
+      if (!photo?.uri) {
+        Alert.alert("Couldn't capture photo", 'Please try again.');
+        return;
+      }
+      const ratio = photo.width > 0 ? photo.height / photo.width : 16 / 9;
+      navigateToPreview(photo.uri, ratio);
+    } catch (err) {
+      console.warn('[workout-photo] takePictureAsync failed', err);
+      Alert.alert("Couldn't capture photo", 'Please try again.');
+    } finally {
+      setCapturing(false);
+    }
   };
 
   const handleUpload = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.9,
-    });
-    if (!result.canceled && result.assets[0]) navigateToPreview(result.assets[0].uri);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.9,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const ratio = asset.width > 0 ? asset.height / asset.width : 16 / 9;
+        navigateToPreview(asset.uri, ratio);
+      }
+    } catch (err) {
+      handlePickerError(err);
+    }
   };
 
-  const handleTemplateSelect = (src: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const { uri } = RNImage.resolveAssetSource(src);
-    navigateToPreview(uri);
-  };
+  const cameraReady = !!permission?.granted;
 
   return (
     <View style={styles.container}>
-      {/* Static background — replaces live CameraView */}
-      <View style={styles.cameraPlaceholder}>
-        <Ionicons name="camera-outline" size={64} color="rgba(255,255,255,0.15)" />
+      {/* Camera frame — fills from very top of screen */}
+      <View style={[styles.cameraFrame, { top: insets.top, borderRadius: 20 }]}>
+        {cameraReady ? (
+          <CameraView
+            ref={cameraRef}
+            style={StyleSheet.absoluteFill}
+            facing={facing}
+            flash={flash}
+            enableTorch={false}
+            mute
+            // Selfie photos should match the mirrored preview the user sees
+            // while framing — otherwise text/asymmetry looks flipped after capture.
+            mirror={facing === 'front'}
+          />
+        ) : (
+          <Ionicons name="camera-outline" size={64} color="rgba(255,255,255,0.15)" />
+        )}
+
+        {/* Shutter — centered at bottom of camera frame */}
+        <Pressable
+          style={[styles.shutterOuter, capturing && { opacity: 0.6 }]}
+          onPress={handleTakePhoto}
+          disabled={capturing}
+        >
+          <View style={styles.shutterInner} />
+        </Pressable>
       </View>
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, zIndex: 40 }]}>
+      {/* Top controls — float over image, no backgrounds */}
+      <View style={[styles.topControls, { top: insets.top + 12 }]}>
+        {/* Back */}
         <Pressable
+          style={styles.iconBtn}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             router.back();
           }}
-          style={styles.circleBtn}
         >
-          <Ionicons name="chevron-back" size={22} color="#000" />
-        </Pressable>
-        <Text style={styles.title}>Submit Photo</Text>
-        <View style={styles.circleBtn}>
-          <Ionicons name="information-circle-outline" size={22} color="#000" />
-        </View>
-      </View>
-
-      {/* Shutter + links */}
-      <View style={[styles.shutterArea, { paddingBottom: insets.bottom + 16 }]}>
-        <Pressable style={styles.shutterBtn} onPress={handleTakePhoto} />
-        <View style={styles.bottomLinks}>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              showSheet();
-            }}
-          >
-            <Text style={styles.linkText}>Template</Text>
-          </Pressable>
-          <Pressable onPress={handleUpload}>
-            <Text style={styles.linkText}>Upload</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {/* Choose Image sheet — top is dynamic so it starts below the header */}
-      <Animated.View
-        style={[styles.sheet, { top: insets.top + 72, transform: [{ translateY: sheetY }] }]}
-      >
-        <View style={styles.dragHandle} />
-
-        <View style={styles.sheetHeader}>
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              hideSheet();
-            }}
-            style={styles.sheetIconBtn}
-          >
-            <Ionicons name="chevron-back" size={24} color="#000" />
-          </Pressable>
-          <Text style={styles.sheetTitle}>Choose Image</Text>
-          <View style={styles.sheetIconBtn}>
-            <Ionicons name="options-outline" size={24} color="#000" />
+          <View style={styles.iconShadow}>
+            <Ionicons name="chevron-back" size={28} color="#fff" />
           </View>
-        </View>
+        </Pressable>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetScroll}>
-          {TEMPLATE_SECTIONS.map((section) => (
-            <View key={section.title}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <View style={styles.grid}>
-                {section.templates.map((src, i) => (
-                  <Pressable
-                    key={i}
-                    style={[
-                      styles.gridCard,
-                      { transform: [{ rotate: i % 2 === 0 ? '-1deg' : '1deg' }] },
-                    ]}
-                    onPress={() => handleTemplateSelect(src)}
-                  >
-                    <Image source={src} style={styles.gridImage} contentFit="cover" />
-                  </Pressable>
-                ))}
-              </View>
+        {/* Flash — center */}
+        <Pressable
+          style={styles.iconBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            setFlash((f) => (f === 'off' ? 'on' : 'off'));
+          }}
+        >
+          <View style={styles.iconShadow}>
+            <Ionicons
+              name={flash === 'on' ? 'flash' : 'flash-off-outline'}
+              size={26}
+              color="#fff"
+            />
+          </View>
+        </Pressable>
+      </View>
+
+      {/* Bottom controls — below the camera frame */}
+      <View
+        style={[
+          styles.bottomControls,
+          { top: insets.top + PHOTO_H, paddingBottom: insets.bottom + 8 },
+        ]}
+      >
+        {/* Gallery / recent photo */}
+        <Pressable style={[styles.sideBtn, styles.sideBtnUpload]} onPress={handleUpload}>
+          {recentPhotoUri ? (
+            <RNImage
+              source={{ uri: recentPhotoUri }}
+              style={styles.recentPhoto}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.sideBtnInner}>
+              <Ionicons name="image-outline" size={22} color="#fff" />
             </View>
-          ))}
-        </ScrollView>
-      </Animated.View>
+          )}
+        </Pressable>
+
+        {/* Spacer where Templates used to live */}
+        <View />
+
+        {/* Flip camera — liquid glass dark circle */}
+        <Pressable
+          style={[styles.sideBtn, styles.sideBtnFlip]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            setFacing((f) => (f === 'back' ? 'front' : 'back'));
+          }}
+        >
+          <BlurView
+            intensity={40}
+            tint="systemChromeMaterialDark"
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.sideBtnOverlay}>
+            <Ionicons name="camera-reverse-outline" size={26} color="#fff" />
+          </View>
+        </Pressable>
+      </View>
     </View>
   );
 }
-
-const CARD_SIZE = Math.floor((Dimensions.get('window').width - 40) / 3);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
   },
-  cameraPlaceholder: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  header: {
+  cameraFrame: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    height: PHOTO_H,
+    backgroundColor: '#1c1c1e',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  topControls: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     zIndex: 20,
   },
-  circleBtn: {
+  iconBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  title: {
-    flex: 1,
-    fontFamily: fonts.bold,
-    fontSize: 26,
-    color: '#fff',
-    textAlign: 'center',
-  },
-  shutterArea: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    gap: 20,
-    zIndex: 5,
-  },
-  shutterBtn: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: '#fff',
-    borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.5)',
-  },
-  bottomLinks: {
-    flexDirection: 'row',
-    gap: 40,
-  },
-  linkText: {
-    fontFamily: fonts.medium,
-    fontSize: 17,
-    color: 'rgba(255,255,255,0.6)',
-    textDecorationLine: 'underline',
-  },
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    zIndex: 30,
-  },
-  dragHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#C8C8CC',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  sheetIconBtn: {
-    width: 40,
-    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sheetTitle: {
-    flex: 1,
-    fontFamily: fonts.semiBold,
-    fontSize: 26,
-    color: '#000',
-    textAlign: 'center',
-  },
-  sheetScroll: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-    gap: 24,
-  },
-  sectionTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize: 22,
-    color: '#000',
-    marginBottom: 12,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  gridCard: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
-    borderRadius: 16,
-    overflow: 'hidden',
+  iconShadow: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 4,
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
   },
-  gridImage: {
+  shutterOuter: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: '#fff',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shutterInner: {
+    width: 65,
+    height: 65,
+    borderRadius: 33,
+    backgroundColor: '#fff',
+  },
+  bottomControls: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  sideBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  sideBtnUpload: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+  },
+  sideBtnFlip: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+  },
+  sideBtnInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sideBtnOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  recentPhoto: {
     width: '100%',
     height: '100%',
   },

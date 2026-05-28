@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-na
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { fonts, spacing } from '@/constants/theme';
-import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 import {
   OnboardingBackButton,
   OnboardingContinueButton,
@@ -44,8 +44,10 @@ const CARD_GAP = 12;
 const ROW_GAP = 20;
 
 export default function ChallengeScreen() {
-  const { isNavigating, withLock } = useNavigationLock();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const setAndSave = useOnboardingStore((s) => s.setAndSave);
+  const savedChallenges = useOnboardingStore((s) => s.challenges);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(savedChallenges));
+  const [isSaving, setIsSaving] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
 
   const cardWidth = (screenWidth - H_PAD * 2 - CARD_GAP) / 2;
@@ -53,7 +55,7 @@ export default function ChallengeScreen() {
   const cardRadius = Math.round(cardWidth * (40 / 283));
 
   function handleSelect(id: string) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -62,12 +64,15 @@ export default function ChallengeScreen() {
     });
   }
 
-  function handleContinue() {
-    if (selected.size === 0) return;
-    withLock(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      router.push('/onboarding/finding-workout');
-    });
+  async function handleContinue() {
+    if (selected.size === 0 || isSaving) return;
+    setIsSaving(true);
+    try {
+      await setAndSave('challenges', [...selected]);
+    } finally {
+      setIsSaving(false);
+      router.push('/onboarding/workout-days');
+    }
   }
 
   return (
@@ -127,7 +132,7 @@ export default function ChallengeScreen() {
       <View style={styles.bottomSection}>
         <OnboardingContinueButton
           onPress={handleContinue}
-          disabled={selected.size === 0 || isNavigating}
+          disabled={selected.size === 0 || isSaving}
         />
       </View>
     </SafeAreaView>

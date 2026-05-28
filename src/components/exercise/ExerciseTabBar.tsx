@@ -15,7 +15,7 @@ export default function ExerciseTabBar({ activeTab, onTabChange }: ExerciseTabBa
       <Pressable
         style={[styles.tab, activeTab === 'summary' && styles.tabActive]}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onTabChange('summary');
         }}
       >
@@ -26,7 +26,7 @@ export default function ExerciseTabBar({ activeTab, onTabChange }: ExerciseTabBa
       <Pressable
         style={[styles.tab, activeTab === 'history' && styles.tabActive]}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onTabChange('history');
         }}
       >
@@ -37,7 +37,7 @@ export default function ExerciseTabBar({ activeTab, onTabChange }: ExerciseTabBa
       <Pressable
         style={[styles.tab, activeTab === 'howto' && styles.tabActive]}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           onTabChange('howto');
         }}
       >

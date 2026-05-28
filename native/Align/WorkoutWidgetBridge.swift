@@ -3,10 +3,10 @@ import React
 
 @objc(WorkoutWidgetBridge)
 class WorkoutWidgetBridge: RCTEventEmitter {
-  private static let appGroupId = "group.com.aligntracker.app"
+  private static let appGroupId = "group.com.itgirlapp.app"
   private static let workoutStateKey = "workoutState"
   private static let widgetActionsKey = "widgetActions"
-  private static let darwinNotificationName = "com.aligntracker.app.setCompleted"
+  private static let darwinNotificationName = "com.itgirlapp.app.setCompleted"
 
   private var hasListeners = false
 

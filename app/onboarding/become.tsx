@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, StyleSheet, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -33,13 +33,23 @@ export default function BecomeScreen() {
   const w1 = useSharedValue(0);
   const w2 = useSharedValue(0);
   const w3 = useSharedValue(0);
+  const [animDone, setAnimDone] = useState(false);
 
   useEffect(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    w0.value = withTiming(1, { duration: 675 });
-    w1.value = withDelay(340, withTiming(1, { duration: 675 }));
-    w2.value = withDelay(680, withTiming(1, { duration: 675 }));
-    w3.value = withDelay(1020, withTiming(1, { duration: 675 }));
+    // VERY STRONG: one Heavy stamp per word as it fades in (Become / an / It / Girl).
+    const hapticDelays = [0, 510, 1020, 1530];
+    const hapticTimers = hapticDelays.map((ms) =>
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), ms)
+    );
+    w0.value = withTiming(1, { duration: 1013 });
+    w1.value = withDelay(510, withTiming(1, { duration: 1013 }));
+    w2.value = withDelay(1020, withTiming(1, { duration: 1013 }));
+    w3.value = withDelay(1530, withTiming(1, { duration: 1013 }));
+    const t = setTimeout(() => setAnimDone(true), 1793);
+    return () => {
+      clearTimeout(t);
+      hapticTimers.forEach(clearTimeout);
+    };
   }, []);
 
   return (
@@ -68,7 +78,12 @@ export default function BecomeScreen() {
       {/* Button anchored to the bottom safe area */}
       <SafeAreaView edges={['bottom']} style={styles.safeBottom}>
         <View style={styles.bottomSection}>
-          <OnboardingContinueButton onPress={() => router.push('/onboarding/name')} />
+          <OnboardingContinueButton
+            onPress={() => {
+              if (!animDone) return;
+              router.push('/onboarding/name');
+            }}
+          />
         </View>
       </SafeAreaView>
     </View>

@@ -2,10 +2,16 @@ import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-na
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { fonts, spacing } from '@/constants/theme';
 import { OnboardingContinueButton } from '@/components';
 import { GYM_BUDDIES } from '@/data/gymBuddies';
+import { useOnboardingStore } from '@/stores/onboardingStore';
+import { supabase } from '@/services/supabase';
+import { useUserProfileStore } from '@/stores/userProfileStore';
+import { addSeedBuddyAsFriend } from '@/services/api/friends';
+import { authStateManager } from '@/services/authState';
+import { logger } from '@/utils/logger';
 
 const FIGMA_W = 642;
 const PHOTO_RATIO = 318 / FIGMA_W;
@@ -19,6 +25,7 @@ export default function PartnerMatchScreen() {
     GYM_BUDDIES.length - 1
   );
   const buddy = GYM_BUDDIES[idx];
+  const setAndSave = useOnboardingStore((s) => s.setAndSave);
 
   const { width, height } = useWindowDimensions();
   const s = width / FIGMA_W;
@@ -27,14 +34,71 @@ export default function PartnerMatchScreen() {
   const onlineBadgeLeft = Math.round(width * ONLINE_BADGE_LEFT_RATIO);
   const onlineBadgeTop = Math.round(width * ONLINE_BADGE_TOP_RATIO);
 
-  function handleStart() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.push('/onboarding/sticker');
+  // userProfileStore.userId hydrates via an async chain (onAuthStateChange →
+  // storeManager → refreshProfile → fetchProfile). On a fresh sign-up that
+  // chain may not have completed by the time the user reaches this screen.
+  // authStateManager is sourced from getSession() (locally stored as soon as
+  // signInWithIdToken resolves), and supabase.auth.getUser() is a hard fallback.
+  async function resolveUserId(): Promise<string | null> {
+    const cached = authStateManager.getUserId();
+    if (cached) return cached;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user?.id ?? null;
   }
 
-  function handleSolo() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.push('/onboarding/sticker');
+  function persistBuddyToProfile(userId: string) {
+    supabase
+      .from('profiles')
+      .update({ matched_buddy_index: idx })
+      .eq('id', userId)
+      .then(() => useUserProfileStore.getState().refreshProfile());
+  }
+
+  // "Start with {buddy}" — saves the match AND adds the buddy as a real friend
+  // so they show up in the Friends tab immediately. Awaits the friendship insert
+  // so failures surface in the logs instead of being swallowed.
+  async function handleStart() {
+    strongHaptic();
+    setAndSave('matchedBuddyIndex', idx);
+
+    const userId = await resolveUserId();
+    if (!userId) {
+      logger.error('partner-match handleStart: no userId, skipping buddy add', {
+        idx,
+        buddyId: buddy.id,
+      });
+      router.push('/onboarding/not-by-accident');
+      return;
+    }
+
+    persistBuddyToProfile(userId);
+
+    const added = await addSeedBuddyAsFriend(userId, buddy.id);
+    if (!added) {
+      logger.error('partner-match handleStart: addSeedBuddyAsFriend returned false', {
+        userId: userId.slice(0, 8),
+        buddyId: buddy.id,
+        sentinel: `seed-buddy-${buddy.id}`,
+      });
+    }
+
+    router.push('/onboarding/not-by-accident');
+  }
+
+  // "Continue without partner" — saves the match index (so the buddy banner
+  // still appears on the user's profile) but does NOT add them as a friend.
+  async function handleSolo() {
+    strongHaptic();
+    setAndSave('matchedBuddyIndex', idx);
+    const userId = await resolveUserId();
+    if (userId) {
+      persistBuddyToProfile(userId);
+    } else {
+      logger.error('partner-match handleSolo: no userId, skipping profile update', { idx });
+    }
+    router.push('/onboarding/not-by-accident');
   }
 
   return (

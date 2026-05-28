@@ -26,6 +26,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="gym-buddy" />
       <Stack.Screen name="partner-match" />
       <Stack.Screen name="sticker" />
+      <Stack.Screen name="quote-flicker" options={{ animation: 'fade', animationDuration: 600 }} />
       <Stack.Screen name="personalising" />
       <Stack.Screen name="pre-paywall" />
       <Stack.Screen name="paywall" />

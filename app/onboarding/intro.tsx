@@ -31,10 +31,10 @@ const SLIDES = [
     italicPhrase: 'your workouts',
   },
   {
-    image: null,
-    heightRatio: null,
-    topOffset: 0,
-    scale: 1,
+    image: require('../../assets/Onboarding Assets/Onboarding P2/2.2.png'),
+    heightRatio: 3102 / 1662,
+    topOffset: 100,
+    scale: 0.88,
     boldLine: 'Track',
     italicPhrase: 'every session',
   },
@@ -81,7 +81,14 @@ function SlideHeading({
   const italicWords = slide.italicPhrase.split(' ');
 
   function triggerHaptic() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  }
+
+  // Fire one Heavy per word reveal — timed to match the staggered fade-in.
+  function triggerWordHaptics() {
+    triggerHaptic();
+    setTimeout(triggerHaptic, 309);
+    setTimeout(triggerHaptic, 619);
   }
 
   const containerStyle = useAnimatedStyle(() => {
@@ -94,10 +101,10 @@ function SlideHeading({
   // because the value never transitions from false→true. Use useEffect instead.
   useEffect(() => {
     if (index === 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      w0.value = withTiming(1, { duration: 675 });
-      w1.value = withDelay(340, withTiming(1, { duration: 675 }));
-      w2.value = withDelay(680, withTiming(1, { duration: 675 }));
+      triggerWordHaptics();
+      w0.value = withTiming(1, { duration: 615 });
+      w1.value = withDelay(309, withTiming(1, { duration: 615 }));
+      w2.value = withDelay(619, withTiming(1, { duration: 615 }));
     }
   }, []);
 
@@ -105,13 +112,13 @@ function SlideHeading({
     () => Math.round(scrollX.value / width) === index,
     (isActive, wasActive) => {
       if (isActive && wasActive === false) {
-        runOnJS(triggerHaptic)();
+        runOnJS(triggerWordHaptics)();
         w0.value = 0;
         w1.value = 0;
         w2.value = 0;
-        w0.value = withTiming(1, { duration: 675 });
-        w1.value = withDelay(340, withTiming(1, { duration: 675 }));
-        w2.value = withDelay(680, withTiming(1, { duration: 675 }));
+        w0.value = withTiming(1, { duration: 615 });
+        w1.value = withDelay(309, withTiming(1, { duration: 615 }));
+        w2.value = withDelay(619, withTiming(1, { duration: 615 }));
       } else if (!isActive && wasActive === true) {
         w0.value = 0;
         w1.value = 0;
@@ -146,7 +153,16 @@ export default function IntroScreen() {
   // currentPageRef is the source of truth for navigation — updated on scroll settle,
   // not from the Reanimated shared value which can lag on the JS thread.
   const currentPageRef = useRef(0);
+  const slideReady = useRef(false);
+  const slideReadyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isNavigating, withLock } = useNavigationLock();
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      slideReady.current = true;
+    }, 779);
+    return () => clearTimeout(t);
+  }, []);
 
   // Slide 1: 10px below the Dynamic Island pill.
   // edges={['bottom']} lets imageSection start at y=0; insets.top - 12 ≈ pill_height + 10px.
@@ -160,17 +176,21 @@ export default function IntroScreen() {
 
   function handleScrollEnd(e: { nativeEvent: { contentOffset: { x: number } } }) {
     currentPageRef.current = Math.round(e.nativeEvent.contentOffset.x / width);
+    slideReady.current = false;
+    if (slideReadyTimer.current) clearTimeout(slideReadyTimer.current);
+    slideReadyTimer.current = setTimeout(() => {
+      slideReady.current = true;
+    }, 779);
   }
 
   const handleContinue = useCallback(() => {
     const page = currentPageRef.current;
+    if (!slideReady.current) return;
     if (page >= SLIDES.length - 1) {
       withLock(() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
         router.push('/onboarding/become');
       });
     } else {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       const nextPage = page + 1;
       currentPageRef.current = nextPage;
       scrollViewRef.current?.scrollTo({ x: nextPage * width, animated: true });

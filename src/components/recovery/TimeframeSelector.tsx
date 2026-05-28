@@ -26,7 +26,7 @@ export default function TimeframeSelector({ selected, onSelect }: TimeframeSelec
             key={option.value}
             style={[styles.pill, isSelected && styles.pillSelected]}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               onSelect(option.value);
             }}
           >

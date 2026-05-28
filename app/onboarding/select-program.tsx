@@ -10,7 +10,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { strongHaptic } from '@/utils/haptics';
 import { fonts, spacing } from '@/constants/theme';
 
 const PLANS = [
@@ -35,8 +35,8 @@ const PLANS = [
     image: require('../../assets/Onboarding Assets/Onboarding P10/ITGirl.png'),
   },
   {
-    id: 'glow-up',
-    image: require('../../assets/Onboarding Assets/Onboarding P10/Glow.png'),
+    id: 'busy-girl',
+    image: require('../../assets/Onboarding Assets/Onboarding P10/BusyGirl.png'),
   },
   {
     id: 'muscle-mommy',
@@ -57,12 +57,12 @@ export default function SelectProgramScreen() {
   const cardHeight = Math.round(cardWidth / IMG_RATIO);
 
   function handleCustomTab() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     Alert.alert('Coming Soon', 'Custom programs are on the way!');
   }
 
   function handleSelectPlan(id: string) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    strongHaptic();
     router.push({ pathname: '/onboarding/program-detail', params: { planId: id } });
   }
 
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressBarFill: {
-    width: 60,
+    width: 70,
     height: 4,
     backgroundColor: '#000000',
   },
@@ -152,6 +152,7 @@ const styles = StyleSheet.create({
     fontSize: 48,
     color: '#000000',
     lineHeight: 56,
+    textAlign: 'center',
   },
   tabBar: {
     flexDirection: 'row',

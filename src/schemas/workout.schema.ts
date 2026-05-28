@@ -17,6 +17,10 @@ export const WorkoutSetInputSchema = z.object({
   setNumber: z.number().int().min(1).max(50),
   weightKg: WeightKgSchema,
   reps: RepsSchema,
+  // Cardio-only fields. Used for `cardio-*` exercises in place of weight/reps.
+  // Both nullable so non-cardio sets can omit them and existing sets unaffected.
+  difficulty: z.number().min(0).max(100).nullable().optional(),
+  durationSeconds: z.number().int().min(0).max(86400).nullable().optional(),
   setType: SetTypeSchema.default('normal'),
   completed: z.boolean(),
   rpe: z.number().min(6).max(10).nullable().optional(),
@@ -48,6 +52,9 @@ export const SaveWorkoutInputSchema = z.object({
   imageType: ImageTypeSchema.optional(),
   imageUri: z.string().max(2000).optional(),
   imageTemplateId: z.string().max(200).optional(),
+  imageAudience: z.enum(['friends', 'everyone']).optional(),
+  imageAspectRatio: z.number().positive().optional(),
+  titleCustomized: z.boolean().optional(),
   exercises: z.array(WorkoutExerciseInputSchema).min(1).max(100),
 });
 

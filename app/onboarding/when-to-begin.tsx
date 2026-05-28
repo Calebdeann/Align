@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
@@ -12,7 +11,7 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated';
 import { fonts, spacing } from '@/constants/theme';
-import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 import { OnboardingBackButton, OnboardingContinueButton } from '@/components';
 
 const LIFESTYLE_IMAGE = require('../../assets/Onboarding Assets/Onboarding P12/Onboarding 3 Full Page.png');
@@ -58,9 +57,21 @@ function TickMark({ index, scrollX }: { index: number; scrollX: Animated.SharedV
 }
 
 export default function WhenToBeginScreen() {
-  const { isNavigating, withLock } = useNavigationLock();
+  const setAndSave = useOnboardingStore((s) => s.setAndSave);
+  const savedStartDate = useOnboardingStore((s) => s.programStartDate);
   const scrollX = useSharedValue(0);
-  const [selectedIdx, setSelectedIdx] = useState(0);
+  const initialIdx = (() => {
+    if (!savedStartDate) return 0;
+    const idx = DATES.findIndex((d) => {
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+        d.getDate()
+      ).padStart(2, '0')}`;
+      return iso === savedStartDate;
+    });
+    return idx >= 0 ? idx : 0;
+  })();
+  const [selectedIdx, setSelectedIdx] = useState(initialIdx);
+  const [isSaving, setIsSaving] = useState(false);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -73,11 +84,20 @@ export default function WhenToBeginScreen() {
     setSelectedIdx(Math.max(0, Math.min(NUM_DAYS - 1, idx)));
   }
 
-  function handleContinue() {
-    withLock(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  async function handleContinue() {
+    if (isSaving) return;
+    setIsSaving(true);
+    // Local YYYY-MM-DD (avoid UTC drift from toISOString)
+    const d = DATES[selectedIdx];
+    const isoDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate()
+    ).padStart(2, '0')}`;
+    try {
+      await setAndSave('programStartDate', isoDate);
+    } finally {
+      setIsSaving(false);
       router.push('/onboarding/reviews');
-    });
+    }
   }
 
   const selectedDate = DATES[selectedIdx];
@@ -133,6 +153,7 @@ export default function WhenToBeginScreen() {
             scrollEventThrottle={16}
             onMomentumScrollEnd={handleScrollEnd}
             contentContainerStyle={styles.rulerContent}
+            contentOffset={{ x: initialIdx * TICK_SPACING, y: 0 }}
           >
             {DATES.map((_, i) => (
               <TickMark key={i} index={i} scrollX={scrollX} />
@@ -147,7 +168,7 @@ export default function WhenToBeginScreen() {
 
         {/* Continue */}
         <View style={styles.bottomSection}>
-          <OnboardingContinueButton onPress={handleContinue} disabled={isNavigating} />
+          <OnboardingContinueButton onPress={handleContinue} disabled={isSaving} />
         </View>
       </SafeAreaView>
     </View>
