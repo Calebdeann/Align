@@ -529,7 +529,17 @@ const ListRow = memo(function ListRow({
           </Svg>
         ) : (
           <View style={[styles.checkbox, done && styles.checkboxDone]}>
-            {done && <Ionicons name="checkmark" size={13} color="#fff" />}
+            {done && (
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M5 12.5 L10 17.5 L19 7.5"
+                  stroke="#fff"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            )}
           </View>
         )}
       </View>

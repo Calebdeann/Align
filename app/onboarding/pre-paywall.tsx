@@ -1,14 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { usePlacement } from 'expo-superwall';
 import { strongHaptic } from '@/utils/haptics';
 import { fonts, spacing } from '@/constants/theme';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useDiscoverPrefetchStore } from '@/stores/discoverPrefetchStore';
+import { useAppConfigStore } from '@/stores/appConfigStore';
 import { OnboardingContinueButton } from '@/components';
+import { logger } from '@/utils/logger';
+
+// Superwall placement triggered when the user taps "Start now". Same
+// placement name as the in-app gate (useSubscriptionGate) — they share the
+// paywall template configured in the Superwall dashboard. The two surfaces
+// just trigger it from different places in the flow.
+const PLACEMENT = 'campaign_trigger';
 
 const PLAN_BACKGROUNDS: Record<string, ReturnType<typeof require>> = {
   'pilates-princess': require('../../assets/Onboarding Assets/Onboarding P20/p20-pilates.png'),
@@ -25,6 +34,7 @@ export default function PrePaywallScreen() {
   const { selectedPlanId } = useOnboardingStore();
   const bgImage =
     PLAN_BACKGROUNDS[selectedPlanId ?? 'summer-body'] ?? PLAN_BACKGROUNDS['summer-body'];
+  const [isPresenting, setIsPresenting] = useState(false);
 
   // Shake-style haptic burst the moment "Congrats!" lands.
   useEffect(() => {
@@ -41,9 +51,48 @@ export default function PrePaywallScreen() {
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  function handleStart() {
+  // Superwall callbacks. Whichever fires, the user proceeds — we never strand
+  // them on the celebration screen.
+  const { registerPlacement } = usePlacement({
+    onDismiss: () => {
+      setIsPresenting(false);
+      // Apple-review bypass: while the `apple_review_mode` flag is true in
+      // app_config, dismissing the paywall takes the user into the app so
+      // reviewers can test the rest of the experience. Flip the flag off in
+      // Supabase once App Review approves to restore the hard paywall.
+      if (useAppConfigStore.getState().appleReviewMode) {
+        router.replace('/(tabs)');
+      }
+    },
+    onSkip: () => {
+      // No paywall attached to this placement / no audience match — proceed.
+      setIsPresenting(false);
+      router.replace('/(tabs)');
+    },
+    onError: (err) => {
+      setIsPresenting(false);
+      logger.warn('pre-paywall: superwall error, proceeding to app', { err });
+      router.replace('/(tabs)');
+    },
+  });
+
+  async function handleStart() {
+    if (isPresenting) return;
     strongHaptic();
-    router.replace('/(tabs)');
+
+    setIsPresenting(true);
+    try {
+      await registerPlacement({
+        placement: PLACEMENT,
+        feature: () => {
+          router.replace('/(tabs)');
+        },
+      });
+    } catch (e) {
+      logger.warn('pre-paywall: registerPlacement threw, proceeding to app', { error: e });
+      setIsPresenting(false);
+      router.replace('/(tabs)');
+    }
   }
 
   return (
@@ -61,7 +110,11 @@ export default function PrePaywallScreen() {
         <View style={{ flex: 1 }} />
 
         <View style={styles.bottomSection}>
-          <OnboardingContinueButton onPress={handleStart} label="Start now" />
+          <OnboardingContinueButton
+            onPress={handleStart}
+            label="Start now"
+            disabled={isPresenting}
+          />
         </View>
       </SafeAreaView>
     </ImageBackground>

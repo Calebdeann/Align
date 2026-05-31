@@ -25,6 +25,21 @@ export const TIMER_SOUND_OPTIONS: { id: TimerSoundId; label: string }[] = [
   { id: 'alert', label: 'Alert' },
 ];
 
+// Filenames for the expo-notifications plugin's bundled sounds (see app.json).
+// iOS resolves these by name when scheduling a local notification, so the
+// background rest-timer chime stays in sync with the in-app expo-av playback.
+const SOUND_FILE_NAMES: Record<TimerSoundId, string> = {
+  chime: 'chime.wav',
+  bell: 'bell.wav',
+  ding: 'ding.wav',
+  pulse: 'pulse.wav',
+  alert: 'alert.wav',
+};
+
+export function timerSoundFileName(id: TimerSoundId): string {
+  return SOUND_FILE_NAMES[id] ?? SOUND_FILE_NAMES.chime;
+}
+
 let currentSound: Audio.Sound | null = null;
 
 // Plays a single timer sound (used for preview in settings)

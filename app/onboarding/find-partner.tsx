@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -12,8 +12,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { fonts, spacing } from '@/constants/theme';
 import { OnboardingContinueButton } from '@/components';
-
-const { width, height } = Dimensions.get('screen');
 
 export default function FindPartnerScreen() {
   const statOpacity = useSharedValue(0);
@@ -92,8 +90,10 @@ const styles = StyleSheet.create({
   },
   bgImage: {
     position: 'absolute',
-    width,
-    height,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   topArea: {
     position: 'absolute',

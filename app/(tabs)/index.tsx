@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { fonts, spacing } from '@/constants/theme';
-import { UserAvatar, VerifiedBadge } from '@/components';
+import { UserAvatar, VerifiedBadge, ReportForm } from '@/components';
 import {
   getFriendsWithActivity,
   pokeFriend,
@@ -80,6 +80,7 @@ type WorkoutPost = {
   completedAt: string;
   titleCustomized: boolean;
   isOfficial?: boolean;
+  isVerified?: boolean;
 };
 
 // Format duration seconds → "1h 2 mins" or "45 mins" (singular for 1)
@@ -142,6 +143,7 @@ function FriendCard({
         imageUri: entry.imageUri ?? '',
         userName: entry.name,
         ownerUserId: entry.friendId,
+        isVerified: entry.isVerified ? '1' : '0',
       },
     });
   };
@@ -166,7 +168,21 @@ function FriendCard({
         <View style={{ marginBottom: 6 }}>
           <UserAvatar uri={entry.avatarUrl} size={avatarSize} />
         </View>
-        <Text style={styles.friendName}>{entry.name.split(' ')[0]}</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+          }}
+        >
+          <Text style={styles.friendName}>{entry.name.split(' ')[0]}</Text>
+          {entry.isVerified && (
+            <View style={{ marginTop: 3 }}>
+              <VerifiedBadge size={12} />
+            </View>
+          )}
+        </View>
         <Text style={styles.timeAgo}>{formatTimeAgo(entry.workoutAt)}</Text>
       </Pressable>
 
@@ -282,7 +298,14 @@ function InactiveFriendRow({
         <UserAvatar uri={entry.avatarUrl} size={avatarSize} />
 
         <View style={styles.inactiveInfo}>
-          <Text style={styles.inactiveName}>{entry.name.split(' ')[0]}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={styles.inactiveName}>{entry.name.split(' ')[0]}</Text>
+            {entry.isVerified && (
+              <View style={{ marginTop: 3 }}>
+                <VerifiedBadge size={12} />
+              </View>
+            )}
+          </View>
           <Text style={styles.inactiveSubtitle}>
             {entry.lastWorkoutAt
               ? `Last Workout: ${formatLastWorkoutDay(entry.lastWorkoutAt)}`
@@ -326,10 +349,12 @@ const WorkoutPostCard = React.memo(function WorkoutPostCard({
   post,
   colWidth,
   onImageError,
+  onRequestReport,
 }: {
   post: WorkoutPost;
   colWidth: number;
   onImageError: (id: string) => void;
+  onRequestReport: (postId: string, label: string) => void;
 }) {
   const cardHeight = Math.round(colWidth * post.aspectRatio);
 
@@ -358,7 +383,7 @@ const WorkoutPostCard = React.memo(function WorkoutPostCard({
               <UserAvatar uri={post.avatarUri} size={28} />
             </View>
             <Text style={styles.postUsername}>{post.username}</Text>
-            {post.isOfficial && (
+            {(post.isOfficial || post.isVerified) && (
               <View style={styles.verifiedBadgeShadow}>
                 <VerifiedBadge size={13} />
               </View>
@@ -386,8 +411,13 @@ const WorkoutPostCard = React.memo(function WorkoutPostCard({
             userName: post.username,
             userAvatarUrl: post.avatarUri ?? '',
             ownerUserId: post.userId,
+            isVerified: post.isOfficial || post.isVerified ? '1' : '0',
           },
         });
+      }}
+      onLongPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        onRequestReport(post.id, post.caption || post.username);
       }}
     >
       <View style={[styles.postCard, { height: cardHeight }]}>
@@ -419,6 +449,11 @@ const WorkoutPostCard = React.memo(function WorkoutPostCard({
             <UserAvatar uri={post.avatarUri} size={28} version={post.avatarVersion} />
           </View>
           <Text style={styles.postUsername}>{post.username}</Text>
+          {(post.isOfficial || post.isVerified) && (
+            <View style={styles.verifiedBadgeShadow}>
+              <VerifiedBadge size={13} />
+            </View>
+          )}
         </Pressable>
       </View>
       {post.titleCustomized && (
@@ -485,6 +520,13 @@ function DiscoverFeed() {
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // Report state — long-pressing a Discover card surfaces the ReportForm
+  // with target_type='workout' and the post's workoutId.
+  const [reportTarget, setReportTarget] = useState<{ id: string; label: string } | null>(null);
+  const handleRequestReport = useCallback(
+    (postId: string, label: string) => setReportTarget({ id: postId, label }),
+    []
+  );
   const isLoadingRef = useRef(false);
   const cursorRef = useRef<string | undefined>(undefined);
   const hasMoreRef = useRef(true);
@@ -742,6 +784,7 @@ function DiscoverFeed() {
           completedAt: p.completedAt,
           titleCustomized: p.titleCustomized,
           isOfficial,
+          isVerified: !isOfficial && !!p.isVerified,
         };
       }),
     [
@@ -805,6 +848,7 @@ function DiscoverFeed() {
               post={p}
               colWidth={colWidth}
               onImageError={handleImageError}
+              onRequestReport={handleRequestReport}
             />
           ))}
         </View>
@@ -815,10 +859,19 @@ function DiscoverFeed() {
               post={p}
               colWidth={colWidth}
               onImageError={handleImageError}
+              onRequestReport={handleRequestReport}
             />
           ))}
         </View>
       </View>
+
+      <ReportForm
+        visible={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        targetType="workout"
+        targetId={reportTarget?.id ?? ''}
+        targetLabel={reportTarget?.label}
+      />
     </ScrollView>
   );
 }

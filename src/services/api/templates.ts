@@ -67,7 +67,10 @@ export interface DbTemplateSet {
 
 // Uploads a local camera/gallery image to Supabase Storage and returns the public URL.
 // Returns null if upload fails — callers should treat null as "no image" and continue saving.
-async function uploadTemplateImage(userId: string, localUri: string): Promise<string | null> {
+export async function uploadTemplateImage(
+  userId: string,
+  localUri: string
+): Promise<string | null> {
   try {
     const response = await fetch(localUri);
     const blob = await response.blob();
@@ -92,7 +95,7 @@ async function uploadTemplateImage(userId: string, localUri: string): Promise<st
 }
 
 // Returns true if the URI is a local device path that needs uploading
-function isLocalUri(uri: string): boolean {
+export function isLocalUri(uri: string): boolean {
   return uri.startsWith('file://') || uri.startsWith('/');
 }
 

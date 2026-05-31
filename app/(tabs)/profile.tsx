@@ -14,23 +14,21 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   useWindowDimensions,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { router, useFocusEffect } from 'expo-router';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Crypto from 'expo-crypto';
-import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
 import * as StoreReview from 'expo-store-review';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts, spacing } from '@/constants/theme';
 import { LIQUID_TAB_BAR_HEIGHT } from '@/components/ui/LiquidGlassTabBar';
-import { UserAvatar } from '@/components';
+import { UserAvatar, NameShells, VerifiedBadge } from '@/components';
 import RecoverySection from '@/components/recovery/RecoverySection';
 import { supabase } from '@/services/supabase';
 import { useUserProfileStore } from '@/stores/userProfileStore';
@@ -153,8 +151,7 @@ export default function ProfileScreen() {
   const [bioText, setBioText] = useState('');
   const [displayBio, setDisplayBio] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [isAppleLoading, setIsAppleLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const shellsRef = useRef<View>(null);
 
   const profile = useUserProfileStore((state) => state.profile);
   const userId = useUserProfileStore((state) => state.userId);
@@ -253,99 +250,29 @@ export default function ProfileScreen() {
     router.push('/profile/traits');
   }
 
+  async function handleShareShells() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    if (!shellsRef.current) return;
+    try {
+      const uri = await captureRef(shellsRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share your shells',
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to share shells:', error);
+    }
+  }
+
   const savedTraits = (profile?.traits ?? []) as PlacedTrait[];
   const hasSavedTraits = savedTraits.length > 0;
-
-  const handleAppleSignIn = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    try {
-      setIsAppleLoading(true);
-      const rawNonce = Crypto.randomUUID();
-      const hashedNonce = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        rawNonce
-      );
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-        nonce: hashedNonce,
-      });
-      if (!credential.identityToken) {
-        Alert.alert('Sign In Failed', 'No identity token from Apple.');
-        return;
-      }
-      const { data, error } = await supabase.auth.signInWithIdToken({
-        provider: 'apple',
-        token: credential.identityToken,
-        nonce: rawNonce,
-      });
-      if (error) throw error;
-      if (!data.user) {
-        Alert.alert('Sign In Failed', 'Something went wrong.');
-        return;
-      }
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      if (error.code === 'ERR_REQUEST_CANCELED') return;
-      Alert.alert('Sign In Failed', error?.message || 'Apple sign-in failed.');
-    } finally {
-      setIsAppleLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    try {
-      setIsGoogleLoading(true);
-      const redirectTo = 'itgirl://auth/callback';
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo, skipBrowserRedirect: true },
-      });
-      if (error) throw error;
-      if (!data.url) {
-        Alert.alert('Sign In Failed', 'Could not start Google sign-in.');
-        return;
-      }
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-      if (result.type !== 'success') {
-        if (result.type !== 'dismiss' && result.type !== 'cancel') {
-          Alert.alert('Sign In Failed', 'Google sign-in was interrupted.');
-        }
-        return;
-      }
-      if (!result.url) {
-        Alert.alert('Sign In Failed', 'No response from Google.');
-        return;
-      }
-      const url = new URL(result.url);
-      const params = new URLSearchParams(url.hash.substring(1));
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      if (!accessToken) {
-        const errorDesc =
-          params.get('error_description') || url.searchParams.get('error_description');
-        Alert.alert('Sign In Failed', errorDesc || 'Google sign-in failed.');
-        return;
-      }
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || '',
-      });
-      if (sessionError) throw sessionError;
-      if (!sessionData.user) {
-        Alert.alert('Sign In Failed', 'Something went wrong.');
-        return;
-      }
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      Alert.alert('Sign In Failed', 'Google sign-in failed.');
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
 
   async function handleReview() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -392,7 +319,37 @@ export default function ProfileScreen() {
         </Pressable>
 
         {/* Name */}
-        <Text style={styles.name}>{profile?.name ?? 'Your Name'}</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          <Text style={styles.name}>{profile?.name ?? 'Your Name'}</Text>
+          {profile?.is_verified && (
+            <View style={{ marginTop: 10 }}>
+              <VerifiedBadge size={18} />
+            </View>
+          )}
+        </View>
+
+        {/* Shells under the name — tap anywhere on the row to share the whole row as a transparent PNG */}
+        {(profile?.show_shells ?? true) && (
+          <Pressable onPress={handleShareShells}>
+            <View ref={shellsRef} collapsable={false} style={styles.shellsCapture}>
+              <NameShells
+                name={profile?.name ?? ''}
+                maxSize={51}
+                minSize={17}
+                gap={8}
+                minRowHeight={58}
+                style={{ marginTop: 12 }}
+              />
+            </View>
+          </Pressable>
+        )}
 
         {/* Bio */}
         <Pressable style={styles.bioRow} onPress={handleBio}>
@@ -608,37 +565,6 @@ export default function ProfileScreen() {
             </View>
           </Pressable>
         )}
-
-        {__DEV__ && (
-          <View style={styles.devAuthSection}>
-            <Text style={styles.devLabel}>DEV: Switch Account</Text>
-            <Pressable
-              style={[styles.devAuthBtn, styles.devAppleBtn]}
-              onPress={handleAppleSignIn}
-              disabled={isAppleLoading || isGoogleLoading}
-            >
-              {isAppleLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <View style={styles.devBtnRow}>
-                  <Ionicons name="logo-apple" size={18} color="#fff" />
-                  <Text style={styles.devAppleText}>Sign in with Apple</Text>
-                </View>
-              )}
-            </Pressable>
-            <Pressable
-              style={[styles.devAuthBtn, styles.devGoogleBtn]}
-              onPress={handleGoogleSignIn}
-              disabled={isAppleLoading || isGoogleLoading}
-            >
-              {isGoogleLoading ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <Text style={styles.devGoogleText}>Sign in with Google</Text>
-              )}
-            </Pressable>
-          </View>
-        )}
       </ScrollView>
 
       {/* Bio edit modal */}
@@ -729,22 +655,25 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: fonts.bold,
-    fontSize: 22,
+    fontSize: 28,
     color: '#000000',
     textAlign: 'center',
     marginTop: 10,
     letterSpacing: -0.4,
   },
+  shellsCapture: {
+    backgroundColor: 'transparent',
+  },
   bioRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
+    marginTop: 12,
     gap: 5,
   },
   bioText: {
     fontFamily: fonts.semiBold,
-    fontSize: 13,
+    fontSize: 17,
     color: '#888888',
     letterSpacing: -0.2,
   },
@@ -909,48 +838,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: -0.2,
-  },
-  // Dev auth
-  devAuthSection: {
-    marginTop: 28,
-    gap: 10,
-  },
-  devLabel: {
-    fontFamily: fonts.semiBold,
-    fontSize: 10,
-    color: 'rgba(0,0,0,0.3)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 2,
-  },
-  devAuthBtn: {
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  devAppleBtn: {
-    backgroundColor: '#000',
-  },
-  devBtnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  devAppleText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 15,
-    color: '#fff',
-  },
-  devGoogleBtn: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.15)',
-  },
-  devGoogleText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 15,
-    color: '#000',
   },
   // Bio modal
   modalOverlay: {

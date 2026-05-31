@@ -1,6 +1,7 @@
 import { useExerciseStore } from '@/stores/exerciseStore';
 import { matchExercisesToDatabase } from '@/services/exerciseMatching';
 import type { Exercise } from '@/services/api/exercises';
+import type { ProgramExercise } from './types';
 import aliasesJson from './exerciseAliases.json';
 
 const ALIASES: Record<string, string> = aliasesJson.aliases;
@@ -115,4 +116,36 @@ export function resolveProgramExercises(names: string[]): ResolvedProgramExercis
   }
 
   return results;
+}
+
+// Reps strings can be "12", "8-10", "10 each", "AMRAP", "12-15". Take the
+// first integer; undefined falls back to whatever the user types live.
+function parseFirstRep(reps: string): number | undefined {
+  const m = reps.match(/\d+/);
+  return m ? parseInt(m[0], 10) : undefined;
+}
+
+// Converts a ProgramExercise (program data shape) into the shape that
+// startWorkoutFromTemplate / startActiveWorkout expects. Pre-fills reps and
+// preserves superset grouping. Used by both workout-preview and the
+// Start Workout sheet's "plan folder" cards.
+export function programExerciseToTemplateExercise(
+  pe: ProgramExercise,
+  resolved?: ResolvedProgramExercise
+) {
+  const targetReps = parseFirstRep(pe.reps);
+  return {
+    exerciseId: resolved?.exerciseId ?? `plan_${pe.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
+    exerciseName: resolved?.matchedName ?? pe.name,
+    muscle: resolved?.muscleGroup ?? 'other',
+    gifUrl: resolved?.gifUrl,
+    thumbnailUrl: resolved?.thumbnailUrl,
+    notes: pe.notes,
+    sets: Array.from({ length: pe.sets }).map(() => ({
+      targetReps,
+      setType: 'normal',
+    })),
+    restTimerSeconds: 90,
+    supersetId: pe.supersetGroup ?? null,
+  };
 }

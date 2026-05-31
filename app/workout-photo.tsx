@@ -172,6 +172,16 @@ export default function WorkoutPhotoScreen() {
           <Ionicons name="camera-outline" size={64} color="rgba(255,255,255,0.15)" />
         )}
 
+        {/* Rule-of-thirds grid overlay */}
+        {cameraReady && (
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <View style={[styles.gridLineV, { left: '33.3333%' }]} />
+            <View style={[styles.gridLineV, { left: '66.6666%' }]} />
+            <View style={[styles.gridLineH, { top: '33.3333%' }]} />
+            <View style={[styles.gridLineH, { top: '66.6666%' }]} />
+          </View>
+        )}
+
         {/* Shutter — centered at bottom of camera frame */}
         <Pressable
           style={[styles.shutterOuter, capturing && { opacity: 0.6 }]}
@@ -362,5 +372,19 @@ const styles = StyleSheet.create({
   recentPhoto: {
     width: '100%',
     height: '100%',
+  },
+  gridLineV: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+  },
+  gridLineH: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.35)',
   },
 });

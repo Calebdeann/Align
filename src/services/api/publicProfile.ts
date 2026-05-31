@@ -9,6 +9,8 @@ export type PublicProfile = {
   traits: PlacedTrait[];
   planId: string | null;
   createdAt: string;
+  showShells: boolean;
+  isVerified: boolean;
 };
 
 export type PublicWorkout = {
@@ -40,6 +42,8 @@ export async function getPublicProfile(
     traits: (r.traits ?? []) as PlacedTrait[],
     planId: r.plan_id ?? null,
     createdAt: r.created_at,
+    showShells: r.show_shells ?? true,
+    isVerified: r.is_verified ?? false,
   };
 }
 

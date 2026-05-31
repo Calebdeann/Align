@@ -3,14 +3,22 @@ import * as Notifications from 'expo-notifications';
 const DAILY_REMINDER_ID = 'daily-reminder';
 const WORKOUT_IN_PROGRESS_ID = 'workout-in-progress';
 
-// Configure how notifications behave when the app is in the foreground
+// Configure how notifications behave when the app is in the foreground.
+// Rest-timer notifications are suppressed in foreground: the in-app countdown
+// already plays the chime + vibration, so letting the OS also fire the sound
+// would double up.
 export function setupNotificationHandler() {
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
+    handleNotification: async (notification) => {
+      const isRestTimer = notification.request.content.data?.type === 'restTimer';
+      return {
+        shouldShowAlert: !isRestTimer,
+        shouldShowBanner: !isRestTimer,
+        shouldShowList: !isRestTimer,
+        shouldPlaySound: !isRestTimer,
+        shouldSetBadge: false,
+      };
+    },
   });
 }
 
@@ -100,4 +108,41 @@ export async function scheduleWorkoutInProgressReminder(): Promise<void> {
 // Cancel the workout-in-progress notification
 export async function cancelWorkoutInProgressReminder(): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(WORKOUT_IN_PROGRESS_ID);
+}
+
+// Schedule a one-shot notification that fires when the rest timer expires.
+// Sound files must be bundled via the expo-notifications plugin in app.json.
+export async function scheduleRestTimerNotification(
+  durationSeconds: number,
+  soundFile: string
+): Promise<string | null> {
+  if (durationSeconds <= 0) return null;
+  try {
+    return await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Rest complete',
+        body: 'Time for your next set.',
+        sound: soundFile,
+        data: { type: 'restTimer' },
+        interruptionLevel: 'timeSensitive',
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: durationSeconds,
+        repeats: false,
+      },
+    });
+  } catch (error) {
+    console.warn('[Notifications] Failed to schedule rest-timer notification:', error);
+    return null;
+  }
+}
+
+export async function cancelRestTimerNotification(id: string | null): Promise<void> {
+  if (!id) return;
+  try {
+    await Notifications.cancelScheduledNotificationAsync(id);
+  } catch {
+    // Already fired or already cancelled — nothing to do.
+  }
 }

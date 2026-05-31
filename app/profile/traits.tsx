@@ -22,7 +22,7 @@ import Svg, { Path } from 'react-native-svg';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { fonts } from '@/constants/theme';
-import { UserAvatar, OnboardingContinueButton } from '@/components';
+import { UserAvatar, OnboardingContinueButton, NameShells } from '@/components';
 import {
   TRAIT_CATEGORIES,
   TRAITS_BOX_H,
@@ -436,6 +436,18 @@ export default function TraitsScreen() {
         </View>
 
         <Text style={styles.name}>{profile?.name ?? 'Your Name'}</Text>
+
+        {(profile?.show_shells ?? true) && (
+          <NameShells
+            name={profile?.name ?? ''}
+            maxSize={51}
+            minSize={17}
+            gap={8}
+            minRowHeight={58}
+            style={{ marginTop: 12 }}
+          />
+        )}
+
         <Text style={styles.bio}>{profile?.bio || 'Add a bio'}</Text>
 
         {/* Trait canvas — single GestureDetector wraps a transparent zone
@@ -637,7 +649,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: fonts.bold,
-    fontSize: 22,
+    fontSize: 28,
     color: '#000000',
     textAlign: 'center',
     marginTop: 10,
@@ -645,10 +657,10 @@ const styles = StyleSheet.create({
   },
   bio: {
     fontFamily: fonts.semiBold,
-    fontSize: 13,
+    fontSize: 17,
     color: '#888888',
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 12,
     letterSpacing: -0.2,
   },
   gestureZone: {

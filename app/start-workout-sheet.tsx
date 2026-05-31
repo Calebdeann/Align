@@ -32,10 +32,21 @@ import {
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
+import { getProgram, WORKOUT_TYPE_COLORS, type ProgramWorkout } from '@/data/programs';
+import { getPlanSquareImage } from '@/data/programs/planImages';
+import { getPlanById } from '@/data/plans';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const REORDER_ROW_HEIGHT = 72;
 const SWIPE_DELETE_WIDTH = 60;
+
+// Sentinel folder id used by the auto-managed plan templates folder. Prefixed
+// so it never collides with a real user folder id. Per-plan so switching
+// plans doesn't surface custom templates from a different plan.
+const PLAN_FOLDER_PREFIX = 'plan-folder:';
+const planFolderIdFor = (planId: string) => `${PLAN_FOLDER_PREFIX}${planId}`;
+const isPlanFolderId = (id: string | null) =>
+  typeof id === 'string' && id.startsWith(PLAN_FOLDER_PREFIX);
 
 // ─── SVG Icons (matching legacy) ─────────────────────────────────────────────
 
@@ -240,6 +251,66 @@ function TemplateCard({
         <Text style={styles.startTemplateIcon}>+</Text>
         <Text style={styles.startTemplateText}>Start</Text>
       </Pressable>
+    </Pressable>
+  );
+}
+
+// ─── Plan workout card (read-only — no swipe, no menu, no status icon) ────────
+// Mirrors the list-view row from app/(tabs)/plan.tsx (tilted thumbnail,
+// name + meta, chevron) so the same plan workout looks identical here as on
+// the planner. The status indicator (check / cross) is intentionally
+// omitted — these cards aren't tied to a specific scheduled occurrence.
+
+function PlanWorkoutCard({
+  workout,
+  index,
+  onPress,
+}: {
+  workout: ProgramWorkout;
+  index: number;
+  onPress: () => void;
+}) {
+  const localImage = getPlanSquareImage(workout.id);
+  const exerciseCount = workout.exercises.length;
+  const totalSets = workout.exercises.reduce((acc, e) => acc + e.sets, 0);
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.planListRow, pressed && { opacity: 0.7 }]}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        onPress();
+      }}
+    >
+      {/* Thumbnail — alternating tilt to match the planner list view */}
+      <View
+        style={[
+          styles.planListThumb,
+          { transform: [{ rotate: `${index % 2 === 0 ? 2 : -2}deg` }] },
+        ]}
+      >
+        {localImage ? (
+          <Image
+            source={localImage}
+            style={styles.planListThumbImg}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={[styles.planListThumbImg, styles.planListThumbPlaceholder]}>
+            <Ionicons name="barbell-outline" size={20} color="rgba(0,0,0,0.3)" />
+          </View>
+        )}
+      </View>
+      <View style={styles.planListInfo}>
+        <Text style={styles.planListName} numberOfLines={1}>
+          {workout.title}
+        </Text>
+        <Text style={styles.planListSub} numberOfLines={1}>
+          {exerciseCount}x Exercises • {totalSets} Total Sets
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={22} color="rgba(0,0,0,0.3)" />
     </Pressable>
   );
 }
@@ -466,6 +537,50 @@ export default function StartWorkoutSheet() {
   const discardActiveWorkout = useWorkoutStore((s) => s.discardActiveWorkout);
   const startActiveWorkout = useWorkoutStore((s) => s.startActiveWorkout);
   const userId = useUserProfileStore((s) => s.userId);
+  const profile = useUserProfileStore((s) => s.profile);
+
+  // ─── Plan folder data ───────────────────────────────────────────────────────
+  // Render the user's current plan as a virtual folder above My Templates.
+  // Read-only: not deletable, not reorderable, no swipe-to-delete.
+  const planProgram = useMemo(
+    () => (profile?.plan_id ? getProgram(profile.plan_id) : null),
+    [profile?.plan_id]
+  );
+  // "Summer Body Plan" → "Summer Body Templates" etc. The folder represents
+  // template-able plan workouts, not the plan itself.
+  const planName = useMemo(() => {
+    if (!profile?.plan_id) return null;
+    const raw = getPlanById(profile.plan_id)?.name;
+    return raw ? raw.replace(/\s*Plan\b/, ' Templates') : null;
+  }, [profile?.plan_id]);
+  const planWorkouts = useMemo<ProgramWorkout[]>(() => {
+    if (!planProgram) return [];
+    // Show one card per workout day in the first cycle. Skip abs/cardio
+    // companions (they live as `workouts[1+]` and would crowd the list).
+    // Skip rest-day entries (e.g. Summer Body's "Active Rest") — they have
+    // no exercises, just a freeText instruction.
+    return planProgram.days
+      .slice(0, planProgram.daysPerWeek)
+      .map((day) => day.workouts[0])
+      .filter((w): w is ProgramWorkout => !!w && w.exercises.length > 0);
+  }, [planProgram]);
+
+  // Sentinel id for the auto-managed plan templates folder. Acts as the
+  // selectedFolderId when the user taps the 3-dot menu, so the existing
+  // openFolderMenu / handleFolderMenuAddRoutine / handleFolderMenuReorderTemplates
+  // handlers all just work without duplicating their logic.
+  const planFolderId = useMemo(
+    () => (profile?.plan_id ? planFolderIdFor(profile.plan_id) : null),
+    [profile?.plan_id]
+  );
+
+  // User templates whose folderId points at this plan folder sentinel — they
+  // render inside the plan folder body alongside the plan workouts.
+  const planFolderUserTemplates = useMemo(() => {
+    if (!planFolderId) return [];
+    return templates.filter((t) => t.folderId === planFolderId);
+  }, [planFolderId, templates]);
+  const [planFolderCollapsed, setPlanFolderCollapsed] = useState(false);
 
   useEffect(() => {
     ensureDefaultFolders();
@@ -569,6 +684,20 @@ export default function StartWorkoutSheet() {
       if (activeWorkout) discardActiveWorkout();
       withLock(() => router.replace({ pathname: '/active-workout', params: { templateId } }));
     }
+  };
+
+  // Tapping a plan template opens the same detail view as the planner list
+  // row, just with the action button repurposed to "Schedule Workout"
+  // instead of "Start Workout" (these are read-only templates — the only
+  // thing you can do with them is schedule an occurrence).
+  const handlePlanWorkoutPress = (pw: ProgramWorkout) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    withLock(() =>
+      router.push({
+        pathname: '/workout-preview',
+        params: { programWorkoutId: pw.id, source: 'template' },
+      })
+    );
   };
 
   const handleResumeWorkout = () => {
@@ -702,9 +831,14 @@ export default function StartWorkoutSheet() {
     if (!selectedFolderId) return;
     const folder = folders.find((f) => f.id === selectedFolderId);
     if (!folder) return;
-    if (selectedFolderId === DEFAULT_FOLDER_ID) {
+    if (selectedFolderId === DEFAULT_FOLDER_ID || isPlanFolderId(selectedFolderId)) {
       closeFolderMenu();
-      Alert.alert('Cannot Delete', 'The default "My Templates" folder cannot be deleted.');
+      Alert.alert(
+        'Cannot Delete',
+        isPlanFolderId(selectedFolderId)
+          ? "Plan template folders can't be deleted — switch plans in Profile to change which folder appears here."
+          : 'The default "My Templates" folder cannot be deleted.'
+      );
       return;
     }
     closeFolderMenu();
@@ -896,7 +1030,7 @@ export default function StartWorkoutSheet() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      {/* Close button only */}
+      {/* Header: close button (left) + centered title + spacer (right) */}
       <View style={styles.header}>
         <Pressable
           style={styles.closeBtn}
@@ -908,10 +1042,12 @@ export default function StartWorkoutSheet() {
         >
           <Ionicons name="close" size={24} color="#000" />
         </Pressable>
+        <Text style={styles.headerTitle}>Start Workout</Text>
+        <View style={styles.closeBtn} />
       </View>
 
       <ScrollView scrollEnabled={scrollEnabled} showsVerticalScrollIndicator={false}>
-        {/* Start Empty Workout */}
+        {/* Hero: Start Empty Workout */}
         <Pressable
           style={({ pressed }) => [styles.startEmptyButton, pressed && { opacity: 0.7 }]}
           onPress={handleStartEmptyWorkout}
@@ -920,14 +1056,27 @@ export default function StartWorkoutSheet() {
           <Text style={styles.startEmptyText}>Start Empty Workout</Text>
         </Pressable>
 
-        {/* New Template */}
-        <Pressable
-          style={({ pressed }) => [styles.startEmptyButton, pressed && { opacity: 0.7 }]}
-          onPress={handleNewTemplatePress}
-        >
-          <Text style={styles.plusIcon}>+</Text>
-          <Text style={styles.startEmptyText}>New Template</Text>
-        </Pressable>
+        {/* Secondary row: Schedule Workout + Create Template */}
+        <View style={styles.secondaryRow}>
+          <Pressable
+            style={({ pressed }) => [styles.secondaryCard, pressed && { opacity: 0.7 }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              withLock(() => router.push('/schedule-new-workout'));
+            }}
+          >
+            <Ionicons name="calendar-outline" size={24} color="#000" />
+            <Text style={styles.startEmptyText}>Schedule Workout</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.secondaryCard, pressed && { opacity: 0.7 }]}
+            onPress={handleNewTemplatePress}
+          >
+            <Ionicons name="clipboard-outline" size={24} color="#000" />
+            <Text style={styles.startEmptyText}>Create Template</Text>
+          </Pressable>
+        </View>
 
         {/* Saved Templates section header */}
         <View style={styles.sectionHeader}>
@@ -1017,6 +1166,62 @@ export default function StartWorkoutSheet() {
               />
             </SwipeableTemplateCard>
           ))}
+
+          {/* Plan folder — the user's current plan, rendered below their own
+              folders. Read-only: cards open workout-preview in template mode
+              (Schedule Workout button) rather than starting an active workout.
+              The 3-dot button matches the user folder UX visually but only
+              surfaces a brief explanation since the folder is auto-managed. */}
+          {planProgram && planName && planWorkouts.length > 0 && (
+            <View style={styles.folderContainer}>
+              <View style={styles.folderHeaderRow}>
+                <Pressable
+                  style={({ pressed }) => [styles.folderHeader, pressed && { opacity: 0.7 }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    setPlanFolderCollapsed((v) => !v);
+                  }}
+                >
+                  <FolderChevronIcon collapsed={planFolderCollapsed} />
+                  <Text style={styles.folderName}>{planName}</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.folderMenuButton}
+                  onPress={() => {
+                    if (planFolderId) openFolderMenu(planFolderId);
+                  }}
+                >
+                  <Ionicons name="ellipsis-horizontal" size={18} color="rgba(0,0,0,0.4)" />
+                </Pressable>
+              </View>
+              {!planFolderCollapsed && (
+                <View style={styles.folderTemplates}>
+                  {planWorkouts.map((pw, idx) => (
+                    <PlanWorkoutCard
+                      key={pw.id}
+                      workout={pw}
+                      index={idx}
+                      onPress={() => handlePlanWorkoutPress(pw)}
+                    />
+                  ))}
+                  {planFolderUserTemplates.map((template) => (
+                    <SwipeableTemplateCard
+                      key={template.id}
+                      template={template}
+                      onDelete={handleDeleteTemplate}
+                    >
+                      <TemplateCard
+                        template={template}
+                        onStart={() => handleStartFromTemplate(template.id)}
+                        onPress={() => handleTemplatePress(template)}
+                        isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
+                      />
+                    </SwipeableTemplateCard>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={{ height: 40 }} />
@@ -1103,7 +1308,7 @@ export default function StartWorkoutSheet() {
                   <AddIcon />
                   <Text style={styles.menuItemText}>Add New Template</Text>
                 </Pressable>
-                {selectedFolderId !== DEFAULT_FOLDER_ID && (
+                {selectedFolderId !== DEFAULT_FOLDER_ID && !isPlanFolderId(selectedFolderId) && (
                   <Pressable style={styles.menuItem} onPress={handleFolderMenuDeleteFolder}>
                     <DeleteIcon />
                     <Text style={[styles.menuItemText, { color: '#C75050' }]}>Delete Folder</Text>
@@ -1257,6 +1462,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 4,
@@ -1266,6 +1472,11 @@ const styles = StyleSheet.create({
     height: 46,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 18,
+    color: '#000',
   },
 
   startEmptyButton: {
@@ -1282,6 +1493,24 @@ const styles = StyleSheet.create({
   },
   plusIcon: { fontFamily: fonts.medium, fontSize: 20, color: '#000', marginRight: 4 },
   startEmptyText: { fontFamily: fonts.medium, fontSize: 16, color: '#000' },
+  secondaryRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 12,
+  },
+  secondaryCard: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 14,
+    minHeight: 104,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
 
   sectionHeader: {
     flexDirection: 'row',
@@ -1320,6 +1549,33 @@ const styles = StyleSheet.create({
   folderMenuButton: { padding: 8 },
 
   folderTemplates: { gap: 8, paddingBottom: 4 },
+
+  // Plan workout row — mirrors the planner list-view row (tilted thumbnail,
+  // name + meta, chevron) so a plan workout looks identical here as in the
+  // planner. No status icon — these cards aren't tied to a scheduled date.
+  planListRow: {
+    height: 74,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+  },
+  planListThumb: {
+    width: 54,
+    height: 54,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#e8e8e8',
+  },
+  planListThumbImg: { width: 54, height: 54 },
+  planListThumbPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  planListInfo: { flex: 1, gap: 3 },
+  planListName: { fontFamily: fonts.semiBold, fontSize: 17, color: '#000' },
+  planListSub: { fontFamily: fonts.medium, fontSize: 13, color: 'rgba(0,0,0,0.5)' },
+
   // Template card (horizontal row, matches legacy)
   templateCard: {
     flexDirection: 'row',

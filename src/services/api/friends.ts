@@ -28,6 +28,7 @@ export type FriendActivity = {
   lastWorkoutAt: string | null;
   imageUri: string | null;
   imageAudience: string | null;
+  isVerified: boolean;
 };
 
 export type PendingRequest = {
@@ -37,6 +38,7 @@ export type PendingRequest = {
   requesterAvatar: string | null;
   requesterBio: string | null;
   requesterTraits: any[];
+  requesterIsVerified: boolean;
 };
 
 export type SuggestedUser = {
@@ -45,6 +47,7 @@ export type SuggestedUser = {
   avatarUrl: string | null;
   bio: string | null;
   traits: any[];
+  isVerified: boolean;
 };
 
 export type PokeReceived = {
@@ -82,6 +85,7 @@ export async function getFriendsWithActivity(userId: string): Promise<FriendActi
     lastWorkoutAt: row.last_workout_at ?? null,
     imageUri: row.image_uri ?? null,
     imageAudience: row.image_audience ?? null,
+    isVerified: row.friend_is_verified ?? false,
   }));
 
   // Sort by most recent workout first; friends with no workouts at the bottom.
@@ -246,7 +250,7 @@ export async function getPendingRequests(userId: string): Promise<PendingRequest
   const { data, error } = await supabase
     .from('friendships')
     .select(
-      'id, requester_id, profiles!friendships_requester_id_fkey(name, avatar_url, bio, traits)'
+      'id, requester_id, profiles!friendships_requester_id_fkey(name, avatar_url, bio, traits, is_verified)'
     )
     .eq('addressee_id', userId)
     .eq('status', 'pending');
@@ -263,6 +267,7 @@ export async function getPendingRequests(userId: string): Promise<PendingRequest
     requesterAvatar: row.profiles?.avatar_url ?? null,
     requesterBio: row.profiles?.bio ?? null,
     requesterTraits: row.profiles?.traits ?? [],
+    requesterIsVerified: row.profiles?.is_verified ?? false,
   }));
 }
 
@@ -445,6 +450,7 @@ export async function getSuggestedUsers(userId: string, limit = 5): Promise<Sugg
     avatarUrl: row.avatar_url ?? null,
     bio: row.bio ?? null,
     traits: row.traits ?? [],
+    isVerified: row.is_verified ?? false,
   }));
 }
 

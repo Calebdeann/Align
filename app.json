@@ -2,7 +2,7 @@
   "expo": {
     "name": "It Girl",
     "slug": "it-girl",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "itgirl",
     "orientation": "portrait",
     "icon": "./assets/Star Logo.png",
@@ -15,10 +15,12 @@
     },
     "ios": {
       "supportsTablet": false,
+      "requireFullScreen": true,
       "bundleIdentifier": "com.itgirlapp.app",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIRequiresFullScreen": true
       },
       "entitlements": {}
     },
@@ -36,7 +38,18 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/chime.wav",
+            "./assets/sounds/bell.wav",
+            "./assets/sounds/ding.wav",
+            "./assets/sounds/pulse.wav",
+            "./assets/sounds/alert.wav"
+          ]
+        }
+      ],
       "expo-secure-store",
       "expo-web-browser",
       "expo-router",

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   Modal,
   Animated,
   Dimensions,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +23,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { fonts, colors, fontSize, spacing } from '@/constants/theme';
 import i18n from '@/i18n';
-import { CircleBackButton, UserAvatar, SkeletonBlock } from '@/components';
+import {
+  CircleBackButton,
+  UserAvatar,
+  SkeletonBlock,
+  VerifiedBadge,
+  ReportForm,
+} from '@/components';
 import { useWorkoutStore, type ActiveExerciseSet } from '@/stores/workoutStore';
 
 type SetType = 'normal' | 'warmup' | 'failure' | 'dropset';
@@ -33,6 +41,7 @@ import {
   getWorkoutById,
   getWorkoutMuscles,
   getPublicWorkoutDetails,
+  getOwnerWorkoutDetails,
   deleteWorkout,
   updateWorkoutAudience,
   type DbWorkout,
@@ -323,7 +332,7 @@ type LiveExercise = {
   id: string;
   name: string;
   thumbnailUrl: string | null;
-  sets: { number: number; weight: number; reps: number }[];
+  sets: { number: number; weight: number; reps: number; rpe: number | null }[];
 };
 
 function ExerciseBlock({ exercise, unit }: { exercise: LiveExercise; unit: string }) {
@@ -368,7 +377,11 @@ function ExerciseBlock({ exercise, unit }: { exercise: LiveExercise; unit: strin
               {exercise.name}
             </Text>
           </View>
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={22} color="#000000" />
+          <Ionicons
+            name={expanded ? 'chevron-down' : 'chevron-forward'}
+            size={22}
+            color="#000000"
+          />
         </Pressable>
       </View>
 
@@ -379,13 +392,17 @@ function ExerciseBlock({ exercise, unit }: { exercise: LiveExercise; unit: strin
         <View style={styles.setsContainer}>
           <View style={styles.setHeaderRow}>
             <Text style={[styles.setHeaderCell, styles.setIndexCell]}>SET</Text>
-            <Text style={styles.setHeaderCell}>WEIGHT & REPS</Text>
+            <Text style={[styles.setHeaderCell, styles.setWeightRepsCell]}>WEIGHT & REPS</Text>
+            <Text style={[styles.setHeaderCell, styles.setRpeCell]}>RPE</Text>
           </View>
           {exercise.sets.map((set) => (
             <View key={set.number} style={styles.setRow}>
               <Text style={[styles.setNumber, styles.setIndexCell]}>{set.number}</Text>
-              <Text style={styles.setDetails}>
+              <Text style={[styles.setDetails, styles.setWeightRepsCell]}>
                 {set.weight} {unit} × {set.reps} reps
+              </Text>
+              <Text style={[styles.setDetails, styles.setRpeCell]}>
+                {set.rpe != null ? set.rpe : '—'}
               </Text>
             </View>
           ))}
@@ -417,6 +434,7 @@ export default function WorkoutSummaryScreen() {
     imageUri?: string;
     completedAt?: string;
     ownerUserId?: string;
+    isVerified?: string;
   }>();
 
   // Store access
@@ -463,6 +481,16 @@ export default function WorkoutSummaryScreen() {
         return;
       }
 
+      // Fast path: one bundled RPC for workout + exercises + sets + muscles.
+      // Cuts the cold load from ~3 sequential round-trips to one.
+      const bundled = await getOwnerWorkoutDetails(workoutId);
+      if (bundled) {
+        setDbWorkout({ workout: bundled.workout, exercises: bundled.exercises });
+        setDbMuscles(bundled.muscles);
+        return;
+      }
+
+      // Fallback for older servers without migration 089 (or other RPC errors).
       const [ownResult, ownMuscles] = await Promise.all([
         getWorkoutById(workoutId),
         getWorkoutMuscles(workoutId),
@@ -499,6 +527,57 @@ export default function WorkoutSummaryScreen() {
   const [description, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Scroll-to-edit-fields: a tall photo can push the title/description below
+  // the keyboard. We lift the card up — but only 75% of the way to the card's
+  // top, so the photo stays meaningfully visible above the edit inputs.
+  // Scroll fires on two triggers so it works every time:
+  //   1. `keyboardWillShow` (iOS) / `keyboardDidShow` (Android) — handles the
+  //      first input tap that opens the keyboard, syncs the card glide with
+  //      the keyboard animation.
+  //   2. Focus while keyboard is already up — handles switching between the
+  //      title and description inputs, where no new keyboard event fires.
+  const scrollRef = useRef<ScrollView>(null);
+  const cardYRef = useRef(0);
+  const focusedEditFieldRef = useRef(false);
+  const keyboardVisibleRef = useRef(false);
+
+  const scrollToCardTop = useCallback(() => {
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, (cardYRef.current - 16) * 0.75),
+      animated: true,
+    });
+  }, []);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const showSub = Keyboard.addListener(showEvent, () => {
+      keyboardVisibleRef.current = true;
+      if (focusedEditFieldRef.current) {
+        scrollToCardTop();
+      }
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardVisibleRef.current = false;
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [scrollToCardTop]);
+
+  const handleEditFieldFocus = useCallback(() => {
+    focusedEditFieldRef.current = true;
+    // If the keyboard is already up (e.g., switching from title to description
+    // without dismissing), no keyboardWillShow event will fire — scroll now.
+    if (keyboardVisibleRef.current) {
+      scrollToCardTop();
+    }
+  }, [scrollToCardTop]);
+
+  const handleEditFieldBlur = useCallback(() => {
+    focusedEditFieldRef.current = false;
+  }, []);
+
   // Compute liveDuration early so we can initialize editDuration from it
   const liveDuration = activeWorkout?.elapsedSeconds ?? parseInt(params.durationSeconds ?? '0', 10);
   const [editDuration, setEditDuration] = useState(liveDuration);
@@ -507,6 +586,8 @@ export default function WorkoutSummaryScreen() {
   // Public/private audience for the 3-dot menu (own workouts in view mode only).
   const [currentAudience, setCurrentAudience] = useState<'friends' | 'everyone'>('everyone');
   const [menuOpen, setMenuOpen] = useState(false);
+  // Report modal (only mounted when viewing someone else's workout).
+  const [reportOpen, setReportOpen] = useState(false);
   useEffect(() => {
     const audience = dbWorkout?.workout.image_audience;
     if (audience === 'friends' || audience === 'everyone') {
@@ -548,6 +629,7 @@ export default function WorkoutSummaryScreen() {
             number: i + 1,
             weight: parseFloat(s.kg) || 0,
             reps: parseInt(s.reps, 10) || 0,
+            rpe: s.rpe,
           })),
       }));
   }, [activeWorkout]);
@@ -582,6 +664,7 @@ export default function WorkoutSummaryScreen() {
         number: i + 1,
         weight: s.weight ?? 0,
         reps: s.reps ?? 0,
+        rpe: s.rpe,
       })),
     }));
   }, [dbWorkout]);
@@ -868,6 +951,7 @@ export default function WorkoutSummaryScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -877,7 +961,12 @@ export default function WorkoutSummaryScreen() {
         <View style={{ height: PHOTO_HEIGHT }} pointerEvents="none" />
 
         {/* White card — overlaps photo by 24px */}
-        <View style={styles.card}>
+        <View
+          style={styles.card}
+          onLayout={(e) => {
+            cardYRef.current = e.nativeEvent.layout.y;
+          }}
+        >
           {/* Drag pill */}
           <View style={styles.dragPill} />
 
@@ -902,7 +991,14 @@ export default function WorkoutSummaryScreen() {
               </View>
 
               <View style={styles.userInfo}>
-                <Text style={styles.userName}>{userName}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Text style={styles.userName}>{userName}</Text>
+                  {(isOtherUserWorkout ? params.isVerified === '1' : profile?.is_verified) && (
+                    <View style={{ marginTop: 1 }}>
+                      <VerifiedBadge size={14} />
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.workoutDate}>{displayDate}</Text>
               </View>
             </Pressable>
@@ -936,6 +1032,8 @@ export default function WorkoutSummaryScreen() {
               style={styles.titleInput}
               value={title}
               onChangeText={setTitle}
+              onFocus={handleEditFieldFocus}
+              onBlur={handleEditFieldBlur}
               placeholder={defaultTitle || 'Title...'}
               placeholderTextColor="rgba(0,0,0,0.35)"
               returnKeyType="done"
@@ -952,9 +1050,11 @@ export default function WorkoutSummaryScreen() {
               style={styles.descriptionInput}
               value={description}
               onChangeText={setDescription}
+              onFocus={handleEditFieldFocus}
+              onBlur={handleEditFieldBlur}
               placeholder="Description (optional)"
               placeholderTextColor="rgba(0,0,0,0.35)"
-              multiline
+              returnKeyType="done"
               maxLength={200}
             />
           ) : description ? (
@@ -1082,6 +1182,22 @@ export default function WorkoutSummaryScreen() {
         </Pressable>
       )}
 
+      {/* Report button — when viewing someone else's workout. Single tap
+          fires the Report form for this workout. Apple Guideline 1.2: every
+          UGC item needs a flag mechanism. */}
+      {!isSaveMode && isDbMode && isOtherUserWorkout && params.workoutId && (
+        <Pressable
+          style={[styles.menuButton, { top: insets.top + 10 }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            setReportOpen(true);
+          }}
+          hitSlop={8}
+        >
+          <Ionicons name="flag-outline" size={22} color="#000" />
+        </Pressable>
+      )}
+
       {/* Audience dropdown */}
       {menuOpen && (
         <>
@@ -1121,6 +1237,16 @@ export default function WorkoutSummaryScreen() {
         }}
         onClose={() => setShowDurationModal(false)}
       />
+
+      {isOtherUserWorkout && params.workoutId && (
+        <ReportForm
+          visible={reportOpen}
+          onClose={() => setReportOpen(false)}
+          targetType="workout"
+          targetId={params.workoutId}
+          targetLabel={displayTitle ?? undefined}
+        />
+      )}
     </View>
   );
 }
@@ -1457,7 +1583,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#000000',
     letterSpacing: -0.2,
-    flex: 1,
+  },
+  setWeightRepsCell: {
+    minWidth: 150,
+  },
+  setRpeCell: {
+    minWidth: 40,
+    marginLeft: 12,
   },
 
   // Discard

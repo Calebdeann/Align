@@ -7,9 +7,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  useWindowDimensions,
 } from 'react-native';
-import { Image } from 'expo-image';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -19,36 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { fonts, spacing } from '@/constants/theme';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
-import { OnboardingContinueButton } from '@/components';
-
-const SHELL_IMAGES: Record<string, number> = {
-  A: require('../../assets/shells/A.png'),
-  B: require('../../assets/shells/B.png'),
-  C: require('../../assets/shells/C.png'),
-  D: require('../../assets/shells/D.png'),
-  E: require('../../assets/shells/E.png'),
-  F: require('../../assets/shells/F.png'),
-  G: require('../../assets/shells/G.png'),
-  H: require('../../assets/shells/H.png'),
-  I: require('../../assets/shells/I.png'),
-  J: require('../../assets/shells/J.png'),
-  K: require('../../assets/shells/K.png'),
-  L: require('../../assets/shells/L.png'),
-  M: require('../../assets/shells/M.png'),
-  N: require('../../assets/shells/N.png'),
-  O: require('../../assets/shells/O.png'),
-  P: require('../../assets/shells/P.png'),
-  Q: require('../../assets/shells/Q.png'),
-  R: require('../../assets/shells/R.png'),
-  S: require('../../assets/shells/S.png'),
-  T: require('../../assets/shells/T.png'),
-  U: require('../../assets/shells/U.png'),
-  V: require('../../assets/shells/V.png'),
-  W: require('../../assets/shells/W.png'),
-  X: require('../../assets/shells/X.png'),
-  Y: require('../../assets/shells/Y.png'),
-  Z: require('../../assets/shells/Z.png'),
-};
+import { OnboardingContinueButton, NameShells } from '@/components';
 
 export default function EditNameScreen() {
   const profile = useUserProfileStore((s) => s.profile);
@@ -57,27 +26,8 @@ export default function EditNameScreen() {
   const [name, setName] = useState(profile?.name ?? '');
   const [isSaving, setIsSaving] = useState(false);
 
-  const { width: screenWidth } = useWindowDimensions();
-
   const trimmedName = name.trim();
   const canContinue = trimmedName.length >= 2;
-  const shellLetters = trimmedName
-    .toUpperCase()
-    .replace(/[^A-Z]/g, '')
-    .split('');
-
-  const shellGap = 8;
-  const availableWidth = screenWidth - spacing.lg * 2;
-  const shellSize =
-    shellLetters.length === 0
-      ? 54
-      : Math.max(
-          18,
-          Math.min(
-            54,
-            (availableWidth - (shellLetters.length - 1) * shellGap) / shellLetters.length
-          )
-        );
 
   async function handleSave() {
     if (!canContinue) return;
@@ -115,7 +65,6 @@ export default function EditNameScreen() {
       {/* Input */}
       <View style={styles.inputContainer}>
         <TextInput
-          ref={inputRef}
           style={styles.input}
           value={name}
           onChangeText={setName}
@@ -137,20 +86,7 @@ export default function EditNameScreen() {
       </View>
 
       {/* Shell row — single line, shrinks to fit */}
-      <View style={[styles.shellRow, { gap: shellGap }]}>
-        {shellLetters.map((letter, index) => {
-          const source = SHELL_IMAGES[letter];
-          if (!source) return null;
-          return (
-            <Image
-              key={`${letter}-${index}`}
-              source={source}
-              style={{ width: shellSize, height: shellSize }}
-              contentFit="contain"
-            />
-          );
-        })}
-      </View>
+      <NameShells name={trimmedName} style={styles.shellRow} />
 
       {/* Spacer pushes button to bottom */}
       <View style={{ flex: 1 }} />
@@ -220,12 +156,8 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   shellRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     marginTop: 20,
-    minHeight: 62,
-    alignItems: 'center',
   },
   bottomSection: {
     alignItems: 'center',

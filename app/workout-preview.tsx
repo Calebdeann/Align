@@ -13,20 +13,15 @@ import { getCurrentUser } from '@/services/api/user';
 import { ExerciseImage } from '@/components/ExerciseImage';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
 import CircleBackButton from '@/components/ui/CircleBackButton';
-import {
-  getProgramWorkout,
-  WORKOUT_TYPE_COLORS,
-  type ProgramExercise,
-  type ProgramWorkout,
-} from '@/data/programs';
+import { getProgramWorkout, WORKOUT_TYPE_COLORS, type ProgramWorkout } from '@/data/programs';
 import { getPlanRectangleImage } from '@/data/programs/planImages';
 import {
   resolveProgramExercises,
+  programExerciseToTemplateExercise,
   type ResolvedProgramExercise,
 } from '@/data/programs/exerciseMatching';
 import { useExerciseStore } from '@/stores/exerciseStore';
 import { WORKOUT_PREVIEW_LOREM } from '@/data/plans';
-import { getSuggestedWeightKg } from '@/data/suggestedWeights';
 import { CARDIO_OPTIONS, parseRecommendedMinutes } from '@/constants/cardioOptions';
 
 const MAX_CARDIO_SELECTIONS = 2;
@@ -57,40 +52,6 @@ const CARDIO_ICON_COLORS: Record<string, string> = {
   'outdoor-walk': '#D9EAD3',
 };
 
-function parseFirstRep(reps: string): number | undefined {
-  const m = reps.match(/\d+/);
-  return m ? parseInt(m[0], 10) : undefined;
-}
-
-function programExerciseToTemplateExercise(
-  pe: ProgramExercise,
-  resolved?: ResolvedProgramExercise
-) {
-  const targetReps = parseFirstRep(pe.reps);
-  // Pre-fill a sensible starting weight from the central suggested-weights map.
-  // 0 = bodyweight (the user can edit during the workout); we map 0 to undefined
-  // so it's not displayed as "0 kg" in the input.
-  const suggestedKg = getSuggestedWeightKg(pe.name);
-  const targetWeight = suggestedKg > 0 ? suggestedKg : undefined;
-  return {
-    exerciseId: resolved?.exerciseId ?? `plan_${pe.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
-    exerciseName: resolved?.matchedName ?? pe.name,
-    muscle: resolved?.muscleGroup ?? 'other',
-    gifUrl: resolved?.gifUrl,
-    thumbnailUrl: resolved?.thumbnailUrl,
-    notes: pe.notes,
-    sets: Array.from({ length: pe.sets }).map(() => ({
-      targetWeight,
-      targetReps,
-      setType: 'normal',
-    })),
-    restTimerSeconds: 90,
-    // Forward the program's superset grouping so active-workout starts with
-    // the pair already linked (no manual setup needed).
-    supersetId: pe.supersetGroup ?? null,
-  };
-}
-
 // Mirrors SUPERSET_COLORS in app/active-workout.tsx — same indices, same colors,
 // so the badge in the preview matches what users see during the workout.
 const SUPERSET_COLORS = ['#FFB6C1', '#C8B6FF', '#B6E0FF', '#B6FFD9', '#FFE08A', '#FFA585'];
@@ -102,6 +63,13 @@ export default function WorkoutPreviewScreen() {
   const params = useLocalSearchParams();
   const workoutId = params.workoutId as string;
   const dateKey = params.dateKey as string;
+  // `programWorkoutId` is passed when this screen is opened from a plan
+  // template card (start-workout-sheet's "Templates" folder). No scheduled
+  // workout backs it — render purely from program data.
+  const programWorkoutIdParam = params.programWorkoutId as string | undefined;
+  // `source=template` flips the bottom action from "Start Workout" to
+  // "Schedule Workout" — templates can only be scheduled, not started.
+  const isTemplateMode = params.source === 'template';
   const { t } = useTranslation();
 
   const { withLock } = useNavigationLock();
@@ -140,10 +108,13 @@ export default function WorkoutPreviewScreen() {
     return scheduledWorkouts.find((w) => w.id === cleanId || w.id === workoutId);
   }, [scheduledWorkouts, workoutId]);
 
+  // Program workout resolved either from the scheduled workout's link OR
+  // directly from the `programWorkoutId` URL param (template mode).
   const programWorkout = useMemo<ProgramWorkout | null>(() => {
-    if (!workout?.programWorkoutId) return null;
-    return getProgramWorkout(workout.programWorkoutId);
-  }, [workout]);
+    const pwId = workout?.programWorkoutId ?? programWorkoutIdParam ?? null;
+    if (!pwId) return null;
+    return getProgramWorkout(pwId);
+  }, [workout, programWorkoutIdParam]);
 
   const template = useMemo(() => {
     if (!workout?.templateId) return null;
@@ -164,9 +135,8 @@ export default function WorkoutPreviewScreen() {
   // Resolve title, description, exercises, duration, hero color
   const display = useMemo(() => {
     if (programWorkout) {
-      const heroImage = workout?.programWorkoutId
-        ? getPlanRectangleImage(workout.programWorkoutId)
-        : null;
+      const pwIdForImage = workout?.programWorkoutId ?? programWorkoutIdParam ?? null;
+      const heroImage = pwIdForImage ? getPlanRectangleImage(pwIdForImage) : null;
       return {
         title: programWorkout.title,
         description: programWorkout.description ?? WORKOUT_PREVIEW_LOREM,
@@ -364,7 +334,10 @@ export default function WorkoutPreviewScreen() {
     Alert.alert('Share', 'Sharing is coming soon.');
   };
 
-  if (!workout) {
+  // In template mode there's no scheduled workout to look up — render from
+  // programWorkout alone. The "not found" guard only applies when we expected
+  // a scheduled workout and didn't find one.
+  if (!workout && !programWorkout) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
@@ -416,15 +389,31 @@ export default function WorkoutPreviewScreen() {
           </View>
         </View>
 
-        {/* Start Workout pill — disabled for cardio until user picks at least one */}
+        {/* Action pill — "Schedule Workout" in template mode, "Start Workout"
+            for live previews. Cardio pickers still gate the Start variant
+            until at least one option is selected. */}
         <Pressable
           style={[
             styles.startPill,
-            isCardioWorkout && selectedCardio.length === 0 && styles.startPillDisabled,
+            !isTemplateMode &&
+              isCardioWorkout &&
+              selectedCardio.length === 0 &&
+              styles.startPillDisabled,
           ]}
-          disabled={isCardioWorkout && selectedCardio.length === 0}
+          disabled={!isTemplateMode && isCardioWorkout && selectedCardio.length === 0}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            if (isTemplateMode) {
+              const pwId = programWorkoutIdParam ?? workout?.programWorkoutId ?? null;
+              if (!pwId) return;
+              withLock(() =>
+                router.push({
+                  pathname: '/schedule-workout',
+                  params: { programWorkoutId: pwId },
+                })
+              );
+              return;
+            }
             const todayKey = new Date().toISOString().split('T')[0];
             if (dateKey && dateKey !== todayKey) {
               const workoutDate = new Date(dateKey + 'T12:00:00');
@@ -448,7 +437,9 @@ export default function WorkoutPreviewScreen() {
             handleStartWorkout();
           }}
         >
-          <Text style={styles.startPillText}>Start Workout</Text>
+          <Text style={styles.startPillText}>
+            {isTemplateMode ? 'Schedule Workout' : 'Start Workout'}
+          </Text>
         </Pressable>
 
         {/* Exercise list (or cardio picker for cardio sub-workouts, or

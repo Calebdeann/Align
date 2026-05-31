@@ -20,7 +20,14 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '@/constants/theme';
 import { LIQUID_TAB_BAR_HEIGHT } from '@/components/ui/LiquidGlassTabBar';
-import { UserAvatar, CircleBackButton, SkeletonBlock } from '@/components';
+import {
+  UserAvatar,
+  CircleBackButton,
+  SkeletonBlock,
+  NameShells,
+  VerifiedBadge,
+  ReportForm,
+} from '@/components';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import {
   getPublicProfile,
@@ -91,6 +98,7 @@ export default function PublicProfileScreen() {
   const [workouts, setWorkouts] = useState<PublicWorkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   const openMenu = () => {
@@ -182,6 +190,8 @@ export default function PublicProfileScreen() {
             traits: (myProfile.traits ?? []) as PlacedTrait[],
             planId: myProfile.plan_id ?? null,
             createdAt: myProfile.created_at ?? new Date().toISOString(),
+            showShells: myProfile.show_shells ?? true,
+            isVerified: myProfile.is_verified ?? false,
           })
         : getPublicProfile(myProfile.id, params.userId);
       const [prof, wkts] = await Promise.all([
@@ -247,7 +257,33 @@ export default function PublicProfileScreen() {
         </View>
 
         {/* Name — shows immediately from prefill data */}
-        <Text style={styles.name}>{displayName || 'User'}</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          <Text style={styles.name}>{displayName || 'User'}</Text>
+          {publicProfile?.isVerified && (
+            <View style={{ marginTop: 10 }}>
+              <VerifiedBadge size={18} />
+            </View>
+          )}
+        </View>
+
+        {/* Shells under the name (respects target user's toggle) */}
+        {(publicProfile?.showShells ?? true) && !!displayName && (
+          <NameShells
+            name={displayName}
+            maxSize={51}
+            minSize={17}
+            gap={8}
+            minRowHeight={58}
+            style={{ marginTop: 12 }}
+          />
+        )}
 
         {/* Bio */}
         {!!publicProfile?.bio && <Text style={styles.bioText}>{publicProfile.bio}</Text>}
@@ -330,6 +366,7 @@ export default function PublicProfileScreen() {
                             userName: publicProfile?.name ?? '',
                             userAvatarUrl: publicProfile?.avatarUrl ?? '',
                             ownerUserId: publicProfile?.id ?? '',
+                            isVerified: publicProfile?.isVerified ? '1' : '0',
                           },
                         });
                       }}
@@ -394,6 +431,20 @@ export default function PublicProfileScreen() {
               {!isSelf && (
                 <>
                   <View style={styles.menuDivider} />
+                  <Pressable
+                    style={styles.menuRow}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                      closeMenu();
+                      // Delay the report modal open so the menu's close
+                      // animation finishes first.
+                      setTimeout(() => setReportOpen(true), 250);
+                    }}
+                  >
+                    <Ionicons name="flag-outline" size={22} color="#000" />
+                    <Text style={styles.menuRowText}>Report</Text>
+                  </Pressable>
+                  <View style={styles.menuDivider} />
                   <Pressable style={styles.menuRow} onPress={handleBlock}>
                     <Ionicons name="ban-outline" size={22} color="#FF3B30" />
                     <Text style={[styles.menuRowText, { color: '#FF3B30' }]}>Block</Text>
@@ -404,6 +455,16 @@ export default function PublicProfileScreen() {
           </Animated.View>
         </Pressable>
       </Modal>
+
+      {publicProfile && (
+        <ReportForm
+          visible={reportOpen}
+          onClose={() => setReportOpen(false)}
+          targetType="profile"
+          targetId={publicProfile.id}
+          targetLabel={publicProfile.name ?? undefined}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -497,7 +558,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: fonts.bold,
-    fontSize: 22,
+    fontSize: 28,
     color: '#000000',
     textAlign: 'center',
     marginTop: 10,
@@ -505,10 +566,10 @@ const styles = StyleSheet.create({
   },
   bioText: {
     fontFamily: fonts.semiBold,
-    fontSize: 13,
+    fontSize: 17,
     color: '#444444',
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 12,
     letterSpacing: -0.2,
   },
   traitsContainer: {

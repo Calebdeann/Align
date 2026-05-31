@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-  Image,
-  Dimensions,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -21,16 +12,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { fonts, spacing } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
 import { clearAnonymousSession } from '@/services/anonymousSession';
-import { OnboardingBackButton } from '@/components';
+import { OnboardingBackButton, EulaCheckbox } from '@/components';
+import { markTermsAccepted } from '@/services/api/onboarding';
 
 WebBrowser.maybeCompleteAuthSession();
-
-const { width, height } = Dimensions.get('screen');
 
 export default function SignInScreen() {
   const { t } = useTranslation();
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const appleScale = useSharedValue(1);
   const appleAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: appleScale.value }] }));
 
@@ -80,6 +71,7 @@ export default function SignInScreen() {
       }
       const ok = await ensureProfileOrAlert(data.user.id);
       if (!ok) return;
+      await markTermsAccepted(data.user.id);
       await clearAnonymousSession();
       router.replace('/(tabs)');
     } catch (error: any) {
@@ -139,6 +131,7 @@ export default function SignInScreen() {
       }
       const ok = await ensureProfileOrAlert(sessionData.user.id);
       if (!ok) return;
+      await markTermsAccepted(sessionData.user.id);
       await clearAnonymousSession();
       router.replace('/(tabs)');
     } catch (error: any) {
@@ -177,15 +170,22 @@ export default function SignInScreen() {
               handleAppleSignIn();
             }}
             onPressIn={() => {
+              if (!termsAccepted) return;
               appleScale.value = withSpring(0.93, { damping: 15, stiffness: 400 });
             }}
             onPressOut={() => {
               appleScale.value = withSpring(1, { damping: 15, stiffness: 400 });
             }}
-            disabled={isAppleLoading || isGoogleLoading}
+            disabled={!termsAccepted || isAppleLoading || isGoogleLoading}
           >
             <Animated.View
-              style={[styles.authButton, styles.appleButton, { marginBottom: 5 }, appleAnimStyle]}
+              style={[
+                styles.authButton,
+                styles.appleButton,
+                { marginBottom: 5 },
+                !termsAccepted && styles.authButtonDisabled,
+                appleAnimStyle,
+              ]}
             >
               {isAppleLoading ? (
                 <ActivityIndicator color="#FFFFFF" />
@@ -199,12 +199,16 @@ export default function SignInScreen() {
           </Pressable>
 
           <Pressable
-            style={[styles.authButton, styles.googleButton]}
+            style={[
+              styles.authButton,
+              styles.googleButton,
+              !termsAccepted && styles.authButtonDisabled,
+            ]}
             onPress={() => {
               strongHaptic();
               handleGoogleSignIn();
             }}
-            disabled={isAppleLoading || isGoogleLoading}
+            disabled={!termsAccepted || isAppleLoading || isGoogleLoading}
           >
             {isGoogleLoading ? (
               <ActivityIndicator color="#000000" />
@@ -225,11 +229,13 @@ export default function SignInScreen() {
               strongHaptic();
               router.push('/sign-in-email');
             }}
-            disabled={isAppleLoading || isGoogleLoading}
-            style={styles.emailLinkPressable}
+            disabled={!termsAccepted || isAppleLoading || isGoogleLoading}
+            style={[styles.emailLinkPressable, !termsAccepted && styles.authButtonDisabled]}
           >
             <Text style={styles.emailLinkText}>Sign in with email</Text>
           </Pressable>
+
+          <EulaCheckbox accepted={termsAccepted} onChange={setTermsAccepted} />
         </View>
       </View>
     </View>
@@ -243,8 +249,10 @@ const styles = StyleSheet.create({
   },
   bgImage: {
     position: 'absolute',
-    width,
-    height,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   topArea: {
     position: 'absolute',
@@ -289,6 +297,9 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  authButtonDisabled: {
+    opacity: 0.45,
   },
   appleButton: {
     backgroundColor: '#000000',

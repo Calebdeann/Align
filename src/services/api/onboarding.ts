@@ -51,6 +51,27 @@ export async function saveOnboardingField(field: string, value: unknown): Promis
   return true;
 }
 
+// Standalone helper for sign-in paths that don't go through onboarding (the
+// "Already have an account?" flow). Stamps terms acceptance on the existing
+// profile. Backwards-compat retry per CLAUDE.md rule #9.
+export async function markTermsAccepted(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      terms_accepted_at: new Date().toISOString(),
+      terms_version: 'v1',
+    })
+    .eq('id', userId);
+
+  if (error && error.code === 'PGRST204') {
+    console.warn('markTermsAccepted: terms columns missing — run migration 091.', error);
+    return;
+  }
+  if (error) {
+    console.warn('markTermsAccepted error:', error);
+  }
+}
+
 export async function linkOnboardingToUser(userId: string): Promise<boolean> {
   const anonymousId = await getAnonymousSessionId();
 
@@ -73,27 +94,45 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { error: updateError } = await supabase.from('profiles').upsert(
-    {
-      id: userId,
-      email: user?.email,
-      name: session.name || null,
-      full_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
-      avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture,
-      // It Girl onboarding answers — every column an active onboarding screen wrote to.
-      traffic_source: session.traffic_source,
-      achieve_goals: session.achieve_goals,
-      ideal_day: session.ideal_day,
-      challenges: session.challenges,
-      workout_days: session.workout_days,
-      plan_id: session.plan_id || 'summer-body',
-      matched_buddy_index: session.matched_buddy_index ?? null,
-      program_start_date: session.program_start_date,
-      skipped_fields: session.skipped_fields,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'id' }
-  );
+  // Base payload shared by both attempts.
+  const baseRow = {
+    id: userId,
+    email: user?.email,
+    name: session.name || null,
+    full_name: user?.user_metadata?.full_name || user?.user_metadata?.name,
+    avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture,
+    // It Girl onboarding answers — every column an active onboarding screen wrote to.
+    traffic_source: session.traffic_source,
+    achieve_goals: session.achieve_goals,
+    ideal_day: session.ideal_day,
+    challenges: session.challenges,
+    workout_days: session.workout_days,
+    plan_id: session.plan_id || 'summer-body',
+    matched_buddy_index: session.matched_buddy_index ?? null,
+    program_start_date: session.program_start_date,
+    skipped_fields: session.skipped_fields,
+    updated_at: new Date().toISOString(),
+  };
+
+  // CLAUDE.md rule #9: never unconditionally write new columns. Build the
+  // full row including terms_accepted_at + terms_version, retry without
+  // them on PGRST204 (schema cache hasn't seen migration 091 yet).
+  const rowWithTerms = {
+    ...baseRow,
+    terms_accepted_at: new Date().toISOString(),
+    terms_version: 'v1',
+  };
+
+  let updateError = (await supabase.from('profiles').upsert(rowWithTerms, { onConflict: 'id' }))
+    .error;
+
+  if (updateError && updateError.code === 'PGRST204') {
+    console.warn(
+      'linkOnboardingToUser: terms columns missing — retrying without (run migration 091).',
+      updateError
+    );
+    updateError = (await supabase.from('profiles').upsert(baseRow, { onConflict: 'id' })).error;
+  }
 
   if (updateError) {
     console.warn('Error transferring onboarding data to profile:', updateError);

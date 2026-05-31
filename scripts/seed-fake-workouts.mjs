@@ -112,9 +112,11 @@ function pickBaseWeightKg(accountId, exerciseName) {
   else { lo = 8; hi = 25; }
   const h = hash(accountId, exerciseName);
   const span = hi - lo;
-  // Round to nearest 2.5kg (standard dumbbell jump).
+  // Round to nearest 2.5kg (standard dumbbell jump). The 0.85 multiplier
+  // applies the across-the-board 15% reduction users found more realistic
+  // than the original ranges.
   const raw = lo + (h % (span * 10)) / 10;
-  return Math.round(raw / 2.5) * 2.5;
+  return Math.round((raw * 0.85) / 2.5) * 2.5;
 }
 
 // Reps string from program might be "12", "8-10", "10 each", "AMRAP", "12-15".

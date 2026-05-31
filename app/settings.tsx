@@ -91,6 +91,19 @@ function BellIcon({ color = '#000' }: { color?: string }) {
   );
 }
 
+function ShellIcon({ color = '#000' }: { color?: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24">
+      {/* Chubby 5-arm starfish with rounded arm tips */}
+      <Path
+        stroke={color}
+        {...S}
+        d="M10 9 C10.5 6 11 4.5 12 4 C13 4.5 13.5 6 14 9 C16 9 17.5 9 19.5 9.5 C18.5 11 17 12.5 15.5 13 C15.7 14.5 16 16.5 17 18.5 C15 18 13 17 12 15.5 C11 17 9 18 7 18.5 C8 16.5 8.3 14.5 8.5 13 C7 12.5 5.5 11 4.5 9.5 C6.5 9 8 9 10 9 Z"
+      />
+    </Svg>
+  );
+}
+
 function InstagramIcon({ color = '#000' }: { color?: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24">
@@ -249,6 +262,7 @@ export default function SettingsScreen() {
   const [notificationsOn, setNotificationsOn] = useState(true);
 
   const profile = useUserProfileStore((state) => state.profile);
+  const updateProfile = useUserProfileStore((state) => state.updateProfile);
   const clearProfile = useUserProfileStore((state) => state.clearProfile);
 
   function haptic() {
@@ -338,6 +352,16 @@ export default function SettingsScreen() {
             label="Your name"
             rightValue={profile?.name ?? ''}
             onPress={openNameEdit}
+          />
+          <Row
+            icon={<ShellIcon />}
+            label="Shells on profile"
+            showToggle
+            toggleValue={profile?.show_shells ?? true}
+            onToggle={(v) => {
+              haptic();
+              updateProfile({ show_shells: v });
+            }}
           />
           <Row
             icon={<GlobeIcon />}

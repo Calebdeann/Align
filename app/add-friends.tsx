@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fonts } from '@/constants/theme';
-import { UserAvatar } from '@/components';
+import { UserAvatar, VerifiedBadge } from '@/components';
 import {
   getPendingRequests,
   getSuggestedUsers,
@@ -207,9 +207,16 @@ function RequestCard({ req, index, photos, onAccept, onDecline }: RequestCardPro
             });
           }}
         >
-          <Text style={styles.cardName} numberOfLines={1}>
-            {req.requesterName}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={styles.cardName} numberOfLines={1}>
+              {req.requesterName}
+            </Text>
+            {req.requesterIsVerified && (
+              <View style={{ marginTop: 4 }}>
+                <VerifiedBadge size={13} />
+              </View>
+            )}
+          </View>
           {req.requesterBio ? (
             <Text style={styles.cardBio} numberOfLines={1}>
               {req.requesterBio}
@@ -306,9 +313,16 @@ function SuggestionCard({ user, index, requested, photos, onAdd, onCancel }: Sug
             });
           }}
         >
-          <Text style={styles.cardName} numberOfLines={1}>
-            {user.name}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={styles.cardName} numberOfLines={1}>
+              {user.name}
+            </Text>
+            {user.isVerified && (
+              <View style={{ marginTop: 4 }}>
+                <VerifiedBadge size={13} />
+              </View>
+            )}
+          </View>
           {user.bio ? (
             <Text style={styles.cardBio} numberOfLines={1}>
               {user.bio}

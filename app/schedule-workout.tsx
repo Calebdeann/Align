@@ -38,6 +38,7 @@ import {
 } from '@/stores/templateStore';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { CATEGORY_HERO_IMAGES } from '@/stores/presetTemplates';
+import { getProgramWorkout } from '@/data/programs';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_GAP = spacing.sm;
@@ -413,10 +414,15 @@ export default function ScheduleWorkoutScreen() {
   const params = useLocalSearchParams<{
     editWorkoutId?: string;
     editDateKey?: string;
+    // Set when opened from the plan-templates folder via workout-preview.
+    // Pre-fills the workout name + persists the link to the program workout
+    // so the scheduled occurrence loads the right exercises when started.
+    programWorkoutId?: string;
   }>();
   const isEditMode = !!params.editWorkoutId;
 
   const userId = useUserProfileStore((state) => state.userId);
+  const profile = useUserProfileStore((state) => state.profile);
   const addWorkout = useWorkoutStore((state) => state.addWorkout);
   const updateWorkout = useWorkoutStore((state) => state.updateWorkout);
   const editSingleOccurrence = useWorkoutStore((state) => state.editSingleOccurrence);
@@ -522,6 +528,16 @@ export default function ScheduleWorkoutScreen() {
       setReminderMinute(workout.reminder.minute);
     }
   }, [params.editWorkoutId]);
+
+  // CREATE mode: pre-fill from a plan template. The `programWorkoutId` query
+  // param is passed when the user lands here from the "Schedule Workout"
+  // button on workout-preview in template mode (start-workout-sheet flow).
+  useEffect(() => {
+    if (isEditMode || !params.programWorkoutId) return;
+    const pw = getProgramWorkout(params.programWorkoutId);
+    if (!pw) return;
+    setWorkoutName(pw.title);
+  }, [isEditMode, params.programWorkoutId]);
 
   // Get templates from store
   const templates = useTemplateStore((state) => state.templates);
@@ -720,6 +736,15 @@ export default function ScheduleWorkoutScreen() {
         : undefined,
       templateId: selectedTemplate?.id,
       ...(titleCustomized !== undefined && { titleCustomized }),
+      // When this schedule was started from a plan template, persist the
+      // program link so the scheduled occurrence loads the right exercises
+      // (and the right plan tile artwork) when the user taps Start later.
+      ...(params.programWorkoutId && !isEditMode
+        ? {
+            programWorkoutId: params.programWorkoutId,
+            planId: profile?.plan_id ?? undefined,
+          }
+        : {}),
     };
   };
 

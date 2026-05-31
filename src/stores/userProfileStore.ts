@@ -65,6 +65,8 @@ export interface UserProfile {
   updated_at?: string;
   traits?: PlacedTrait[];
   plan_id?: string;
+  show_shells?: boolean;
+  is_verified?: boolean;
 }
 
 interface UserProfileState {
@@ -252,11 +254,15 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
         (error.code === 'PGRST204' ||
           error.code === 'PGRST301' ||
           (typeof error.code === 'string' && error.code.startsWith('42')));
-      if (isSchemaErr && 'workout_day_assignments' in updates) {
+      if (isSchemaErr && ('workout_day_assignments' in updates || 'show_shells' in updates)) {
         console.warn(
-          'updateProfile: workout_day_assignments column missing (migration 083 not applied). Retrying without it.'
+          'updateProfile: optional column missing on server. Retrying without workout_day_assignments / show_shells.'
         );
-        const { workout_day_assignments: _omit, ...baseUpdates } = updates;
+        const {
+          workout_day_assignments: _omitAssignments,
+          show_shells: _omitShells,
+          ...baseUpdates
+        } = updates;
         const retry = await supabase
           .from('profiles')
           .update({ ...baseUpdates, updated_at: updatedAt })

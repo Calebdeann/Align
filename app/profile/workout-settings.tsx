@@ -11,12 +11,13 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import { CircleBackButton } from '@/components';
 import { useUserPreferencesStore, TimerSoundId } from '@/stores/userPreferencesStore';
+import { useWorkoutStore } from '@/stores/workoutStore';
 import { playTimerSound, TIMER_SOUND_OPTIONS } from '@/utils/sounds';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -106,11 +107,24 @@ export default function WorkoutSettingsScreen() {
     rpeTrackingEnabled,
     timerSoundId,
     vibrationEnabled,
+    weightUnit,
     setDefaultRestTimerSeconds,
     setRpeTrackingEnabled,
     setTimerSoundId,
     setVibrationEnabled,
+    setWeightUnit,
   } = useUserPreferencesStore();
+
+  // When opened from inside an active workout (?source=workout), the Default
+  // Rest Timer row reflects and edits the current workout's per-exercise
+  // timers instead of the global default. Profile entry is unchanged.
+  const params = useLocalSearchParams<{ source?: string }>();
+  const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
+  const setAllActiveExerciseRestTimers = useWorkoutStore((s) => s.setAllActiveExerciseRestTimers);
+  const exerciseTimers = activeWorkout?.exercises.map((e) => e.restTimerSeconds) ?? [];
+  const useWorkoutContext = params.source === 'workout' && exerciseTimers.length > 0;
+  const allSame = exerciseTimers.length > 0 && exerciseTimers.every((t) => t === exerciseTimers[0]);
+  const workoutValue: number | null = useWorkoutContext && allSame ? exerciseTimers[0] : null;
 
   // Rest timer picker modal
   const [showTimerModal, setShowTimerModal] = useState(false);
@@ -157,7 +171,11 @@ export default function WorkoutSettingsScreen() {
   };
 
   const handleSelectTimer = (value: number) => {
-    setDefaultRestTimerSeconds(value);
+    if (useWorkoutContext) {
+      setAllActiveExerciseRestTimers(value);
+    } else {
+      setDefaultRestTimerSeconds(value);
+    }
   };
 
   const handleSelectSound = (id: TimerSoundId) => {
@@ -185,7 +203,13 @@ export default function WorkoutSettingsScreen() {
             icon={<Ionicons name="timer-outline" size={20} color={colors.text} />}
             label="Default Rest Timer"
             onPress={openTimerModal}
-            rightText={formatTimerLabel(defaultRestTimerSeconds)}
+            rightText={
+              useWorkoutContext
+                ? workoutValue !== null
+                  ? formatTimerLabel(workoutValue)
+                  : 'Mixed'
+                : formatTimerLabel(defaultRestTimerSeconds)
+            }
             showDivider={false}
           />
         </MenuCard>
@@ -198,7 +222,6 @@ export default function WorkoutSettingsScreen() {
             label="RPE Tracking"
             onPress={() => setRpeTrackingEnabled(!rpeTrackingEnabled)}
             showArrow={false}
-            showDivider={false}
             rightElement={
               <Switch
                 value={rpeTrackingEnabled}
@@ -209,6 +232,48 @@ export default function WorkoutSettingsScreen() {
                 trackColor={{ false: '#E5E5EA', true: '#34C759' }}
                 ios_backgroundColor="#E5E5EA"
               />
+            }
+          />
+          <MenuItem
+            icon={<Ionicons name="barbell-outline" size={20} color={colors.text} />}
+            label="Units"
+            showArrow={false}
+            showDivider={false}
+            rightElement={
+              <View style={styles.unitPillRow}>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    setWeightUnit('kg');
+                  }}
+                  style={[styles.unitPill, weightUnit === 'kg' && styles.unitPillSelected]}
+                >
+                  <Text
+                    style={[
+                      styles.unitPillText,
+                      weightUnit === 'kg' && styles.unitPillTextSelected,
+                    ]}
+                  >
+                    KG
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    setWeightUnit('lbs');
+                  }}
+                  style={[styles.unitPill, weightUnit === 'lbs' && styles.unitPillSelected]}
+                >
+                  <Text
+                    style={[
+                      styles.unitPillText,
+                      weightUnit === 'lbs' && styles.unitPillTextSelected,
+                    ]}
+                  >
+                    LBS
+                  </Text>
+                </Pressable>
+              </View>
             }
           />
         </MenuCard>
@@ -273,7 +338,8 @@ export default function WorkoutSettingsScreen() {
 
               <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
                 {REST_TIMER_OPTIONS.map((option) => {
-                  const isSelected = defaultRestTimerSeconds === option.value;
+                  const compareValue = useWorkoutContext ? workoutValue : defaultRestTimerSeconds;
+                  const isSelected = compareValue === option.value;
                   return (
                     <Pressable
                       key={option.value}
@@ -456,6 +522,31 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(217, 217, 217, 0.25)',
     marginHorizontal: spacing.sm,
+  },
+  // KG / LBS pills used by the Units row in the Tracking section.
+  unitPillRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  unitPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: '#F0F0F0',
+    minWidth: 44,
+    alignItems: 'center',
+  },
+  unitPillSelected: {
+    backgroundColor: '#000000',
+  },
+  unitPillText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: '#000000',
+    letterSpacing: 0.3,
+  },
+  unitPillTextSelected: {
+    color: '#FFFFFF',
   },
   bottomSpacer: {
     height: 40,

@@ -49,6 +49,12 @@ export interface ActiveExerciseSet {
   previous: string;
   kg: string;
   reps: string;
+  // Target hints carried from the source plan/template. Rendered as the
+  // grey placeholder in the active-workout TextInputs so the user can see
+  // the prescribed weight/reps without those values being treated as
+  // logged performance.
+  targetWeight?: string;
+  targetReps?: string;
   // Cardio-only fields. When `isCardioExerciseId(exercise.id)` is true,
   // the active-workout row UI uses these instead of kg/reps.
   difficulty?: string;
@@ -288,6 +294,7 @@ interface WorkoutStore {
     scheduledWorkoutId?: string
   ) => void;
   setActiveWorkoutExercises: (exercises: ActiveWorkoutExercise[]) => void;
+  setAllActiveExerciseRestTimers: (seconds: number) => void;
   updateActiveWorkoutTime: (seconds: number) => void;
   minimizeActiveWorkout: () => void;
   restoreActiveWorkout: () => void;
@@ -452,8 +459,10 @@ export const useWorkoutStore = create<WorkoutStore>()(
               // exercise before. Showing template targets here would
               // misrepresent unfinished plans as historical performance.
               previous: '-',
-              kg: isCardio ? '' : s.targetWeight?.toString() || '',
-              reps: isCardio ? '' : s.targetReps?.toString() || '',
+              kg: '',
+              reps: '',
+              targetWeight: isCardio ? undefined : s.targetWeight?.toString(),
+              targetReps: isCardio ? undefined : s.targetReps?.toString(),
               difficulty: isCardio ? (s.targetDifficulty?.toString() ?? '') : undefined,
               durationMinutes: isCardio ? (s.targetDurationMinutes?.toString() ?? '') : undefined,
               completed: false,
@@ -486,6 +495,20 @@ export const useWorkoutStore = create<WorkoutStore>()(
       setActiveWorkoutExercises: (exercises) => {
         set((state) => ({
           activeWorkout: state.activeWorkout ? { ...state.activeWorkout, exercises } : null,
+        }));
+      },
+
+      setAllActiveExerciseRestTimers: (seconds) => {
+        set((state) => ({
+          activeWorkout: state.activeWorkout
+            ? {
+                ...state.activeWorkout,
+                exercises: state.activeWorkout.exercises.map((e) => ({
+                  ...e,
+                  restTimerSeconds: seconds,
+                })),
+              }
+            : null,
         }));
       },
 

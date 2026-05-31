@@ -26,6 +26,8 @@ import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
 import {
   scheduleWorkoutInProgressReminder,
   cancelWorkoutInProgressReminder,
+  scheduleRestTimerNotification,
+  cancelRestTimerNotification,
 } from '@/services/notifications';
 import {
   getBatchExercisePreviousSets,
@@ -59,7 +61,7 @@ import {
   getExerciseDefaultNote,
   resolveExerciseDisplayName,
 } from '@/stores/exerciseStore';
-import { playTimerSoundDouble, triggerTimerVibration } from '@/utils/sounds';
+import { playTimerSoundDouble, triggerTimerVibration, timerSoundFileName } from '@/utils/sounds';
 import { getSimplifiedMuscleI18nKey } from '@/constants/muscleGroups';
 import {
   startWorkoutLiveActivity,
@@ -94,6 +96,11 @@ interface ExerciseSet {
   previous: string;
   kg: string;
   reps: string;
+  // Target hints carried from the source plan/template. Rendered as the
+  // grey placeholder so prescribed weight/reps stay visible without being
+  // treated as logged performance.
+  targetWeight?: string;
+  targetReps?: string;
   // Cardio-only fields. When `isCardioExerciseId(exercise.id)` is true,
   // the row UI hides kg/reps and shows these instead. Stored as strings to
   // match the TextInput pattern used by kg/reps; parsed on save.
@@ -675,7 +682,7 @@ function SwipeableSetRow({
                 onUpdateValue(exerciseIndex, setIndex, 'kg', filterNumericInput(value))
               }
               keyboardType="decimal-pad"
-              placeholder={suggestedWeight || previousWeight || '0'}
+              placeholder={suggestedWeight || previousWeight || set.targetWeight || '0'}
               placeholderTextColor={colors.textTertiary}
               inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
               onFocus={onInputFocus}
@@ -688,7 +695,7 @@ function SwipeableSetRow({
                 onUpdateValue(exerciseIndex, setIndex, 'reps', filterNumericInput(value, false))
               }
               keyboardType="numeric"
-              placeholder={suggestedReps || previousReps || '0'}
+              placeholder={suggestedReps || previousReps || set.targetReps || '0'}
               placeholderTextColor={colors.textTertiary}
               inputAccessoryViewID={NUMERIC_ACCESSORY_ID}
               onFocus={onInputFocus}
@@ -821,10 +828,14 @@ export default function ActiveWorkoutScreen() {
   );
   const restTimerModalSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
-  // Rest timer countdown state
+  // Rest timer countdown state — wall-clock based so backgrounding the app
+  // never drifts the visual countdown. The scheduled OS notification fires the
+  // chime if we're still backgrounded when the timer expires.
   const [restTimerActive, setRestTimerActive] = useState(false);
   const [restTimerRemaining, setRestTimerRemaining] = useState(0);
   const restTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const restEndsAtRef = useRef<number | null>(null);
+  const restNotificationIdRef = useRef<string | null>(null);
   const restPopupSlideAnim = useRef(new Animated.Value(200)).current;
 
   // Superset modal state
@@ -1039,6 +1050,9 @@ export default function ActiveWorkoutScreen() {
         clearInterval(restTimerRef.current);
         restTimerRef.current = null;
       }
+      cancelRestTimerNotification(restNotificationIdRef.current);
+      restNotificationIdRef.current = null;
+      restEndsAtRef.current = null;
     };
   }, []);
 
@@ -1124,6 +1138,24 @@ export default function ActiveWorkoutScreen() {
       }
     }
   }, [activeWorkout]);
+
+  // Pick up rest-timer changes made by other screens (e.g. workout-settings
+  // bulk-set). Narrowly re-syncs only restTimerSeconds so in-progress sets,
+  // RPE, and inputs are never clobbered.
+  useFocusEffect(
+    useCallback(() => {
+      if (isEditMode) return;
+      const storeExs = useWorkoutStore.getState().activeWorkout?.exercises;
+      if (!storeExs) return;
+      setWorkoutExercises((prev) =>
+        prev.map((we, i) => {
+          const s = storeExs[i];
+          if (!s || we.restTimerSeconds === s.restTimerSeconds) return we;
+          return { ...we, restTimerSeconds: s.restTimerSeconds };
+        })
+      );
+    }, [isEditMode])
+  );
 
   // Override template targets with latest actual history when starting from a template
   const historyFetchedRef = useRef(false);
@@ -1588,6 +1620,9 @@ export default function ActiveWorkoutScreen() {
         clearInterval(restTimerRef.current);
         restTimerRef.current = null;
       }
+      cancelRestTimerNotification(restNotificationIdRef.current);
+      restNotificationIdRef.current = null;
+      restEndsAtRef.current = null;
       setRestTimerActive(false);
       router.back();
       return;
@@ -1601,6 +1636,9 @@ export default function ActiveWorkoutScreen() {
       clearInterval(restTimerRef.current);
       restTimerRef.current = null;
     }
+    cancelRestTimerNotification(restNotificationIdRef.current);
+    restNotificationIdRef.current = null;
+    restEndsAtRef.current = null;
     setRestTimerActive(false);
     // Minimize the workout - widget will handle timer from store
     minimizeActiveWorkout();
@@ -1634,6 +1672,9 @@ export default function ActiveWorkoutScreen() {
       clearInterval(restTimerRef.current);
       restTimerRef.current = null;
     }
+    cancelRestTimerNotification(restNotificationIdRef.current);
+    restNotificationIdRef.current = null;
+    restEndsAtRef.current = null;
     setRestTimerActive(false);
     cancelWorkoutInProgressReminder();
     endWorkoutLiveActivity();
@@ -1863,6 +1904,9 @@ export default function ActiveWorkoutScreen() {
             clearInterval(restTimerRef.current);
             restTimerRef.current = null;
           }
+          cancelRestTimerNotification(restNotificationIdRef.current);
+          restNotificationIdRef.current = null;
+          restEndsAtRef.current = null;
           cancelWorkoutInProgressReminder();
           endWorkoutLiveActivity();
           if (!isEditMode) {
@@ -1914,11 +1958,45 @@ export default function ActiveWorkoutScreen() {
   };
 
   // Rest Timer Countdown Functions
-  const startRestTimer = (seconds: number) => {
+  // Completes the rest timer: clears interval + scheduled notification, plays
+  // the chime/vibration only when requested (skip the sound when the timer
+  // expired while backgrounded, because the OS notification already fired it).
+  function completeRestTimer({ playSound }: { playSound: boolean }) {
     if (restTimerRef.current) {
       clearInterval(restTimerRef.current);
+      restTimerRef.current = null;
+    }
+    cancelRestTimerNotification(restNotificationIdRef.current);
+    restNotificationIdRef.current = null;
+    restEndsAtRef.current = null;
+
+    if (playSound) {
+      const { vibrationEnabled, timerSoundId } = useUserPreferencesStore.getState();
+      if (vibrationEnabled) triggerTimerVibration();
+      playTimerSoundDouble(timerSoundId);
     }
 
+    Animated.timing(restPopupSlideAnim, {
+      toValue: 200,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setRestTimerActive(false);
+      setRestTimerRemaining(0);
+    });
+  }
+
+  const startRestTimer = (seconds: number) => {
+    // Clear any prior timer + scheduled notification so we don't leak either.
+    if (restTimerRef.current) {
+      clearInterval(restTimerRef.current);
+      restTimerRef.current = null;
+    }
+    cancelRestTimerNotification(restNotificationIdRef.current);
+    restNotificationIdRef.current = null;
+
+    const endsAt = Date.now() + seconds * 1000;
+    restEndsAtRef.current = endsAt;
     setRestTimerRemaining(seconds);
     setRestTimerActive(true);
 
@@ -1929,43 +2007,71 @@ export default function ActiveWorkoutScreen() {
       friction: 11,
     }).start();
 
+    // Schedule the OS chime so the sound still plays if the user backgrounds
+    // the app before the countdown reaches zero. Foreground handler suppresses
+    // it in the race case (see setupNotificationHandler).
+    const { timerSoundId } = useUserPreferencesStore.getState();
+    scheduleRestTimerNotification(seconds, timerSoundFileName(timerSoundId)).then((id) => {
+      // If the timer was cancelled/restarted while the schedule was in flight,
+      // discard the now-stale id (and immediately cancel it).
+      if (restEndsAtRef.current === endsAt) {
+        restNotificationIdRef.current = id;
+      } else {
+        cancelRestTimerNotification(id);
+      }
+    });
+
+    // Drive the visual countdown from wall-clock time. Tick at 500ms so the
+    // displayed second updates promptly when crossing a boundary, and the
+    // displayed value always reflects real elapsed time even after foreground
+    // returns from a backgrounded period.
     restTimerRef.current = setInterval(() => {
-      setRestTimerRemaining((prev) => {
-        if (prev <= 1) {
-          if (restTimerRef.current) {
-            clearInterval(restTimerRef.current);
-          }
-          // Timer completion alerts based on user preferences
-          const { vibrationEnabled, timerSoundId } = useUserPreferencesStore.getState();
-          if (vibrationEnabled) {
-            triggerTimerVibration();
-          }
-          playTimerSoundDouble(timerSoundId);
-          Animated.timing(restPopupSlideAnim, {
-            toValue: 200,
-            duration: 200,
-            useNativeDriver: true,
-          }).start(() => {
-            setRestTimerActive(false);
-          });
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+      const target = restEndsAtRef.current;
+      if (target == null) return;
+      const remainingMs = target - Date.now();
+      const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+      setRestTimerRemaining(remainingSeconds);
+      if (remainingMs <= 0) {
+        completeRestTimer({ playSound: true });
+      }
+    }, 500);
   };
 
   const adjustRestTimer = (delta: number) => {
-    setRestTimerRemaining((prev) => {
-      const newValue = prev + delta;
-      return Math.max(0, newValue);
-    });
+    if (restEndsAtRef.current == null) return;
+    const now = Date.now();
+    // Clamp to "now" so repeated -15s taps can't push endsAt into the past.
+    const newEndsAt = Math.max(now, restEndsAtRef.current + delta * 1000);
+    restEndsAtRef.current = newEndsAt;
+    const remainingSeconds = Math.max(0, Math.ceil((newEndsAt - now) / 1000));
+    setRestTimerRemaining(remainingSeconds);
+
+    // Reschedule the OS notification with the new remaining duration.
+    cancelRestTimerNotification(restNotificationIdRef.current);
+    restNotificationIdRef.current = null;
+    if (remainingSeconds > 0) {
+      const { timerSoundId } = useUserPreferencesStore.getState();
+      scheduleRestTimerNotification(remainingSeconds, timerSoundFileName(timerSoundId)).then(
+        (id) => {
+          if (restEndsAtRef.current === newEndsAt) {
+            restNotificationIdRef.current = id;
+          } else {
+            cancelRestTimerNotification(id);
+          }
+        }
+      );
+    }
   };
 
   const skipRestTimer = () => {
+    // Skip = silent dismissal; don't play the chime.
     if (restTimerRef.current) {
       clearInterval(restTimerRef.current);
+      restTimerRef.current = null;
     }
+    cancelRestTimerNotification(restNotificationIdRef.current);
+    restNotificationIdRef.current = null;
+    restEndsAtRef.current = null;
     Animated.timing(restPopupSlideAnim, {
       toValue: 200,
       duration: 200,
@@ -1975,6 +2081,25 @@ export default function ActiveWorkoutScreen() {
       setRestTimerRemaining(0);
     });
   };
+
+  // Foreground reconciliation. When iOS suspends the JS thread our interval
+  // pauses, so on resume we sync the visual to wall-clock and — if the timer
+  // already expired while backgrounded — dismiss without re-playing the chime
+  // (the OS notification already played it).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') return;
+      const target = restEndsAtRef.current;
+      if (target == null) return;
+      const remainingMs = target - Date.now();
+      if (remainingMs <= 0) {
+        completeRestTimer({ playSound: false });
+      } else {
+        setRestTimerRemaining(Math.max(0, Math.ceil(remainingMs / 1000)));
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   // Set Type Modal Functions
   const openSetTypeModal = (exerciseIndex: number, setIndex: number) => {
@@ -2138,7 +2263,7 @@ export default function ActiveWorkoutScreen() {
               style={styles.secondaryButton}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                router.push('/profile/workout-settings');
+                router.push('/profile/workout-settings?source=workout');
               }}
             >
               <Text style={styles.secondaryButtonText}>{t('workout.settings')}</Text>
@@ -2367,7 +2492,7 @@ export default function ActiveWorkoutScreen() {
               style={styles.secondaryButton}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                router.push('/profile/workout-settings');
+                router.push('/profile/workout-settings?source=workout');
               }}
             >
               <Text style={styles.secondaryButtonText}>{t('workout.settings')}</Text>

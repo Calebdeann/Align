@@ -1,6 +1,11 @@
 // Layout components
 export { default as OnboardingLayout } from './OnboardingLayout';
+export { default as OnboardingScaffold } from './OnboardingScaffold';
 export { default as QuestionLayout } from './QuestionLayout';
+
+// Legal / compliance
+export { default as EulaCheckbox } from './EulaCheckbox';
+export { default as ReportForm } from './ReportForm';
 
 // UI components
 export { FloatingTabBar, FLOATING_TAB_BAR_HEIGHT } from './ui/FloatingTabBar';
@@ -10,6 +15,7 @@ export { default as OnboardingBackButton } from './ui/OnboardingBackButton';
 export { default as CircleBackButton } from './ui/CircleBackButton';
 export { default as OnboardingRadioCircle } from './ui/OnboardingRadioCircle';
 export { default as UserAvatar } from './ui/UserAvatar';
+export { default as NameShells } from './ui/NameShells';
 export { default as SkeletonBlock } from './ui/SkeletonBlock';
 export { default as VerifiedBadge } from './ui/VerifiedBadge';
 export { PaywallGate } from './PaywallGate';

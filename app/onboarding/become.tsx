@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, StyleSheet, Image, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -12,8 +12,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { spacing, fonts } from '@/constants/theme';
 import { OnboardingContinueButton } from '@/components';
-
-const { width, height } = Dimensions.get('screen');
 
 function WordItem({
   word,
@@ -29,6 +27,9 @@ function WordItem({
 }
 
 export default function BecomeScreen() {
+  // useWindowDimensions instead of module-scope Dimensions.get so values
+  // reflect the actual viewport (matters on iPad in compat mode).
+  const { width, height } = useWindowDimensions();
   const w0 = useSharedValue(0);
   const w1 = useSharedValue(0);
   const w2 = useSharedValue(0);

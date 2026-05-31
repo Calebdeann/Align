@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { strongHaptic } from '@/utils/haptics';
@@ -12,7 +12,6 @@ import {
 } from '@/components';
 
 const BG_IMAGE = require('../../assets/programs/p5-background.png');
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('screen');
 
 const OPTIONS = [
   'TikTok',
@@ -50,7 +49,7 @@ export default function TrafficSourceScreen() {
     <View style={styles.container}>
       <Image
         source={BG_IMAGE}
-        style={{ position: 'absolute', width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         resizeMode="cover"
       />
 

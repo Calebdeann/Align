@@ -112,7 +112,7 @@ export default function WhenToBeginScreen() {
       {/* Full-page background image */}
       <Image
         source={LIFESTYLE_IMAGE}
-        style={{ position: 'absolute', width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         contentFit="cover"
       />
 

@@ -403,6 +403,20 @@ The onboarding paywall ([app/onboarding/pre-paywall.tsx](app/onboarding/pre-payw
 
 ## Response Format
 
+**Structure explanations with clear section headings.** The user wants enough context to act on, but not a wall of text. Goal: skimmable, with each section answering one specific thing.
+
+- Use `##` headings to break up multi-part answers. Examples: `## Explanation`, `## What's wired`, `## Things to do`, `## After approval`, `## Why`, `## Verification`.
+- Inside each section, prefer bullets and short paragraphs.
+- Lead the response with the headline answer in 1–2 sentences before the first heading, so the user knows where it's going.
+- Drop preamble ("Great question," "Let me explain,") and trailing recaps.
+- Skip illustrative examples unless asked.
+- Numbers, file paths, and exact commands stay — those are the value. Surrounding narration is what gets cut.
+- Yes/no questions: lead with yes or no.
+- "What do I have to do" questions: lead with a numbered action list under a `## Things to do` heading.
+- Don't over-trim. Cutting useful context is as bad as filler — the goal is "1–2 minutes to read" not "10 seconds with key info missing."
+
+Long is OK only when the task genuinely requires it (multi-step debugging, architectural trade-offs the user is choosing between). Default to short-but-structured.
+
 At the end of every response after completing a task, include:
 
 **Completed:** (A 1 sentence explanation of what was just done)

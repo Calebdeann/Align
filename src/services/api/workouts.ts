@@ -1081,6 +1081,34 @@ export async function getWorkoutById(
   }
 }
 
+// Owner-side bundled fetch — one round-trip for workout + exercises + sets +
+// muscles. Mirrors getPublicWorkoutDetails but auth-gated on the caller's UID.
+// Returns null if the RPC errors (e.g. older server without migration 089), so
+// callers can fall back to the legacy per-table path.
+export async function getOwnerWorkoutDetails(workoutId: string): Promise<{
+  workout: DbWorkout;
+  exercises: (DbWorkoutExercise & { sets: DbWorkoutSet[] })[];
+  muscles: WorkoutMuscleData[];
+} | null> {
+  const { data, error } = await callRpcWithRetry(
+    () => supabase.rpc('get_owner_workout_details', { p_workout_id: workoutId }),
+    { data: null, error: null } as any
+  );
+  if (error || !data) return null;
+
+  const muscles: WorkoutMuscleData[] = (data.muscles ?? []).map((m: any) => ({
+    muscle: m.muscle,
+    totalSets: m.total_sets,
+    activation: m.activation,
+  }));
+
+  return {
+    workout: data.workout,
+    exercises: data.exercises ?? [],
+    muscles,
+  };
+}
+
 // Fetches a publicly-viewable workout (image_audience = 'everyone') with full
 // exercises + sets + muscles via the get_public_workout_details RPC. Used when
 // viewing another user's workout from the Discover feed — RLS blocks the
@@ -1287,7 +1315,10 @@ export async function getWorkoutsByDateRange(
         image_aspect_ratio,
         image_template_id,
         image_audience,
-        workout_exercises(id)
+        workout_exercises(
+          id,
+          workout_sets(id)
+        )
       `
       )
       .eq('user_id', userId)
@@ -1300,21 +1331,25 @@ export async function getWorkoutsByDateRange(
       return [];
     }
 
-    return workouts.map((workout) => ({
-      id: workout.id,
-      userId,
-      name: workout.name,
-      completedAt: workout.completed_at,
-      durationSeconds: workout.duration_seconds,
-      exerciseCount: workout.workout_exercises?.length || 0,
-      totalSets: 0,
-      imageType: workout.image_type ?? null,
-      imageUri: workout.image_uri ?? null,
-      imageAspectRatio:
-        workout.image_aspect_ratio != null ? Number(workout.image_aspect_ratio) : null,
-      imageTemplateId: workout.image_template_id ?? null,
-      imageAudience: (workout.image_audience as 'friends' | 'everyone' | null) ?? 'everyone',
-    }));
+    return workouts.map((workout) => {
+      const exercises = workout.workout_exercises || [];
+      const totalSets = exercises.reduce((sum, ex) => sum + (ex.workout_sets?.length || 0), 0);
+      return {
+        id: workout.id,
+        userId,
+        name: workout.name,
+        completedAt: workout.completed_at,
+        durationSeconds: workout.duration_seconds,
+        exerciseCount: exercises.length,
+        totalSets,
+        imageType: workout.image_type ?? null,
+        imageUri: workout.image_uri ?? null,
+        imageAspectRatio:
+          workout.image_aspect_ratio != null ? Number(workout.image_aspect_ratio) : null,
+        imageTemplateId: workout.image_template_id ?? null,
+        imageAudience: (workout.image_audience as 'friends' | 'everyone' | null) ?? 'everyone',
+      };
+    });
   } catch (error) {
     logger.warn('Error in getWorkoutsByDateRange', { error });
     return [];
@@ -1481,6 +1516,7 @@ export type PublicWorkoutPhoto = {
   userAvatar: string | null;
   titleCustomized: boolean;
   isOfficial?: boolean;
+  isVerified?: boolean;
 };
 
 export async function getPublicWorkoutPhotos(
@@ -1513,5 +1549,6 @@ export async function getPublicWorkoutPhotos(
     userName: row.user_name ?? null,
     userAvatar: row.user_avatar ?? null,
     titleCustomized: !!row.title_customized,
+    isVerified: !!row.user_is_verified,
   }));
 }
