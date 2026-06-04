@@ -67,9 +67,15 @@ export default function WorkoutPreviewScreen() {
   // template card (start-workout-sheet's "Templates" folder). No scheduled
   // workout backs it — render purely from program data.
   const programWorkoutIdParam = params.programWorkoutId as string | undefined;
-  // `source=template` flips the bottom action from "Start Workout" to
-  // "Schedule Workout" — templates can only be scheduled, not started.
+  // `templateId` is passed when this screen is opened from a user-created
+  // My-Template card. Like programWorkoutId, no scheduled workout backs it —
+  // render directly from the saved template + start it on tap.
+  const templateIdParam = params.templateId as string | undefined;
+  // `source=template` switches the bottom action:
+  //   - plan template (programWorkoutIdParam) → "Schedule Workout"
+  //   - user template (templateIdParam)       → "Start Workout"
   const isTemplateMode = params.source === 'template';
+  const isUserTemplateMode = isTemplateMode && !!templateIdParam && !programWorkoutIdParam;
   const { t } = useTranslation();
 
   const { withLock } = useNavigationLock();
@@ -85,6 +91,8 @@ export default function WorkoutPreviewScreen() {
   const removeWorkout = useWorkoutStore((s) => s.removeWorkout);
   const removeWorkoutOccurrence = useWorkoutStore((s) => s.removeWorkoutOccurrence);
   const updateWorkout = useWorkoutStore((s) => s.updateWorkout);
+  const toggleWorkoutCompletion = useWorkoutStore((s) => s.toggleWorkoutCompletion);
+  const isWorkoutCompleted = useWorkoutStore((s) => s.isWorkoutCompleted);
   const getTemplateById = useTemplateStore((s) => s.getTemplateById);
   const allExercises = useExerciseStore((s) => s.allExercises);
   const loadExercises = useExerciseStore((s) => s.loadExercises);
@@ -117,9 +125,13 @@ export default function WorkoutPreviewScreen() {
   }, [workout, programWorkoutIdParam]);
 
   const template = useMemo(() => {
-    if (!workout?.templateId) return null;
-    return getTemplateById(workout.templateId);
-  }, [workout, getTemplateById]);
+    // Prefer the scheduled-workout's templateId, but fall back to the
+    // templateId URL param so the preview can render directly from a
+    // My-Template tap (no scheduled workout backing it).
+    const tid = workout?.templateId ?? templateIdParam ?? null;
+    if (!tid) return null;
+    return getTemplateById(tid);
+  }, [workout, templateIdParam, getTemplateById]);
 
   // Resolve plan-workout exercises to real DB rows once the exercise store is loaded.
   useEffect(() => {
@@ -158,11 +170,20 @@ export default function WorkoutPreviewScreen() {
       };
     }
     if (template) {
+      // Hero image priority: bundled localImage (legacy preset templates) →
+      // user-uploaded image.uri → null (color fallback).
+      const tplHeroImage = template.localImage
+        ? template.localImage
+        : template.image?.uri
+          ? { uri: template.image.uri }
+          : null;
       return {
         title: workout?.name ?? template.name,
+        // tagColor is no longer set by save-template UI, but we still honor
+        // any value present on legacy rows for back-compat.
         description: workout?.description ?? template.description ?? '',
         heroColor: workout?.tagColor ?? template.tagColor ?? '#E5E5E5',
-        heroImage: null,
+        heroImage: tplHeroImage,
         exercises: template.exercises.map((ex) => ({
           name: ex.exerciseName,
           sub: `${ex.sets.length} sets`,
@@ -241,6 +262,19 @@ export default function WorkoutPreviewScreen() {
   // returns null when local state drifts from the current program data — that
   // shouldn't block the picker because the user-facing intent is unambiguous).
   const isCardioWorkout = programWorkout?.type === 'cardio' || workout?.tagId === 'cardio';
+
+  // "Complete-only" workouts have no trackable exercises — just free-text
+  // instructions (e.g. Pilates Session 1/2 in the Pilates Princess plan).
+  // Tapping the action pill marks the scheduled workout complete for the
+  // current date and dismisses the screen — no tracker.
+  const isCompleteOnlyWorkout =
+    !!workout &&
+    !isCardioWorkout &&
+    !!programWorkout &&
+    programWorkout.exercises.length === 0 &&
+    !!programWorkout.freeText;
+  const alreadyCompleted =
+    isCompleteOnlyWorkout && !!dateKey && isWorkoutCompleted(workout.id, dateKey);
   const recommendedCardioMinutes = isCardioWorkout
     ? parseRecommendedMinutes(programWorkout?.freeText)
     : null;
@@ -258,7 +292,9 @@ export default function WorkoutPreviewScreen() {
   }
 
   const handleStartWorkout = () => {
-    if (!workout) return;
+    // Two valid entry points: a scheduled workout (calendar/planner) or a
+    // user-template tapped from the start sheet (no workout backing it).
+    if (!workout && !isUserTemplateMode) return;
     withLock(() => {
       // Cardio: each picker option maps to a real DB exercise row, so the
       // workout uses that row's id directly (animations + detail view work).
@@ -320,9 +356,9 @@ export default function WorkoutPreviewScreen() {
             restTimerSeconds: ex.restTimerSeconds,
           })),
           userId,
-          workout.id
+          workout?.id
         );
-      } else {
+      } else if (workout) {
         startActiveWorkout(userId, workout.id);
       }
       router.push('/active-workout');
@@ -335,9 +371,10 @@ export default function WorkoutPreviewScreen() {
   };
 
   // In template mode there's no scheduled workout to look up — render from
-  // programWorkout alone. The "not found" guard only applies when we expected
-  // a scheduled workout and didn't find one.
-  if (!workout && !programWorkout) {
+  // programWorkout (plan template) or template (user template) alone. The
+  // "not found" guard only applies when we expected a scheduled workout and
+  // didn't find one.
+  if (!workout && !programWorkout && !template) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
@@ -389,9 +426,12 @@ export default function WorkoutPreviewScreen() {
           </View>
         </View>
 
-        {/* Action pill — "Schedule Workout" in template mode, "Start Workout"
-            for live previews. Cardio pickers still gate the Start variant
-            until at least one option is selected. */}
+        {/* Action pill —
+            • plan template (programWorkoutId + source=template) → "Schedule Workout"
+            • user template (templateId + source=template)       → "Start Workout"
+            • live preview                                        → "Start Workout"
+            Cardio pickers still gate the Start variant until at least one
+            option is selected. */}
         <Pressable
           style={[
             styles.startPill,
@@ -399,11 +439,22 @@ export default function WorkoutPreviewScreen() {
               isCardioWorkout &&
               selectedCardio.length === 0 &&
               styles.startPillDisabled,
+            alreadyCompleted && styles.startPillDisabled,
           ]}
-          disabled={!isTemplateMode && isCardioWorkout && selectedCardio.length === 0}
+          disabled={
+            (!isTemplateMode && isCardioWorkout && selectedCardio.length === 0) || alreadyCompleted
+          }
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            if (isTemplateMode) {
+            // Complete-only entry → mark the scheduled workout complete for
+            // the current date and dismiss; no tracker.
+            if (isCompleteOnlyWorkout && !isTemplateMode && dateKey) {
+              toggleWorkoutCompletion(workout.id, dateKey);
+              router.back();
+              return;
+            }
+            // Plan-template entry → go to schedule screen.
+            if (isTemplateMode && !isUserTemplateMode) {
               const pwId = programWorkoutIdParam ?? workout?.programWorkoutId ?? null;
               if (!pwId) return;
               withLock(() =>
@@ -412,6 +463,12 @@ export default function WorkoutPreviewScreen() {
                   params: { programWorkoutId: pwId },
                 })
               );
+              return;
+            }
+            // User-template entry → start the workout immediately (no date warn
+            // since there's no scheduled date to compare against).
+            if (isUserTemplateMode) {
+              handleStartWorkout();
               return;
             }
             const todayKey = new Date().toISOString().split('T')[0];
@@ -438,7 +495,13 @@ export default function WorkoutPreviewScreen() {
           }}
         >
           <Text style={styles.startPillText}>
-            {isTemplateMode ? 'Schedule Workout' : 'Start Workout'}
+            {isTemplateMode && !isUserTemplateMode
+              ? 'Schedule Workout'
+              : isCompleteOnlyWorkout && !isTemplateMode
+                ? alreadyCompleted
+                  ? 'Completed'
+                  : 'Complete Workout'
+                : 'Start Workout'}
           </Text>
         </Pressable>
 

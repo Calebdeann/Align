@@ -20,18 +20,13 @@ export default function OnboardingLayout() {
       <Stack.Screen name="finding-workout" />
       <Stack.Screen name="select-program" />
       <Stack.Screen name="program-detail" />
-      <Stack.Screen name="when-to-begin" />
       <Stack.Screen name="signin" />
       <Stack.Screen name="find-partner" />
       <Stack.Screen name="gym-buddy" />
       <Stack.Screen name="partner-match" />
-      <Stack.Screen name="sticker" />
       <Stack.Screen name="quote-flicker" options={{ animation: 'fade', animationDuration: 600 }} />
       <Stack.Screen name="personalising" />
       <Stack.Screen name="pre-paywall" />
-      <Stack.Screen name="paywall" />
-      <Stack.Screen name="email-signin" />
-      <Stack.Screen name="signup" />
     </Stack>
   );
 }

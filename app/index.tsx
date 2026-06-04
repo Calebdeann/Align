@@ -146,19 +146,7 @@ export default function WelcomeScreen() {
       </View>
 
       <View style={styles.headingArea}>
-        {__DEV__ ? (
-          /* DEV SHORTCUT: tap heading to skip to signin */
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              router.push('/onboarding/signin');
-            }}
-          >
-            <MixedHeading boldLine="Choose" italicPhrase="your program" size={44} />
-          </Pressable>
-        ) : (
-          <MixedHeading boldLine="Choose" italicPhrase="your program" size={44} />
-        )}
+        <MixedHeading boldLine="Choose" italicPhrase="your program" size={44} />
       </View>
 
       <View style={styles.headingButtonSpacer} />

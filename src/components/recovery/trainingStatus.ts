@@ -81,18 +81,18 @@ export function getTrainingStatus(
       return pick([
         `Heavy ${topMuscle ?? 'session'} day. Get some protein in within the next 2 hours and actually sleep tonight. That's when muscle repair happens.${freshMuscle ? ` ${freshMuscle} is fresh if you want to train tomorrow.` : ''}`,
         `${top2Names ? `${top2Names} took a beating today.` : 'Heavy session.'} Eat well, sleep 8 hours, and you'll feel the adaptation by tomorrow.`,
-        `Heavy session done${topMuscle ? ` — ${topMuscle} was the focus` : ''}. Protein synthesis peaks in the next few hours so eat something. Your body will do the rest overnight.`,
+        `Heavy session done${topMuscle ? `, ${topMuscle} was the focus` : ''}. Protein synthesis peaks in the next few hours so eat something. Your body will do the rest overnight.`,
       ]);
     }
     if (maxTier === 2) {
       return pick([
         `Solid ${topMuscle ? `${topMuscle} session` : 'session'}. Stay hydrated, eat well, and sleep. Your muscles will genuinely be ready to go again tomorrow.`,
-        `Good work today${top2Names ? ` — ${top2Names} trained` : ''}. You're in the optimal training zone. Rest well and you'll recover fully by tomorrow.`,
+        `Good work today${top2Names ? `, ${top2Names} trained` : ''}. You're in the optimal training zone. Rest well and you'll recover fully by tomorrow.`,
         `Solid effort${topMuscle ? ` on ${topMuscle}` : ''}. Moderate volume is actually where most long-term progress comes from. Sleep well tonight.`,
       ]);
     }
     return pick([
-      `Light session today${topMuscle ? ` — mostly ${topMuscle}` : ''}. Great for active recovery. Your body's ready to push harder tomorrow if you want.`,
+      `Light session today${topMuscle ? `, mostly ${topMuscle}` : ''}. Great for active recovery. Your body's ready to push harder tomorrow if you want.`,
       'Easy session today. Active recovery like this keeps blood flowing to your muscles without adding fatigue. Good call.',
       `Light work done${freshMuscle ? `. ${freshMuscle} is fully recovered if you want to go harder tomorrow` : '. Your body is recovered and ready'}.`,
     ]);
@@ -242,8 +242,8 @@ export function getTrainingStatus(
       }
       return pick(
         [
-          `${workoutCount} sessions this month (${avgRounded}/week), ${recencyNote}${topMuscle ? ` — mostly ${topMuscle}` : ''}. Consistency is the biggest factor here, more than intensity. Aim for 3 sessions a week and watch what happens.`,
-          `${workoutCount} sessions this month (${avgRounded}/week), ${recencyNote}. Frequency beats intensity for long-term results. 3 consistent sessions a week will change everything${freshMuscle ? ` — and your ${freshMuscle} hasn't been touched yet` : ''}.`,
+          `${workoutCount} sessions this month (${avgRounded}/week), ${recencyNote}${topMuscle ? `, mostly ${topMuscle}` : ''}. Consistency is the biggest factor here, more than intensity. Aim for 3 sessions a week and watch what happens.`,
+          `${workoutCount} sessions this month (${avgRounded}/week), ${recencyNote}. Frequency beats intensity for long-term results. 3 consistent sessions a week will change everything${freshMuscle ? `, and your ${freshMuscle} hasn't been touched yet` : ''}.`,
           `${workoutCount} sessions this month (${avgRounded}/week), ${recencyNote}. You're capable of more. Even adding one extra session a week will make a noticeable difference.`,
         ],
         workoutCount

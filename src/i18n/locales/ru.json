@@ -494,7 +494,6 @@
     "minutes": "{{minutes}} мин"
   },
   "workoutComplete": {
-    "shareWorkout": "Поделиться тренировкой - Отметить @align.tracker",
     "done": "Готово",
     "duration": "Длительность",
     "volume": "Объём",

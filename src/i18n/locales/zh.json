@@ -494,7 +494,6 @@
     "minutes": "{{minutes}} 分钟"
   },
   "workoutComplete": {
-    "shareWorkout": "分享训练 - 标记 @align.tracker",
     "done": "完成",
     "duration": "时长",
     "volume": "训练量",

@@ -114,6 +114,10 @@ interface ExerciseSet {
 interface WorkoutExercise {
   exercise: Exercise;
   notes: string;
+  // Plan-side coaching note that renders as the placeholder of the notes
+  // field (replaced when the user types). See ActiveWorkoutExercise in
+  // src/stores/workoutStore.ts for the full rationale.
+  placeholderNote?: string;
   restTimerSeconds: number; // 0 means off
   sets: ExerciseSet[];
   previousSets: PreviousSetData[] | null;
@@ -1293,7 +1297,7 @@ export default function ActiveWorkoutScreen() {
       console.error('Failed to add exercises:', e);
       Alert.alert(
         'Could not add exercises',
-        'Something went wrong adding those exercises. They were not added to your workout — please try again.'
+        'Something went wrong adding those exercises. They were not added to your workout. Please try again.'
       );
     }
   }
@@ -2370,9 +2374,12 @@ export default function ActiveWorkoutScreen() {
               {/* Notes Input — hardcoded coaching note (if any) acts as the
                   placeholder; clearing the field restores it. */}
               <TextInput
-                autoCorrect={false}
+                autoCorrect
+                multiline
+                textAlignVertical="top"
                 style={styles.notesInput}
                 placeholder={
+                  workoutExercise.placeholderNote ??
                   getExerciseDefaultNote(workoutExercise.exercise.id) ??
                   t('workout.addNotesPlaceholder')
                 }

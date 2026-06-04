@@ -181,7 +181,7 @@ async function uploadWorkoutPhoto(
     } = await supabase.auth.getSession();
     const accessToken = session?.access_token;
     if (!accessToken) {
-      const msg = 'No auth session — cannot upload photo';
+      const msg = 'No auth session, cannot upload photo';
       console.error('[uploadWorkoutPhoto]', msg);
       return { error: msg };
     }
@@ -435,7 +435,7 @@ export async function saveCompletedWorkout(
           .single();
 
         if (retryError || !retryExercise) {
-          logger.warn('Error saving workout exercise (retry failed) — deleting orphan workout', {
+          logger.warn('Error saving workout exercise (retry failed), deleting orphan workout', {
             exerciseName: exercise.exerciseName,
             workoutId,
             error: retryError,
@@ -486,7 +486,7 @@ export async function saveCompletedWorkout(
             .insert(setsWithoutOptional);
           if (retryError) {
             logger.warn(
-              'Error saving workout sets (retry without optional cols) — deleting orphan workout',
+              'Error saving workout sets (retry without optional cols), deleting orphan workout',
               {
                 workoutId,
                 error: retryError,
@@ -498,7 +498,7 @@ export async function saveCompletedWorkout(
             );
           }
         } else if (setsError) {
-          logger.warn('Error saving workout sets — deleting orphan workout', {
+          logger.warn('Error saving workout sets, deleting orphan workout', {
             workoutId,
             error: setsError,
           });

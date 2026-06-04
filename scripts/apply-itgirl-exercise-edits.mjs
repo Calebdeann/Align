@@ -79,7 +79,6 @@ const STEP_UP_CABLE_STEPS = [
 
 const edits = [
   // ── Renames only ─────────────────────────────────────────────────────────────
-  { lookup: 'Cross over lateral pull down (cable)', rename: 'Wide-grip lat pulldown (cable)' },
   { lookup: '21s bicep curl', rename: 'Standing bicep curl (dumbbell)' },
   { lookup: 'Incline pushdown (cable)', rename: 'Triceps pushdown' },
   { lookup: 'Straight arm pull down (rope)', rename: 'Straight arm pulldown (cable)' },

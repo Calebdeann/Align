@@ -125,7 +125,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '1',
         exerciseId: '17538922-0fce-4403-be34-4c69678388ec',
-        exerciseName: 'Ab Crunch (Cable)',
+        exerciseName: 'Cable Crunch',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0175.gif',
         thumbnailUrl:
@@ -147,7 +147,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '3',
         exerciseId: '386aa2d2-91da-45a5-9840-4f60f9eafa67',
-        exerciseName: 'Rotations (Cable)',
+        exerciseName: 'Wood Chopper (Cable)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0243.gif',
         thumbnailUrl:
@@ -236,7 +236,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '4',
         exerciseId: '78eef81e-b954-42e6-91bd-cede0c5ca52f',
-        exerciseName: 'Plank (Weighted)',
+        exerciseName: 'Plank',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2135.gif',
         thumbnailUrl:
@@ -325,7 +325,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '5',
         exerciseId: '8cceeb36-68ef-4b16-91f1-3c28f23ea12f',
-        exerciseName: 'Bicycle Crunch Raise',
+        exerciseName: 'Bicycle Crunches',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0003.gif',
         thumbnailUrl:
@@ -431,7 +431,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '1',
         exerciseId: '17538922-0fce-4403-be34-4c69678388ec',
-        exerciseName: 'Ab Crunch (Cable)',
+        exerciseName: 'Cable Crunch',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0175.gif',
         thumbnailUrl:
@@ -465,7 +465,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '4',
         exerciseId: '78eef81e-b954-42e6-91bd-cede0c5ca52f',
-        exerciseName: 'Plank (Weighted)',
+        exerciseName: 'Plank',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/2135.gif',
         thumbnailUrl:
@@ -546,7 +546,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '4',
         exerciseId: '76bf9bf5-ed0e-4ec1-8d88-34f03c01f459',
-        exerciseName: 'Standing Cable Glute Kickbacks',
+        exerciseName: 'Cable Kickbacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0228.gif',
         thumbnailUrl:
@@ -558,7 +558,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '5',
         exerciseId: '46a3dec5-f0ae-4fa5-ab69-f10e4c0c3395',
-        exerciseName: 'Back Extension (Hyperextension)',
+        exerciseName: 'Back Extensions (Hyperextension)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0489.gif',
         thumbnailUrl:
@@ -775,7 +775,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '4',
         exerciseId: '76bf9bf5-ed0e-4ec1-8d88-34f03c01f459',
-        exerciseName: 'Standing Cable Glute Kickbacks',
+        exerciseName: 'Cable Kickbacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0228.gif',
         thumbnailUrl:
@@ -1154,12 +1154,12 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
     exercises: [
       {
         id: '1',
-        exerciseId: '139796b1-7fff-461d-9761-2c01d6287203',
-        exerciseName: 'Wide-Grip Lat Pulldown (Cable)',
+        exerciseId: '9536551e-91c3-40e4-b9c8-b892918b9ea8',
+        exerciseName: 'Wide-grip lat pulldown (cable)',
         gifUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0197.gif',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0153.gif',
         thumbnailUrl:
-          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0197.png?v=1770098903217',
+          'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-thumbnails/0153.png?v=1770098903217',
         muscle: 'Back',
         sets: s3(12, 10, 10, 25, 30, 30),
         restTimerSeconds: 60,
@@ -1179,7 +1179,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '3',
         exerciseId: '7ae9c6c4-f8f4-4042-89ce-14ab109fb5a0',
-        exerciseName: 'Standing Face Pull',
+        exerciseName: 'Face Pulls',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0203.gif',
         thumbnailUrl:
@@ -2165,7 +2165,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '7',
         exerciseId: '4dfb32ea-bdcd-4a61-b738-010d23f768f8',
-        exerciseName: 'Standing Bicep Curl (Dumbbell)',
+        exerciseName: 'Bicep Curl (Dumbbell)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0416.gif',
         thumbnailUrl:
@@ -2343,7 +2343,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '2',
         exerciseId: '840b0452-442a-438a-90e9-3461a914c709',
-        exerciseName: 'Band Pullaparts',
+        exerciseName: 'Reverse Fly (Cable)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0993.gif',
         thumbnailUrl:
@@ -2367,7 +2367,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '4',
         exerciseId: 'd91074d3-b5db-488b-97d2-f35bfbd51580',
-        exerciseName: 'Lateral Raise (Band)',
+        exerciseName: 'Lateral Raise (Cable)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0977.gif',
         thumbnailUrl:
@@ -2524,7 +2524,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '4',
         exerciseId: '17538922-0fce-4403-be34-4c69678388ec',
-        exerciseName: 'Ab Crunch (Cable)',
+        exerciseName: 'Cable Crunch',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0175.gif',
         thumbnailUrl:
@@ -2625,7 +2625,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '5',
         exerciseId: '46a3dec5-f0ae-4fa5-ab69-f10e4c0c3395',
-        exerciseName: 'Back Extension (Hyperextension)',
+        exerciseName: 'Back Extensions (Hyperextension)',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0489.gif',
         thumbnailUrl:
@@ -2882,7 +2882,7 @@ export const PRESET_TEMPLATES: WorkoutTemplate[] = [
       {
         id: '3',
         exerciseId: '76bf9bf5-ed0e-4ec1-8d88-34f03c01f459',
-        exerciseName: 'Standing Cable Glute Kickbacks',
+        exerciseName: 'Cable Kickbacks',
         gifUrl:
           'https://dngpsabyqsuunajtotci.supabase.co/storage/v1/object/public/exercise-gifs/0228.gif',
         thumbnailUrl:

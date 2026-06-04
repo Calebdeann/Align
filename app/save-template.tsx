@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,52 +7,37 @@ import {
   TextInput,
   ScrollView,
   Alert,
-  Modal,
-  Animated,
-  Dimensions,
   ImageSourcePropType,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import { colors, fonts, fontSize, spacing, cardStyle } from '@/constants/theme';
+import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import {
   useTemplateStore,
   TemplateExercise,
   estimateTemplateDuration,
 } from '@/stores/templateStore';
 import { WorkoutImage } from '@/stores/workoutStore';
+import { useUserPreferencesStore } from '@/stores/userPreferencesStore';
+import { kgToLbs } from '@/utils/units';
 import { getCurrentUser } from '@/services/api/user';
-import { ExerciseImage } from '@/components/ExerciseImage';
 import { prefetchExerciseGif } from '@/stores/exerciseStore';
-import {
-  ImagePickerSheet,
-  ImagePlaceholderIcon,
-  SelectedImageData,
-} from '@/components/ImagePickerSheet';
+import { ImagePickerSheet, SelectedImageData } from '@/components/ImagePickerSheet';
 import { consumePendingTemplateImage } from '@/lib/imagePickerState';
 import { resolveExerciseDisplayName } from '@/stores/exerciseStore';
 import { useNavigationLock } from '@/hooks/useNavigationLock';
 import { getTemplateImageById } from '@/constants/templateImages';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Colour options (matching schedule-workout)
-const WORKOUT_COLOURS = [
-  { id: 'purple', color: colors.primary },
-  { id: 'green', color: colors.workout.back },
-  { id: 'blue', color: colors.workout.chest },
-  { id: 'orange', color: colors.workout.biceps },
-  { id: 'pink', color: colors.workout.legs },
-  { id: 'teal', color: colors.workout.cardio },
-  { id: 'yellow', color: colors.workout.shoulders },
-  { id: 'red', color: colors.workout.core },
-];
+// Templates no longer carry a user-selectable color in the new It Girl style.
+// We persist a neutral default so existing schemas / list code that still
+// reads `tagColor` keeps working unchanged.
+const NEUTRAL_TAG_COLOR = '#000000';
 
 function BackIcon() {
   return (
@@ -68,22 +53,99 @@ function BackIcon() {
   );
 }
 
-function CloseIcon() {
-  return (
-    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M18 6L6 18M6 6l12 12"
-        stroke={colors.text}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
+// Exercise row — mirrors ExerciseBlock in app/workout-summary.tsx (the detailed
+// workout view): 70x70 thumbnail, bold name, tap-to-expand per-set table.
+// Template sets carry targetWeight/targetReps (kg) and no RPE, so the WEIGHT &
+// REPS column uses the targets and the RPE column shows "-".
+function TemplateExerciseBlock({
+  exercise,
+  unit,
+  isNavigating,
+  withLock,
+}: {
+  exercise: TemplateExercise;
+  unit: string;
+  isNavigating: boolean;
+  withLock: (fn: () => void) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
 
-function Divider() {
-  return <View style={styles.divider} />;
+  const toggle = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setExpanded((prev) => !prev);
+  };
+
+  const navigateToDetail = isNavigating
+    ? undefined
+    : () => {
+        withLock(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          prefetchExerciseGif(exercise.exerciseId);
+          router.push(`/exercise/${exercise.exerciseId}`);
+        });
+      };
+
+  const thumbUri = exercise.thumbnailUrl ?? exercise.gifUrl;
+  const thumbnailContent = thumbUri ? (
+    <Image source={{ uri: thumbUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+  ) : (
+    <View style={[StyleSheet.absoluteFill, styles.exerciseThumbnailPlaceholder]} />
+  );
+
+  return (
+    <View style={styles.exerciseBlock}>
+      {/* Header: thumbnail + name/chevron */}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Pressable onPress={navigateToDetail} style={styles.exerciseThumbnail}>
+          {thumbnailContent}
+        </Pressable>
+        <View style={{ width: 12 }} />
+        <Pressable
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', minHeight: 70 }}
+          onPress={toggle}
+        >
+          <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
+            <Text
+              style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
+              numberOfLines={2}
+              onPress={navigateToDetail}
+            >
+              {resolveExerciseDisplayName(exercise.exerciseId, exercise.exerciseName)}
+            </Text>
+          </View>
+          <Ionicons
+            name={expanded ? 'chevron-down' : 'chevron-forward'}
+            size={22}
+            color="#000000"
+          />
+        </Pressable>
+      </View>
+
+      {/* Sets table — sibling of header, spans full card width. */}
+      {expanded && (
+        <View style={styles.setsContainer}>
+          <View style={styles.setHeaderRow}>
+            <Text style={[styles.setHeaderCell, styles.setIndexCell]}>SET</Text>
+            <Text style={[styles.setHeaderCell, styles.setWeightRepsCell]}>WEIGHT & REPS</Text>
+            <Text style={[styles.setHeaderCell, styles.setRpeCell]}>RPE</Text>
+          </View>
+          {exercise.sets.map((set) => {
+            const weightKg = set.targetWeight ?? 0;
+            const displayWeight = unit === 'lbs' ? kgToLbs(weightKg) : weightKg;
+            return (
+              <View key={set.setNumber} style={styles.setRow}>
+                <Text style={[styles.setNumber, styles.setIndexCell]}>{set.setNumber}</Text>
+                <Text style={[styles.setDetails, styles.setWeightRepsCell]}>
+                  {displayWeight} {unit} × {set.targetReps ?? 0} reps
+                </Text>
+                <Text style={[styles.setDetails, styles.setRpeCell]}>-</Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
 }
 
 export default function SaveTemplateScreen() {
@@ -102,21 +164,19 @@ export default function SaveTemplateScreen() {
   const createTemplate = useTemplateStore((state) => state.createTemplate);
   const updateTemplate = useTemplateStore((state) => state.updateTemplate);
 
+  const { getUnitSystem } = useUserPreferencesStore();
+  const unit = getUnitSystem() === 'imperial' ? 'lbs' : 'kg';
+
   // Parse exercises from params
   const [exercises, setExercises] = useState<TemplateExercise[]>([]);
 
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedColourId, setSelectedColourId] = useState('purple');
   const [isSaving, setIsSaving] = useState(false);
   // Image state
   const [selectedImage, setSelectedImage] = useState<SelectedImageData | null>(null);
   const [showImagePicker, setShowImagePicker] = useState(false);
-
-  // Colour modal state
-  const [showColourModal, setShowColourModal] = useState(false);
-  const colourSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   // Load exercise data and existing template data
   useEffect(() => {
@@ -141,12 +201,6 @@ export default function SaveTemplateScreen() {
       if (existing) {
         setName(existing.name);
         setDescription(existing.description || '');
-
-        // Find matching colour from tagColor
-        const matchingColour = WORKOUT_COLOURS.find((c) => c.color === existing.tagColor);
-        if (matchingColour) {
-          setSelectedColourId(matchingColour.id);
-        }
 
         // Use exercises from params (may have been edited) or fall back to template exercises
         if (!params.exercises) {
@@ -191,35 +245,6 @@ export default function SaveTemplateScreen() {
     }, [])
   );
 
-  // Colour modal functions
-  const openColourModal = () => {
-    setShowColourModal(true);
-    Animated.spring(colourSlideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 11,
-    }).start();
-  };
-
-  const closeColourModal = () => {
-    Animated.timing(colourSlideAnim, {
-      toValue: SCREEN_HEIGHT,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setShowColourModal(false));
-  };
-
-  const selectColour = (colourId: string) => {
-    setSelectedColourId(colourId);
-    closeColourModal();
-  };
-
-  const getSelectedColour = () => {
-    const colour = WORKOUT_COLOURS.find((c) => c.id === selectedColourId);
-    return colour?.color || colors.primary;
-  };
-
   const handleSave = async () => {
     if (isSaving) return;
 
@@ -236,8 +261,6 @@ export default function SaveTemplateScreen() {
     setIsSaving(true);
 
     const user = await getCurrentUser();
-
-    const tagColor = getSelectedColour();
 
     // Build image data for save
     const imageData: { image?: WorkoutImage; localImage?: ImageSourcePropType } = {};
@@ -261,7 +284,7 @@ export default function SaveTemplateScreen() {
       name: name.trim(),
       description: description.trim() || undefined,
       tagIds: [] as string[],
-      tagColor,
+      tagColor: NEUTRAL_TAG_COLOR,
       estimatedDuration: estimateTemplateDuration({ exercises }),
       difficulty: 'Beginner' as const,
       equipment: 'Gym',
@@ -277,8 +300,11 @@ export default function SaveTemplateScreen() {
       createTemplate(templateData);
     }
 
-    // Navigate to workout tab so user can see their template
-    router.navigate('/(tabs)/workout');
+    // Return to the templates screen (start-workout-sheet → "My Templates"),
+    // which reactively shows the newly saved template. dismissTo pops the
+    // create-template + save-template screens back to it rather than resetting
+    // all the way to a tab.
+    router.dismissTo('/start-workout-sheet');
   };
 
   return (
@@ -312,204 +338,91 @@ export default function SaveTemplateScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Template Info Card */}
-        <View style={styles.card}>
-          {/* Photo + Name + Description row */}
-          <View style={styles.infoRow}>
-            <Pressable
-              style={[styles.imagePlaceholder, selectedImage && styles.imagePlaceholderFilled]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                setShowImagePicker(true);
-              }}
-            >
-              {selectedImage ? (
-                selectedImage.localSource ? (
-                  <Image
-                    source={selectedImage.localSource}
-                    style={styles.selectedImage}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                  />
-                ) : (
-                  <Image
-                    source={{ uri: selectedImage.uri }}
-                    style={styles.selectedImage}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                  />
-                )
-              ) : (
-                <ImagePlaceholderIcon />
-              )}
-            </Pressable>
-            <View style={styles.textInputs}>
-              <TextInput
-                autoCorrect={false}
-                style={styles.nameInput}
-                placeholder={t('template.templateName')}
-                placeholderTextColor={colors.textTertiary}
-                value={name}
-                onChangeText={setName}
-              />
-              <TextInput
-                autoCorrect={false}
-                style={styles.descriptionInput}
-                placeholder={t('template.descriptionOptional')}
-                placeholderTextColor={colors.textTertiary}
-                value={description}
-                onChangeText={setDescription}
-              />
-            </View>
-          </View>
-
-          <Divider />
-
-          {/* Colour */}
+        {/* Template Info Row — matches the "Choose Template" row layout in
+            schedule-workout (photo + name + subtitle). The "Choose Template"
+            label is replaced by the editable template name; the meta line is
+            replaced by the editable description. */}
+        <View style={styles.infoRow}>
           <Pressable
-            style={styles.menuRow}
+            style={styles.imageContainer}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              openColourModal();
+              setShowImagePicker(true);
             }}
           >
-            <Text style={styles.menuLabel}>{t('template.colour')}</Text>
-            <View style={styles.menuRight}>
-              <View style={[styles.colourCircle, { backgroundColor: getSelectedColour() }]} />
-              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-            </View>
-          </Pressable>
-        </View>
-
-        {/* Exercises */}
-        <Text style={styles.sectionHeader}>{t('saveWorkout.exercises')}</Text>
-        <View style={styles.card}>
-          {exercises.map((exercise, index) => (
-            <View key={exercise.id}>
-              <View style={styles.exerciseRow}>
-                <Pressable
-                  onPress={
-                    exercise.gifUrl || exercise.thumbnailUrl
-                      ? () => {
-                          withLock(() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                            prefetchExerciseGif(exercise.exerciseId);
-                            router.push(`/exercise/${exercise.exerciseId}`);
-                          });
-                        }
-                      : undefined
-                  }
-                  disabled={isNavigating || (!exercise.gifUrl && !exercise.thumbnailUrl)}
-                >
-                  <ExerciseImage
-                    gifUrl={exercise.gifUrl}
-                    thumbnailUrl={exercise.thumbnailUrl}
-                    size={46}
-                    borderRadius={8}
-                  />
-                </Pressable>
-                <View style={{ flex: 1, justifyContent: 'center' }} pointerEvents="box-none">
-                  <Text
-                    style={[styles.exerciseName, { alignSelf: 'flex-start' }]}
-                    onPress={
-                      isNavigating || (!exercise.gifUrl && !exercise.thumbnailUrl)
-                        ? undefined
-                        : () => {
-                            withLock(() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                              prefetchExerciseGif(exercise.exerciseId);
-                              router.push(`/exercise/${exercise.exerciseId}`);
-                            });
-                          }
-                    }
-                  >
-                    {resolveExerciseDisplayName(exercise.exerciseId, exercise.exerciseName)}
-                  </Text>
-                </View>
+            {selectedImage ? (
+              selectedImage.localSource ? (
+                <Image
+                  source={selectedImage.localSource}
+                  style={styles.selectedImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
+              ) : (
+                <Image
+                  source={{ uri: selectedImage.uri }}
+                  style={styles.selectedImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
+              )
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons name="barbell-outline" size={31} color="rgba(0,0,0,0.4)" />
               </View>
-
-              {index < exercises.length - 1 && <Divider />}
-            </View>
-          ))}
-
-          {exercises.length === 0 && (
-            <View style={styles.emptyExercises}>
-              <Text style={styles.emptyText}>{t('template.noExercisesAdded')}</Text>
-            </View>
-          )}
+            )}
+          </Pressable>
+          <View style={styles.textInputs}>
+            <TextInput
+              autoCorrect={false}
+              style={styles.nameInput}
+              placeholder={t('template.templateName')}
+              placeholderTextColor={colors.textTertiary}
+              value={name}
+              onChangeText={setName}
+            />
+            <TextInput
+              autoCorrect
+              style={styles.descriptionInput}
+              placeholder={t('template.descriptionOptional')}
+              placeholderTextColor={colors.textTertiary}
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
         </View>
+
+        {/* Exercises — replicates ExerciseBlock from the detailed workout view
+            (app/workout-summary.tsx): 70x70 thumbnail, bold name, tap-to-expand
+            per-set table. Blocks render directly on the background (no card). */}
+        <Text style={styles.sectionHeading}>{t('saveWorkout.exercises')}</Text>
+        {exercises.map((exercise) => (
+          <TemplateExerciseBlock
+            key={exercise.id}
+            exercise={exercise}
+            unit={unit}
+            isNavigating={isNavigating}
+            withLock={withLock}
+          />
+        ))}
+
+        {exercises.length === 0 && (
+          <View style={styles.emptyExercises}>
+            <Text style={styles.emptyText}>{t('template.noExercisesAdded')}</Text>
+          </View>
+        )}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Image Picker Bottom Sheet */}
+      {/* Image Picker Bottom Sheet — templates don't expose the pre-made
+          template-image library; just Camera + Photo Library. */}
       <ImagePickerSheet
         visible={showImagePicker}
         onClose={() => setShowImagePicker(false)}
         onImageSelected={(image) => setSelectedImage(image)}
+        hideTemplateLibrary
       />
-
-      {/* Colour Bottom Sheet Modal */}
-      <Modal
-        visible={showColourModal}
-        transparent
-        animationType="none"
-        onRequestClose={closeColourModal}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            closeColourModal();
-          }}
-        >
-          <Animated.View
-            style={[styles.modalContent, { transform: [{ translateY: colourSlideAnim }] }]}
-          >
-            <Pressable onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalHandle} />
-
-              <View style={styles.modalHeader}>
-                <Pressable
-                  style={styles.modalCloseButton}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                    closeColourModal();
-                  }}
-                >
-                  <CloseIcon />
-                </Pressable>
-                <Text style={styles.modalTitle}>{t('template.colour')}</Text>
-                <View style={styles.modalCloseButton} />
-              </View>
-
-              <View style={styles.colourContainer}>
-                <View style={styles.colourGrid}>
-                  {WORKOUT_COLOURS.map((colour) => (
-                    <Pressable
-                      key={colour.id}
-                      style={[
-                        styles.colourOption,
-                        selectedColourId === colour.id && styles.colourOptionSelected,
-                      ]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                        selectColour(colour.id);
-                      }}
-                    >
-                      <View style={[styles.colourCircleLarge, { backgroundColor: colour.color }]}>
-                        {selectedColourId === colour.id && (
-                          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                        )}
-                      </View>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            </Pressable>
-          </Animated.View>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -517,7 +430,7 @@ export default function SaveTemplateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.surfaceSecondary,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -549,98 +462,128 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: 100,
   },
-  card: {
-    ...cardStyle,
-    marginBottom: spacing.md,
-  },
+  // Info row — mirrors schedule-workout's chooseCard/chooseRow: roomy #f5f5f5
+  // card with a large, slightly-rotated photo thumbnail beside the inputs.
   infoRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
     padding: spacing.md,
-    gap: spacing.md,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 14,
+    marginBottom: spacing.md,
   },
+  imageContainer: {},
   imagePlaceholder: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceSecondary,
+    width: 96,
+    height: 116,
+    borderRadius: 14,
+    backgroundColor: '#e0e0e0',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
     overflow: 'hidden',
-  },
-  imagePlaceholderFilled: {
-    borderStyle: 'solid',
-    borderColor: 'transparent',
-    borderWidth: 0,
+    transform: [{ rotate: '-2.5deg' }],
   },
   selectedImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
+    width: 96,
+    height: 116,
+    borderRadius: 14,
+    overflow: 'hidden',
+    transform: [{ rotate: '-2.5deg' }],
   },
   textInputs: {
     flex: 1,
     justifyContent: 'center',
+    gap: 4,
   },
   nameInput: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.text,
-    paddingVertical: spacing.xs,
+    paddingVertical: 0,
   },
   descriptionInput: {
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    paddingVertical: spacing.xs,
+    lineHeight: 18,
+    paddingVertical: 0,
   },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(217, 217, 217, 0.25)',
-    marginHorizontal: spacing.sm,
+  // "Exercises" heading — matches the detailed workout view's sectionHeading.
+  sectionHeading: {
+    fontFamily: fonts.bold,
+    fontSize: 24,
+    color: '#000000',
+    letterSpacing: -0.4,
+    marginBottom: 8,
+    marginTop: 4,
   },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: spacing.md,
+  // Exercise rows — copied verbatim from app/workout-summary.tsx's ExerciseBlock.
+  exerciseBlock: {
+    marginBottom: 28,
   },
-  menuLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.text,
+  exerciseThumbnail: {
+    width: 70,
+    height: 70,
+    borderRadius: 4,
+    overflow: 'hidden',
+    backgroundColor: '#E8E8E8',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 4,
   },
-  menuRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  colourCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  sectionHeader: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  exerciseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
+  exerciseThumbnailPlaceholder: {
+    backgroundColor: '#E0E0E0',
   },
   exerciseName: {
     fontFamily: fonts.semiBold,
-    fontSize: fontSize.md,
-    color: colors.primary,
+    fontSize: 16,
+    color: '#000000',
+    letterSpacing: -0.3,
+    lineHeight: 20,
+  },
+  setsContainer: {
+    marginTop: 14,
+  },
+  setIndexCell: {
+    width: 82,
+  },
+  setHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  setHeaderCell: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: 'rgba(0,0,0,0.5)',
+    letterSpacing: 0.2,
+  },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  setNumber: {
+    fontFamily: fonts.semiBold,
+    fontSize: 18,
+    color: '#000000',
+    letterSpacing: -0.2,
+  },
+  setDetails: {
+    fontFamily: fonts.regular,
+    fontSize: 18,
+    color: '#000000',
+    letterSpacing: -0.2,
+  },
+  setWeightRepsCell: {
+    minWidth: 150,
+  },
+  setRpeCell: {
+    minWidth: 40,
+    marginLeft: 12,
   },
   emptyExercises: {
     padding: spacing.lg,
@@ -653,71 +596,5 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 40,
-  },
-
-  // Colour modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.surfaceSecondary,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 40,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: colors.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  modalCloseButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize: fontSize.lg,
-    color: colors.text,
-  },
-  colourContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  colourGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: spacing.lg,
-  },
-  colourOption: {
-    padding: spacing.sm,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  colourOptionSelected: {
-    borderColor: colors.text,
-  },
-  colourCircleLarge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

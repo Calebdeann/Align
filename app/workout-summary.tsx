@@ -402,7 +402,7 @@ function ExerciseBlock({ exercise, unit }: { exercise: LiveExercise; unit: strin
                 {set.weight} {unit} × {set.reps} reps
               </Text>
               <Text style={[styles.setDetails, styles.setRpeCell]}>
-                {set.rpe != null ? set.rpe : '—'}
+                {set.rpe != null ? set.rpe : '-'}
               </Text>
             </View>
           ))}
@@ -1046,7 +1046,7 @@ export default function WorkoutSummaryScreen() {
           {/* Description */}
           {isSaveMode ? (
             <TextInput
-              autoCorrect={false}
+              autoCorrect
               style={styles.descriptionInput}
               value={description}
               onChangeText={setDescription}

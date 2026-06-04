@@ -1341,7 +1341,9 @@ export default function CreateTemplateScreen() {
               {/* Notes Input — hardcoded coaching note (if any) acts as the
                   placeholder; clearing the field restores it. */}
               <TextInput
-                autoCorrect={false}
+                autoCorrect
+                multiline
+                textAlignVertical="top"
                 style={styles.notesInput}
                 placeholder={getExerciseDefaultNote(exercise.exerciseId) ?? 'Add notes here...'}
                 placeholderTextColor={colors.textSecondary}

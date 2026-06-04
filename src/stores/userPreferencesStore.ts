@@ -67,10 +67,25 @@ interface UserPreferencesState extends UserPreferences {
   reset: () => void;
 }
 
+// Detects the user's measurement system from device locale only.
+// Uses expo-localization's region + measurementSystem, which read iOS/Android
+// Region settings. This never triggers a location permission request.
 function detectUnitSystemFromLocale(): UnitSystem {
   try {
-    const region = Localization.getLocales()[0]?.regionCode;
-    if (region && IMPERIAL_COUNTRIES.includes(region)) {
+    const locale = Localization.getLocales()[0];
+
+    // Primary signal: the device's explicit measurement system setting.
+    // 'us' is fully imperial. 'uk' and 'metric' both use kg for gym weights,
+    // so we treat them as metric here.
+    if (locale?.measurementSystem === 'us') {
+      return 'imperial';
+    }
+    if (locale?.measurementSystem === 'metric' || locale?.measurementSystem === 'uk') {
+      return 'metric';
+    }
+
+    // Fallback (measurementSystem unavailable): infer from country/region.
+    if (locale?.regionCode && IMPERIAL_COUNTRIES.includes(locale.regionCode)) {
       return 'imperial';
     }
   } catch (error) {

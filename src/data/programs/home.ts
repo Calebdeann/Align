@@ -1,7 +1,8 @@
 import type { Program, ProgramDay, ProgramExercise, ProgramWorkout, WorkoutType } from './types';
 import { HOME_DESCRIPTIONS } from './home-descriptions';
 
-const ex = (name: string, sets: number, reps: string): ProgramExercise => ({ name, sets, reps });
+const ex = (name: string, sets: number, reps: string, notes?: string): ProgramExercise =>
+  notes ? { name, sets, reps, notes } : { name, sets, reps };
 
 const CARDIO_30 = '30 mins cardio of choice';
 
@@ -52,26 +53,41 @@ function buildDay(
 function phaseAGlutes(week: number): ProgramExercise[] {
   if (week === 1) {
     return [
-      ex('DB RDL', 3, '10'),
-      ex('Sumo Squat', 3, '12'),
-      ex('Single Leg Hip Thrust (DB)', 3, '10'),
-      ex('Reverse Lunge (DB)', 3, '8'),
+      ex('Romanian Deadlift (Dumbbell)', 3, '10'),
+      ex(
+        'Sumo Squat (Dumbbell)',
+        3,
+        '12',
+        'Can be done with a barbell, dumbbell, any weight, or no weight at all.'
+      ),
+      ex('Single Leg Hip Thrust (Dumbbell)', 3, '10'),
+      ex('Reverse Lunge (Dumbbell)', 3, '8', 'Can be done with any weight or no weight at all.'),
     ];
   }
   if (week === 2 || week === 3) {
     return [
-      ex('DB RDL', 3, '12'),
-      ex('Sumo Squat', 3, '15'),
-      ex('Single Leg Hip Thrust (DB)', 4, '8'),
-      ex('Reverse Lunge (DB)', 3, '10'),
+      ex('Romanian Deadlift (Dumbbell)', 3, '12'),
+      ex(
+        'Sumo Squat (Dumbbell)',
+        3,
+        '15',
+        'Can be done with a barbell, dumbbell, any weight, or no weight at all.'
+      ),
+      ex('Single Leg Hip Thrust (Dumbbell)', 4, '8'),
+      ex('Reverse Lunge (Dumbbell)', 3, '10', 'Can be done with any weight or no weight at all.'),
     ];
   }
   // week 4 — increase sets
   return [
-    ex('DB RDL', 4, '8'),
-    ex('Sumo Squat', 4, '10'),
-    ex('Single Leg Hip Thrust (DB)', 4, '8'),
-    ex('Reverse Lunge (DB)', 3, '10'),
+    ex('Romanian Deadlift (Dumbbell)', 4, '8'),
+    ex(
+      'Sumo Squat (Dumbbell)',
+      4,
+      '10',
+      'Can be done with a barbell, dumbbell, any weight, or no weight at all.'
+    ),
+    ex('Single Leg Hip Thrust (Dumbbell)', 4, '8'),
+    ex('Reverse Lunge (Dumbbell)', 3, '10', 'Can be done with any weight or no weight at all.'),
   ];
 }
 
@@ -81,7 +97,7 @@ function phaseAAbsCardioDay2(week: number): ProgramExercise[] {
       ex('Dead Bug', 3, '10'),
       ex('Heel Taps', 3, '12'),
       ex('Reverse Crunch', 3, '10'),
-      ex('Bicycle Crunch', 3, '10'),
+      ex('Bicycle Crunches', 3, '10'),
     ];
   }
   // weeks 2-4
@@ -89,36 +105,36 @@ function phaseAAbsCardioDay2(week: number): ProgramExercise[] {
     ex('Dead Bug', 3, '12'),
     ex('Heel Taps', 3, '15'),
     ex('Reverse Crunch', 3, '12'),
-    ex('Bicycle Crunch', 3, '12'),
+    ex('Bicycle Crunches', 3, '12'),
   ];
 }
 
 function phaseAUpper(week: number): ProgramExercise[] {
   if (week === 1) {
     return [
-      ex('Shoulder Press', 3, '10'),
-      ex('Single Arm Dumbbell Row', 3, '10'),
-      ex('Lateral Raise', 3, '10'),
-      ex('Bicep Curl', 3, '10'),
-      ex('Tricep Kickback', 3, '10'),
+      ex('Standing Shoulder Press (Dumbbell)', 3, '10'),
+      ex('Single Arm Row (Dumbbell)', 3, '10'),
+      ex('Lateral Raise (Dumbbell)', 3, '10'),
+      ex('Bicep Curl (Dumbbell)', 3, '10'),
+      ex('Standing Triceps Kickback (Dumbbell)', 3, '10'),
     ];
   }
   if (week === 2 || week === 3) {
     return [
-      ex('Shoulder Press', 3, '12'),
-      ex('Single Arm Dumbbell Row', 3, '12'),
-      ex('Lateral Raise', 3, '12'),
-      ex('Bicep Curl', 3, '12'),
-      ex('Tricep Kickback', 3, '12'),
+      ex('Standing Shoulder Press (Dumbbell)', 3, '12'),
+      ex('Single Arm Row (Dumbbell)', 3, '12'),
+      ex('Lateral Raise (Dumbbell)', 3, '12'),
+      ex('Bicep Curl (Dumbbell)', 3, '12'),
+      ex('Standing Triceps Kickback (Dumbbell)', 3, '12'),
     ];
   }
   // week 4
   return [
-    ex('Shoulder Press', 4, '8'),
-    ex('Single Arm Dumbbell Row', 4, '10'),
-    ex('Lateral Raise', 4, '10'),
-    ex('Bicep Curl', 4, '10'),
-    ex('Tricep Kickback', 3, '12'),
+    ex('Standing Shoulder Press (Dumbbell)', 4, '8'),
+    ex('Single Arm Row (Dumbbell)', 4, '10'),
+    ex('Lateral Raise (Dumbbell)', 4, '10'),
+    ex('Bicep Curl (Dumbbell)', 4, '10'),
+    ex('Standing Triceps Kickback (Dumbbell)', 3, '12'),
   ];
 }
 
@@ -127,45 +143,60 @@ function phaseAAbsCardioDay4(week: number): ProgramExercise[] {
     return [
       ex('Mountain Climber', 2, '12'),
       ex('Ab Crunch', 2, '10'),
-      ex('Elbow To Knee Crunch', 2, '10'),
-      ex('Plank Hold', 3, week === 3 ? '70 sec' : '60 sec'),
+      ex('Elbow to Knee Crunch', 2, '10'),
+      ex('Plank', 3, week === 3 ? '70 sec' : '60 sec'),
     ];
   }
   // week 4
   return [
     ex('Mountain Climber', 2, '12'),
     ex('Ab Crunch', 3, '10'),
-    ex('Elbow To Knee Crunch', 3, '10'),
-    ex('Plank Hold', 3, '80 sec'),
+    ex('Elbow to Knee Crunch', 3, '10'),
+    ex('Plank', 3, '80 sec'),
   ];
 }
 
 function phaseALower(week: number): ProgramExercise[] {
   if (week === 1) {
     return [
-      ex('Goblet Squat (DB)', 3, '10'),
-      ex('Single Leg RDL', 3, '10'),
+      ex(
+        'Goblet Squat (Dumbbell)',
+        3,
+        '10',
+        'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+      ),
+      ex('Single Leg Romanian Deadlift (Dumbbell)', 3, '10'),
       ex('Single Leg Standing Calf Raise', 3, '10'),
-      ex('BB Good Mornings', 3, '8'),
-      ex('Split Squat (DB)', 3, '8'),
+      ex('Good Morning (Barbell)', 3, '8'),
+      ex('Bulgarian Split Squat (Dumbbell)', 3, '8'),
     ];
   }
   if (week === 2 || week === 3) {
     return [
-      ex('Goblet Squat (DB)', 3, '12'),
-      ex('Single Leg RDL', 3, '12'),
+      ex(
+        'Goblet Squat (Dumbbell)',
+        3,
+        '12',
+        'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+      ),
+      ex('Single Leg Romanian Deadlift (Dumbbell)', 3, '12'),
       ex('Single Leg Standing Calf Raise', 3, '12'),
-      ex('BB Good Mornings', 3, '10'),
-      ex('Split Squat (DB)', 3, '10'),
+      ex('Good Morning (Barbell)', 3, '10'),
+      ex('Bulgarian Split Squat (Dumbbell)', 3, '10'),
     ];
   }
   // week 4
   return [
-    ex('Goblet Squat (DB)', 4, '10'),
-    ex('Single Leg RDL', 4, '10'),
+    ex(
+      'Goblet Squat (Dumbbell)',
+      4,
+      '10',
+      'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+    ),
+    ex('Single Leg Romanian Deadlift (Dumbbell)', 4, '10'),
     ex('Single Leg Standing Calf Raise', 3, '12'),
-    ex('BB Good Mornings', 3, '12'),
-    ex('Split Squat (DB)', 4, '8'),
+    ex('Good Morning (Barbell)', 3, '12'),
+    ex('Bulgarian Split Squat (Dumbbell)', 4, '8'),
   ];
 }
 
@@ -174,26 +205,41 @@ function phaseALower(week: number): ProgramExercise[] {
 function phaseBGlutes(week: number): ProgramExercise[] {
   if (week === 5) {
     return [
-      ex('BB RDL', 3, '8'),
-      ex('Single Leg Squat', 3, '6'),
-      ex('Step Up (DB)', 3, '8'),
-      ex('Lunge (DB)', 3, '10'),
+      ex('Romanian Deadlift (Barbell)', 3, '8'),
+      ex('Single Leg Squat (Dumbbell)', 3, '6', 'Can be done with any weight or no weight at all.'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
+      ex('Lunge (Dumbbell)', 3, '10'),
     ];
   }
   if (week === 6 || week === 7) {
     return [
-      ex('BB RDL', 3, '10'),
-      ex('Single Leg Squat', 3, '8'),
-      ex('Step Up (DB)', 3, '8'),
-      ex('Lunge (DB)', 3, '10'),
+      ex('Romanian Deadlift (Barbell)', 3, '10'),
+      ex('Single Leg Squat (Dumbbell)', 3, '8', 'Can be done with any weight or no weight at all.'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
+      ex('Lunge (Dumbbell)', 3, '10'),
     ];
   }
   // week 8
   return [
-    ex('BB RDL', 3, '10'),
-    ex('Single Leg Squat', 3, '10'),
-    ex('Step Up (DB)', 3, '10'),
-    ex('Lunge (DB)', 3, '12'),
+    ex('Romanian Deadlift (Barbell)', 3, '10'),
+    ex('Single Leg Squat (Dumbbell)', 3, '10', 'Can be done with any weight or no weight at all.'),
+    ex(
+      'Step Up (Dumbbell)',
+      3,
+      '10',
+      'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+    ),
+    ex('Lunge (Dumbbell)', 3, '12'),
   ];
 }
 
@@ -223,38 +269,38 @@ function phaseBAbsCardioDay2(week: number): ProgramExercise[] {
 function phaseBUpper(week: number): ProgramExercise[] {
   if (week === 5) {
     return [
-      ex('BB Bent Over Row', 3, '8'),
+      ex('Bent Over Row (Barbell)', 3, '8'),
       ex('Incline Push Up', 3, '6'),
-      ex('Standing Around The World', 3, '6'),
-      ex('Hammer Curl', 3, '12'),
-      ex('Tricep Dip', 3, '8'),
+      ex('Standing Around World (Dumbbell)', 3, '6'),
+      ex('Hammer Curl (Dumbbell)', 3, '12'),
+      ex('Assisted Triceps Dip', 3, '8'),
     ];
   }
   if (week === 6) {
     return [
-      ex('BB Bent Over Row', 3, '8'),
+      ex('Bent Over Row (Barbell)', 3, '8'),
       ex('Incline Push Up', 3, '8'),
-      ex('Standing Around The World', 3, '8'),
-      ex('Hammer Curl', 3, '12'),
-      ex('Tricep Dip', 3, '10'),
+      ex('Standing Around World (Dumbbell)', 3, '8'),
+      ex('Hammer Curl (Dumbbell)', 3, '12'),
+      ex('Assisted Triceps Dip', 3, '10'),
     ];
   }
   if (week === 7) {
     return [
-      ex('BB Bent Over Row', 3, '10'),
+      ex('Bent Over Row (Barbell)', 3, '10'),
       ex('Incline Push Up', 3, '8'),
-      ex('Standing Around The World', 3, '8'),
-      ex('Hammer Curl', 3, '12'),
-      ex('Tricep Dip', 3, '10'),
+      ex('Standing Around World (Dumbbell)', 3, '8'),
+      ex('Hammer Curl (Dumbbell)', 3, '12'),
+      ex('Assisted Triceps Dip', 3, '10'),
     ];
   }
   // week 8
   return [
-    ex('BB Bent Over Row', 3, '10'),
+    ex('Bent Over Row (Barbell)', 3, '10'),
     ex('Incline Push Up', 3, '10'),
-    ex('Standing Around The World', 3, '10'),
-    ex('Hammer Curl', 3, '12'),
-    ex('Tricep Dip', 3, '10'),
+    ex('Standing Around World (Dumbbell)', 3, '10'),
+    ex('Hammer Curl (Dumbbell)', 3, '12'),
+    ex('Assisted Triceps Dip', 3, '10'),
   ];
 }
 
@@ -264,47 +310,47 @@ function phaseBAbsCardioDay4(week: number): ProgramExercise[] {
     week === 5 ? '30 sec' : week === 6 ? '40 sec' : week === 7 ? '50 sec' : '60 sec';
   const tableTopSets = week <= 6 ? 2 : 3;
   return [
-    ex('Weighted Plank', 3, plankSec),
+    ex('Plank', 3, plankSec),
     ex('Side Plank', 3, sidePlankSec),
-    ex('Weighted Table Top Crunch', tableTopSets, '10'),
+    ex('Table Top Crunch (Weighted)', tableTopSets, '10', 'Can be done with or without weight.'),
   ];
 }
 
 function phaseBLower(week: number): ProgramExercise[] {
   if (week === 5) {
     return [
-      ex('BB Back Squat', 3, '10'),
-      ex('B Stance RDL', 3, '8'),
-      ex('Standing Calf Raise (DB)', 3, '10'),
-      ex('BB Lateral Lunge', 3, '6'),
-      ex('Bulgarian Split Squat (DB)', 3, '10'),
+      ex('Back Squat (Barbell)', 3, '10'),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '8'),
+      ex('Standing Calf Raise (Dumbbell)', 3, '10'),
+      ex('Lateral Lunge (Barbell)', 3, '6'),
+      ex('Bulgarian Split Squat (Dumbbell)', 3, '10'),
     ];
   }
   if (week === 6) {
     return [
-      ex('BB Back Squat', 3, '10'),
-      ex('B Stance RDL', 3, '8'),
-      ex('Standing Calf Raise (DB)', 3, '10'),
-      ex('BB Lateral Lunge', 3, '8'),
-      ex('Bulgarian Split Squat (DB)', 3, '10'),
+      ex('Back Squat (Barbell)', 3, '10'),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '8'),
+      ex('Standing Calf Raise (Dumbbell)', 3, '10'),
+      ex('Lateral Lunge (Barbell)', 3, '8'),
+      ex('Bulgarian Split Squat (Dumbbell)', 3, '10'),
     ];
   }
   if (week === 7) {
     return [
-      ex('BB Back Squat', 3, '10'),
-      ex('B Stance RDL', 3, '10'),
-      ex('Standing Calf Raise (DB)', 3, '12'),
-      ex('BB Lateral Lunge', 3, '10'),
-      ex('Bulgarian Split Squat (DB)', 3, '10'),
+      ex('Back Squat (Barbell)', 3, '10'),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
+      ex('Standing Calf Raise (Dumbbell)', 3, '12'),
+      ex('Lateral Lunge (Barbell)', 3, '10'),
+      ex('Bulgarian Split Squat (Dumbbell)', 3, '10'),
     ];
   }
   // week 8
   return [
-    ex('BB Back Squat', 3, '12'),
-    ex('B Stance RDL', 3, '10'),
-    ex('Standing Calf Raise (DB)', 3, '12'),
-    ex('BB Lateral Lunge', 3, '10'),
-    ex('Bulgarian Split Squat (DB)', 3, '12'),
+    ex('Back Squat (Barbell)', 3, '12'),
+    ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
+    ex('Standing Calf Raise (Dumbbell)', 3, '12'),
+    ex('Lateral Lunge (Barbell)', 3, '10'),
+    ex('Bulgarian Split Squat (Dumbbell)', 3, '12'),
   ];
 }
 

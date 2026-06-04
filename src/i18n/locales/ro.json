@@ -494,7 +494,6 @@
     "minutes": "{{minutes}} minute"
   },
   "workoutComplete": {
-    "shareWorkout": "Distribuie antrenamentul - Etichetează @align.tracker",
     "done": "Gata",
     "duration": "Durată",
     "volume": "Volum",

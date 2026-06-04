@@ -32,6 +32,9 @@ interface ImagePickerSheetProps {
   visible: boolean;
   onClose: () => void;
   onImageSelected: (image: SelectedImageData) => void;
+  // Suppress the "Templates" entry (the pre-made template-image gallery).
+  // Used by save-template where only a real photo makes sense.
+  hideTemplateLibrary?: boolean;
 }
 
 function CloseIcon() {
@@ -95,7 +98,12 @@ export function ImagePlaceholderIcon() {
   );
 }
 
-export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePickerSheetProps) {
+export function ImagePickerSheet({
+  visible,
+  onClose,
+  onImageSelected,
+  hideTemplateLibrary = false,
+}: ImagePickerSheetProps) {
   const { t } = useTranslation();
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -226,13 +234,17 @@ export function ImagePickerSheet({ visible, onClose, onImageSelected }: ImagePic
                 <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
               </Pressable>
 
-              <View style={styles.divider} />
+              {!hideTemplateLibrary && (
+                <>
+                  <View style={styles.divider} />
 
-              <Pressable style={styles.imagePickerRow} onPress={handleOpenTemplates}>
-                <Ionicons name="grid-outline" size={22} color={colors.text} />
-                <Text style={styles.imagePickerLabel}>{t('imagePicker.templates')}</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-              </Pressable>
+                  <Pressable style={styles.imagePickerRow} onPress={handleOpenTemplates}>
+                    <Ionicons name="grid-outline" size={22} color={colors.text} />
+                    <Text style={styles.imagePickerLabel}>{t('imagePicker.templates')}</Text>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                  </Pressable>
+                </>
+              )}
             </View>
           </Pressable>
         </Animated.View>

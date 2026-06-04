@@ -670,12 +670,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 12,
     gap: 5,
+    paddingHorizontal: 24,
   },
   bioText: {
     fontFamily: fonts.semiBold,
     fontSize: 17,
     color: '#888888',
     letterSpacing: -0.2,
+    textAlign: 'center',
   },
   bioTextFilled: {
     color: '#444444',

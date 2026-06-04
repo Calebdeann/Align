@@ -494,7 +494,6 @@
     "minutes": "{{minutes}} मिनट"
   },
   "workoutComplete": {
-    "shareWorkout": "वर्कआउट शेयर करें - @align.tracker टैग करें",
     "done": "पूर्ण",
     "duration": "अवधि",
     "volume": "वॉल्यूम",

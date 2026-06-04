@@ -494,7 +494,6 @@
     "minutes": "{{minutes}} dəqiqə"
   },
   "workoutComplete": {
-    "shareWorkout": "Məşqi paylaş - @align.tracker etiketlə",
     "done": "Hazır",
     "duration": "Müddət",
     "volume": "Həcm",

@@ -8,6 +8,8 @@ import {
   TextInput,
   ActivityIndicator,
   SectionList,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -196,6 +198,22 @@ export default function AddExerciseScreen() {
   const [selectedEquipment, setSelectedEquipment] = useState('all');
   const [showMuscleModal, setShowMuscleModal] = useState(false);
   const [showEquipmentModal, setShowEquipmentModal] = useState(false);
+
+  // Track the keyboard so the bottom of the exercise list isn't covered when
+  // the user scrolls down while the search input is focused.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvt, (e) =>
+      setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hideSub = Keyboard.addListener(hideEvt, () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Exercise store (cached exercises)
   const {
@@ -575,7 +593,7 @@ export default function AddExerciseScreen() {
               keyExtractor={(item) => item.id}
               extraData={translationsLanguage}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 100 }}
+              contentContainerStyle={{ paddingBottom: 100 + keyboardHeight }}
               stickySectionHeadersEnabled={false}
               initialNumToRender={15}
               maxToRenderPerBatch={10}

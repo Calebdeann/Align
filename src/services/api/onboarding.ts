@@ -64,7 +64,7 @@ export async function markTermsAccepted(userId: string): Promise<void> {
     .eq('id', userId);
 
   if (error && error.code === 'PGRST204') {
-    console.warn('markTermsAccepted: terms columns missing — run migration 091.', error);
+    console.warn('markTermsAccepted: terms columns missing, run migration 091.', error);
     return;
   }
   if (error) {
@@ -128,7 +128,7 @@ export async function linkOnboardingToUser(userId: string): Promise<boolean> {
 
   if (updateError && updateError.code === 'PGRST204') {
     console.warn(
-      'linkOnboardingToUser: terms columns missing — retrying without (run migration 091).',
+      'linkOnboardingToUser: terms columns missing, retrying without (run migration 091).',
       updateError
     );
     updateError = (await supabase.from('profiles').upsert(baseRow, { onConflict: 'id' })).error;

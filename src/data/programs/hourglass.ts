@@ -1,17 +1,18 @@
 import type { Program, ProgramDay, ProgramExercise, ProgramWorkout, WorkoutType } from './types';
 import { HOURGLASS_DESCRIPTIONS } from './hourglass-descriptions';
 
-const ex = (name: string, sets: number, reps: string): ProgramExercise => ({ name, sets, reps });
+const ex = (name: string, sets: number, reps: string, notes?: string): ProgramExercise =>
+  notes ? { name, sets, reps, notes } : { name, sets, reps };
 
 const ABS_FAV: ProgramExercise[] = [
-  ex('Hanging knee raise', 3, '12'),
+  ex('Hanging Knee Raise', 3, '12'),
   ex('Plank', 3, '45 sec'),
-  ex('Russian twist', 3, '20 (10 each side)'),
+  ex('Russian Twist', 3, '20 (10 each side)'),
 ];
 const ABS_CABLE: ProgramExercise[] = [
-  ex('Cable crunch', 3, '12'),
-  ex('Cable woodchopper', 3, '10 each side'),
-  ex('Hanging knee raise', 3, '12'),
+  ex('Cable Crunch', 3, '12'),
+  ex('Wood Chopper (Cable)', 3, '10 each side'),
+  ex('Hanging Knee Raise', 3, '12'),
 ];
 const CARDIO_30 = '30 mins cardio - walk, stairs, bike';
 
@@ -65,21 +66,36 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 3, '12'),
-      ex('Cable Step Ups', 3, '8'),
+      ex(
+        'Hip Thrust (Barbell)',
+        3,
+        '12',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Bulgarian Split Squats', 3, '10'),
-      ex('Back Extensions', 3, '12'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '12',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Cable Kickbacks', 3, '12'),
     ],
     { abs: ABS_FAV }
   ),
   buildDay(1, 2, 'upper', 'Upper', [
-    ex('Lat Pull Downs', 3, '10'),
-    ex('Shoulder Press', 3, '10'),
-    ex('Seated Row', 3, '12'),
-    ex('Lateral Raises', 3, '10'),
+    ex('Lat Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Seated Shoulder Press (Dumbbell)', 3, '10'),
+    ex('Seated Row (Cable)', 3, '12'),
+    ex('Lateral Raise (Dumbbell)', 3, '10'),
     ex('Face Pulls', 3, '12'),
-    ex('DB Bicep Curls', 3, '10'),
+    ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
   ]),
   buildDay(
     1,
@@ -87,11 +103,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('RDLs', 3, '10'),
-      ex('Cable Step Ups', 3, '8'),
-      ex('Reverse Lunges', 3, '8'),
-      ex('Hamstring Curls', 3, '10'),
-      ex('Goblet Squat', 3, '12'),
+      ex('Romanian Deadlift (Barbell)', 3, '10'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
+      ex('Reverse Lunges (Barbell)', 3, '8'),
+      ex(
+        'Lying Leg Curl (Machine)',
+        3,
+        '10',
+        'Any leg curl machine works. Use whichever your gym has.'
+      ),
+      ex(
+        'Goblet Squat (Dumbbell)',
+        3,
+        '12',
+        'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+      ),
     ],
     { abs: ABS_CABLE }
   ),
@@ -101,12 +132,17 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 3, '12'),
-      ex('Hip Abductors', 3, '12'),
-      ex('B Stance or Single Leg RDL', 3, '8'),
-      ex('Close Grip Lat Pull Down', 3, '8'),
-      ex('Single Arm Dumbbell Row', 3, '10'),
-      ex('Shoulder Press Machine', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        3,
+        '12',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Seated Hip Abduction (Machine)', 3, '12'),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '8'),
+      ex('Lat Pulldown', 3, '8', 'Close Grip'),
+      ex('Single Arm Row (Dumbbell)', 3, '10'),
+      ex('Shoulder Press (Machine)', 3, '10'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -118,21 +154,36 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 3, '12'),
-      ex('Cable Step Ups', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        3,
+        '12',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '10',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Bulgarian Split Squats', 3, '10'),
-      ex('Back Extensions', 3, '12'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '12',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Cable Kickbacks', 3, '12'),
     ],
     { abs: ABS_FAV }
   ),
   buildDay(2, 2, 'upper', 'Upper', [
-    ex('Lat Pull Downs', 3, '12'),
-    ex('Shoulder Press', 3, '10'),
-    ex('Seated Row', 3, '12'),
-    ex('Lateral Raises', 3, '10'),
+    ex('Lat Pulldown', 3, '12', 'Feel free to use any attachment.'),
+    ex('Seated Shoulder Press (Dumbbell)', 3, '10'),
+    ex('Seated Row (Cable)', 3, '12'),
+    ex('Lateral Raise (Dumbbell)', 3, '10'),
     ex('Face Pulls', 3, '12'),
-    ex('DB Bicep Curls', 3, '12'),
+    ex('Alternating Bicep Curl (Dumbbell)', 3, '12'),
   ]),
   buildDay(
     2,
@@ -140,11 +191,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('RDLs', 3, '10'),
-      ex('Cable Step Ups', 3, '8'),
-      ex('Reverse Lunges', 3, '8'),
-      ex('Hamstring Curls', 3, '10'),
-      ex('Goblet Squat', 3, '12'),
+      ex('Romanian Deadlift (Barbell)', 3, '10'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
+      ex('Reverse Lunges (Barbell)', 3, '8'),
+      ex(
+        'Lying Leg Curl (Machine)',
+        3,
+        '10',
+        'Any leg curl machine works. Use whichever your gym has.'
+      ),
+      ex(
+        'Goblet Squat (Dumbbell)',
+        3,
+        '12',
+        'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+      ),
     ],
     { abs: ABS_CABLE }
   ),
@@ -154,12 +220,17 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 3, '12'),
-      ex('Hip Abductors', 3, '12'),
-      ex('B Stance or Single Leg RDL', 3, '10'),
-      ex('Close Grip Lat Pull Down', 3, '10'),
-      ex('Single Arm Dumbbell Row', 3, '10'),
-      ex('Shoulder Press Machine', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        3,
+        '12',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Seated Hip Abduction (Machine)', 3, '12'),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
+      ex('Lat Pulldown', 3, '10', 'Close Grip'),
+      ex('Single Arm Row (Dumbbell)', 3, '10'),
+      ex('Shoulder Press (Machine)', 3, '10'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -171,21 +242,36 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 3, '8'),
-      ex('Cable Step Ups', 3, '8'),
+      ex(
+        'Hip Thrust (Barbell)',
+        3,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Bulgarian Split Squats', 3, '6'),
-      ex('Back Extensions', 3, '10'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '10',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Cable Kickbacks', 3, '10'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(3, 2, 'upper', 'Upper', [
-    ex('Lat Pull Downs', 3, '10'),
-    ex('Shoulder Press', 3, '10'),
-    ex('Seated Row', 3, '10'),
-    ex('Lateral Raises', 3, '10'),
+    ex('Lat Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Seated Shoulder Press (Dumbbell)', 3, '10'),
+    ex('Seated Row (Cable)', 3, '10'),
+    ex('Lateral Raise (Dumbbell)', 3, '10'),
     ex('Face Pulls', 3, '10'),
-    ex('DB Bicep Curls', 3, '10'),
+    ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
   ]),
   buildDay(
     3,
@@ -193,11 +279,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('RDLs', 3, '8'),
-      ex('Cable Step Ups', 3, '8'),
-      ex('Reverse Lunges', 3, '8'),
-      ex('Hamstring Curls', 3, '10'),
-      ex('Goblet Squat', 3, '10'),
+      ex('Romanian Deadlift (Barbell)', 3, '8'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
+      ex('Reverse Lunges (Barbell)', 3, '8'),
+      ex(
+        'Lying Leg Curl (Machine)',
+        3,
+        '10',
+        'Any leg curl machine works. Use whichever your gym has.'
+      ),
+      ex(
+        'Goblet Squat (Dumbbell)',
+        3,
+        '10',
+        'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+      ),
     ],
     { abs: ABS_CABLE }
   ),
@@ -207,12 +308,17 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 3, '8'),
-      ex('Hip Abductors', 3, '12'),
-      ex('B Stance or Single Leg RDL', 3, '10'),
-      ex('Close Grip Lat Pull Down', 3, '8'),
-      ex('Single Arm Dumbbell Row', 3, '10'),
-      ex('Shoulder Press Machine', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        3,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Seated Hip Abduction (Machine)', 3, '12'),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
+      ex('Lat Pulldown', 3, '8', 'Close Grip'),
+      ex('Single Arm Row (Dumbbell)', 3, '10'),
+      ex('Shoulder Press (Machine)', 3, '10'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -224,21 +330,36 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Cable Step Ups', 3, '8'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Bulgarian Split Squats', 3, '6'),
-      ex('Back Extensions', 3, '10'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '10',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Cable Kickbacks', 4, '10'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(4, 2, 'upper', 'Upper', [
-    ex('Lat Pull Downs', 3, '10'),
-    ex('Shoulder Press', 4, '10'),
-    ex('Seated Row', 3, '10'),
-    ex('Lateral Raises', 3, '10'),
+    ex('Lat Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Seated Shoulder Press (Dumbbell)', 4, '10'),
+    ex('Seated Row (Cable)', 3, '10'),
+    ex('Lateral Raise (Dumbbell)', 3, '10'),
     ex('Face Pulls', 3, '10'),
-    ex('DB Bicep Curls', 4, '10'),
+    ex('Alternating Bicep Curl (Dumbbell)', 4, '10'),
   ]),
   buildDay(
     4,
@@ -246,11 +367,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('RDLs', 3, '8'),
-      ex('Cable Step Ups', 3, '8'),
-      ex('Reverse Lunges', 3, '8'),
-      ex('Hamstring Curls', 3, '10'),
-      ex('Goblet Squat', 3, '10'),
+      ex('Romanian Deadlift (Barbell)', 3, '8'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
+      ex('Reverse Lunges (Barbell)', 3, '8'),
+      ex(
+        'Lying Leg Curl (Machine)',
+        3,
+        '10',
+        'Any leg curl machine works. Use whichever your gym has.'
+      ),
+      ex(
+        'Goblet Squat (Dumbbell)',
+        3,
+        '10',
+        'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+      ),
     ],
     { abs: ABS_CABLE }
   ),
@@ -260,12 +396,17 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Hip Abductors', 4, '8'),
-      ex('B Stance or Single Leg RDL', 3, '10'),
-      ex('Close Grip Lat Pull Down', 3, '8'),
-      ex('Single Arm Dumbbell Row', 4, '8'),
-      ex('Shoulder Press Machine', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Seated Hip Abduction (Machine)', 4, '8'),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
+      ex('Lat Pulldown', 3, '8', 'Close Grip'),
+      ex('Single Arm Row (Dumbbell)', 4, '8'),
+      ex('Shoulder Press (Machine)', 3, '10'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -277,21 +418,36 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Cable Step Ups', 3, '8'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Bulgarian Split Squats', 3, '6'),
-      ex('Back Extensions', 3, '10'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '10',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Cable Kickbacks', 4, '10'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(5, 2, 'upper', 'Upper', [
-    ex('Lat Pull Downs', 3, '10'),
-    ex('Shoulder Press', 4, '10'),
-    ex('Seated Row', 3, '10'),
-    ex('Lateral Raises', 3, '10'),
+    ex('Lat Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Seated Shoulder Press (Dumbbell)', 4, '10'),
+    ex('Seated Row (Cable)', 3, '10'),
+    ex('Lateral Raise (Dumbbell)', 3, '10'),
     ex('Face Pulls', 3, '10'),
-    ex('DB Bicep Curls', 4, '10'),
+    ex('Alternating Bicep Curl (Dumbbell)', 4, '10'),
   ]),
   buildDay(
     5,
@@ -299,11 +455,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('RDLs', 3, '8'),
-      ex('Cable Step Ups', 3, '8'),
-      ex('Reverse Lunges', 3, '8'),
-      ex('Hamstring Curls', 3, '10'),
-      ex('Goblet Squat', 3, '10'),
+      ex('Romanian Deadlift (Barbell)', 3, '8'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
+      ex('Reverse Lunges (Barbell)', 3, '8'),
+      ex(
+        'Lying Leg Curl (Machine)',
+        3,
+        '10',
+        'Any leg curl machine works. Use whichever your gym has.'
+      ),
+      ex(
+        'Goblet Squat (Dumbbell)',
+        3,
+        '10',
+        'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+      ),
     ],
     { abs: ABS_CABLE }
   ),
@@ -313,12 +484,17 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Hip Abductors', 4, '8'),
-      ex('B Stance or Single Leg RDL', 3, '10'),
-      ex('Close Grip Lat Pull Down', 3, '8'),
-      ex('Single Arm Dumbbell Row', 4, '8'),
-      ex('Shoulder Press Machine', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Seated Hip Abduction (Machine)', 4, '8'),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
+      ex('Lat Pulldown', 3, '8', 'Close Grip'),
+      ex('Single Arm Row (Dumbbell)', 4, '8'),
+      ex('Shoulder Press (Machine)', 3, '10'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -330,21 +506,36 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Cable Step Ups', 3, '8'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Bulgarian Split Squats', 3, '6'),
-      ex('Back Extensions', 3, '10'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '10',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Cable Kickbacks', 4, '10'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(6, 2, 'upper', 'Upper', [
-    ex('Lat Pull Downs', 3, '10'),
-    ex('Shoulder Press', 4, '10'),
-    ex('Seated Row', 3, '10'),
-    ex('Lateral Raises', 3, '10'),
+    ex('Lat Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Seated Shoulder Press (Dumbbell)', 4, '10'),
+    ex('Seated Row (Cable)', 3, '10'),
+    ex('Lateral Raise (Dumbbell)', 3, '10'),
     ex('Face Pulls', 3, '10'),
-    ex('DB Bicep Curls', 4, '10'),
+    ex('Alternating Bicep Curl (Dumbbell)', 4, '10'),
   ]),
   buildDay(
     6,
@@ -352,11 +543,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('DB RDLs', 3, '8'),
-      ex('Cable Step Ups', 3, '8'),
-      ex('Reverse Lunges', 3, '8'),
-      ex('Hamstring Curls', 3, '10'),
-      ex('Goblet Squat', 3, '10'),
+      ex('Romanian Deadlift (Barbell)', 3, '8'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
+      ex('Reverse Lunges (Barbell)', 3, '8'),
+      ex(
+        'Lying Leg Curl (Machine)',
+        3,
+        '10',
+        'Any leg curl machine works. Use whichever your gym has.'
+      ),
+      ex(
+        'Goblet Squat (Dumbbell)',
+        3,
+        '10',
+        'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+      ),
     ],
     { abs: ABS_CABLE }
   ),
@@ -366,12 +572,17 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Hip Abductors', 4, '8'),
-      ex('B Stance or Single Leg RDL', 3, '10'),
-      ex('Close Grip Lat Pull Down', 3, '8'),
-      ex('Single Arm Dumbbell Row', 4, '8'),
-      ex('Shoulder Press Machine', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Seated Hip Abduction (Machine)', 4, '8'),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
+      ex('Lat Pulldown', 3, '8', 'Close Grip'),
+      ex('Single Arm Row (Dumbbell)', 4, '8'),
+      ex('Shoulder Press (Machine)', 3, '10'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -383,21 +594,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Good Mornings (Smith)', 3, '8'),
-      ex('Deficit Reverse Lunge', 2, '8'),
-      ex('DB RDLs', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Good Morning (Smith Machine)', 3, '8'),
+      ex('Deficit Reverse Lunge', 2, '8', 'Can also be done on the smith machine.'),
+      ex('Romanian Deadlift (Dumbbell)', 3, '10'),
       ex('Cable Kickbacks', 4, '10'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(7, 2, 'upper', 'Upper', [
-    ex('Single Arm Machine Rows (Wide Grip)', 3, '10'),
-    ex('Straight Arm Pulldown', 3, '10'),
-    ex('Reverse Flies', 3, '10'),
-    ex('Incline Front Raise', 3, '10'),
-    ex('Lateral Raise Machine', 3, '10'),
-    ex('Cable Bicep Curls', 4, '10'),
+    ex('Seated Single Arm Row (Cable)', 3, '10'),
+    ex('Straight Arm Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Chest Supported Reverse Fly (Dumbbell)', 3, '10'),
+    ex('Incline Front Raise (Dumbbell)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, '10'),
+    ex('Bicep Curl (Cable)', 4, '10'),
   ]),
   buildDay(
     7,
@@ -405,10 +621,15 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('Leg Press', 3, '8'),
-      ex('Step Up Dumbbells', 3, '8'),
+      ex('Leg Press (Machine)', 3, '8'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Walking Lunges', 3, '8'),
-      ex('Leg Extensions', 3, '10'),
+      ex('Leg Extension (Machine)', 3, '10'),
       ex('Cable Kickbacks', 3, '10'),
     ],
     { abs: ABS_CABLE, cardio: CARDIO_30 }
@@ -419,12 +640,22 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Deadlift or RDL (BB)', 3, '10'),
-      ex('Back Extensions', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Deadlift (Barbell)', 3, '10'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '10',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Assisted Pull Up', 3, '6'),
-      ex('Single Arm Dumbbell Row', 4, '8'),
-      ex('Arnold Press', 3, '10'),
+      ex('Single Arm Row (Dumbbell)', 4, '8'),
+      ex('Arnold Press (Dumbbell)', 3, '10'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -436,21 +667,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Good Mornings (Smith)', 3, '8'),
-      ex('Deficit Reverse Lunge', 2, '8'),
-      ex('DB RDLs', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Good Morning (Smith Machine)', 3, '8'),
+      ex('Deficit Reverse Lunge', 2, '8', 'Can also be done on the smith machine.'),
+      ex('Romanian Deadlift (Dumbbell)', 3, '10'),
       ex('Cable Kickbacks', 4, '10'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(8, 2, 'upper', 'Upper', [
-    ex('Single Arm Machine Rows (Wide Grip)', 3, '10'),
-    ex('Straight Arm Pulldown', 3, '10'),
-    ex('Reverse Flies', 3, '10'),
-    ex('Incline Front Raise', 3, '10'),
-    ex('Lateral Raise Machine', 3, '10'),
-    ex('Cable Bicep Curls', 4, '10'),
+    ex('Seated Single Arm Row (Cable)', 3, '10'),
+    ex('Straight Arm Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Chest Supported Reverse Fly (Dumbbell)', 3, '10'),
+    ex('Incline Front Raise (Dumbbell)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, '10'),
+    ex('Bicep Curl (Cable)', 4, '10'),
   ]),
   buildDay(
     8,
@@ -458,10 +694,15 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('Leg Press', 3, '8'),
-      ex('Step Up Dumbbells', 3, '8'),
+      ex('Leg Press (Machine)', 3, '8'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '8',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Walking Lunges', 3, '8'),
-      ex('Leg Extensions', 3, '10'),
+      ex('Leg Extension (Machine)', 3, '10'),
       ex('Cable Kickbacks', 3, '10'),
     ],
     { abs: ABS_CABLE, cardio: CARDIO_30 }
@@ -472,12 +713,22 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Deadlift or RDL (BB)', 3, '10'),
-      ex('Back Extensions', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '8',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Deadlift (Barbell)', 3, '10'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '10',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Assisted Pull Up', 3, '6'),
-      ex('Single Arm Dumbbell Row', 4, '8'),
-      ex('Arnold Press', 3, '10'),
+      ex('Single Arm Row (Dumbbell)', 4, '8'),
+      ex('Arnold Press (Dumbbell)', 3, '10'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -489,21 +740,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 4, '10'),
-      ex('Good Mornings (Smith)', 3, '10'),
-      ex('Deficit Reverse Lunge', 3, '8'),
-      ex('DB RDLs', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '10',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Good Morning (Smith Machine)', 3, '10'),
+      ex('Deficit Reverse Lunge', 3, '8', 'Can also be done on the smith machine.'),
+      ex('Romanian Deadlift (Dumbbell)', 3, '10'),
       ex('Cable Kickbacks', 4, '12'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(9, 2, 'upper', 'Upper', [
-    ex('Single Arm Machine Rows (Wide Grip)', 3, '12'),
-    ex('Straight Arm Pulldown', 3, '10'),
-    ex('Reverse Flies', 3, '12'),
-    ex('Incline Front Raise', 3, '10'),
-    ex('Lateral Raise Machine', 3, '10'),
-    ex('Cable Bicep Curls', 4, '10'),
+    ex('Seated Single Arm Row (Cable)', 3, '12'),
+    ex('Straight Arm Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Chest Supported Reverse Fly (Dumbbell)', 3, '12'),
+    ex('Incline Front Raise (Dumbbell)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, '10'),
+    ex('Bicep Curl (Cable)', 4, '10'),
   ]),
   buildDay(
     9,
@@ -511,10 +767,15 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('Leg Press', 3, '10'),
-      ex('Step Up Dumbbells', 3, '10'),
+      ex('Leg Press (Machine)', 3, '10'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '10',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Walking Lunges', 3, '10'),
-      ex('Leg Extensions', 3, '12'),
+      ex('Leg Extension (Machine)', 3, '12'),
       ex('Cable Kickbacks', 3, '12'),
     ],
     { abs: ABS_CABLE, cardio: CARDIO_30 }
@@ -525,12 +786,22 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 4, '10'),
-      ex('Deadlift or RDL (BB)', 3, '12'),
-      ex('Back Extensions', 3, '12'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '10',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Deadlift (Barbell)', 3, '12'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '12',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Assisted Pull Up', 3, '8'),
-      ex('Single Arm Dumbbell Row', 4, '10'),
-      ex('Arnold Press', 3, '10'),
+      ex('Single Arm Row (Dumbbell)', 4, '10'),
+      ex('Arnold Press (Dumbbell)', 3, '10'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -542,21 +813,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 4, '10'),
-      ex('Good Mornings (Smith)', 3, '10'),
-      ex('Deficit Reverse Lunge', 3, '8'),
-      ex('DB RDLs', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '10',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Good Morning (Smith Machine)', 3, '10'),
+      ex('Deficit Reverse Lunge', 3, '8', 'Can also be done on the smith machine.'),
+      ex('Romanian Deadlift (Dumbbell)', 3, '10'),
       ex('Cable Kickbacks', 4, '12'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(10, 2, 'upper', 'Upper', [
-    ex('Single Arm Machine Rows (Wide Grip)', 3, '8'),
-    ex('Straight Arm Pulldown', 3, '10'),
-    ex('Reverse Flies', 3, '10'),
-    ex('Incline Front Raise', 3, '10'),
-    ex('Lateral Raise Machine', 3, '10'),
-    ex('Cable Bicep Curls', 4, '10'),
+    ex('Seated Single Arm Row (Cable)', 3, '8'),
+    ex('Straight Arm Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Chest Supported Reverse Fly (Dumbbell)', 3, '10'),
+    ex('Incline Front Raise (Dumbbell)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, '10'),
+    ex('Bicep Curl (Cable)', 4, '10'),
   ]),
   buildDay(
     10,
@@ -564,10 +840,15 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('Leg Press', 3, '8'),
-      ex('Step Up Dumbbells', 3, '10'),
+      ex('Leg Press (Machine)', 3, '8'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '10',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Walking Lunges', 3, '10'),
-      ex('Leg Extensions', 3, '12'),
+      ex('Leg Extension (Machine)', 3, '12'),
       ex('Cable Kickbacks', 3, '12'),
     ],
     { abs: ABS_CABLE, cardio: CARDIO_30 }
@@ -578,12 +859,22 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 4, '10'),
-      ex('Deadlift or RDL (BB)', 3, '10'),
-      ex('Back Extensions', 3, '8'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '10',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Deadlift (Barbell)', 3, '10'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '8',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Assisted Pull Up', 3, '8'),
-      ex('Single Arm Dumbbell Row', 4, '8'),
-      ex('Arnold Press', 3, '8'),
+      ex('Single Arm Row (Dumbbell)', 4, '8'),
+      ex('Arnold Press (Dumbbell)', 3, '8'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -595,21 +886,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 4, '10'),
-      ex('Good Mornings (Smith)', 3, '10'),
-      ex('Deficit Reverse Lunge', 3, '8'),
-      ex('DB RDLs', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '10',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Good Morning (Smith Machine)', 3, '10'),
+      ex('Deficit Reverse Lunge', 3, '8', 'Can also be done on the smith machine.'),
+      ex('Romanian Deadlift (Dumbbell)', 3, '10'),
       ex('Cable Kickbacks', 4, '12'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(11, 2, 'upper', 'Upper', [
-    ex('Single Arm Machine Rows (Wide Grip)', 3, '8'),
-    ex('Straight Arm Pulldown', 3, '10'),
-    ex('Reverse Flies', 3, '10'),
-    ex('Incline Front Raise', 3, '10'),
-    ex('Lateral Raise Machine', 3, '10'),
-    ex('Cable Bicep Curls', 4, '10'),
+    ex('Seated Single Arm Row (Cable)', 3, '8'),
+    ex('Straight Arm Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Chest Supported Reverse Fly (Dumbbell)', 3, '10'),
+    ex('Incline Front Raise (Dumbbell)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, '10'),
+    ex('Bicep Curl (Cable)', 4, '10'),
   ]),
   buildDay(
     11,
@@ -617,10 +913,15 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('Leg Press', 3, '8'),
-      ex('Step Up Dumbbells', 3, '10'),
+      ex('Leg Press (Machine)', 3, '8'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '10',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Walking Lunges', 3, '10'),
-      ex('Leg Extensions', 3, '12'),
+      ex('Leg Extension (Machine)', 3, '12'),
       ex('Cable Kickbacks', 3, '12'),
     ],
     { abs: ABS_CABLE, cardio: CARDIO_30 }
@@ -631,12 +932,22 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 4, '10'),
-      ex('Deadlift or RDL (BB)', 3, '10'),
-      ex('Back Extensions', 3, '8'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '10',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Deadlift (Barbell)', 3, '10'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '8',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Assisted Pull Up', 3, '8'),
-      ex('Single Arm Dumbbell Row', 4, '8'),
-      ex('Arnold Press', 3, '8'),
+      ex('Single Arm Row (Dumbbell)', 4, '8'),
+      ex('Arnold Press (Dumbbell)', 3, '8'),
     ],
     { cardio: CARDIO_30 }
   ),
@@ -648,21 +959,26 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 1)',
     [
-      ex('Hip Thrusts', 4, '10'),
-      ex('Good Mornings (Smith)', 3, '10'),
-      ex('Deficit Reverse Lunge', 3, '8'),
-      ex('DB RDLs', 3, '10'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '10',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Good Morning (Smith Machine)', 3, '10'),
+      ex('Deficit Reverse Lunge', 3, '8', 'Can also be done on the smith machine.'),
+      ex('Romanian Deadlift (Dumbbell)', 3, '10'),
       ex('Cable Kickbacks', 4, '12'),
     ],
     { abs: ABS_FAV, cardio: CARDIO_30 }
   ),
   buildDay(12, 2, 'upper', 'Upper', [
-    ex('Single Arm Machine Rows (Wide Grip)', 3, '8'),
-    ex('Straight Arm Pulldown', 3, '10'),
-    ex('Reverse Flies', 3, '10'),
-    ex('Incline Front Raise', 3, '10'),
-    ex('Lateral Raise Machine', 3, '10'),
-    ex('Cable Bicep Curls', 4, '10'),
+    ex('Seated Single Arm Row (Cable)', 3, '8'),
+    ex('Straight Arm Pulldown', 3, '10', 'Feel free to use any attachment.'),
+    ex('Chest Supported Reverse Fly (Dumbbell)', 3, '10'),
+    ex('Incline Front Raise (Dumbbell)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, '10'),
+    ex('Bicep Curl (Cable)', 4, '10'),
   ]),
   buildDay(
     12,
@@ -670,10 +986,15 @@ const DAYS: ProgramDay[] = [
     'lower',
     'Lower (Session 2)',
     [
-      ex('Leg Press', 3, '8'),
-      ex('Step Up Dumbbells', 3, '10'),
+      ex('Leg Press (Machine)', 3, '8'),
+      ex(
+        'Step Up (Dumbbell)',
+        3,
+        '10',
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+      ),
       ex('Walking Lunges', 3, '10'),
-      ex('Leg Extensions', 3, '12'),
+      ex('Leg Extension (Machine)', 3, '12'),
       ex('Cable Kickbacks', 3, '12'),
     ],
     { abs: ABS_CABLE, cardio: CARDIO_30 }
@@ -684,12 +1005,22 @@ const DAYS: ProgramDay[] = [
     'full-body',
     'Full Body',
     [
-      ex('Hip Thrusts', 4, '10'),
-      ex('Deadlift or RDL (BB)', 3, '10'),
-      ex('Back Extensions', 3, '8'),
+      ex(
+        'Hip Thrust (Barbell)',
+        4,
+        '10',
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+      ),
+      ex('Deadlift (Barbell)', 3, '10'),
+      ex(
+        'Back Extensions (Hyperextension)',
+        3,
+        '8',
+        'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+      ),
       ex('Assisted Pull Up', 3, '8'),
-      ex('Single Arm Dumbbell Row', 4, '8'),
-      ex('Arnold Press', 3, '8'),
+      ex('Single Arm Row (Dumbbell)', 4, '8'),
+      ex('Arnold Press (Dumbbell)', 3, '8'),
     ],
     { cardio: CARDIO_30 }
   ),

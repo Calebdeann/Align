@@ -228,7 +228,7 @@ function FriendCard({
       >
         <Text style={styles.statLabel}>Workout</Text>
         <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
-          {entry.workoutName ?? '—'}
+          {entry.workoutName ?? '-'}
         </Text>
         <Text style={styles.statLabel}>Time</Text>
         <Text style={styles.statValue}>{formatDuration(entry.durationSeconds)}</Text>
@@ -239,7 +239,7 @@ function FriendCard({
   );
 }
 
-function InactiveFriendRow({
+const InactiveFriendRow = React.memo(function InactiveFriendRow({
   entry,
   index,
   onPoke,
@@ -330,7 +330,7 @@ function InactiveFriendRow({
       </Animated.View>
     </Pressable>
   );
-}
+});
 
 function renderCaption(caption: string): React.ReactNode {
   const parts = caption.split(/(@\w+)/g);
@@ -943,24 +943,27 @@ export default function FriendsScreen() {
     setRefreshing(false);
   };
 
-  const handlePoke = async (friendId: string, _friendName: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 80);
-    setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 160);
-    setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 280);
-    const nowIso = new Date().toISOString();
-    setRecentPokesMap((prev) => ({ ...prev, [friendId]: nowIso }));
-    if (friendId.startsWith('buddy-')) return;
-    const msg = pickRandomPokeMessage();
-    const ok = await pokeFriend(userId, friendId, msg);
-    if (!ok) {
-      setRecentPokesMap((prev) => {
-        const next = { ...prev };
-        delete next[friendId];
-        return next;
-      });
-    }
-  };
+  const handlePoke = useCallback(
+    async (friendId: string, _friendName: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 80);
+      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 160);
+      setTimeout(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 280);
+      const nowIso = new Date().toISOString();
+      setRecentPokesMap((prev) => ({ ...prev, [friendId]: nowIso }));
+      if (friendId.startsWith('buddy-')) return;
+      const msg = pickRandomPokeMessage();
+      const ok = await pokeFriend(userId, friendId, msg);
+      if (!ok) {
+        setRecentPokesMap((prev) => {
+          const next = { ...prev };
+          delete next[friendId];
+          return next;
+        });
+      }
+    },
+    [userId]
+  );
 
   return (
     <View style={styles.container}>

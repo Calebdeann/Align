@@ -25,8 +25,6 @@ import {
   WorkoutTemplate,
   TemplateFolder,
   getTemplateTotalSets,
-  estimateTemplateDuration,
-  formatTemplateDuration,
   DEFAULT_FOLDER_ID,
 } from '@/stores/templateStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
@@ -182,26 +180,22 @@ function MinusCircleIcon() {
 
 function TemplateCard({
   template,
-  onStart,
+  index,
   onPress,
   isDragGhost,
 }: {
   template: WorkoutTemplate;
-  onStart: () => void;
+  index: number;
   onPress: () => void;
   isDragGhost?: boolean;
 }) {
+  const exerciseCount = template.exercises.length;
   const totalSets = useMemo(() => getTemplateTotalSets(template), [template]);
-  const duration = useMemo(
-    () => formatTemplateDuration(estimateTemplateDuration(template)),
-    [template]
-  );
 
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.templateCard,
-        { backgroundColor: (template.tagColor || '#000') + '30' },
+        styles.planListRow,
         isDragGhost && { opacity: 0.3 },
         pressed && !isDragGhost && { opacity: 0.7 },
       ]}
@@ -210,47 +204,42 @@ function TemplateCard({
         onPress();
       }}
     >
-      <View style={styles.templateImageContainer}>
+      {/* Thumbnail — alternating tilt to match the plan-template row */}
+      <View
+        style={[
+          styles.planListThumb,
+          { transform: [{ rotate: `${index % 2 === 0 ? 2 : -2}deg` }] },
+        ]}
+      >
         {template.localImage ? (
           <Image
             source={template.localImage}
-            style={styles.templateImage}
+            style={styles.planListThumbImg}
             contentFit="cover"
             cachePolicy="memory-disk"
           />
         ) : template.image?.uri ? (
           <Image
             source={{ uri: template.image.uri }}
-            style={styles.templateImage}
+            style={styles.planListThumbImg}
             contentFit="cover"
             cachePolicy="memory-disk"
           />
         ) : (
-          <View style={[styles.templateImage, styles.templateImagePlaceholder]}>
+          <View style={[styles.planListThumbImg, styles.planListThumbPlaceholder]}>
             <Ionicons name="barbell-outline" size={20} color="rgba(0,0,0,0.3)" />
           </View>
         )}
       </View>
-      <View style={styles.templateInfo}>
-        <Text style={styles.templateName} numberOfLines={1}>
+      <View style={styles.planListInfo}>
+        <Text style={styles.planListName} numberOfLines={1}>
           {template.name}
         </Text>
-        <Text style={styles.templateMeta} numberOfLines={1}>
-          {totalSets} Sets • {duration}
+        <Text style={styles.planListSub} numberOfLines={1}>
+          {exerciseCount}x Exercises • {totalSets} Total Sets
         </Text>
       </View>
-      <Pressable
-        style={({ pressed }) => [styles.startTemplateButton, pressed && { opacity: 0.7 }]}
-        onPress={(e) => {
-          e.stopPropagation();
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-          onStart();
-        }}
-        hitSlop={6}
-      >
-        <Text style={styles.startTemplateIcon}>+</Text>
-        <Text style={styles.startTemplateText}>Start</Text>
-      </Pressable>
+      <Ionicons name="chevron-forward" size={22} color="rgba(0,0,0,0.3)" />
     </Pressable>
   );
 }
@@ -721,9 +710,16 @@ export default function StartWorkoutSheet() {
     }
   };
 
+  // Tapping a My-Template now opens the same workout-preview screen as plan
+  // templates do. The preview's Start button (driven by templateId + source)
+  // begins the active workout — no more inline Start button on the row.
   const handleTemplatePress = (template: WorkoutTemplate) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     withLock(() =>
-      router.push({ pathname: '/template-detail', params: { templateId: template.id } })
+      router.push({
+        pathname: '/workout-preview',
+        params: { templateId: template.id, source: 'template' },
+      })
     );
   };
 
@@ -836,7 +832,7 @@ export default function StartWorkoutSheet() {
       Alert.alert(
         'Cannot Delete',
         isPlanFolderId(selectedFolderId)
-          ? "Plan template folders can't be deleted — switch plans in Profile to change which folder appears here."
+          ? "Plan template folders can't be deleted. Switch plans in Profile to change which folder appears here."
           : 'The default "My Templates" folder cannot be deleted.'
       );
       return;
@@ -1132,7 +1128,7 @@ export default function StartWorkoutSheet() {
 
                 {!folder.isCollapsed && folderTemplates.length > 0 && (
                   <View style={styles.folderTemplates}>
-                    {folderTemplates.map((template) => (
+                    {folderTemplates.map((template, idx) => (
                       <SwipeableTemplateCard
                         key={template.id}
                         template={template}
@@ -1140,7 +1136,7 @@ export default function StartWorkoutSheet() {
                       >
                         <TemplateCard
                           template={template}
-                          onStart={() => handleStartFromTemplate(template.id)}
+                          index={idx}
                           onPress={() => handleTemplatePress(template)}
                           isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
                         />
@@ -1152,7 +1148,7 @@ export default function StartWorkoutSheet() {
             );
           })}
 
-          {unfolderedTemplates.map((template) => (
+          {unfolderedTemplates.map((template, idx) => (
             <SwipeableTemplateCard
               key={template.id}
               template={template}
@@ -1160,7 +1156,7 @@ export default function StartWorkoutSheet() {
             >
               <TemplateCard
                 template={template}
-                onStart={() => handleStartFromTemplate(template.id)}
+                index={idx}
                 onPress={() => handleTemplatePress(template)}
                 isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
               />
@@ -1204,7 +1200,7 @@ export default function StartWorkoutSheet() {
                       onPress={() => handlePlanWorkoutPress(pw)}
                     />
                   ))}
-                  {planFolderUserTemplates.map((template) => (
+                  {planFolderUserTemplates.map((template, idx) => (
                     <SwipeableTemplateCard
                       key={template.id}
                       template={template}
@@ -1212,7 +1208,7 @@ export default function StartWorkoutSheet() {
                     >
                       <TemplateCard
                         template={template}
-                        onStart={() => handleStartFromTemplate(template.id)}
+                        index={planWorkouts.length + idx}
                         onPress={() => handleTemplatePress(template)}
                         isDragGhost={isDragToFolder && draggedTemplate?.id === template.id}
                       />
@@ -1243,7 +1239,7 @@ export default function StartWorkoutSheet() {
             },
           ]}
         >
-          <TemplateCard template={draggedTemplate} onStart={() => {}} onPress={() => {}} />
+          <TemplateCard template={draggedTemplate} index={0} onPress={() => {}} />
         </Animated.View>
       )}
 

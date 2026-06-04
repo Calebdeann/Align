@@ -10,6 +10,7 @@ import {
   Animated,
   Dimensions,
   Alert,
+  type ImageSourcePropType,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,11 +18,17 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
-import { ImagePickerSheet, type SelectedImageData } from '@/components/ImagePickerSheet';
 import { useUserProfileStore } from '@/stores/userProfileStore';
 import { useWorkoutStore, type ScheduledWorkout } from '@/stores/workoutStore';
+import {
+  useTemplateStore,
+  type WorkoutTemplate,
+  type TemplateFolder,
+  DEFAULT_FOLDER_ID,
+} from '@/stores/templateStore';
 import { saveScheduledWorkoutToBackend } from '@/services/api/scheduledWorkouts';
-import { uploadTemplateImage, isLocalUri } from '@/services/api/templates';
+import { getProgram, WORKOUT_TYPE_COLORS, type ProgramWorkout } from '@/data/programs';
+import { getPlanSquareImage } from '@/data/programs/planImages';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -52,6 +59,10 @@ const REPEAT_OPTIONS: { id: RepeatType; label: string }[] = [
   { id: 'custom', label: 'Custom days' },
   { id: 'interval', label: 'Every X days' },
 ];
+
+type SelectedTemplate =
+  | { source: 'user'; template: WorkoutTemplate }
+  | { source: 'plan'; workout: ProgramWorkout };
 
 // ─── Helpers (mirrors schedule-workout.tsx — unify into src/utils/calendar.ts later) ──
 
@@ -210,17 +221,121 @@ function InlineCalendar({
   );
 }
 
+// ─── Template thumbnail (used by the chosen-template card + picker rows) ────
+
+function TemplateThumbnail({
+  source,
+  size,
+  rotate,
+}: {
+  source: ImageSourcePropType | { uri: string } | null;
+  size: { width: number; height: number; radius: number };
+  rotate: string;
+}) {
+  return (
+    <View
+      style={[
+        {
+          width: size.width,
+          height: size.height,
+          borderRadius: size.radius,
+          overflow: 'hidden',
+          backgroundColor: '#e0e0e0',
+          transform: [{ rotate }],
+        },
+      ]}
+    >
+      {source ? (
+        <Image
+          source={source as ImageSourcePropType}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, styles.thumbPlaceholder]}>
+          <Ionicons name="barbell-outline" size={size.width * 0.32} color="rgba(0,0,0,0.4)" />
+        </View>
+      )}
+    </View>
+  );
+}
+
+function resolveUserTemplateImageSource(
+  t: WorkoutTemplate
+): ImageSourcePropType | { uri: string } | null {
+  if (t.localImage) return t.localImage;
+  if (t.image?.uri) return { uri: t.image.uri };
+  return null;
+}
+
+function resolvePlanWorkoutImageSource(
+  w: ProgramWorkout
+): ImageSourcePropType | { uri: string } | null {
+  return getPlanSquareImage(w.id);
+}
+
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function ScheduleNewWorkoutScreen() {
   const userId = useUserProfileStore((s) => s.userId);
+  const planId = useUserProfileStore((s) => s.profile?.plan_id) ?? null;
   const addWorkout = useWorkoutStore((s) => s.addWorkout);
+  const userTemplates = useTemplateStore((s) => s.templates);
+  const folders = useTemplateStore((s) => s.folders);
 
-  // Edit card
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [editImage, setEditImage] = useState<SelectedImageData | null>(null);
-  const [showImagePicker, setShowImagePicker] = useState(false);
+  const planProgram = useMemo(() => (planId ? getProgram(planId) : null), [planId]);
+
+  // Plan workouts: one card per workout day in the FIRST cycle, mirroring the
+  // dedup used by app/start-workout-sheet.tsx — without the slice we'd render
+  // the same templates repeated for every week of the program.
+  const planWorkouts = useMemo<ProgramWorkout[]>(() => {
+    if (!planProgram) return [];
+    return planProgram.days
+      .slice(0, planProgram.daysPerWeek)
+      .map((day) => day.workouts[0])
+      .filter((w): w is ProgramWorkout => !!w && w.exercises.length > 0);
+  }, [planProgram]);
+
+  // Folder grouping for My Templates. Skip plan-folder-prefixed folders
+  // (start-workout-sheet.tsx auto-creates `plan-folder:<planId>` containers
+  // for the user's current plan; those belong under Plan Templates, not here).
+  const myFolderGroups = useMemo<{ folder: TemplateFolder; templates: WorkoutTemplate[] }[]>(() => {
+    const groups: { folder: TemplateFolder; templates: WorkoutTemplate[] }[] = [];
+    const seenTemplateIds = new Set<string>();
+    for (const f of folders) {
+      if (f.id.startsWith('plan-folder:')) continue;
+      const inFolder = userTemplates.filter((t) =>
+        f.id === DEFAULT_FOLDER_ID
+          ? t.folderId === DEFAULT_FOLDER_ID || !t.folderId
+          : t.folderId === f.id
+      );
+      inFolder.forEach((t) => seenTemplateIds.add(t.id));
+      if (inFolder.length > 0) groups.push({ folder: f, templates: inFolder });
+    }
+    // Any templates not surfaced by a folder (e.g. their folderId points at a
+    // plan-folder which we filtered out, or a folder that was deleted) fall
+    // through here so the picker never silently hides them.
+    const orphans = userTemplates.filter(
+      (t) => !seenTemplateIds.has(t.id) && !(t.folderId && t.folderId.startsWith('plan-folder:'))
+    );
+    if (orphans.length > 0) {
+      groups.push({
+        folder: { id: '__orphans', name: 'Other', createdAt: '', isCollapsed: false },
+        templates: orphans,
+      });
+    }
+    return groups;
+  }, [folders, userTemplates]);
+
+  const hasMyTemplates = myFolderGroups.length > 0;
+
+  // Selected template (user-template OR plan-workout)
+  const [selected, setSelected] = useState<SelectedTemplate | null>(null);
+
+  // Template picker bottom sheet
+  const [showTemplateSheet, setShowTemplateSheet] = useState(false);
+  const templateSheetSlide = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   // Date
   const now = new Date();
@@ -249,6 +364,39 @@ export default function ScheduleNewWorkoutScreen() {
   useEffect(() => {
     if (repeatType === 'never') setEndDate(null);
   }, [repeatType]);
+
+  // ── Template picker open/close ──────────────────────────────────────────────
+
+  const openTemplateSheet = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setShowTemplateSheet(true);
+    Animated.spring(templateSheetSlide, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+  const closeTemplateSheet = () => {
+    Animated.timing(templateSheetSlide, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => setShowTemplateSheet(false));
+  };
+
+  const handleSelectUser = (t: WorkoutTemplate) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSelected({ source: 'user', template: t });
+    closeTemplateSheet();
+  };
+  const handleSelectPlan = (w: ProgramWorkout) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSelected({ source: 'plan', workout: w });
+    closeTemplateSheet();
+  };
+
+  // ── Repeat modal open/close ─────────────────────────────────────────────────
 
   const openRepeatModal = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -299,6 +447,8 @@ export default function ScheduleNewWorkoutScreen() {
     if (id !== 'custom' && id !== 'interval') closeRepeatModal();
   };
 
+  // ── Save ────────────────────────────────────────────────────────────────────
+
   const handleSave = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     if (saving) return;
@@ -306,46 +456,52 @@ export default function ScheduleNewWorkoutScreen() {
       Alert.alert('Not signed in', 'Sign in to schedule a workout.');
       return;
     }
-    if (!editName.trim()) {
-      Alert.alert('Name required', 'Give this workout a name to schedule it.');
+    if (!selected) {
+      Alert.alert('Choose a template', 'Pick a template first to schedule it.');
       return;
     }
     setSaving(true);
 
-    let imageField: ScheduledWorkout['image'] | undefined;
-    if (editImage) {
-      if (editImage.type === 'template') {
-        imageField = {
-          type: 'template',
-          uri: editImage.uri,
-          templateId: editImage.templateImageId,
-        };
-      } else if (editImage.uri && isLocalUri(editImage.uri)) {
-        const remoteUrl = await uploadTemplateImage(userId, editImage.uri);
-        if (remoteUrl) {
-          imageField = { type: editImage.type, uri: remoteUrl };
-        }
-      } else if (editImage.uri) {
-        imageField = { type: editImage.type, uri: editImage.uri };
-      }
-    }
-
-    const workoutData: Omit<ScheduledWorkout, 'id' | 'createdAt' | 'completedDates'> = {
-      userId,
-      name: editName.trim(),
-      description: editDescription.trim() || undefined,
-      image: imageField,
-      tagId: 'purple',
-      tagColor: colors.primary,
-      templateName: null,
-      date: dateKey(selectedDate),
-      repeat: {
-        type: repeatType,
-        ...(repeatType === 'custom' ? { customDays } : {}),
-        ...(repeatType === 'interval' ? { intervalDays } : {}),
-      },
-      ...(endDate ? { endDate: dateKey(endDate) } : {}),
+    const repeatField: ScheduledWorkout['repeat'] = {
+      type: repeatType,
+      ...(repeatType === 'custom' ? { customDays } : {}),
+      ...(repeatType === 'interval' ? { intervalDays } : {}),
     };
+
+    let workoutData: Omit<ScheduledWorkout, 'id' | 'createdAt' | 'completedDates'>;
+
+    if (selected.source === 'user') {
+      const t = selected.template;
+      workoutData = {
+        userId,
+        name: t.name,
+        description: t.description || undefined,
+        image: t.image,
+        tagId: 'purple',
+        tagColor: t.tagColor || colors.primary,
+        templateName: t.name,
+        templateId: t.id,
+        date: dateKey(selectedDate),
+        repeat: repeatField,
+        ...(endDate ? { endDate: dateKey(endDate) } : {}),
+      };
+    } else {
+      const w = selected.workout;
+      workoutData = {
+        userId,
+        name: w.title,
+        description: w.description || undefined,
+        image: undefined,
+        tagId: 'purple',
+        tagColor: WORKOUT_TYPE_COLORS[w.type] ?? colors.primary,
+        templateName: w.title,
+        date: dateKey(selectedDate),
+        repeat: repeatField,
+        ...(planId ? { planId } : {}),
+        programWorkoutId: w.id,
+        ...(endDate ? { endDate: dateKey(endDate) } : {}),
+      };
+    }
 
     addWorkout(workoutData);
 
@@ -370,6 +526,31 @@ export default function ScheduleNewWorkoutScreen() {
     router.back();
   };
 
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  const selectedImageSource =
+    selected?.source === 'user'
+      ? resolveUserTemplateImageSource(selected.template)
+      : selected?.source === 'plan'
+        ? resolvePlanWorkoutImageSource(selected.workout)
+        : null;
+
+  const selectedTitle =
+    selected?.source === 'user'
+      ? selected.template.name
+      : selected?.source === 'plan'
+        ? selected.workout.title
+        : null;
+
+  const selectedDescription =
+    selected?.source === 'user'
+      ? selected.template.description
+      : selected?.source === 'plan'
+        ? selected.workout.description
+        : null;
+
+  const saveDisabled = saving || !selected;
+
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       {/* Header */}
@@ -388,10 +569,10 @@ export default function ScheduleNewWorkoutScreen() {
         <Pressable
           style={[styles.headerButton, styles.headerSaveBtn]}
           onPress={handleSave}
-          disabled={saving}
+          disabled={saveDisabled}
           hitSlop={8}
         >
-          <Text style={[styles.headerSaveText, saving && { opacity: 0.4 }]}>Save</Text>
+          <Text style={[styles.headerSaveText, saveDisabled && { opacity: 0.4 }]}>Save</Text>
         </Pressable>
       </View>
 
@@ -400,61 +581,45 @@ export default function ScheduleNewWorkoutScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Edit card: tilted image + title + description */}
-        <View style={styles.editCard}>
-          <View style={styles.editInfoRow}>
-            <Pressable
-              style={styles.heroImage}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                setShowImagePicker(true);
-              }}
-            >
-              {editImage?.localSource ? (
-                <Image
-                  source={editImage.localSource}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                />
-              ) : editImage?.uri ? (
-                <Image
-                  source={{ uri: editImage.uri }}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                />
+        {/* Choose Template card */}
+        <Pressable
+          style={({ pressed }) => [styles.chooseCard, pressed && { opacity: 0.7 }]}
+          onPress={openTemplateSheet}
+        >
+          <View style={styles.chooseRow}>
+            <TemplateThumbnail
+              source={selectedImageSource}
+              size={{ width: 96, height: 116, radius: 14 }}
+              rotate="-2.5deg"
+            />
+            <View style={styles.chooseTextCol}>
+              {selected ? (
+                <>
+                  <Text style={styles.chooseTitle} numberOfLines={2}>
+                    {selectedTitle}
+                  </Text>
+                  {selectedDescription ? (
+                    <Text style={styles.chooseDescription} numberOfLines={3}>
+                      {selectedDescription}
+                    </Text>
+                  ) : (
+                    <Text style={styles.chooseSubtle}>
+                      {selected.source === 'plan' ? 'From your plan' : 'My template'}
+                    </Text>
+                  )}
+                </>
               ) : (
-                <View style={styles.heroImagePlaceholder}>
-                  <Ionicons name="barbell-outline" size={32} color="rgba(0,0,0,0.4)" />
-                  <Text style={styles.heroImagePlaceholderText}>Add image</Text>
-                </View>
+                <>
+                  <Text style={styles.choosePlaceholderTitle}>Choose template</Text>
+                  <Text style={styles.chooseSubtle}>Tap to pick one</Text>
+                </>
               )}
-            </Pressable>
-
-            <View style={styles.editTextInputs}>
-              <TextInput
-                autoCorrect={false}
-                style={styles.nameInput}
-                placeholder="Workout name"
-                placeholderTextColor={colors.textTertiary}
-                value={editName}
-                onChangeText={setEditName}
-              />
-              <TextInput
-                autoCorrect={false}
-                style={styles.descriptionInput}
-                placeholder="Description (optional)"
-                placeholderTextColor={colors.textTertiary}
-                value={editDescription}
-                onChangeText={setEditDescription}
-                multiline
-              />
             </View>
+            <Ionicons name="chevron-forward" size={18} color="rgba(0,0,0,0.35)" />
           </View>
-        </View>
+        </Pressable>
 
-        {/* Date + Repeat section */}
+        {/* Date + inline calendar */}
         <Text style={styles.sectionHeader}>Date</Text>
         <View style={styles.card}>
           <View style={styles.menuRow}>
@@ -481,6 +646,7 @@ export default function ScheduleNewWorkoutScreen() {
           />
         </View>
 
+        {/* Repeat */}
         <View style={styles.card}>
           <Pressable style={styles.menuRow} onPress={openRepeatModal}>
             <View style={styles.menuLeft}>
@@ -496,6 +662,7 @@ export default function ScheduleNewWorkoutScreen() {
           </Pressable>
         </View>
 
+        {/* End repeat (only when repeat != never) */}
         {repeatType !== 'never' && (
           <View style={styles.card}>
             <Pressable style={styles.menuRow} onPress={openEndRepeatModal}>
@@ -516,14 +683,145 @@ export default function ScheduleNewWorkoutScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Image picker bottom sheet */}
-      <ImagePickerSheet
-        visible={showImagePicker}
-        onClose={() => setShowImagePicker(false)}
-        onImageSelected={(img) => setEditImage(img)}
-      />
+      {/* ── Template picker bottom sheet ── */}
+      <Modal
+        visible={showTemplateSheet}
+        transparent
+        animationType="none"
+        onRequestClose={closeTemplateSheet}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            closeTemplateSheet();
+          }}
+        >
+          <Animated.View
+            style={[
+              styles.modalContent,
+              styles.templateSheet,
+              { transform: [{ translateY: templateSheetSlide }] },
+            ]}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalHandle} />
+              <View style={styles.modalHeader}>
+                <View style={styles.modalCloseSpacer} />
+                <Text style={styles.modalTitle}>Choose template</Text>
+                <Pressable
+                  style={styles.modalCloseSpacer}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    closeTemplateSheet();
+                  }}
+                  hitSlop={8}
+                >
+                  <Ionicons name="close" size={22} color="#000" />
+                </Pressable>
+              </View>
 
-      {/* Repeat modal */}
+              <ScrollView
+                style={styles.templateSheetScroll}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 12 }}
+              >
+                {!hasMyTemplates && planWorkouts.length === 0 && (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="barbell-outline" size={32} color="rgba(0,0,0,0.25)" />
+                    <Text style={styles.emptyStateText}>
+                      No templates yet. Create one from the + menu.
+                    </Text>
+                  </View>
+                )}
+
+                {hasMyTemplates && (
+                  <>
+                    <Text style={styles.pickerSectionHeader}>My Templates</Text>
+                    {myFolderGroups.map((group) => (
+                      <View key={group.folder.id} style={styles.folderGroup}>
+                        <View style={styles.folderHeader}>
+                          <Ionicons name="folder-outline" size={14} color="rgba(0,0,0,0.45)" />
+                          <Text style={styles.folderHeaderText} numberOfLines={1}>
+                            {group.folder.name}
+                          </Text>
+                        </View>
+                        <View style={styles.pickerList}>
+                          {group.templates.map((t, i) => {
+                            const isSelected =
+                              selected?.source === 'user' && selected.template.id === t.id;
+                            return (
+                              <Pressable
+                                key={t.id}
+                                style={({ pressed }) => [
+                                  styles.pickerRow,
+                                  pressed && { opacity: 0.7 },
+                                ]}
+                                onPress={() => handleSelectUser(t)}
+                              >
+                                <TemplateThumbnail
+                                  source={resolveUserTemplateImageSource(t)}
+                                  size={{ width: 48, height: 56, radius: 10 }}
+                                  rotate={i % 2 === 0 ? '-2.5deg' : '2.5deg'}
+                                />
+                                <View style={styles.pickerInfo}>
+                                  <Text style={styles.pickerName} numberOfLines={1}>
+                                    {t.name}
+                                  </Text>
+                                  <Text style={styles.pickerMeta} numberOfLines={1}>
+                                    {t.exercises.length} exercises
+                                  </Text>
+                                </View>
+                                {isSelected && <Ionicons name="checkmark" size={22} color="#000" />}
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                {planWorkouts.length > 0 && (
+                  <>
+                    <Text style={styles.pickerSectionHeader}>Plan Templates</Text>
+                    <View style={styles.pickerList}>
+                      {planWorkouts.map((w, i) => {
+                        const isSelected =
+                          selected?.source === 'plan' && selected.workout.id === w.id;
+                        return (
+                          <Pressable
+                            key={w.id}
+                            style={({ pressed }) => [styles.pickerRow, pressed && { opacity: 0.7 }]}
+                            onPress={() => handleSelectPlan(w)}
+                          >
+                            <TemplateThumbnail
+                              source={resolvePlanWorkoutImageSource(w)}
+                              size={{ width: 48, height: 56, radius: 10 }}
+                              rotate={i % 2 === 0 ? '2deg' : '-2deg'}
+                            />
+                            <View style={styles.pickerInfo}>
+                              <Text style={styles.pickerName} numberOfLines={1}>
+                                {w.title}
+                              </Text>
+                              <Text style={styles.pickerMeta} numberOfLines={1}>
+                                {w.exercises.length} exercises
+                              </Text>
+                            </View>
+                            {isSelected && <Ionicons name="checkmark" size={22} color="#000" />}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+              </ScrollView>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      {/* ── Repeat modal ── */}
       <Modal
         visible={showRepeatModal}
         transparent
@@ -671,7 +969,7 @@ export default function ScheduleNewWorkoutScreen() {
         </Pressable>
       </Modal>
 
-      {/* End repeat modal */}
+      {/* ── End repeat modal ── */}
       <Modal
         visible={showEndRepeatModal}
         transparent
@@ -773,47 +1071,31 @@ const styles = StyleSheet.create({
 
   scroll: { paddingHorizontal: 16, paddingTop: 8 },
 
-  // Edit card (tilted image + title + description)
-  editCard: {
+  // Choose template card
+  chooseCard: {
     backgroundColor: '#f5f5f5',
     borderRadius: 14,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
-  editInfoRow: { flexDirection: 'row', gap: 16 },
-  heroImage: {
-    width: 110,
-    height: 130,
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginLeft: 4,
-    backgroundColor: '#e0e0e0',
-    transform: [{ rotate: '-2.5deg' }],
-  },
-  heroImagePlaceholder: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  heroImagePlaceholderText: {
-    fontFamily: fonts.medium,
-    fontSize: 12,
-    color: 'rgba(0,0,0,0.5)',
-  },
-  editTextInputs: { flex: 1, justifyContent: 'center' },
-  nameInput: {
+  chooseRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  chooseTextCol: { flex: 1, justifyContent: 'center', gap: 4 },
+  chooseTitle: { fontFamily: fonts.semiBold, fontSize: fontSize.md, color: colors.text },
+  choosePlaceholderTitle: {
     fontFamily: fonts.semiBold,
     fontSize: fontSize.md,
     color: colors.text,
-    paddingVertical: spacing.xs,
   },
-  descriptionInput: {
+  chooseDescription: {
     fontFamily: fonts.regular,
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    paddingVertical: spacing.xs,
-    minHeight: 36,
+    lineHeight: 18,
+  },
+  chooseSubtle: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: 'rgba(0,0,0,0.45)',
   },
 
   // Section header
@@ -899,6 +1181,12 @@ const styles = StyleSheet.create({
   calendarDayTextToday: { color: '#000', fontFamily: fonts.bold },
   calendarDayTextDisabled: { color: 'rgba(0,0,0,0.2)' },
 
+  // Thumbnail placeholder (inside TemplateThumbnail)
+  thumbPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   // Modal
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   modalContent: {
@@ -924,6 +1212,59 @@ const styles = StyleSheet.create({
   },
   modalCloseSpacer: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   modalTitle: { fontFamily: fonts.bold, fontSize: 17, color: '#000' },
+
+  // Template picker sheet
+  templateSheet: { maxHeight: SCREEN_HEIGHT * 0.85 },
+  templateSheetScroll: { paddingHorizontal: 16 },
+  pickerSectionHeader: {
+    fontFamily: fonts.semiBold,
+    fontSize: 13,
+    color: 'rgba(0,0,0,0.5)',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    marginLeft: 4,
+  },
+  pickerList: { gap: 8, marginBottom: spacing.md },
+  folderGroup: { marginBottom: spacing.sm },
+  folderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+  },
+  folderHeaderText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 13,
+    color: 'rgba(0,0,0,0.55)',
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+  },
+  pickerInfo: { flex: 1, gap: 2 },
+  pickerName: { fontFamily: fonts.semiBold, fontSize: 15, color: '#000' },
+  pickerMeta: { fontFamily: fonts.medium, fontSize: 13, color: 'rgba(0,0,0,0.5)' },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 48,
+  },
+  emptyStateText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: 'rgba(0,0,0,0.5)',
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
 
   // Repeat modal content
   repeatCard: {

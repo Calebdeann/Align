@@ -494,7 +494,6 @@
     "minutes": "{{minutes}} minutos"
   },
   "workoutComplete": {
-    "shareWorkout": "Compartilhar treino - Marcar @align.tracker",
     "done": "Concluído",
     "duration": "Duração",
     "volume": "Volume",

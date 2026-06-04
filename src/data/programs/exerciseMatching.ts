@@ -140,7 +140,11 @@ export function programExerciseToTemplateExercise(
     muscle: resolved?.muscleGroup ?? 'other',
     gifUrl: resolved?.gifUrl,
     thumbnailUrl: resolved?.thumbnailUrl,
-    notes: pe.notes,
+    // Plan-level coaching note flows through as `placeholderNote` (a hint
+    // that renders in grey and is replaced when the user types), NOT as
+    // the value of `notes` — so the user can tap and overwrite.
+    notes: undefined,
+    placeholderNote: pe.notes,
     sets: Array.from({ length: pe.sets }).map(() => ({
       targetReps,
       setType: 'normal',

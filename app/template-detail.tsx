@@ -527,7 +527,7 @@ export default function TemplateDetailScreen() {
                   onChangeText={setEditName}
                 />
                 <TextInput
-                  autoCorrect={false}
+                  autoCorrect
                   style={styles.descriptionInput}
                   placeholder={t('template.descriptionOptional')}
                   placeholderTextColor={colors.textTertiary}

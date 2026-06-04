@@ -604,6 +604,19 @@ export default function PlanScreen() {
     fetchProfile();
   }, [fetchProfile]);
 
+  // The planner tab stays mounted forever (tab navigator), so `today` and the
+  // calendar's `currentMonth/Year` state captured at mount go stale on the
+  // next day OR when the user comes back after time away. When the user
+  // changes plans in profile, the planner should snap back to the *real*
+  // current month — not whatever month they were last viewing.
+  useEffect(() => {
+    if (!planId) return;
+    const now = new Date();
+    todayRef.current = now;
+    setCurrentYear(now.getFullYear());
+    setCurrentMonth(now.getMonth());
+  }, [planId]);
+
   // Lazy seed plan workouts when user lands on planner with an unseeded plan.
   // Also self-heal any stale scheduled workouts left over from previous plans
   // so a user who's switched plans multiple times doesn't see ghost rows from

@@ -50,10 +50,16 @@ function phaseAGlutesAbs(week: number): ProgramExercise[] {
   const cableCrunchReps = week === 4 ? '12' : '8';
   const plankSecs = week === 4 ? '70 sec' : '60 sec';
   return [
-    ex('Hip Thrusts', 3, hipThrustReps),
-    ex('BB RDL', 3, rdlReps),
-    ex('Cable Step Ups', 3, '8'),
-    ex('Hip Abductions', 3, hipAbReps),
+    ex('Hip Thrust (Barbell)', 3, hipThrustReps, {
+      notes:
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+    }),
+    ex('Romanian Deadlift (Barbell)', 3, rdlReps),
+    ex('Step Up (Dumbbell)', 3, '8', {
+      notes:
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+    }),
+    ex('Seated Hip Abduction (Machine)', 3, hipAbReps),
     ex('Cable Crunch', 3, cableCrunchReps),
     ex('Plank', 3, plankSecs, { supersetGroup: 1 }),
     ex('Dead Bug', 3, '12', { supersetGroup: 1 }),
@@ -63,12 +69,12 @@ function phaseAGlutesAbs(week: number): ProgramExercise[] {
 function phaseAUpper(week: number): ProgramExercise[] {
   const lastReps = week === 4 ? '10' : '8';
   return [
-    ex('Lat Pull Down', 3, '10'),
-    ex('Seated Cable Row', 3, '10'),
-    ex('Shoulder Press Machine', 3, '10'),
-    ex('Lateral Raise Into Front Raise', 3, lastReps),
-    ex('Bicep Curl', 3, lastReps, { supersetGroup: 1 }),
-    ex('Tricep Pushdown', 3, lastReps, { supersetGroup: 1 }),
+    ex('Lat Pulldown', 3, '10'),
+    ex('Seated Row (Cable)', 3, '10'),
+    ex('Shoulder Press (Machine)', 3, '10'),
+    ex('Lateral to Front Raise (Dumbbell)', 3, lastReps),
+    ex('Bicep Curl (Barbell)', 3, lastReps, { supersetGroup: 1 }),
+    ex('Triceps Pushdown', 3, lastReps, { supersetGroup: 1 }),
   ];
 }
 
@@ -78,11 +84,14 @@ function phaseAFullBody(week: number): ProgramExercise[] {
   const facePullReps = week === 4 ? '12' : '10';
   const finisherReps = week === 4 ? '12' : '8';
   return [
-    ex('Hip Thrusts', 3, hipThrustReps),
-    ex('Leg Press', 3, '10'),
-    ex('Bulgarian Split Squat', 3, '10'),
-    ex('Close Grip Lat Pull Down', 3, closeGripReps),
-    ex('Face Pull', 3, facePullReps),
+    ex('Hip Thrust (Barbell)', 3, hipThrustReps, {
+      notes:
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+    }),
+    ex('Leg Press (Machine)', 3, '10'),
+    ex('Bulgarian Split Squats', 3, '10'),
+    ex('Lat Pulldown', 3, closeGripReps, { notes: 'Close Grip' }),
+    ex('Face Pulls', 3, facePullReps),
     ex('Cable Crunch', 3, finisherReps, { supersetGroup: 1 }),
     ex('Hanging Knee Raise', 3, finisherReps, { supersetGroup: 1 }),
   ];
@@ -98,10 +107,17 @@ function phaseBGlutesAbs(week: number): ProgramExercise[] {
   const abWheelReps = week >= 7 ? '8' : '6';
   const sidePlankSecs = week >= 7 ? '40 sec' : '30 sec';
   return [
-    ex('Hip Thrusts', 3, '10'),
-    ex('Sumo Squat', 3, sumoReps),
+    ex('Hip Thrust (Barbell)', 3, '10', {
+      notes:
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+    }),
+    ex('Sumo Squat (Dumbbell)', 3, sumoReps, {
+      notes: 'Can be done with a barbell, dumbbell, any weight, or no weight at all.',
+    }),
     ex('Cable Kickbacks', 3, kickbackReps),
-    ex('Back Extensions', 3, backExtReps),
+    ex('Back Extensions (Hyperextension)', 3, backExtReps, {
+      notes: 'Hold onto a plate or dumbbell at your chest to increase difficulty.',
+    }),
     ex('Ab Wheel Rollout', 3, abWheelReps),
     ex('Russian Twist', 3, '12', { supersetGroup: 1 }),
     ex('Side Plank', 3, sidePlankSecs, { supersetGroup: 1 }),
@@ -111,12 +127,12 @@ function phaseBGlutesAbs(week: number): ProgramExercise[] {
 function phaseBUpper(week: number): ProgramExercise[] {
   const lastReps = week >= 7 ? '10' : '8';
   return [
-    ex('Shoulder Press', 3, '10'),
-    ex('Single Arm Dumbbell Row', 3, '10'),
-    ex('Reverse Fly', 3, '10'),
-    ex('Lateral Raise Machine', 3, lastReps),
-    ex('Cable Bicep Curl', 3, lastReps, { supersetGroup: 1 }),
-    ex('Cable Tricep Extension', 3, lastReps, { supersetGroup: 1 }),
+    ex('Shoulder Press (Machine)', 3, '10'),
+    ex('Single Arm Row (Dumbbell)', 3, '10'),
+    ex('Reverse Fly (Cable)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, lastReps),
+    ex('Bicep Curl (Cable)', 3, lastReps, { supersetGroup: 1 }),
+    ex('Triceps Extension (Cable)', 3, lastReps, { supersetGroup: 1 }),
   ];
 }
 
@@ -128,13 +144,13 @@ function phaseBFullBody(week: number): ProgramExercise[] {
   const declineReps = week >= 7 ? '10' : '8';
   const hangingReps = week >= 7 ? '10' : '8';
   return [
-    ex('Back Squat', 3, squatReps),
-    ex('Reverse Lunge', 3, '10'),
-    ex('Single Leg RDL', 3, singleLegReps),
+    ex('Back Squat (Barbell)', 3, squatReps),
+    ex('Reverse Lunges (Barbell)', 3, '10'),
+    ex('Single Leg Romanian Deadlift (Barbell)', 3, singleLegReps),
     ex('Assisted Pull Up', 3, pullupReps),
-    ex('Bent Over Row', 3, bentRowReps),
+    ex('Bent Over Row (Barbell)', 3, bentRowReps),
     ex('Decline Crunch', 3, declineReps),
-    ex('Hanging Leg Raise', 3, hangingReps),
+    ex('Hanging Straight Leg Raise', 3, hangingReps),
   ];
 }
 

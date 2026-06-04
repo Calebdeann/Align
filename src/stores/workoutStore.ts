@@ -82,6 +82,11 @@ export interface PreviousSetData {
 export interface ActiveWorkoutExercise {
   exercise: ActiveExercise;
   notes: string;
+  // Coaching note attached to the source plan workout (e.g. Lower Session 1's
+  // "These can be done with a barbell, smith machine or hip thrust machine if
+  // your gym has one."). Renders as the placeholder of the notes field — does
+  // NOT pre-fill the value, so the user types fresh and clearing restores it.
+  placeholderNote?: string;
   restTimerSeconds: number;
   sets: ActiveExerciseSet[];
   previousSets: PreviousSetData[] | null;
@@ -278,6 +283,7 @@ interface WorkoutStore {
       gifUrl?: string;
       thumbnailUrl?: string;
       notes?: string;
+      placeholderNote?: string;
       is_custom?: boolean;
       sets: {
         targetWeight?: number;
@@ -448,6 +454,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
             is_custom: te.is_custom,
           },
           notes: te.notes || '',
+          placeholderNote: te.placeholderNote,
           restTimerSeconds: te.restTimerSeconds,
           sets: te.sets.map((s, index) => {
             const isCardio = isCardioExerciseId(te.exerciseId);

@@ -33,12 +33,8 @@
   },
   "dependencies": {
     "@callstack/liquid-glass": "^0.7.1",
-    "@expo-google-fonts/caveat": "^0.4.2",
-    "@expo-google-fonts/cormorant-garamond": "^0.4.1",
     "@expo-google-fonts/fraunces": "^0.4.1",
-    "@expo-google-fonts/gochi-hand": "^0.4.1",
     "@expo-google-fonts/instrument-serif": "^0.4.1",
-    "@expo-google-fonts/lora": "^0.4.2",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@shopify/flash-list": "2.0.2",
     "@supabase/supabase-js": "^2.90.1",

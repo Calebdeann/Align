@@ -1083,7 +1083,7 @@ export default function ScheduleWorkoutScreen() {
           <View style={styles.inputRow}>
             <Text style={styles.inputLabel}>{t('schedule.description')}</Text>
             <TextInput
-              autoCorrect={false}
+              autoCorrect
               style={styles.inputField}
               placeholder={t('schedule.optional')}
               placeholderTextColor={colors.textTertiary}

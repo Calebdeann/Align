@@ -797,7 +797,7 @@ export default function SaveWorkoutScreen() {
                 onChangeText={setWorkoutTitle}
               />
               <TextInput
-                autoCorrect={false}
+                autoCorrect
                 style={styles.descriptionInput}
                 placeholder={t('saveWorkout.descriptionOptional')}
                 placeholderTextColor={colors.textTertiary}

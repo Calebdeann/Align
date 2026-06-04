@@ -1,23 +1,24 @@
 import type { Program, ProgramDay, ProgramExercise, ProgramWorkout, WorkoutType } from './types';
 import { BOOTY_DESCRIPTIONS } from './booty-descriptions';
 
-const ex = (name: string, sets: number, reps: string): ProgramExercise => ({ name, sets, reps });
+const ex = (name: string, sets: number, reps: string, notes?: string): ProgramExercise =>
+  notes ? { name, sets, reps, notes } : { name, sets, reps };
 
 const ABS_HANG_AB: ProgramExercise[] = [
-  ex('Hanging knee raise', 3, '10'),
-  ex('Ab crunch', 3, '10'),
+  ex('Hanging Knee Raise', 3, '10'),
+  ex('Ab Crunch', 3, '10'),
 ];
 const ABS_HANG_AB_12: ProgramExercise[] = [
-  ex('Hanging knee raise', 3, '12'),
-  ex('Ab crunch', 3, '12'),
+  ex('Hanging Knee Raise', 3, '12'),
+  ex('Ab Crunch', 3, '12'),
 ];
 const ABS_HANG_DECLINE: ProgramExercise[] = [
-  ex('Hanging leg raise', 3, '12'),
-  ex('Decline ab crunch', 3, '12'),
+  ex('Hanging Straight Leg Raise', 3, '12'),
+  ex('Decline Crunch', 3, '12'),
 ];
 const ABS_HANG_DECLINE_10: ProgramExercise[] = [
-  ex('Hanging leg raise', 3, '10'),
-  ex('Decline ab crunch', 3, '10'),
+  ex('Hanging Straight Leg Raise', 3, '10'),
+  ex('Decline Crunch', 3, '10'),
 ];
 
 function buildDay(
@@ -57,132 +58,194 @@ function buildDay(
 
 function phaseAGlutes(week: number, cableStepReps: string): ProgramExercise[] {
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('DB RDL', 3, '10'),
-    ex('Cable Step Ups', 3, cableStepReps),
+    ex(
+      'Hip Thrust (Barbell)',
+      4,
+      '10',
+      'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+    ),
+    ex('Romanian Deadlift (Dumbbell)', 3, '10'),
+    ex(
+      'Step Up (Dumbbell)',
+      3,
+      cableStepReps,
+      'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+    ),
     ex('Cable Kickbacks', 4, '12'),
   ];
 }
 
 function phaseAGlutesW4Plus(): ProgramExercise[] {
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('DB RDL', 3, '10'),
-    ex('Cable Step Ups', 4, '8'),
+    ex(
+      'Hip Thrust (Barbell)',
+      4,
+      '10',
+      'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+    ),
+    ex('Romanian Deadlift (Dumbbell)', 3, '10'),
+    ex(
+      'Step Up (Dumbbell)',
+      4,
+      '8',
+      'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+    ),
     ex('Cable Kickbacks', 4, '12'),
   ];
 }
 
 function phaseAUpperW1(): ProgramExercise[] {
   return [
-    ex('Lat Pull Down', 3, '10'),
-    ex('Seated Cable Row', 3, '10'),
-    ex('Shoulder Press Machine', 3, '8'),
-    ex('Face Pull', 3, '12'),
-    ex('Cable Bicep Curl', 3, '8'),
-    ex('Hammer Curl', 3, '8'),
+    ex('Lat Pulldown', 3, '10'),
+    ex('Seated Row (Cable)', 3, '10'),
+    ex('Shoulder Press (Machine)', 3, '8'),
+    ex('Face Pulls', 3, '12'),
+    ex('Bicep Curl (Cable)', 3, '8'),
+    ex('Hammer Curl (Dumbbell)', 3, '8'),
   ];
 }
 
 function phaseAUpperW3Plus(): ProgramExercise[] {
   return [
-    ex('Lat Pull Down', 3, '12'),
-    ex('Seated Cable Row', 3, '10'),
-    ex('Shoulder Press Machine', 3, '10'),
-    ex('Face Pull', 3, '12'),
-    ex('Cable Bicep Curl', 3, '10'),
-    ex('Hammer Curl', 3, '10'),
+    ex('Lat Pulldown', 3, '12'),
+    ex('Seated Row (Cable)', 3, '10'),
+    ex('Shoulder Press (Machine)', 3, '10'),
+    ex('Face Pulls', 3, '12'),
+    ex('Bicep Curl (Cable)', 3, '10'),
+    ex('Hammer Curl (Dumbbell)', 3, '10'),
   ];
 }
 
 function phaseAUpperW4(): ProgramExercise[] {
   return [
-    ex('Lat Pull Down', 3, '12'),
-    ex('Seated Cable Row', 3, '12'),
-    ex('Shoulder Press Machine', 4, '8'),
-    ex('Face Pull', 3, '12'),
-    ex('Cable Bicep Curl', 3, '10'),
-    ex('Hammer Curl', 3, '10'),
+    ex('Lat Pulldown', 3, '12'),
+    ex('Seated Row (Cable)', 3, '12'),
+    ex('Shoulder Press (Machine)', 4, '8'),
+    ex('Face Pulls', 3, '12'),
+    ex('Bicep Curl (Cable)', 3, '10'),
+    ex('Hammer Curl (Dumbbell)', 3, '10'),
   ];
 }
 
 function phaseAGlutesHamsW1(): ProgramExercise[] {
   return [
-    ex('Hip Thrusts', 3, '10'),
-    ex('Single Leg Hip Thrusts', 3, '8'),
-    ex('BB RDL', 3, '10'),
-    ex('Leg Curls', 3, '10'),
-    ex('Back Extensions', 3, '12'),
+    ex(
+      'Hip Thrust (Barbell)',
+      3,
+      '10',
+      'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+    ),
+    ex('Romanian Deadlift (Barbell)', 3, '10'),
+    ex(
+      'Lying Leg Curl (Machine)',
+      3,
+      '10',
+      'Any leg curl machine works. Use whichever your gym has.'
+    ),
+    ex(
+      'Back Extensions (Hyperextension)',
+      3,
+      '12',
+      'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+    ),
   ];
 }
 
 function phaseAGlutesHamsW3(): ProgramExercise[] {
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('Single Leg Hip Thrusts', 3, '10'),
-    ex('BB RDL', 3, '10'),
-    ex('Leg Curls', 3, '12'),
-    ex('Back Extensions', 3, '12'),
+    ex(
+      'Hip Thrust (Barbell)',
+      4,
+      '10',
+      'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+    ),
+    ex('Romanian Deadlift (Barbell)', 3, '10'),
+    ex(
+      'Lying Leg Curl (Machine)',
+      3,
+      '12',
+      'Any leg curl machine works. Use whichever your gym has.'
+    ),
+    ex(
+      'Back Extensions (Hyperextension)',
+      3,
+      '12',
+      'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+    ),
   ];
 }
 
 function phaseAGlutesHamsW4(): ProgramExercise[] {
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('Single Leg Hip Thrusts', 3, '10'),
-    ex('BB RDL', 3, '10'),
-    ex('Leg Curls', 4, '12'),
-    ex('Back Extensions', 3, '12'),
+    ex(
+      'Hip Thrust (Barbell)',
+      4,
+      '10',
+      'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+    ),
+    ex('Romanian Deadlift (Barbell)', 3, '10'),
+    ex(
+      'Lying Leg Curl (Machine)',
+      4,
+      '12',
+      'Any leg curl machine works. Use whichever your gym has.'
+    ),
+    ex(
+      'Back Extensions (Hyperextension)',
+      3,
+      '12',
+      'Hold onto a plate or dumbbell at your chest to increase difficulty.'
+    ),
   ];
 }
 
 function phaseAUpper2W1(): ProgramExercise[] {
   return [
-    ex('Shoulder Press Machine', 3, '8'),
-    ex('Single Arm DB Row', 3, '10'),
-    ex('Reverse Fly', 3, '10'),
-    ex('Lateral Raise DB', 3, '8'),
-    ex('Tricep Pushdown', 3, '10'),
+    ex('Shoulder Press (Machine)', 3, '8'),
+    ex('Single Arm Row (Dumbbell)', 3, '10'),
+    ex('Reverse Fly (Cable)', 3, '10'),
+    ex('Lateral Raise (Dumbbell)', 3, '8'),
+    ex('Triceps Pushdown', 3, '10'),
   ];
 }
 
 function phaseAUpper2W3(): ProgramExercise[] {
   return [
-    ex('Shoulder Press Machine', 3, '10'),
-    ex('Single Arm DB Row', 3, '10'),
-    ex('Reverse Fly', 3, '12'),
-    ex('Lateral Raise DB', 3, '10'),
-    ex('Tricep Pushdown', 3, '12'),
+    ex('Shoulder Press (Machine)', 3, '10'),
+    ex('Single Arm Row (Dumbbell)', 3, '10'),
+    ex('Reverse Fly (Cable)', 3, '12'),
+    ex('Lateral Raise (Dumbbell)', 3, '10'),
+    ex('Triceps Pushdown', 3, '12'),
   ];
 }
 
 function phaseAUpper2W4(): ProgramExercise[] {
   return [
-    ex('Shoulder Press Machine', 4, '8'),
-    ex('Single Arm DB Row', 3, '10'),
-    ex('Reverse Fly', 3, '12'),
-    ex('Lateral Raise DB', 3, '10'),
-    ex('Tricep Pushdown', 3, '12'),
+    ex('Shoulder Press (Machine)', 4, '8'),
+    ex('Single Arm Row (Dumbbell)', 3, '10'),
+    ex('Reverse Fly (Cable)', 3, '12'),
+    ex('Lateral Raise (Dumbbell)', 3, '10'),
+    ex('Triceps Pushdown', 3, '12'),
   ];
 }
 
 function phaseAGlutesQuadsW1(): ProgramExercise[] {
   return [
-    ex('Leg Press', 4, '10'),
-    ex('Hack Squats', 3, '10'),
-    ex('Reverse Lunges', 3, '8'),
-    ex('Leg Extensions', 3, '10'),
-    ex('Hip Abductions', 3, '12'),
+    ex('Leg Press (Machine)', 4, '10'),
+    ex('Hack Squat', 3, '10'),
+    ex('Reverse Lunges (Barbell)', 3, '8'),
+    ex('Leg Extension (Machine)', 3, '10'),
+    ex('Seated Hip Abduction (Machine)', 3, '12'),
   ];
 }
 
 function phaseAGlutesQuadsW3Plus(): ProgramExercise[] {
   return [
-    ex('Leg Press', 4, '10'),
-    ex('Hack Squats', 4, '8'),
-    ex('Reverse Lunges', 3, '10'),
-    ex('Leg Extensions', 3, '12'),
-    ex('Hip Abductions', 3, '12'),
+    ex('Leg Press (Machine)', 4, '10'),
+    ex('Hack Squat', 4, '8'),
+    ex('Reverse Lunges (Barbell)', 3, '10'),
+    ex('Leg Extension (Machine)', 3, '12'),
+    ex('Seated Hip Abduction (Machine)', 3, '12'),
   ];
 }
 
@@ -193,101 +256,151 @@ function phaseAGlutesQuadsW3Plus(): ProgramExercise[] {
 
 function phaseBGlutes(): ProgramExercise[] {
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('B-Stance RDL DB', 3, '10'),
-    ex('Cable Step Ups', 4, '8'),
-    ex('Hip Abductions', 4, '12'),
+    ex(
+      'Hip Thrust (Barbell)',
+      4,
+      '10',
+      'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+    ),
+    ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
+    ex(
+      'Step Up (Dumbbell)',
+      4,
+      '8',
+      'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+    ),
+    ex('Seated Hip Abduction (Machine)', 4, '12'),
   ];
 }
 
 function phaseBGlutesW10(): ProgramExercise[] {
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('B-Stance RDL DB', 3, '10'),
-    ex('Cable Step Ups', 4, '10'),
-    ex('Hip Abductions', 4, '12'),
+    ex(
+      'Hip Thrust (Barbell)',
+      4,
+      '10',
+      'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+    ),
+    ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
+    ex(
+      'Step Up (Dumbbell)',
+      4,
+      '10',
+      'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.'
+    ),
+    ex('Seated Hip Abduction (Machine)', 4, '12'),
   ];
 }
 
 function phaseBUpper(): ProgramExercise[] {
   return [
     ex('Assisted Pull Up', 3, '12'),
-    ex('Iso Row Machine', 3, '12'),
-    ex('Chest Press Machine', 4, '8'),
-    ex('Face Pull', 3, '12'),
-    ex('Cable Bicep Curl', 3, '10'),
-    ex('Bicep Curl', 3, '10'),
+    ex('Iso Lateral Row (Machine)', 3, '12'),
+    ex('Chest Press (Machine)', 4, '8'),
+    ex('Face Pulls', 3, '12'),
+    ex('Bicep Curl (Cable)', 3, '10'),
+    ex('Bicep Curl (Barbell)', 3, '10'),
   ];
 }
 
 function phaseBUpperW10(): ProgramExercise[] {
   return [
     ex('Assisted Pull Up', 3, '10'),
-    ex('Iso Row Machine', 3, '10'),
-    ex('Chest Press Machine', 4, '10'),
-    ex('Face Pull', 3, '12'),
-    ex('Cable Bicep Curl', 3, '10'),
-    ex('Bicep Curl', 3, '10'),
+    ex('Iso Lateral Row (Machine)', 3, '10'),
+    ex('Chest Press (Machine)', 4, '10'),
+    ex('Face Pulls', 3, '12'),
+    ex('Bicep Curl (Cable)', 3, '10'),
+    ex('Bicep Curl (Barbell)', 3, '10'),
   ];
 }
 
 function phaseBGlutesHams(): ProgramExercise[] {
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('Good Mornings', 3, '10'),
-    ex('Bulgarian Split Squat', 3, '10'),
-    ex('Lying Leg Curls', 4, '12'),
+    ex(
+      'Hip Thrust (Barbell)',
+      4,
+      '10',
+      'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+    ),
+    ex('Good Morning (Barbell)', 3, '10'),
+    ex('Bulgarian Split Squats', 3, '10'),
+    ex(
+      'Lying Leg Curl (Machine)',
+      4,
+      '12',
+      'Any leg curl machine works. Use whichever your gym has.'
+    ),
     ex('Cable Kickbacks', 3, '12'),
   ];
 }
 
 function phaseBGlutesHamsW10(): ProgramExercise[] {
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('Good Mornings', 3, '10'),
-    ex('Bulgarian Split Squat', 3, '8'),
-    ex('Lying Leg Curls', 3, '10'),
+    ex(
+      'Hip Thrust (Barbell)',
+      4,
+      '10',
+      'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.'
+    ),
+    ex('Good Morning (Barbell)', 3, '10'),
+    ex('Bulgarian Split Squats', 3, '8'),
+    ex(
+      'Lying Leg Curl (Machine)',
+      3,
+      '10',
+      'Any leg curl machine works. Use whichever your gym has.'
+    ),
     ex('Cable Kickbacks', 3, '10'),
   ];
 }
 
 function phaseBUpper2(): ProgramExercise[] {
   return [
-    ex('Shoulder Press DB', 3, '8'),
-    ex('Single Arm Lat Pull Down', 3, '8'),
-    ex('Chest Fly', 3, '10'),
-    ex('Lateral Raise Machine', 3, '10'),
-    ex('Tricep Pushdown', 3, '10'),
+    ex('Standing Shoulder Press (Dumbbell)', 3, '8'),
+    ex('Single Arm Lat Pulldown (Machine)', 3, '8'),
+    ex('Chest Fly (Dumbbell)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, '10'),
+    ex('Triceps Pushdown', 3, '10'),
   ];
 }
 
 function phaseBUpper2W10(): ProgramExercise[] {
   return [
-    ex('Shoulder Press DB', 3, '10'),
-    ex('Single Arm Lat Pull Down', 3, '10'),
-    ex('Chest Fly', 3, '10'),
-    ex('Lateral Raise Machine', 3, '10'),
-    ex('Tricep Pushdown', 3, '10'),
+    ex('Standing Shoulder Press (Dumbbell)', 3, '10'),
+    ex('Single Arm Lat Pulldown (Machine)', 3, '10'),
+    ex('Chest Fly (Dumbbell)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, '10'),
+    ex('Triceps Pushdown', 3, '10'),
   ];
 }
 
 function phaseBGlutesQuads(): ProgramExercise[] {
   return [
-    ex('Single Leg Press', 3, '8'),
-    ex('Goblet Squats', 3, '10'),
+    ex('Single Leg Press (Horizontal Machine)', 3, '8'),
+    ex(
+      'Goblet Squat (Dumbbell)',
+      3,
+      '10',
+      'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+    ),
     ex('Walking Lunges', 3, '10'),
-    ex('Leg Extensions', 3, '10'),
-    ex('Hip Adductors', 3, '8'),
+    ex('Leg Extension (Machine)', 3, '10'),
+    ex('Hip Adductors (Machine)', 3, '8'),
   ];
 }
 
 function phaseBGlutesQuadsW10(): ProgramExercise[] {
   return [
-    ex('Single Leg Press', 3, '10'),
-    ex('Goblet Squats', 3, '10'),
+    ex('Single Leg Press (Horizontal Machine)', 3, '10'),
+    ex(
+      'Goblet Squat (Dumbbell)',
+      3,
+      '10',
+      'These can be done with a dumbbell, kettlebell, plate, or without weight.'
+    ),
     ex('Walking Lunges', 3, '10'),
-    ex('Leg Extensions', 3, '10'),
-    ex('Hip Adductors', 3, '8'),
+    ex('Leg Extension (Machine)', 3, '10'),
+    ex('Hip Adductors (Machine)', 3, '8'),
   ];
 }
 

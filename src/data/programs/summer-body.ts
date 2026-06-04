@@ -60,31 +60,49 @@ function buildDay(
 function pAGlutesAbs(week: number): ProgramExercise[] {
   if (week === 1) {
     return [
-      ex('Hip Thrusts', 3, '10'),
-      ex('Seated Hip Abductions', 3, '10'),
-      ex('Cable Step Up', 3, '8'),
+      ex('Hip Thrust (Barbell)', 3, '10', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Seated Hip Abduction (Machine)', 3, '10'),
+      ex('Step Up (Dumbbell)', 3, '8', {
+        notes:
+          'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+      }),
       ex('Cable Kickbacks', 3, '8'),
-      ex('Cable Ab Crunch', 3, '8'),
+      ex('Cable Crunch', 3, '8'),
       ex('Hanging Knee Raise', 3, '8'),
     ];
   }
   if (week === 2) {
     return [
-      ex('Hip Thrusts', 3, '12'),
-      ex('Seated Hip Abductions', 3, '12'),
-      ex('Cable Step Up', 3, '10'),
+      ex('Hip Thrust (Barbell)', 3, '12', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Seated Hip Abduction (Machine)', 3, '12'),
+      ex('Step Up (Dumbbell)', 3, '10', {
+        notes:
+          'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+      }),
       ex('Cable Kickbacks', 3, '10'),
-      ex('Cable Ab Crunch', 3, '10'),
+      ex('Cable Crunch', 3, '10'),
       ex('Hanging Knee Raise', 3, '10'),
     ];
   }
   // weeks 3 & 4 — same
   return [
-    ex('Hip Thrusts', 3, '8'),
-    ex('Seated Hip Abductions', 3, '10'),
-    ex('Cable Step Up', 3, '10'),
+    ex('Hip Thrust (Barbell)', 3, '8', {
+      notes:
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+    }),
+    ex('Seated Hip Abduction (Machine)', 3, '10'),
+    ex('Step Up (Dumbbell)', 3, '10', {
+      notes:
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+    }),
     ex('Cable Kickbacks', 3, '10'),
-    ex('Cable Ab Crunch', 3, '10'),
+    ex('Cable Crunch', 3, '10'),
     ex('Hanging Knee Raise', 3, '10'),
   ];
 }
@@ -92,124 +110,145 @@ function pAGlutesAbs(week: number): ProgramExercise[] {
 function pAUpperBack(week: number): ProgramExercise[] {
   if (week === 1) {
     return [
-      ex('Lat Pull Down', 3, '8'),
-      ex('Bent Over Row', 3, '8'),
-      ex('Face Pull', 3, '8'),
-      ex('Seated Cable Row', 3, '10'),
-      ex('BB Standing Bicep Curl', 3, '8'),
-      ex('Cable Bicep Curl', 3, '10'),
+      ex('Lat Pulldown', 3, '8'),
+      ex('Bent Over Row (Barbell)', 3, '8'),
+      ex('Face Pulls', 3, '8'),
+      ex('Seated Row (Cable)', 3, '10'),
+      ex('Bicep Curl (Barbell)', 3, '8'),
+      ex('Bicep Curl (Cable)', 3, '10'),
     ];
   }
   if (week === 2) {
     return [
-      ex('Lat Pull Down', 3, '10'),
-      ex('Bent Over Row', 3, '10'),
-      ex('Face Pull', 3, '10'),
-      ex('Seated Cable Row', 3, '12'),
-      ex('BB Standing Bicep Curl', 3, '10'),
-      ex('Cable Bicep Curl', 3, '10'),
+      ex('Lat Pulldown', 3, '10'),
+      ex('Bent Over Row (Barbell)', 3, '10'),
+      ex('Face Pulls', 3, '10'),
+      ex('Seated Row (Cable)', 3, '12'),
+      ex('Bicep Curl (Barbell)', 3, '10'),
+      ex('Bicep Curl (Cable)', 3, '10'),
     ];
   }
   // weeks 3 & 4 — same
   return [
-    ex('Lat Pull Down', 3, '10'),
-    ex('Bent Over Row', 3, '8'),
-    ex('Face Pull', 3, '10'),
-    ex('Seated Cable Row', 3, '10'),
-    ex('BB Standing Bicep Curl', 3, '8'),
-    ex('Cable Bicep Curl', 3, '8'),
+    ex('Lat Pulldown', 3, '10'),
+    ex('Bent Over Row (Barbell)', 3, '8'),
+    ex('Face Pulls', 3, '10'),
+    ex('Seated Row (Cable)', 3, '10'),
+    ex('Bicep Curl (Barbell)', 3, '8'),
+    ex('Bicep Curl (Cable)', 3, '8'),
   ];
 }
 
 function pAGlutesHams(week: number): ProgramExercise[] {
   if (week === 1) {
     return [
-      ex('Hip Thrusts', 3, '10'),
-      ex('BB RDL', 3, '10'),
-      ex('Lying Leg Curl', 3, '8'),
-      ex('Back Extension', 3, '8'),
-      ex('Hip Abductions', 3, '10'),
+      ex('Hip Thrust (Barbell)', 3, '10', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Romanian Deadlift (Barbell)', 3, '10'),
+      ex('Lying Leg Curl (Machine)', 3, '8', {
+        notes: 'Any leg curl machine works. Use whichever your gym has.',
+      }),
+      ex('Back Extensions (Hyperextension)', 3, '8', {
+        notes: 'Hold onto a plate or dumbbell at your chest to increase difficulty.',
+      }),
+      ex('Seated Hip Abduction (Machine)', 3, '10'),
     ];
   }
   if (week === 2) {
     return [
-      ex('Hip Thrusts', 3, '12'),
-      ex('BB RDL', 3, '10'),
-      ex('Lying Leg Curl', 3, '10'),
-      ex('Back Extension', 3, '10'),
-      ex('Hip Abductions', 3, '12'),
+      ex('Hip Thrust (Barbell)', 3, '12', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Romanian Deadlift (Barbell)', 3, '10'),
+      ex('Lying Leg Curl (Machine)', 3, '10', {
+        notes: 'Any leg curl machine works. Use whichever your gym has.',
+      }),
+      ex('Back Extensions (Hyperextension)', 3, '10', {
+        notes: 'Hold onto a plate or dumbbell at your chest to increase difficulty.',
+      }),
+      ex('Seated Hip Abduction (Machine)', 3, '12'),
     ];
   }
   // weeks 3 & 4
   return [
-    ex('Hip Thrusts', 3, '8'),
-    ex('BB RDL', 3, '8'),
-    ex('Lying Leg Curl', 3, '10'),
-    ex('Back Extension', 3, '10'),
-    ex('Hip Abductions', 3, '10'),
+    ex('Hip Thrust (Barbell)', 3, '8', {
+      notes:
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+    }),
+    ex('Romanian Deadlift (Barbell)', 3, '8'),
+    ex('Lying Leg Curl (Machine)', 3, '10', {
+      notes: 'Any leg curl machine works. Use whichever your gym has.',
+    }),
+    ex('Back Extensions (Hyperextension)', 3, '10', {
+      notes: 'Hold onto a plate or dumbbell at your chest to increase difficulty.',
+    }),
+    ex('Seated Hip Abduction (Machine)', 3, '10'),
   ];
 }
 
 function pAUpper(week: number): ProgramExercise[] {
   if (week === 1) {
     return [
-      ex('Shoulder Press', 3, '8'),
-      ex('Reverse Fly', 3, '8'),
-      ex('Face Pull', 3, '10'),
-      ex('Lateral Raise', 3, '8'),
-      ex('DB Bicep Curl', 3, '8'),
-      ex('Tricep Pushdown', 3, '8'),
+      ex('Shoulder Press (Machine)', 3, '8'),
+      ex('Reverse Fly (Cable)', 3, '8'),
+      ex('Face Pulls', 3, '10'),
+      ex('Lateral Raise (Dumbbell)', 3, '8'),
+      ex('Alternating Bicep Curl (Dumbbell)', 3, '8'),
+      ex('Triceps Pushdown', 3, '8'),
     ];
   }
   if (week === 2) {
     return [
-      ex('Shoulder Press', 3, '10'),
-      ex('Reverse Fly', 3, '12'),
-      ex('Face Pull', 3, '12'),
-      ex('Lateral Raise', 3, '10'),
-      ex('DB Bicep Curl', 3, '10'),
-      ex('Tricep Pushdown', 3, '10'),
+      ex('Shoulder Press (Machine)', 3, '10'),
+      ex('Reverse Fly (Cable)', 3, '12'),
+      ex('Face Pulls', 3, '12'),
+      ex('Lateral Raise (Dumbbell)', 3, '10'),
+      ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
+      ex('Triceps Pushdown', 3, '10'),
     ];
   }
   // weeks 3 & 4 — same as W2
   return [
-    ex('Shoulder Press', 3, '10'),
-    ex('Reverse Fly', 3, '12'),
-    ex('Face Pull', 3, '12'),
-    ex('Lateral Raise', 3, '10'),
-    ex('DB Bicep Curl', 3, '10'),
-    ex('Tricep Pushdown', 3, '10'),
+    ex('Shoulder Press (Machine)', 3, '10'),
+    ex('Reverse Fly (Cable)', 3, '12'),
+    ex('Face Pulls', 3, '12'),
+    ex('Lateral Raise (Dumbbell)', 3, '10'),
+    ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
+    ex('Triceps Pushdown', 3, '10'),
   ];
 }
 
 function pAQuadsAbs(week: number): ProgramExercise[] {
   if (week === 1) {
     return [
-      ex('BB Back Squat', 3, '10'),
-      ex('Walking Lunge', 3, '8'),
-      ex('Leg Extension', 3, '8'),
-      ex('Cable Ab Crunch', 3, '8'),
-      ex('Plank Hold', 3, '60 sec', { supersetGroup: 1 }),
+      ex('Back Squat (Barbell)', 3, '10'),
+      ex('Walking Lunges', 3, '8'),
+      ex('Leg Extension (Machine)', 3, '8'),
+      ex('Cable Crunch', 3, '8'),
+      ex('Plank', 3, '60 sec', { supersetGroup: 1 }),
       ex('Hanging Knee Raise', 3, '8', { supersetGroup: 1 }),
     ];
   }
   if (week === 2) {
     return [
-      ex('BB Back Squat', 3, '10'),
-      ex('Walking Lunge', 3, '10'),
-      ex('Leg Extension', 3, '10'),
-      ex('Cable Ab Crunch', 3, '10'),
-      ex('Plank Hold', 3, '70 sec', { supersetGroup: 1 }),
+      ex('Back Squat (Barbell)', 3, '10'),
+      ex('Walking Lunges', 3, '10'),
+      ex('Leg Extension (Machine)', 3, '10'),
+      ex('Cable Crunch', 3, '10'),
+      ex('Plank', 3, '70 sec', { supersetGroup: 1 }),
       ex('Hanging Knee Raise', 3, '10', { supersetGroup: 1 }),
     ];
   }
   // weeks 3 & 4 — same
   return [
-    ex('BB Back Squat', 3, '8'),
-    ex('Walking Lunge', 3, '8'),
-    ex('Leg Extension', 3, '10'),
-    ex('Cable Ab Crunch', 3, '10'),
-    ex('Plank Hold', 3, '70 sec', { supersetGroup: 1 }),
+    ex('Back Squat (Barbell)', 3, '8'),
+    ex('Walking Lunges', 3, '8'),
+    ex('Leg Extension (Machine)', 3, '10'),
+    ex('Cable Crunch', 3, '10'),
+    ex('Plank', 3, '70 sec', { supersetGroup: 1 }),
     ex('Hanging Knee Raise', 3, '10', { supersetGroup: 1 }),
   ];
 }
@@ -221,32 +260,50 @@ function pAQuadsAbs(week: number): ProgramExercise[] {
 function pBGlutesAbs(week: number): ProgramExercise[] {
   if (week === 5) {
     return [
-      ex('Hip Thrusts', 3, '8'),
-      ex('Smith Machine Reverse Lunge', 3, '10'),
-      ex('Cable Step Up', 3, '10'),
+      ex('Hip Thrust (Barbell)', 3, '8', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Reverse Lunges (Barbell)', 3, '10'),
+      ex('Step Up (Dumbbell)', 3, '10', {
+        notes:
+          'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+      }),
       ex('Cable Kickbacks', 3, '10'),
-      ex('Side Plank Twist With Rear Fly (DB)', 3, '10'),
-      ex('Hanging Knee Oblique Raise', 3, '10'),
+      ex('Side Plank Twist with Rear Fly (Dumbbell)', 3, '10'),
+      ex('Hanging Oblique Knee Raise', 3, '10'),
     ];
   }
   if (week === 6) {
     return [
-      ex('Hip Thrusts', 3, '10'),
-      ex('Smith Machine Reverse Lunge', 3, '10'),
-      ex('Cable Step Up', 3, '10'),
+      ex('Hip Thrust (Barbell)', 3, '10', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Reverse Lunges (Barbell)', 3, '10'),
+      ex('Step Up (Dumbbell)', 3, '10', {
+        notes:
+          'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+      }),
       ex('Cable Kickbacks', 3, '12'),
-      ex('Side Plank Twist With Rear Fly (DB)', 3, '12'),
-      ex('Hanging Knee Oblique Raise', 3, '12'),
+      ex('Side Plank Twist with Rear Fly (Dumbbell)', 3, '12'),
+      ex('Hanging Oblique Knee Raise', 3, '12'),
     ];
   }
   // weeks 7 & 8
   return [
-    ex('Hip Thrusts', 3, '8'),
-    ex('Smith Machine Reverse Lunge', 3, '8'),
-    ex('Cable Step Up', 3, '8'),
+    ex('Hip Thrust (Barbell)', 3, '8', {
+      notes:
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+    }),
+    ex('Reverse Lunges (Barbell)', 3, '8'),
+    ex('Step Up (Dumbbell)', 3, '8', {
+      notes:
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+    }),
     ex('Cable Kickbacks', 3, '12'),
-    ex('Side Plank Twist With Rear Fly (DB)', 3, '12'),
-    ex('Hanging Knee Oblique Raise', 3, '12'),
+    ex('Side Plank Twist with Rear Fly (Dumbbell)', 3, '12'),
+    ex('Hanging Oblique Knee Raise', 3, '12'),
   ];
 }
 
@@ -254,122 +311,143 @@ function pBUpperBack(week: number): ProgramExercise[] {
   if (week === 5) {
     return [
       ex('Assisted Pull Up', 3, '6'),
-      ex('Single Arm DB Row', 3, '8'),
-      ex('Reverse Fly', 3, '10'),
-      ex('Straight Arm Pulldown', 3, '10'),
-      ex('BB Standing Bicep Curl', 3, '8'),
-      ex('Cable Bicep Curl', 3, '8'),
+      ex('Single Arm Row (Dumbbell)', 3, '8'),
+      ex('Reverse Fly (Cable)', 3, '10'),
+      ex('Straight Arm Pulldown', 3, '10', { notes: 'Feel free to use any attachment.' }),
+      ex('Bicep Curl (Barbell)', 3, '8'),
+      ex('Bicep Curl (Cable)', 3, '8'),
     ];
   }
   if (week === 6) {
     return [
       ex('Assisted Pull Up', 3, '8'),
-      ex('Single Arm DB Row', 3, '10'),
-      ex('Reverse Fly', 3, '10'),
-      ex('Straight Arm Pulldown', 3, '10'),
-      ex('BB Standing Bicep Curl', 3, '10'),
-      ex('Cable Bicep Curl', 3, '10'),
+      ex('Single Arm Row (Dumbbell)', 3, '10'),
+      ex('Reverse Fly (Cable)', 3, '10'),
+      ex('Straight Arm Pulldown', 3, '10', { notes: 'Feel free to use any attachment.' }),
+      ex('Bicep Curl (Barbell)', 3, '10'),
+      ex('Bicep Curl (Cable)', 3, '10'),
     ];
   }
   // weeks 7 & 8
   return [
     ex('Assisted Pull Up', 3, '8'),
-    ex('Single Arm DB Row', 3, '10'),
-    ex('Reverse Fly', 3, '10'),
-    ex('Straight Arm Pulldown', 3, '8'),
-    ex('BB Standing Bicep Curl', 3, '8'),
-    ex('Cable Bicep Curl', 3, '8'),
+    ex('Single Arm Row (Dumbbell)', 3, '10'),
+    ex('Reverse Fly (Cable)', 3, '10'),
+    ex('Straight Arm Pulldown', 3, '8', { notes: 'Feel free to use any attachment.' }),
+    ex('Bicep Curl (Barbell)', 3, '8'),
+    ex('Bicep Curl (Cable)', 3, '8'),
   ];
 }
 
 function pBGlutesHams(week: number): ProgramExercise[] {
   if (week === 5) {
     return [
-      ex('Hip Thrusts', 3, '10'),
-      ex('Smith Machine Good Mornings', 3, '8'),
-      ex('Lying Leg Curl', 3, '10'),
-      ex('Back Extension', 3, '10'),
-      ex('B Stance RDL', 3, '10'),
+      ex('Hip Thrust (Barbell)', 3, '10', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Good Morning (Smith Machine)', 3, '8'),
+      ex('Lying Leg Curl (Machine)', 3, '10', {
+        notes: 'Any leg curl machine works. Use whichever your gym has.',
+      }),
+      ex('Back Extensions (Hyperextension)', 3, '10', {
+        notes: 'Hold onto a plate or dumbbell at your chest to increase difficulty.',
+      }),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
     ];
   }
   if (week === 6) {
     return [
-      ex('Hip Thrusts', 3, '10'),
-      ex('Smith Machine Good Mornings', 3, '10'),
-      ex('Lying Leg Curl', 3, '10'),
-      ex('Back Extension', 3, '12'),
-      ex('B Stance RDL', 3, '10'),
+      ex('Hip Thrust (Barbell)', 3, '10', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Good Morning (Smith Machine)', 3, '10'),
+      ex('Lying Leg Curl (Machine)', 3, '10', {
+        notes: 'Any leg curl machine works. Use whichever your gym has.',
+      }),
+      ex('Back Extensions (Hyperextension)', 3, '12', {
+        notes: 'Hold onto a plate or dumbbell at your chest to increase difficulty.',
+      }),
+      ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '10'),
     ];
   }
   // weeks 7 & 8
   return [
-    ex('Hip Thrusts', 3, '8'),
-    ex('Smith Machine Good Mornings', 3, '10'),
-    ex('Lying Leg Curl', 3, '8'),
-    ex('Back Extension', 3, '12'),
-    ex('B Stance RDL', 3, '8'),
+    ex('Hip Thrust (Barbell)', 3, '8', {
+      notes:
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+    }),
+    ex('Good Morning (Smith Machine)', 3, '10'),
+    ex('Lying Leg Curl (Machine)', 3, '8', {
+      notes: 'Any leg curl machine works. Use whichever your gym has.',
+    }),
+    ex('Back Extensions (Hyperextension)', 3, '12', {
+      notes: 'Hold onto a plate or dumbbell at your chest to increase difficulty.',
+    }),
+    ex('B-Stance Single Leg Deadlift (Dumbbell)', 3, '8'),
   ];
 }
 
 function pBUpper(week: number): ProgramExercise[] {
   if (week === 5) {
     return [
-      ex('Shoulder Press', 3, '10'),
-      ex('Chest Press Machine', 3, '8'),
-      ex('Iso Lateral High Row', 3, '10'),
-      ex('Lateral Raise To Front Raise', 3, '6'),
-      ex('Alternating DB Bicep Curl', 3, '10'),
-      ex('Overhead Tricep Extension', 3, '10'),
+      ex('Shoulder Press (Machine)', 3, '10'),
+      ex('Chest Press (Machine)', 3, '8'),
+      ex('Iso Lateral High Row (Machine)', 3, '10'),
+      ex('Lateral to Front Raise (Dumbbell)', 3, '6'),
+      ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
+      ex('Overhead Triceps Extension (Cable)', 3, '10'),
     ];
   }
   if (week === 6) {
     return [
-      ex('Shoulder Press', 3, '10'),
-      ex('Chest Press Machine', 3, '10'),
-      ex('Iso Lateral High Row', 3, '10'),
-      ex('Lateral Raise To Front Raise', 3, '8'),
-      ex('Alternating DB Bicep Curl', 3, '10'),
-      ex('Overhead Tricep Extension', 3, '10'),
+      ex('Shoulder Press (Machine)', 3, '10'),
+      ex('Chest Press (Machine)', 3, '10'),
+      ex('Iso Lateral High Row (Machine)', 3, '10'),
+      ex('Lateral to Front Raise (Dumbbell)', 3, '8'),
+      ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
+      ex('Overhead Triceps Extension (Cable)', 3, '10'),
     ];
   }
   // weeks 7 & 8
   return [
-    ex('Shoulder Press', 3, '8'),
-    ex('Chest Press Machine', 3, '10'),
-    ex('Iso Lateral High Row', 3, '8'),
-    ex('Lateral Raise To Front Raise', 3, '8'),
-    ex('Alternating DB Bicep Curl', 3, '10'),
-    ex('Overhead Tricep Extension', 3, '10'),
+    ex('Shoulder Press (Machine)', 3, '8'),
+    ex('Chest Press (Machine)', 3, '10'),
+    ex('Iso Lateral High Row (Machine)', 3, '8'),
+    ex('Lateral to Front Raise (Dumbbell)', 3, '8'),
+    ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
+    ex('Overhead Triceps Extension (Cable)', 3, '10'),
   ];
 }
 
 function pBQuadsAbs(week: number): ProgramExercise[] {
   if (week === 5) {
     return [
-      ex('BB Pendulum Squat', 3, '8'),
-      ex('Smith Machine Bulgarian Split Squat', 3, '10'),
-      ex('Seated Leg Press', 3, '8'),
-      ex('Leg Extension', 3, '10'),
+      ex('Pendulum Squat (Machine)', 3, '8'),
+      ex('Bulgarian Split Squat (Smith Machine)', 3, '10'),
+      ex('Leg Press (Machine)', 3, '8'),
+      ex('Leg Extension (Machine)', 3, '10'),
       ex('Decline Crunch', 3, '6', { supersetGroup: 1 }),
       ex('Hanging Oblique Knee Raise', 3, '10', { supersetGroup: 1 }),
     ];
   }
   if (week === 6) {
     return [
-      ex('BB Pendulum Squat', 3, '10'),
-      ex('Smith Machine Bulgarian Split Squat', 3, '10'),
-      ex('Seated Leg Press', 3, '10'),
-      ex('Leg Extension', 3, '10'),
+      ex('Pendulum Squat (Machine)', 3, '10'),
+      ex('Bulgarian Split Squat (Smith Machine)', 3, '10'),
+      ex('Leg Press (Machine)', 3, '10'),
+      ex('Leg Extension (Machine)', 3, '10'),
       ex('Decline Crunch', 3, '8', { supersetGroup: 1 }),
       ex('Hanging Oblique Knee Raise', 3, '12', { supersetGroup: 1 }),
     ];
   }
   // weeks 7 & 8
   return [
-    ex('BB Pendulum Squat', 3, '10'),
-    ex('Smith Machine Bulgarian Split Squat', 3, '8'),
-    ex('Seated Leg Press', 3, '10'),
-    ex('Leg Extension', 3, '10'),
+    ex('Pendulum Squat (Machine)', 3, '10'),
+    ex('Bulgarian Split Squat (Smith Machine)', 3, '8'),
+    ex('Leg Press (Machine)', 3, '10'),
+    ex('Leg Extension (Machine)', 3, '10'),
     ex('Decline Crunch', 3, '8', { supersetGroup: 1 }),
     ex('Hanging Oblique Knee Raise', 3, '12', { supersetGroup: 1 }),
   ];
@@ -382,93 +460,125 @@ function pBQuadsAbs(week: number): ProgramExercise[] {
 function pCGlutesAbs(week: number): ProgramExercise[] {
   if (week === 9 || week === 10) {
     return [
-      ex('Hip Thrusts', 4, '8'),
-      ex('Hip Abductions', 3, '8'),
-      ex('Cable Step Up', 3, '8'),
-      ex('Back Extension', 3, '12'),
+      ex('Hip Thrust (Barbell)', 4, '8', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Seated Hip Abduction (Machine)', 3, '8'),
+      ex('Step Up (Dumbbell)', 3, '8', {
+        notes:
+          'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+      }),
+      ex('Back Extensions (Hyperextension)', 3, '12', {
+        notes: 'Hold onto a plate or dumbbell at your chest to increase difficulty.',
+      }),
       ex('Dead Bug', 3, '10'),
-      ex('Hanging Leg Raise', 3, '8'),
+      ex('Hanging Straight Leg Raise', 3, '8'),
     ];
   }
   // weeks 11 & 12
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('Hip Abductions', 3, '10'),
-    ex('Cable Step Up', 3, '10'),
-    ex('Back Extension', 3, '12'),
+    ex('Hip Thrust (Barbell)', 4, '10', {
+      notes:
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+    }),
+    ex('Seated Hip Abduction (Machine)', 3, '10'),
+    ex('Step Up (Dumbbell)', 3, '10', {
+      notes:
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+    }),
+    ex('Back Extensions (Hyperextension)', 3, '12', {
+      notes: 'Hold onto a plate or dumbbell at your chest to increase difficulty.',
+    }),
     ex('Dead Bug', 3, '12'),
-    ex('Hanging Leg Raise', 3, '10'),
+    ex('Hanging Straight Leg Raise', 3, '10'),
   ];
 }
 
 function pCUpperBack(week: number): ProgramExercise[] {
   if (week === 9 || week === 10) {
     return [
-      ex('Seated Cable Row', 3, '8'),
-      ex('T Bar Row', 3, '8'),
-      ex('Seated Face Pull', 3, '10'),
-      ex('Lateral Raise Machine', 3, '8'),
-      ex('Hammer Curl', 3, '8', { supersetGroup: 1 }),
-      ex('Seated Bicep Curl', 3, '8', { supersetGroup: 1 }),
+      ex('Seated Row (Cable)', 3, '8'),
+      ex('T-Bar Row', 3, '8'),
+      ex('Kneeling Face Pull (Cable)', 3, '10'),
+      ex('Lateral Raise (Machine)', 3, '8'),
+      ex('Hammer Curl (Dumbbell)', 3, '8', { supersetGroup: 1 }),
+      ex('Seated Bicep Curl (Dumbbell)', 3, '8', { supersetGroup: 1 }),
     ];
   }
   // weeks 11 & 12
   return [
-    ex('Seated Cable Row', 3, '10'),
-    ex('T Bar Row', 3, '8'),
-    ex('Seated Face Pull', 3, '10'),
-    ex('Lateral Raise Machine', 3, '8'),
-    ex('Hammer Curl', 3, '8', { supersetGroup: 1 }),
-    ex('Seated Bicep Curl', 3, '8', { supersetGroup: 1 }),
+    ex('Seated Row (Cable)', 3, '10'),
+    ex('T-Bar Row', 3, '8'),
+    ex('Kneeling Face Pull (Cable)', 3, '10'),
+    ex('Lateral Raise (Machine)', 3, '8'),
+    ex('Hammer Curl (Dumbbell)', 3, '8', { supersetGroup: 1 }),
+    ex('Seated Bicep Curl (Dumbbell)', 3, '8', { supersetGroup: 1 }),
   ];
 }
 
 function pCGlutesHams(week: number): ProgramExercise[] {
   if (week === 9 || week === 10) {
     return [
-      ex('Hip Thrusts', 3, '8'),
-      ex('Deficit Reverse Lunge', 3, '10'),
-      ex('Cable Step Up', 3, '8'),
-      ex('Seated Leg Curl', 3, '8'),
-      ex('DB RDL', 3, '8'),
+      ex('Hip Thrust (Barbell)', 3, '8', {
+        notes:
+          'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+      }),
+      ex('Deficit Reverse Lunge', 3, '10', { notes: 'Can also be done on the smith machine.' }),
+      ex('Step Up (Dumbbell)', 3, '8', {
+        notes:
+          'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+      }),
+      ex('Seated Leg Curl (Machine)', 3, '8', {
+        notes: 'Any leg curl machine works. Use whichever your gym has.',
+      }),
+      ex('Romanian Deadlift (Dumbbell)', 3, '8'),
     ];
   }
   // weeks 11 & 12
   return [
-    ex('Hip Thrusts', 4, '10'),
-    ex('Deficit Reverse Lunge', 3, '10'),
-    ex('Cable Step Up', 3, '8'),
-    ex('Seated Leg Curl', 3, '8'),
-    ex('DB RDL', 3, '8'),
+    ex('Hip Thrust (Barbell)', 4, '10', {
+      notes:
+        'These can be done with a barbell, smith machine, or hip thrust machine if your gym has one.',
+    }),
+    ex('Deficit Reverse Lunge', 3, '10', { notes: 'Can also be done on the smith machine.' }),
+    ex('Step Up (Dumbbell)', 3, '8', {
+      notes:
+        'These can be done on a bench using a dumbbell, smith machine, cable machine, or barbell.',
+    }),
+    ex('Seated Leg Curl (Machine)', 3, '8', {
+      notes: 'Any leg curl machine works. Use whichever your gym has.',
+    }),
+    ex('Romanian Deadlift (Dumbbell)', 3, '8'),
   ];
 }
 
 function pCUpper(week: number): ProgramExercise[] {
   if (week === 9) {
     return [
-      ex('Shoulder Press Machine', 3, '8'),
-      ex('Incline DB Chest Press', 3, '8'),
-      ex('Single Arm DB Row', 3, '8'),
-      ex('Cable Lateral Raise', 3, '8'),
-      ex('Alternating DB Bicep Curl', 3, '10'),
+      ex('Shoulder Press (Machine)', 3, '8'),
+      ex('Incline Bench Press (Dumbbell)', 3, '8'),
+      ex('Single Arm Row (Dumbbell)', 3, '8'),
+      ex('Lateral Raise (Cable)', 3, '8'),
+      ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
     ];
   }
   if (week === 10) {
     return [
-      ex('Shoulder Press Machine', 3, '8'),
-      ex('Incline DB Chest Press', 3, '8'),
-      ex('Single Arm DB Row', 3, '8'),
-      ex('Cable Lateral Raise', 3, '8'),
-      ex('Alternating DB Bicep Curl', 3, '10'),
+      ex('Shoulder Press (Machine)', 3, '8'),
+      ex('Incline Bench Press (Dumbbell)', 3, '8'),
+      ex('Single Arm Row (Dumbbell)', 3, '8'),
+      ex('Lateral Raise (Cable)', 3, '8'),
+      ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
     ];
   }
   // weeks 11 & 12
   return [
-    ex('Shoulder Press Machine', 3, '8'),
-    ex('Incline DB Chest Press', 3, '8'),
-    ex('Single Arm DB Row', 3, '10'),
-    ex('Cable Lateral Raise', 3, '10'),
-    ex('Alternating DB Bicep Curl', 3, '10'),
+    ex('Shoulder Press (Machine)', 3, '8'),
+    ex('Incline Bench Press (Dumbbell)', 3, '8'),
+    ex('Single Arm Row (Dumbbell)', 3, '10'),
+    ex('Lateral Raise (Cable)', 3, '10'),
+    ex('Alternating Bicep Curl (Dumbbell)', 3, '10'),
   ];
 }
 
@@ -476,21 +586,25 @@ function pCQuadsAbs(week: number): ProgramExercise[] {
   if (week === 9 || week === 10) {
     return [
       ex('Hack Squat', 3, '10'),
-      ex('Goblet Squat', 3, '8'),
-      ex('Single Leg Leg Press', 3, '8'),
+      ex('Goblet Squat (Dumbbell)', 3, '8', {
+        notes: 'These can be done with a dumbbell, kettlebell, plate, or without weight.',
+      }),
+      ex('Single Leg Press (Horizontal Machine)', 3, '8'),
       ex('Single Leg Extension', 3, '8'),
       ex('Cable Crunch', 3, '8'),
-      ex('Hanging Leg Raise', 3, '8'),
+      ex('Hanging Straight Leg Raise', 3, '8'),
     ];
   }
   // weeks 11 & 12
   return [
     ex('Hack Squat', 3, '10'),
-    ex('Goblet Squat', 3, '10'),
-    ex('Single Leg Leg Press', 3, '10'),
+    ex('Goblet Squat (Dumbbell)', 3, '10', {
+      notes: 'These can be done with a dumbbell, kettlebell, plate, or without weight.',
+    }),
+    ex('Single Leg Press (Horizontal Machine)', 3, '10'),
     ex('Single Leg Extension', 3, '10'),
     ex('Cable Crunch', 3, '10'),
-    ex('Hanging Leg Raise', 3, '8'),
+    ex('Hanging Straight Leg Raise', 3, '8'),
   ];
 }
 
